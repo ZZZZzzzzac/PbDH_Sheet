@@ -1,0 +1,4294 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-palette="ink">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>逆命仙途制卡器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<style>
+/* ============================================================
+   CSS RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 15px; scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-body-bg);
+  color: var(--color-text);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Paper noise texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+/* ============================================================
+   CSS VARIABLES — DEFAULT (墨韵 / Ink)
+   ============================================================ */
+:root {
+  --color-primary: #1C1E21;
+  --color-accent: #8C3A3A;
+  --color-accent-light: rgba(140, 58, 58, 0.15);
+  --color-bg-card: #F4F1EA;
+  --color-body-bg: #D5CFC4;
+  --color-text: #2B2B2B;
+  --color-text-light: #6B6B6B;
+  --color-text-muted: #9A9690;
+  --color-border: #3D3D3D;
+  --color-border-light: #D0CCC0;
+  --color-input-bg: #FFFFFF;
+  --color-input-border: #C8C3B8;
+  --color-input-focus: #1C1E21;
+  --color-section-hover: rgba(0,0,0,0.02);
+  --color-tab-active-bg: #1C1E21;
+  --color-tab-active-text: #F4F1EA;
+  --color-tab-inactive-text: #9A9690;
+  --color-tab-hover-bg: rgba(28,30,33,0.06);
+  --color-button-primary-bg: #1C1E21;
+  --color-button-primary-text: #F4F1EA;
+  --color-button-primary-hover: #2D3035;
+  --color-button-accent-bg: #8C3A3A;
+  --color-button-accent-text: #FFFFFF;
+  --color-button-accent-hover: #A04545;
+  --color-button-outline-border: #8C8C8C;
+  --color-button-outline-text: #4A4A4A;
+  --color-button-outline-hover-bg: rgba(0,0,0,0.04);
+  --color-button-remove-text: #8C3A3A;
+  --color-button-remove-hover-bg: rgba(140,58,58,0.08);
+  --color-accent-bar: #8C3A3A;
+  --color-divider: #D0CCC0;
+  --color-trait-bg: rgba(0,0,0,0.02);
+  --color-trait-border: #E0DCD0;
+  --color-shadow-card: 0 8px 32px rgba(0,0,0,0.18);
+  --color-shadow-inner: inset 0 0 40px rgba(0,0,0,0.04);
+  --color-hostile: #8C3A3A;
+  --color-friendly: #3A8C5B;
+  --color-hostile-light: rgba(140, 58, 58, 0.08);
+  --color-friendly-light: rgba(58, 140, 91, 0.08);
+  --font-title: 'Noto Serif SC', 'SimSun', 'STSong', serif;
+  --font-body: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', 'Noto Sans SC', sans-serif;
+  --card-width: 900px;
+  --card-height: 600px;
+  --config-width: 420px;
+}
+
+/* ============================================================
+   PALETTE — 苍竹 (Bamboo)
+   ============================================================ */
+[data-palette="bamboo"] {
+  --color-primary: #2A3A32;
+  --color-accent: #5B8C85;
+  --color-accent-light: rgba(91, 140, 133, 0.15);
+  --color-bg-card: #F2F0E8;
+  --color-body-bg: #D3CFC5;
+  --color-text: #2B2B2B;
+  --color-text-light: #5A5A5A;
+  --color-text-muted: #8A8780;
+  --color-border: #3D4A42;
+  --color-border-light: #C5C0B5;
+  --color-input-bg: #FFFFFF;
+  --color-input-border: #BFBAAE;
+  --color-input-focus: #2A3A32;
+  --color-tab-active-bg: #2A3A32;
+  --color-tab-active-text: #F2F0E8;
+  --color-tab-hover-bg: rgba(42,58,50,0.06);
+  --color-button-primary-bg: #2A3A32;
+  --color-button-primary-text: #F2F0E8;
+  --color-button-primary-hover: #3A4E44;
+  --color-button-accent-bg: #5B8C85;
+  --color-button-accent-text: #FFFFFF;
+  --color-button-accent-hover: #6DA099;
+  --color-button-outline-border: #7A8A82;
+  --color-button-outline-text: #3A4A42;
+  --color-button-remove-text: #8C5B5B;
+  --color-button-remove-hover-bg: rgba(140,91,91,0.08);
+  --color-accent-bar: #5B8C85;
+  --color-divider: #C5C0B5;
+  --color-trait-bg: rgba(42,58,50,0.03);
+  --color-trait-border: #D5D0C5;
+  --color-hostile: #8C6B3A;
+  --color-friendly: #3A6B5B;
+  --color-hostile-light: rgba(140, 107, 58, 0.08);
+  --color-friendly-light: rgba(58, 107, 91, 0.08);
+  --color-shadow-card: 0 8px 32px rgba(42,58,50,0.16);
+  --color-shadow-inner: inset 0 0 40px rgba(42,58,50,0.03);
+}
+
+/* ============================================================
+   PALETTE — 朱砂 (Cinnabar)
+   ============================================================ */
+[data-palette="cinnabar"] {
+  --color-primary: #5C1E1E;
+  --color-accent: #B8543A;
+  --color-accent-light: rgba(184, 84, 58, 0.15);
+  --color-bg-card: #FDF8F0;
+  --color-body-bg: #E0D8CB;
+  --color-text: #2B1E1E;
+  --color-text-light: #6B4A4A;
+  --color-text-muted: #9A8078;
+  --color-border: #4A2A2A;
+  --color-border-light: #D0C0B0;
+  --color-input-bg: #FFFFFF;
+  --color-input-border: #C8B8A8;
+  --color-input-focus: #5C1E1E;
+  --color-tab-active-bg: #5C1E1E;
+  --color-tab-active-text: #FDF8F0;
+  --color-tab-hover-bg: rgba(92,30,30,0.06);
+  --color-button-primary-bg: #5C1E1E;
+  --color-button-primary-text: #FDF8F0;
+  --color-button-primary-hover: #722A2A;
+  --color-button-accent-bg: #B8543A;
+  --color-button-accent-text: #FFFFFF;
+  --color-button-accent-hover: #C9654A;
+  --color-button-outline-border: #9A7A6A;
+  --color-button-outline-text: #5A3A2A;
+  --color-button-remove-text: #B8543A;
+  --color-button-remove-hover-bg: rgba(184,84,58,0.08);
+  --color-accent-bar: #B8543A;
+  --color-divider: #D0C0B0;
+  --color-trait-bg: rgba(92,30,30,0.02);
+  --color-trait-border: #E0D0C0;
+  --color-hostile: #B8543A;
+  --color-friendly: #5B8C5B;
+  --color-hostile-light: rgba(184, 84, 58, 0.08);
+  --color-friendly-light: rgba(91, 140, 91, 0.08);
+  --color-shadow-card: 0 8px 32px rgba(92,30,30,0.16);
+  --color-shadow-inner: inset 0 0 40px rgba(92,30,30,0.03);
+}
+
+/* ============================================================
+   PALETTE — 松烟 (Pine Soot)
+   ============================================================ */
+[data-palette="pinesoot"] {
+  --color-primary: #1A2332;
+  --color-accent: #4A6B8A;
+  --color-accent-light: rgba(74, 107, 138, 0.15);
+  --color-bg-card: #F0F2F0;
+  --color-body-bg: #D8DDD8;
+  --color-text: #1A2332;
+  --color-text-light: #4A5568;
+  --color-text-muted: #7A828A;
+  --color-border: #2A3344;
+  --color-border-light: #C4C9C4;
+  --color-input-bg: #FFFFFF;
+  --color-input-border: #BCC0BC;
+  --color-input-focus: #1A2332;
+  --color-tab-active-bg: #1A2332;
+  --color-tab-active-text: #F0F2F0;
+  --color-tab-hover-bg: rgba(26,35,50,0.06);
+  --color-button-primary-bg: #1A2332;
+  --color-button-primary-text: #F0F2F0;
+  --color-button-primary-hover: #2D3A4E;
+  --color-button-accent-bg: #4A6B8A;
+  --color-button-accent-text: #FFFFFF;
+  --color-button-accent-hover: #5C7FA0;
+  --color-button-outline-border: #8A9298;
+  --color-button-outline-text: #2A3344;
+  --color-button-remove-text: #8A5B5B;
+  --color-button-remove-hover-bg: rgba(138,91,91,0.08);
+  --color-accent-bar: #4A6B8A;
+  --color-divider: #C4C9C4;
+  --color-trait-bg: rgba(26,35,50,0.03);
+  --color-trait-border: #D4D8D4;
+  --color-hostile: #8A5B4A;
+  --color-friendly: #3A6B5B;
+  --color-hostile-light: rgba(138, 91, 74, 0.08);
+  --color-friendly-light: rgba(58, 107, 91, 0.08);
+  --color-shadow-card: 0 8px 32px rgba(26,35,50,0.16);
+  --color-shadow-inner: inset 0 0 40px rgba(26,35,50,0.03);
+}
+
+/* ============================================================
+   PALETTE — 绛紫 (Purple-Red)
+   ============================================================ */
+[data-palette="purplered"] {
+  --color-primary: #3D1E2A;
+  --color-accent: #8B4A6B;
+  --color-accent-light: rgba(139, 74, 107, 0.15);
+  --color-bg-card: #F8F2F4;
+  --color-body-bg: #E8DDE0;
+  --color-text: #2B1E22;
+  --color-text-light: #5A3A44;
+  --color-text-muted: #8A7A7E;
+  --color-border: #4A2834;
+  --color-border-light: #D4C8CC;
+  --color-input-bg: #FFFFFF;
+  --color-input-border: #C8BCC0;
+  --color-input-focus: #3D1E2A;
+  --color-tab-active-bg: #3D1E2A;
+  --color-tab-active-text: #F8F2F4;
+  --color-tab-hover-bg: rgba(61,30,42,0.06);
+  --color-button-primary-bg: #3D1E2A;
+  --color-button-primary-text: #F8F2F4;
+  --color-button-primary-hover: #542A3A;
+  --color-button-accent-bg: #8B4A6B;
+  --color-button-accent-text: #FFFFFF;
+  --color-button-accent-hover: #A05A7D;
+  --color-button-outline-border: #9A8A90;
+  --color-button-outline-text: #4A2834;
+  --color-button-remove-text: #8B4A6B;
+  --color-button-remove-hover-bg: rgba(139,74,107,0.08);
+  --color-accent-bar: #8B4A6B;
+  --color-divider: #D4C8CC;
+  --color-trait-bg: rgba(61,30,42,0.02);
+  --color-trait-border: #E0D4D8;
+  --color-hostile: #8B4A4A;
+  --color-friendly: #4A8B5B;
+  --color-hostile-light: rgba(139, 74, 74, 0.08);
+  --color-friendly-light: rgba(74, 139, 91, 0.08);
+  --color-shadow-card: 0 8px 32px rgba(61,30,42,0.16);
+  --color-shadow-inner: inset 0 0 40px rgba(61,30,42,0.03);
+}
+
+/* ============================================================
+   PALETTE — 金石 (Gold-Stone)
+   ============================================================ */
+[data-palette="goldstone"] {
+  --color-primary: #3A3020;
+  --color-accent: #8B6D3A;
+  --color-accent-light: rgba(139, 109, 58, 0.15);
+  --color-bg-card: #F8F4EA;
+  --color-body-bg: #EAE0D0;
+  --color-text: #2B2218;
+  --color-text-light: #5A4A32;
+  --color-text-muted: #8A7A60;
+  --color-border: #4A3E2A;
+  --color-border-light: #D4C8B0;
+  --color-input-bg: #FFFFFF;
+  --color-input-border: #C8BCA4;
+  --color-input-focus: #3A3020;
+  --color-tab-active-bg: #3A3020;
+  --color-tab-active-text: #F8F4EA;
+  --color-tab-hover-bg: rgba(58,48,32,0.06);
+  --color-button-primary-bg: #3A3020;
+  --color-button-primary-text: #F8F4EA;
+  --color-button-primary-hover: #524430;
+  --color-button-accent-bg: #8B6D3A;
+  --color-button-accent-text: #FFFFFF;
+  --color-button-accent-hover: #A0804A;
+  --color-button-outline-border: #9A8A70;
+  --color-button-outline-text: #4A3E2A;
+  --color-button-remove-text: #8B5B3A;
+  --color-button-remove-hover-bg: rgba(139,91,58,0.08);
+  --color-accent-bar: #8B6D3A;
+  --color-divider: #D4C8B0;
+  --color-trait-bg: rgba(58,48,32,0.02);
+  --color-trait-border: #E0D4C0;
+  --color-hostile: #8B3A3A;
+  --color-friendly: #5B8B3A;
+  --color-hostile-light: rgba(139, 58, 58, 0.08);
+  --color-friendly-light: rgba(91, 139, 58, 0.08);
+  --color-shadow-card: 0 8px 32px rgba(58,48,32,0.16);
+  --color-shadow-inner: inset 0 0 40px rgba(58,48,32,0.03);
+}
+
+/* ============================================================
+   LAYOUT — Left/Right Grid
+   ============================================================ */
+.app-container {
+  display: grid;
+  grid-template-columns: var(--config-width) 1fr;
+  min-height: 100vh;
+}
+
+/* ============================================================
+   CONFIG PANEL — Left Side
+   ============================================================ */
+.config-panel {
+  background: var(--color-bg-card);
+  border-right: 2px solid var(--color-divider);
+  padding: 28px 24px 24px;
+  overflow-y: auto;
+  max-height: 100vh;
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.config-panel-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--color-divider);
+}
+
+.config-panel-header h1 {
+  font-family: var(--font-title);
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--color-primary);
+  letter-spacing: 0.04em;
+}
+
+.config-panel-header .subtitle {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.03em;
+}
+
+/* ============================================================
+   TABS — Card Type Switcher
+   ============================================================ */
+.config-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--color-divider);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-bg-card);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.tab-button {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  background: none;
+  font-family: var(--font-title);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-tab-inactive-text);
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  letter-spacing: 0.04em;
+}
+
+.tab-button:hover {
+  color: var(--color-text);
+  background: var(--color-tab-hover-bg);
+}
+
+.tab-button.active {
+  color: var(--color-tab-active-bg);
+  border-bottom-color: var(--color-tab-active-bg);
+  font-weight: 900;
+  background: rgba(0,0,0,0.03);
+}
+
+/* ============================================================
+   CONFIG SECTIONS — With Left Accent Bar
+   ============================================================ */
+.config-section {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.config-section:last-child { border-bottom: none; }
+
+.config-section h3 {
+  font-family: var(--font-title);
+  font-size: 0.95rem;
+  font-weight: 900;
+  color: var(--color-primary);
+  padding-left: 12px;
+  border-left: 4px solid var(--color-accent-bar);
+  margin-bottom: 14px;
+  letter-spacing: 0.03em;
+}
+
+.config-section .section-desc {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+  padding-left: 16px;
+}
+
+/* ============================================================
+   FORM CONTROLS
+   ============================================================ */
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-group:last-child { margin-bottom: 0; }
+
+.form-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text-light);
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--color-input-border);
+  border-radius: 4px;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  line-height: 1.5;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--color-input-focus);
+  box-shadow: 0 0 0 2px rgba(28,30,33,0.1);
+}
+
+.form-textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+}
+
+.form-row .form-group { flex: 1; }
+
+.form-hint {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: 3px;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.btn:active { transform: translateY(1px); }
+
+/* Primary — Solid Dark */
+.btn-primary {
+  background: var(--color-button-primary-bg);
+  color: var(--color-button-primary-text);
+}
+.btn-primary:hover {
+  background: var(--color-button-primary-hover);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Accent — Red */
+.btn-accent {
+  background: var(--color-button-accent-bg);
+  color: var(--color-button-accent-text);
+}
+.btn-accent:hover {
+  background: var(--color-button-accent-hover);
+  box-shadow: 0 2px 8px rgba(140,58,58,0.2);
+}
+
+/* Outline */
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--color-button-outline-border);
+  color: var(--color-button-outline-text);
+}
+.btn-outline:hover {
+  background: var(--color-button-outline-hover-bg);
+}
+
+/* Remove / Danger */
+.btn-remove {
+  background: transparent;
+  color: var(--color-button-remove-text);
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+.btn-remove:hover {
+  background: var(--color-button-remove-hover-bg);
+}
+
+/* Small variant */
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+
+/* ============================================================
+   COLLAPSIBLE SECTIONS
+   ============================================================ */
+.collapse-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.05em;
+  user-select: none;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.collapse-toggle:hover {
+  background: var(--color-section-hover);
+}
+.collapse-toggle::after {
+  content: '\25B8';
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: transform 0.2s;
+  margin-left: 8px;
+}
+.collapse-toggle.open::after {
+  transform: rotate(90deg);
+}
+.collapse-body {
+  display: none;
+  padding: 8px 0 12px;
+}
+.collapse-body.open {
+  display: block;
+}
+
+/* ============================================================
+   INK STYLE PRESET BUTTONS (in config panel)
+   ============================================================ */
+.ink-style-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.ink-style-btn {
+  padding: 5px 10px;
+  border: 1.5px solid var(--color-border-light);
+  border-radius: 4px;
+  background: var(--color-input-bg);
+  cursor: pointer;
+  font-family: var(--font-title);
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  transition: all 0.2s;
+  letter-spacing: 0.03em;
+}
+
+.ink-style-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+.ink-style-btn.active {
+  background: var(--color-primary);
+  color: var(--color-bg-card);
+  border-color: var(--color-primary);
+}
+
+/* ============================================================
+   PALETTE SWATCHES
+   ============================================================ */
+.palette-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.palette-swatch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1.5px solid var(--color-border-light);
+  border-radius: 6px;
+  background: var(--color-input-bg);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--color-text);
+}
+
+.palette-swatch:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.palette-swatch.active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(28,30,33,0.12);
+}
+
+.swatch-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* ============================================================
+   ACTIONS BAR
+   ============================================================ */
+.actions-bar {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 2px solid var(--color-divider);
+  flex-wrap: wrap;
+}
+
+.actions-bar .btn { flex: 1; min-width: 70px; }
+
+/* ============================================================
+   BOTTOM TOOLBAR — Below Card Preview
+   ============================================================ */
+.bottom-toolbar {
+  margin-top: 16px;
+  background: var(--color-bg-card);
+  border: 2px solid var(--color-border);
+  padding: 14px 16px;
+}
+.bottom-toolbar-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.bottom-toolbar-row:last-child { margin-bottom: 0; }
+.bottom-toolbar-label {
+  font-family: var(--font-title);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 1px;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+.bottom-toolbar .btn {
+  font-size: 0.72rem;
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   SLOT PANEL — Archive Management
+   ============================================================ */
+.slot-panel {
+  border: 1px solid var(--color-border);
+  padding: 8px;
+  margin-top: 4px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.slot-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px;
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: 0.75rem;
+}
+.slot-card:last-child { border-bottom: none; }
+.slot-card .slot-num {
+  font-weight: 900;
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  color: var(--color-primary);
+  min-width: 48px;
+}
+.slot-card .slot-info {
+  flex: 1;
+  min-width: 0;
+}
+.slot-card .slot-title {
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+}
+.slot-card .slot-type {
+  display: inline-block;
+  font-size: 0.65rem;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  padding: 0 4px;
+  margin-left: 6px;
+}
+.slot-card .slot-meta {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+.slot-card .slot-note {
+  font-size: 0.68rem;
+  color: var(--color-text-light);
+  margin-top: 2px;
+  font-style: italic;
+  cursor: pointer;
+}
+.slot-card .slot-note:hover { color: var(--color-accent); }
+.slot-card .slot-note-edit {
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border: 1px solid var(--color-accent);
+  background: #fff;
+  width: 100%;
+}
+.slot-card .slot-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.slot-card .slot-actions button {
+  font-size: 0.65rem;
+  padding: 3px 8px;
+}
+
+/* ============================================================
+   PREVIEW AREA — Right Side
+   ============================================================ */
+.preview-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+  padding: 40px 32px;
+  gap: 24px;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(0,0,0,0.04) 0%, transparent 70%),
+    var(--color-body-bg);
+}
+
+.preview-label {
+  font-family: var(--font-title);
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   CARD PREVIEW
+   ============================================================ */
+.card-preview {
+  width: var(--card-width);
+  min-height: var(--card-height);
+  height: auto;
+  background-color: var(--color-bg-card);
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(0,0,0,0.008) 20px, rgba(0,0,0,0.008) 21px);
+  border: 1px solid var(--color-border);
+  outline: 2px solid var(--color-border);
+  outline-offset: 2px;
+  border-radius: 2px;
+  box-shadow:
+    var(--color-shadow-card),
+    var(--color-shadow-inner);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-body);
+}
+
+/* ============================================================
+   INK WASH BACKGROUND LAYER
+   ============================================================ */
+.card-ink-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-size: 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: all 0.8s ease;
+}
+
+/* Preset styles via data attribute on the card */
+.card-preview[data-ink-style="水墨"] .card-ink-bg {
+  filter: blur(1px) grayscale(0.6) sepia(0.3);
+  mix-blend-mode: multiply;
+  opacity: 0.2;
+}
+
+.card-preview[data-ink-style="青绿"] .card-ink-bg {
+  filter: blur(1.5px) sepia(0.4) hue-rotate(30deg) saturate(0.6);
+  mix-blend-mode: multiply;
+  opacity: 0.18;
+}
+
+.card-preview[data-ink-style="朱砂"] .card-ink-bg {
+  filter: blur(1px) sepia(0.5) saturate(0.7) hue-rotate(-20deg);
+  mix-blend-mode: multiply;
+  opacity: 0.2;
+}
+
+.card-preview[data-ink-style="古卷"] .card-ink-bg {
+  filter: blur(0.5px) sepia(0.7) brightness(0.9);
+  mix-blend-mode: multiply;
+  opacity: 0.22;
+}
+
+.card-preview[data-ink-style="淡墨"] .card-ink-bg {
+  filter: blur(2px) grayscale(1) brightness(1.1);
+  mix-blend-mode: multiply;
+  opacity: 0.15;
+}
+
+.card-preview[data-ink-style="霜华"] .card-ink-bg {
+  filter: blur(2px) hue-rotate(180deg) saturate(0.3);
+  mix-blend-mode: multiply;
+  opacity: 0.16;
+}
+
+.card-preview[data-ink-style="暮色"] .card-ink-bg {
+  filter: sepia(0.6) hue-rotate(-10deg) saturate(0.5) brightness(0.95);
+  mix-blend-mode: multiply;
+  opacity: 0.22;
+}
+
+.card-preview[data-ink-style="烟雨"] .card-ink-bg {
+  filter: blur(3px) grayscale(0.8) brightness(1.05);
+  mix-blend-mode: multiply;
+  opacity: 0.13;
+}
+
+.card-preview[data-ink-style="丹青"] .card-ink-bg {
+  filter: sepia(0.3) hue-rotate(50deg) saturate(0.5);
+  mix-blend-mode: multiply;
+  opacity: 0.18;
+}
+
+.card-preview[data-ink-style="残卷"] .card-ink-bg {
+  filter: blur(0.5px) sepia(0.8) brightness(0.85) contrast(1.1);
+  mix-blend-mode: multiply;
+  opacity: 0.2;
+}
+
+/* When no image: no background layer */
+.card-preview:not([data-ink-style]) .card-ink-bg,
+.card-preview[data-ink-style="none"] .card-ink-bg {
+  display: none;
+}
+
+/* ============================================================
+   CARD BODY — Equal Left/Right Split (Like Original Demo)
+   ============================================================ */
+.card-body {
+  display: flex;
+  flex: 1;
+  position: relative;
+  z-index: 2;
+}
+
+.card-left {
+  flex: 1;
+  min-width: 0;
+  max-width: 50%;
+  padding: 24px;
+  border-right: 1px dashed var(--color-accent);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 0.85rem;
+}
+
+.card-right {
+  flex: 1;
+  min-width: 0;
+  max-width: 50%;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 0.85rem;
+}
+
+/* ============================================================
+   CARD LEFT — Horizontal Header Row
+   ============================================================ */
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--color-accent);
+  margin-bottom: 14px;
+}
+.card-header-row .card-name {
+  font-family: var(--font-title);
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: var(--color-primary);
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+}
+.card-header-row .card-name .rank-suffix {
+  font-size: 0.55em;
+  font-weight: 400;
+  opacity: 0.65;
+  margin-left: 0.1em;
+}
+.card-header-row .card-rank-type {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.92rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.card-header-row .card-rank-type .rank {
+  color: var(--color-text-muted);
+}
+.card-header-row .card-rank-type .type-info {
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* ---- Meta Fields (scoped to left column) ---- */
+.card-left .meta-item {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px dotted rgba(0,0,0,0.06);
+}
+
+.card-left .meta-label {
+  min-width: 5.5em;
+  text-align: right;
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.card-left .meta-value {
+  flex: 1;
+  text-align: left;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+/* ---- Meta Grid (2-column for location cards) ---- */
+.card-left .meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+}
+.card-left .meta-grid .meta-item {
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0;
+  border-bottom: 1px dotted rgba(0,0,0,0.06);
+}
+.card-left .meta-grid .meta-label {
+  text-align: left;
+  min-width: auto;
+}
+
+/* ---- Stronghold: big difficulty number ---- */
+.card-left .str-difficulty {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--color-accent);
+  font-family: var(--font-title);
+}
+
+.card-left .str-ally {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--color-accent);
+  font-family: var(--font-title);
+}
+
+.ally-chip {
+  display: inline-block;
+  border: 1px solid var(--color-accent);
+  border-left: 3px solid var(--color-accent);
+  padding: 4px 8px;
+  margin-right: 8px;
+  margin-bottom: 6px;
+  background: var(--color-accent-light);
+  font-size: 0.78rem;
+}
+.ally-chip-name {
+  font-weight: 700;
+  color: var(--color-primary);
+  display: block;
+}
+.ally-chip-desc {
+  display: block;
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--color-text-light);
+  margin-top: 3px;
+  margin-bottom: 8px;
+  line-height: 1.5;
+  padding-left: 4px;
+}
+
+/* ---- Stronghold: section breathing room ---- */
+.meta-section-gap {
+  height: 12px;
+}
+
+/* ---- Stronghold: description with emphasis ---- */
+.card-left .stronghold-desc {
+  font-size: 0.9rem;
+  line-height: 1.8;
+  padding: 10px 0;
+  border-left: 3px solid var(--color-accent);
+  padding-left: 12px;
+  margin: 8px 0;
+}
+
+/* ============================================================
+   CARD LEFT — Description / Tendencies (in left column)
+   ============================================================ */
+.card-description {
+  font-style: italic;
+  line-height: 1.7;
+  color: var(--color-text);
+  font-size: 0.88rem;
+  padding: 8px 0;
+  border-left: 3px solid var(--color-accent);
+  padding-left: 12px;
+}
+
+mark {
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+  padding: 0 3px;
+  font-weight: 600;
+}
+
+.card-tendencies {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--color-primary);
+}
+
+.faction-bar-bottom {
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+/* ============================================================
+   CARD TRAITS — Inside Card Preview
+   ============================================================ */
+.card-traits {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-trait-item {
+  padding: 10px 14px;
+  background: var(--color-trait-bg);
+  border: 1px solid var(--color-trait-border);
+  border-radius: 4px;
+  font-size: 0.82rem;
+}
+
+.card-trait-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.card-trait-name {
+  font-weight: 900;
+  color: var(--color-primary);
+  font-family: var(--font-title);
+  font-size: 0.9rem;
+}
+
+.card-trait-type {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 3px;
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  letter-spacing: 0.04em;
+}
+
+.card-trait-source {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  letter-spacing: 0.04em;
+}
+
+.card-trait-cost {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  margin-left: auto;
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+}
+
+.card-trait-desc {
+  color: var(--color-text-light);
+  line-height: 1.5;
+  font-size: 0.82rem;
+}
+
+.card-trait-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+/* Trait SVG circle wrapper — clickable */
+.trait-circle-wrap {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.trait-flavor {
+  display: block;
+  margin-top: 4px;
+  padding: 4px 0 4px 10px;
+  border-left: 2px solid var(--color-accent);
+  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--color-text-light);
+  line-height: 1.5;
+}
+.trait-flavor strong { font-weight: 700; color: var(--color-primary); }
+.trait-flavor em { font-style: italic; }
+
+/* Trait type tag color variants */
+.card-trait-type.type-passive  { color: var(--color-text-muted); border-color: var(--color-text-muted); }
+.card-trait-type.type-reaction { color: #C09040; border-color: #C09040; }
+.card-trait-type.type-active   { color: var(--color-accent); border-color: var(--color-accent); }
+
+/* ============================================================
+   CARD TRAITS SECTION TITLE
+   ============================================================ */
+.card-traits-title {
+  font-size: 0.78rem; font-weight: 700; color: var(--color-text-muted);
+  text-align: center; letter-spacing: 2px; margin-bottom: 2px;
+}
+
+/* ============================================================
+   FACTION RELATIONS BAR
+   ============================================================ */
+.faction-relations { padding-bottom: 8px; border-bottom: 1px dashed var(--color-text-muted); }
+.faction-relations-title {
+  font-size: 0.78rem; font-weight: 700; color: var(--color-text-muted);
+  text-align: center; letter-spacing: 2px; margin-bottom: 6px;
+}
+.faction-track {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 2px;
+  font-size: 0.7rem; font-weight: 600; padding: 6px 4px;
+  background: linear-gradient(to right,
+    var(--color-hostile-light),
+    rgba(0,0,0,0.03) 22%,
+    rgba(0,0,0,0.03) 44%,
+    rgba(0,0,0,0.03) 56%,
+    var(--color-friendly-light) 78%,
+    var(--color-friendly-light));
+  border: 1px solid var(--color-border);
+}
+.faction-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  padding: 2px 3px;
+  transition: all 0.15s;
+  user-select: none;
+  height: 40px;
+  justify-content: center;
+}
+.faction-node .dot {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--color-text-muted);
+  background: transparent;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.faction-node.selected .dot {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  transform: scale(1.15);
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+.faction-node.hostile { color: var(--color-hostile); }
+.faction-node.neutral { color: var(--color-text-muted); }
+.faction-node.friendly { color: var(--color-friendly); }
+
+/* ============================================================
+   TRAITS EDITOR — Config Panel
+   ============================================================ */
+.trait-edit-box {
+  border: 1px solid var(--color-border);
+  padding: 12px;
+  margin-bottom: 8px;
+  background: rgba(255,255,255,0.5);
+}
+
+.trait-edit-row {
+  display: flex; gap: 8px; align-items: center; margin-bottom: 6px;
+}
+
+.traits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trait-editor-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--color-trait-bg);
+  border: 1px solid var(--color-trait-border);
+  border-radius: 4px;
+  font-size: 0.78rem;
+}
+
+.trait-editor-item .trait-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.trait-editor-item .trait-info strong {
+  display: block;
+  color: var(--color-primary);
+  font-size: 0.82rem;
+}
+
+.trait-editor-item .trait-info span {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+
+.trait-editor-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-add-trait {
+  width: 100%;
+  padding: 8px;
+  border: 1.5px dashed var(--color-border-light);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.btn-add-trait:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ============================================================
+   SWATCH COLOR BAR & CUSTOM PALETTE PICKERS
+   ============================================================ */
+.swatch-bar {
+  display: inline-flex;
+  width: 34px;
+  height: 14px;
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.12);
+}
+.swatch-bar span { display: block; height: 100%; }
+
+.swatch-dot-multi {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(0,0,0,0.12);
+}
+
+.custom-palette-pickers {
+  margin-top: 12px;
+  padding: 10px 8px;
+  background: var(--color-trait-bg);
+  border: 1px solid var(--color-trait-border);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.color-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-picker-row .cp-label {
+  width: 36px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-text-light);
+  flex-shrink: 0;
+  letter-spacing: 0.03em;
+}
+
+.color-picker-row input[type="color"] {
+  width: 32px;
+  height: 26px;
+  border: 1px solid var(--color-input-border);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 2px;
+  background: var(--color-input-bg);
+  flex-shrink: 0;
+}
+
+.color-picker-row input[type="text"] {
+  flex: 1;
+  padding: 4px 7px;
+  border: 1px solid var(--color-input-border);
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--color-text);
+  background: var(--color-input-bg);
+  min-width: 0;
+}
+
+.color-picker-row input[type="text"]:focus {
+  outline: none;
+  border-color: var(--color-input-focus);
+}
+
+/* ============================================================
+   TYPE-SPECIFIC SECTIONS (shown/hidden by JS)
+   ============================================================ */
+.type-section { display: none; }
+.type-section.active { display: block; }
+
+/* ============================================================
+   OTHER RELATIONS — Config Panel rows + Card preview chips
+   ============================================================ */
+.other-rel-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border-light);
+  border-left: 3px solid var(--color-accent);
+  margin-bottom: 6px;
+  background: rgba(255,255,255,0.35);
+}
+.other-rel-row.character {
+  border-left-color: #8B6D3A;
+}
+.other-rel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  margin-right: 6px;
+  margin-bottom: 4px;
+}
+.other-rel-chip .rel-type {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0 4px;
+}
+.other-rel-chip.faction .rel-type { background: var(--color-accent-light); color: var(--color-accent); }
+.other-rel-chip.character .rel-type { background: rgba(139,109,58,0.15); color: #8B6D3A; }
+
+/* Drag handle for other-relation rows */
+.other-rel-row .drag-handle {
+  cursor: grab;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  padding: 0 4px;
+  user-select: none;
+}
+.other-rel-row.dragging {
+  opacity: 0.4;
+}
+.other-rel-row.drag-over {
+  border-top: 2px solid var(--color-accent);
+}
+
+/* Relation value colored badges */
+.other-rel-chip .rel-value {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+.rel-value.deadly { background: rgba(140,58,58,0.2); color: #8C3A3A; }
+.rel-value.war { background: rgba(180,80,80,0.18); color: #A04040; }
+.rel-value.hostile { background: rgba(180,100,60,0.18); color: #A06040; }
+.rel-value.unfriendly { background: rgba(160,140,80,0.18); color: #908050; }
+.rel-value.neutral { background: rgba(0,0,0,0.06); color: #777; }
+.rel-value.acquaintance { background: rgba(100,140,100,0.15); color: #608060; }
+.rel-value.friendly { background: rgba(80,140,80,0.18); color: #508050; }
+.rel-value.cooperative { background: rgba(80,130,80,0.2); color: #407040; }
+.rel-value.allied { background: rgba(58,140,91,0.22); color: #3A8C5B; }
+
+/* ============================================================
+   IMAGE EDITOR MODAL (Simplified for ink wash)
+   ============================================================ */
+.editor-modal-overlay {
+  position: fixed;
+  z-index: 2000;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.editor-modal-content {
+  background: var(--color-bg-card);
+  border: 2px solid var(--color-border);
+  border-radius: 4px;
+  padding: 28px;
+  width: 90%;
+  max-width: 820px;
+  display: flex;
+  gap: 28px;
+  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.35);
+}
+.editor-preview-pane {
+  flex: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-body-bg);
+  min-height: 380px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border-light);
+  position: relative;
+  overflow: hidden;
+}
+.editor-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 380px;
+  overflow: hidden;
+}
+.editor-frame .editor-ink-preview {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: opacity 0.3s;
+}
+.editor-controls-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 180px;
+}
+.editor-controls-pane label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-text-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.editor-controls-pane label span {
+  font-weight: 400;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+.editor-controls-pane input[type="range"] {
+  width: 100%;
+  accent-color: var(--color-accent);
+}
+.editor-controls-pane .editor-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-divider);
+}
+.editor-controls-pane .editor-buttons .btn { flex: 1; }
+
+/* ============================================================
+   BEAUTIFY PANEL — Floating right-side panel
+   ============================================================ */
+.beautify-panel-toggle {
+  position: fixed;
+  right: 0;
+  top: calc(38% + 90px);
+  transform: translateY(-50%);
+  z-index: 498;
+  writing-mode: vertical-rl;
+  padding: 12px 8px;
+  background: var(--color-accent);
+  color: #fff;
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  cursor: pointer;
+  border: 2px solid var(--color-border);
+  border-right: none;
+  transition: right 0.3s;
+}
+.beautify-panel-toggle.open { right: 280px; }
+
+.beautify-panel {
+  position: fixed;
+  right: -290px;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  z-index: 497;
+  background: var(--color-bg-card);
+  border-left: 2px solid var(--color-border);
+  box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+  transition: right 0.3s;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 16px;
+}
+.beautify-panel.open { right: 0; }
+
+/* ============================================================
+   RESPONSIVE — Single Column Below 1100px
+   ============================================================ */
+@media (max-width: 1100px) {
+  .app-container {
+    grid-template-columns: 1fr;
+  }
+
+  .config-panel {
+    position: relative;
+    max-height: none;
+    border-right: none;
+    border-bottom: 2px solid var(--color-divider);
+    padding: 20px 16px;
+    gap: 20px;
+  }
+
+  .card-preview {
+    width: 100%;
+    max-width: var(--card-width);
+    height: auto;
+    aspect-ratio: 9 / 6;
+  }
+
+  .card-left,
+  .card-right {
+    padding: 18px;
+  }
+
+  .card-name { font-size: 1.6rem; }
+}
+
+@media (max-width: 600px) {
+  .card-preview {
+    aspect-ratio: auto;
+    min-height: 420px;
+  }
+
+  .card-body {
+    flex-direction: column;
+  }
+
+  .card-left {
+    border-right: none;
+    border-bottom: 1px dashed var(--color-accent);
+  }
+
+  .actions-bar { flex-direction: column; }
+}
+
+/* ============================================================
+   PRINT STYLES — Physical Card Output
+   ============================================================ */
+@media print {
+  @page {
+    size: 88mm 63mm landscape;
+    margin: 2mm;
+  }
+
+  html, body {
+    background: white !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  body::before { display: none !important; }
+
+  /* Hide ALL UI */
+  .config-panel, .config-panel-header, .config-tabs, .actions-bar,
+  .gm-panel, .gm-panel-toggle, #imageEditorModal, #configPanel,
+  .collapse-toggle, .collapse-body, .preview-label, .bottom-toolbar,
+  .beautify-panel-toggle, .beautify-panel {
+    display: none !important;
+  }
+
+  .app-container {
+    display: block !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .preview-area {
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  .card-preview {
+    width: 88mm !important;
+    height: 63mm !important;
+    min-height: auto !important;
+    box-shadow: none !important;
+    outline: none !important;
+    border: 1px solid #000 !important;
+    padding: 3mm !important;
+    font-size: 6pt !important;
+    background-image: none !important;
+    page-break-inside: avoid;
+  }
+
+  .card-preview::before { display: none !important; }
+  .card-ink-bg { display: none !important; }
+
+  .card-header-row { padding-bottom: 1mm !important; margin-bottom: 2mm !important; }
+  .card-header-row .card-name { font-size: 11pt !important; }
+  .card-header-row .card-rank-type { font-size: 6pt !important; }
+
+  .card-body { flex-direction: row !important; gap: 2mm !important; }
+  .card-left, .card-right {
+    flex: 1 !important;
+    padding: 1mm !important;
+    max-width: 50% !important;
+    gap: 1mm !important;
+  }
+  .card-left { border-right: 1px dashed #999 !important; }
+  .card-left::after { display: none !important; }
+
+  .meta-label { font-size: 5pt !important; }
+  .meta-value { font-size: 6pt !important; }
+  .card-description { font-size: 6pt !important; border-left-width: 1px !important; padding-left: 1mm !important; }
+  .stronghold-desc { font-size: 6pt !important; border-left-width: 1px !important; padding-left: 1mm !important; }
+  .card-tendencies { font-size: 6pt !important; }
+
+  .card-trait-name { font-size: 6pt !important; }
+  .card-trait-type { font-size: 5pt !important; }
+  .card-trait-cost { font-size: 5.5pt !important; }
+  .card-trait-desc { font-size: 5.5pt !important; }
+  .trait-flavor { font-size: 5pt !important; border-left-width: 1px !important; }
+
+  .faction-track { font-size: 4.5pt !important; padding: 1mm !important; }
+  .faction-node .dot { width: 2mm !important; height: 2mm !important; }
+  .faction-node.selected .dot { transform: scale(1.1) !important; outline-width: 1px !important; }
+}
+
+/* ============================================================
+   GM FLOATING SIDEBAR PANEL
+   ============================================================ */
+.gm-panel-toggle {
+  position: fixed;
+  right: 0;
+  top: 38%;
+  transform: translateY(-50%);
+  z-index: 500;
+  writing-mode: vertical-rl;
+  padding: 12px 8px;
+  background: var(--color-primary);
+  color: var(--color-bg-card);
+  font-family: var(--font-title);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  cursor: pointer;
+  border: 2px solid var(--color-border);
+  border-right: none;
+  transition: right 0.3s;
+}
+.gm-panel-toggle.open { right: 280px; }
+
+.gm-panel {
+  position: fixed;
+  right: -290px;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  z-index: 499;
+  background: var(--color-bg-card);
+  border-left: 2px solid var(--color-border);
+  box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+  transition: right 0.3s;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 16px;
+}
+.gm-panel.open { right: 0; }
+
+.gm-card-slot {
+  margin-bottom: 14px;
+  padding: 10px;
+  border: 1px solid var(--color-border-light);
+  background: rgba(255,255,255,0.3);
+}
+.gm-slot-label {
+  font-family: var(--font-title);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 6px;
+  letter-spacing: 2px;
+}
+.gm-mini-card {
+  padding: 8px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  margin-bottom: 4px;
+  transition: background 0.15s;
+}
+.gm-mini-card:hover { background: var(--color-accent-light); }
+.gm-mini-card.empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+  cursor: default;
+  text-align: center;
+  padding: 12px;
+}
+.gm-mini-name {
+  display: block;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--color-primary);
+}
+.gm-mini-meta {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+.gm-slot-btn {
+  font-size: 0.65rem;
+  padding: 3px 8px;
+  border: 1px solid var(--color-border-light);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  margin-top: 4px;
+  width: 100%;
+}
+.gm-slot-btn:hover { background: var(--color-section-hover); color: var(--color-primary); }
+.gm-slot-btn.set { color: var(--color-accent); border-color: var(--color-accent); }
+.gm-slot-btn.set:hover { background: var(--color-accent-light); }
+.gm-slot-select {
+  width: 100%;
+  font-size: 0.62rem;
+  margin-top: 4px;
+  padding: 3px 4px;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+</style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- ============================================================
+       CONFIG PANEL — Left Side
+       ============================================================ -->
+  <aside class="config-panel" id="configPanel">
+
+    <div class="config-panel-header">
+      <h1>逆命仙途制卡器</h1>
+      <span class="subtitle">环境 / 势力 / 地点</span>
+    </div>
+
+    <!-- Card Type Tabs -->
+    <nav class="config-tabs" id="configTabs">
+      <button class="tab-button active" data-type="environment">环境</button>
+      <button class="tab-button" data-type="faction">势力</button>
+      <button class="tab-button" data-type="location">地点</button>
+      <button class="tab-button" data-type="stronghold">据点</button>
+    </nav>
+
+    <!-- Basic Info Section -->
+    <div class="config-section" id="basicInfoSection">
+      <!-- Dynamically rendered by renderBasicInfoSection() -->
+    </div>
+
+    <!-- Type-Specific: Environment -->
+    <div class="config-section type-section active" id="envSection" data-type="environment">
+      <h3>环境属性</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">环境类型</label>
+          <select class="form-select" id="inputEnvType" onchange="updateState('envType', this.value)">
+            <option value="探索">探索</option>
+            <option value="社交">社交</option>
+            <option value="险境" selected>险境</option>
+            <option value="事件">事件</option>
+          </select>
+        </div>
+        <div class="form-group" style="max-width:100px">
+          <label class="form-label">难度</label>
+          <input type="number" class="form-input" id="inputEnvDifficulty" value="10" min="1" max="30" oninput="updateState('envDifficulty', parseInt(this.value)||0)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">环境潜在风险</label>
+        <input type="text" class="form-input" id="inputEnvRisks" value="血魔狼、赤红鹰、鲜血巨蟒" placeholder="以顿号分隔" oninput="updateState('envRisks', this.value)">
+      </div>
+    </div>
+
+    <!-- Type-Specific: Faction -->
+    <div class="config-section type-section" id="facSection" data-type="faction">
+      <h3>势力属性</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">难度</label>
+          <input type="number" class="form-input" id="inputFacDifficulty" value="12" min="1" max="30" oninput="updateState('facDifficulty', parseInt(this.value)||0)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">关系值</label>
+          <select class="form-input" id="inputFacRelation" onchange="updateState('facRelation', parseInt(this.value)); renderCardPreview();">
+            <option value="-1">— 未选择 —</option>
+            <option value="0">死敌</option>
+            <option value="1">交战</option>
+            <option value="2">敌对</option>
+            <option value="3">不和</option>
+            <option value="4">无关</option>
+            <option value="5">相识</option>
+            <option value="6">友善</option>
+            <option value="7">合作</option>
+            <option value="8">同盟</option>
+          </select>
+          <span class="form-hint">死敌 ~ 同盟</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">潜在风险</label>
+        <input type="text" class="form-input" id="inputFacRisks" placeholder="以顿号分隔" oninput="updateState('facRisks', this.value)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">潜在盟友</label>
+        <input type="text" class="form-input" id="inputFacAllies" placeholder="以顿号分隔" oninput="updateState('facAllies', this.value)">
+      </div>
+      <div class="form-group">
+        <label>其他关系</label>
+        <div id="facOtherRelations"></div>
+        <button onclick="addOtherRelation()" class="btn btn-outline" style="width:100%; font-size:0.72rem;">+ 增加关系</button>
+      </div>
+    </div>
+
+    <!-- Type-Specific: Location -->
+    <div class="config-section type-section" id="locSection" data-type="location">
+      <h3>地点属性</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">主要地貌</label>
+          <input type="text" class="form-input" id="inputLocTerrain" placeholder="山地 / 平原 / 水域..." oninput="updateState('locTerrain', this.value)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">主题</label>
+          <input type="text" class="form-input" id="inputLocTheme" placeholder="仙凡有别/人心不足蛇吞象..." oninput="updateState('locTheme', this.value)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">存在势力</label>
+        <input type="text" class="form-input" id="inputLocFactions" placeholder="以顿号分隔" oninput="updateState('locFactions', this.value)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">主要环境</label>
+        <input type="text" class="form-input" id="inputLocEnvs" placeholder="以顿号分隔" oninput="updateState('locEnvs', this.value)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">主要事件</label>
+        <input type="text" class="form-input" id="inputLocMainEvents" placeholder="以顿号分隔" oninput="updateState('locMainEvents', this.value)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">危险与冲突</label>
+        <input type="text" class="form-input" id="inputLocDangers" placeholder="以顿号分隔" oninput="updateState('locDangers', this.value)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">发现与盟友</label>
+        <input type="text" class="form-input" id="inputLocDiscoveries" placeholder="以顿号分隔" oninput="updateState('locDiscoveries', this.value)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">宿敌的计划</label>
+        <input type="text" class="form-input" id="inputLocNemesis" placeholder="以顿号分隔" oninput="updateState('locNemesis', this.value)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">谜团</label>
+        <input type="text" class="form-input" id="inputLocMysteries" placeholder="以顿号分隔" oninput="updateState('locMysteries', this.value)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">谜底</label>
+        <textarea class="form-textarea" id="inputLocTruth" placeholder="谜团的真相" oninput="updateState('locTruth', this.value)"></textarea>
+      </div>
+    </div>
+
+    <!-- Type-Specific: Stronghold -->
+    <div class="config-section type-section" id="strSection" data-type="stronghold">
+      <h3>据点属性</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">难度</label>
+          <input type="number" class="form-input" id="inputStrDifficulty" value="10" min="1" max="30" oninput="updateState('strDifficulty', parseInt(this.value)||0)">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>盟友</label>
+        <div id="strAlliesEditor"></div>
+        <button class="btn btn-outline" onclick="addAlly()" style="width:100%; font-size:0.72rem; margin-top:4px;">+ 增加盟友</button>
+      </div>
+    </div>
+
+    <!-- Traits Section -->
+    <div class="config-section" id="traitsSection">
+      <h3>特性列表</h3>
+      <div class="traits-list" id="traitsList">
+        <!-- Dynamically populated -->
+      </div>
+      <button class="btn-add-trait" id="btnAddTrait" style="margin-top:8px">+ 增加一条特性</button>
+    </div>
+
+  </aside>
+
+  <!-- ============================================================
+       PREVIEW AREA — Right Side (Flexible)
+       ============================================================ -->
+  <main class="preview-area" id="previewArea">
+
+    <span class="preview-label">卡片预览</span>
+
+    <!-- Card Preview -->
+    <div class="card-preview" id="cardPreview">
+      <div class="card-ink-bg" id="cardInkBg"></div>
+
+      <div class="card-body">
+        <div class="card-left" id="cardLeft">
+          <!-- Fully rendered by renderCardLeftContent() -->
+        </div>
+
+        <div class="card-right" id="cardRight">
+          <!-- Fully rendered by renderCardRightContent() -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Toolbar -->
+    <div class="bottom-toolbar" id="bottomToolbar"></div>
+
+  </main>
+
+</div>
+
+<!-- ============================================================
+     GM FLOATING SIDEBAR PANEL
+     ============================================================ -->
+<div class="gm-panel-toggle" id="gmPanelToggle" onclick="toggleGMPanel()">常用速切</div>
+<div class="gm-panel" id="gmPanel">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:10px; border-bottom:2px solid var(--color-accent);">
+    <span style="font-family:var(--font-title); font-weight:900; font-size:1rem; letter-spacing:2px;">当前场景</span>
+    <span style="cursor:pointer; font-size:1.2rem; color:var(--color-text-muted);" onclick="toggleGMPanel()">✕</span>
+  </div>
+  <div id="gmPanelContent"></div>
+</div>
+
+<!-- ============================================================
+     BEAUTIFY FLOATING SIDEBAR PANEL (below GM toggle)
+     ============================================================ -->
+<div class="beautify-panel-toggle" id="beautifyPanelToggle" onclick="toggleBeautifyPanel()">美化</div>
+<div class="beautify-panel" id="beautifyPanel">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid var(--color-accent);">
+    <span style="font-family:var(--font-title); font-weight:900; font-size:0.9rem; letter-spacing:1px;">自定义美化</span>
+    <span style="cursor:pointer; font-size:1.1rem; color:var(--color-text-muted);" onclick="toggleBeautifyPanel()">✕</span>
+  </div>
+  <div id="beautifyContent"></div>
+</div>
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+'use strict';
+
+/* ============================================================
+   DEFAULT STATE — Full Schema
+   ============================================================ */
+const DefaultState = {
+  cardType: 'environment',
+  name: '',
+  rank: '凡阶',
+  description: '',
+  tendencies: '',
+
+  /* Environment specific */
+  envType: '险境',
+  envDifficulty: 10,
+  envRisks: '',
+
+  /* Faction specific */
+  facDifficulty: 12,
+  facRisks: '',
+  facAllies: '',
+  facRelation: -1,
+  facOtherRelations: [],
+
+  /* Location specific */
+  locTerrain: '',
+  locTheme: '',
+  locFactions: '',
+  locEnvs: '',
+  locDangers: '',
+  locDiscoveries: '',
+  locNemesis: '',
+  locMysteries: '',
+  locMainEvents: '',    // 主要事件
+  locTruth: '',         // 谜底（谜团的真相）
+
+  /* Stronghold specific */
+  strDifficulty: 10,
+  strAllies: [],
+
+  /* Traits */
+  traits: [],
+
+  /* Image — Ink Wash System */
+  image: {
+    src: '',
+    inkStyle: 'none',
+    opacity: 0.18,
+    posX: 50,
+    posY: 50,
+    scale: 100
+  },
+
+  /* Appearance */
+  palette: 'ink',
+  customColors: {
+    primary: '#1C1E21',
+    accent: '#8C3A3A',
+    bgCard: '#F4F1EA',
+    text: '#2B2B2B'
+  }
+};
+
+/* ============================================================
+   CARD STATE — Deep Clone of DefaultState
+   ============================================================ */
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+let CardState = deepClone(DefaultState);
+
+/* ============================================================
+   UTILITY — Parse Markdown-like Syntax
+   Supports: ==highlight==  **bold**  *italic*  newlines-><br>
+   ============================================================ */
+function parseMarkdown(text) {
+  if (!text) return '';
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  html = html.replace(/==(.+?)==/g, '<mark>$1</mark>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
+/* ============================================================
+   UTILITY — SVG Trait Circle
+   ============================================================ */
+function traitCircleSVG(status) {
+  if (status === 'active') {
+    return '<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="var(--color-accent)" stroke="var(--color-accent)" stroke-width="1.5"/></svg>';
+  } else if (status === 'crossed') {
+    return '<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="var(--color-text-muted)" stroke-width="1.5"/><line x1="4" y1="4" x2="12" y2="12" stroke="var(--color-accent)" stroke-width="1.5"/><line x1="12" y1="4" x2="4" y2="12" stroke="var(--color-accent)" stroke-width="1.5"/></svg>';
+  }
+  return '<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="var(--color-text-muted)" stroke-width="1.5"/></svg>';
+}
+
+/* ============================================================
+   FACTION RELATIONS BAR
+   ============================================================ */
+const RELATION_LABELS = ['死敌','交战','敌对','不和','无关','相识','友善','合作','同盟'];
+
+/** Map relation text to CSS class for colored badge */
+function getRelClass(relation) {
+  var map = {
+    '死敌':'deadly', '交战':'war', '敌对':'hostile', '不和':'unfriendly',
+    '无关':'neutral', '相识':'acquaintance', '友善':'friendly',
+    '合作':'cooperative', '同盟':'allied'
+  };
+  return map[relation] || 'neutral';
+}
+
+function renderFactionBar() {
+  var html = '<div class="faction-relations">';
+  html += '<div class="faction-relations-title">—— 当前势力关系 ——</div>';
+  html += '<div class="faction-track">';
+  for (var i = 0; i < RELATION_LABELS.length; i++) {
+    var label = RELATION_LABELS[i];
+    var cssClass = 'faction-node';
+    if (i === CardState.facRelation) cssClass += ' selected';
+    if (i <= 3) cssClass += ' hostile';
+    else if (i === 4) cssClass += ' neutral';
+    else cssClass += ' friendly';
+    html += '<div class="' + cssClass + '" onclick="updateFactionRelation(' + i + ')">';
+    html += '<div class="dot"></div>';
+    html += '<span>' + label + '</span>';
+    html += '</div>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function updateFactionRelation(index) {
+  CardState.facRelation = CardState.facRelation === index ? -1 : index;
+  var input = document.getElementById('inputFacRelation');
+  if (input) input.value = CardState.facRelation;
+  renderCardPreview();
+}
+
+/* ============================================================
+   OTHER RELATIONS — Faction Custom Relationships
+   ============================================================ */
+function renderOtherRelations() {
+  var container = document.getElementById('facOtherRelations');
+  if (!container) return;
+
+  // Auto-sort: faction first, then character, then custom
+  CardState.facOtherRelations.sort(function(a, b) {
+    var order = { faction: 0, character: 1 };
+    var aOrd = order[a.targetType] != null ? order[a.targetType] : 2;
+    var bOrd = order[b.targetType] != null ? order[b.targetType] : 2;
+    if (aOrd !== bOrd) return aOrd - bOrd;
+    return 0;
+  });
+
+  var html = '';
+  CardState.facOtherRelations.forEach(function(rel, i) {
+    var rowClass = 'other-rel-row ' + (rel.targetType === 'character' ? 'character' : 'faction');
+    html += '<div class="' + rowClass + '" draggable="true" ondragstart="dragOtherRel(event, ' + i + ')" ondragover="dragOverOtherRel(event)" ondragleave="dragLeaveOtherRel(event)" ondrop="dropOtherRel(event, ' + i + ')" ondragend="dragEndOtherRel(event)">';
+    // Drag handle
+    html += '<span class="drag-handle">⠿</span>';
+    // Type toggle with custom support
+    var isCustom = (rel.targetType !== 'faction' && rel.targetType !== 'character');
+    html += '<select onchange="updateOtherRelType(' + i + ', this.value)" style="flex:1; font-size:0.72rem;">';
+    html += '<option value="faction" ' + (rel.targetType==='faction'?'selected':'') + '>势力</option>';
+    html += '<option value="character" ' + (rel.targetType==='character'?'selected':'') + '>人物</option>';
+    html += '<option value="__custom__" ' + (isCustom?'selected':'') + '>+ 自定义</option>';
+    html += '</select>';
+    // Name input
+    html += '<input type="text" value="' + escAttr(rel.targetName || '') + '" oninput="updateOtherRel(' + i + ', \'targetName\', this.value)" placeholder="名称" style="flex:2; font-size:0.72rem;">';
+    // Relation dropdown
+    html += '<select onchange="updateOtherRel(' + i + ', \'relation\', this.value)" style="flex:1; font-size:0.72rem;">';
+    ['死敌','交战','敌对','不和','无关','相识','友善','合作','同盟'].forEach(function(r) {
+      html += '<option value="' + r + '" ' + (rel.relation===r?'selected':'') + '>' + r + '</option>';
+    });
+    html += '</select>';
+    // Delete
+    html += '<button onclick="removeOtherRelation(' + i + ')" class="btn-remove" style="font-size:0.65rem;">×</button>';
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function addOtherRelation() {
+  if (!CardState.facOtherRelations) CardState.facOtherRelations = [];
+  CardState.facOtherRelations.push({ targetType: 'faction', targetName: '', relation: '无关' });
+  renderOtherRelations();
+  renderCardPreview();
+}
+
+function updateOtherRel(index, field, value) {
+  CardState.facOtherRelations[index][field] = value;
+  renderCardPreview();
+}
+
+function updateOtherRelType(index, value) {
+  if (value === '__custom__') {
+    var custom = prompt('输入自定义类型（1-3个字）：', '');
+    if (custom && custom.trim()) {
+      CardState.facOtherRelations[index].targetType = custom.trim().substring(0, 3);
+    } else {
+      CardState.facOtherRelations[index].targetType = '其他';
+    }
+  } else {
+    CardState.facOtherRelations[index].targetType = value;
+  }
+  renderOtherRelations();
+  renderCardPreview();
+}
+
+function removeOtherRelation(index) {
+  CardState.facOtherRelations.splice(index, 1);
+  renderOtherRelations();
+  renderCardPreview();
+}
+
+/* Drag-and-drop for other relations */
+var dragOtherRelIndex = -1;
+
+function dragOtherRel(e, index) {
+  dragOtherRelIndex = index;
+  e.target.closest('.other-rel-row').classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', index);
+}
+
+function dragOverOtherRel(e) {
+  e.preventDefault();
+  e.target.closest('.other-rel-row').classList.add('drag-over');
+}
+
+function dragLeaveOtherRel(e) {
+  e.target.closest('.other-rel-row').classList.remove('drag-over');
+}
+
+function dropOtherRel(e, targetIndex) {
+  e.preventDefault();
+  e.target.closest('.other-rel-row').classList.remove('drag-over');
+  if (dragOtherRelIndex < 0 || dragOtherRelIndex === targetIndex) return;
+  var arr = CardState.facOtherRelations;
+  var moved = arr.splice(dragOtherRelIndex, 1)[0];
+  arr.splice(targetIndex, 0, moved);
+  dragOtherRelIndex = -1;
+  renderOtherRelations();
+  renderCardPreview();
+}
+
+function dragEndOtherRel(e) {
+  e.target.closest('.other-rel-row').classList.remove('dragging');
+  document.querySelectorAll('.other-rel-row.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
+  dragOtherRelIndex = -1;
+}
+
+/* ============================================================
+   RENDER FUNCTIONS — Config Panel Sections
+   ============================================================ */
+
+/** Main render orchestrator — calls all sub-render functions */
+function render() {
+  renderCardTypeTabs();
+  renderBasicInfoSection();
+  renderTypeSpecificSection();
+  renderOtherRelations();
+  renderTraitsEditor();
+  renderCardPreview();
+  renderBottomToolbar();
+  updateHeaderSubtitle();
+  // Sync facRelation select (may have changed via load/import)
+  var facSel = document.getElementById('inputFacRelation');
+  if (facSel) facSel.value = CardState.facRelation;
+}
+
+/** Render the palette section in config panel */
+function renderPaletteSection() {
+  var section = document.getElementById('paletteSection');
+  if (!section) return;
+
+  var presets = [
+    { id: 'ink', name: '墨韵', primary: '#1C1E21', accent: '#8C3A3A', bgCard: '#F4F1EA' },
+    { id: 'bamboo', name: '苍竹', primary: '#2A3A32', accent: '#5B8C85', bgCard: '#F2F0E8' },
+    { id: 'cinnabar', name: '朱砂', primary: '#5C1E1E', accent: '#B8543A', bgCard: '#FDF8F0' },
+    { id: 'pinesoot', name: '松烟', primary: '#1A2332', accent: '#4A6B8A', bgCard: '#F0F2F0' },
+    { id: 'purplered', name: '绛紫', primary: '#3D1E2A', accent: '#8B4A6B', bgCard: '#F8F2F4' },
+    { id: 'goldstone', name: '金石', primary: '#3A3020', accent: '#8B6D3A', bgCard: '#F8F4EA' },
+    { id: 'custom', name: '自定义', primary: null, accent: null, bgCard: null }
+  ];
+
+  var html = '<h3>配色方案</h3>';
+
+  // Collapsible: 色彩预设
+  html += '<div class="collapse-toggle open" onclick="toggleCollapse(this)">色彩预设</div>';
+  html += '<div class="collapse-body open">';
+  html += '<div class="palette-swatches" id="paletteSwatches">';
+
+  for (var i = 0; i < presets.length; i++) {
+    var p = presets[i];
+    var isActive = CardState.palette === p.id;
+    html += '<button class="palette-swatch' + (isActive ? ' active' : '') + '" data-palette="' + p.id + '" onclick="applyPalette(\'' + p.id + '\')">';
+
+    if (p.id === 'custom') {
+      html += '<span class="swatch-dot-multi" style="background:conic-gradient(#999 0deg 120deg, #777 120deg 240deg, #bbb 240deg 360deg)"></span>';
+    } else {
+      html += '<span class="swatch-bar">';
+      html += '<span style="flex:1;background:' + p.primary + '"></span>';
+      html += '<span style="flex:1;background:' + p.accent + '"></span>';
+      html += '<span style="flex:1;background:' + p.bgCard + '"></span>';
+      html += '</span>';
+    }
+
+    html += p.name;
+    html += '</button>';
+  }
+
+  html += '</div>';
+
+  // Custom color pickers (shown only for custom mode)
+  if (CardState.palette === 'custom') {
+    html += '<div class="custom-palette-pickers" id="customPaletteControls">';
+    html += buildColorPickerRow('主色', '--color-primary', CardState.customColors.primary);
+    html += buildColorPickerRow('辅色', '--color-accent', CardState.customColors.accent);
+    html += buildColorPickerRow('底色', '--color-bg-card', CardState.customColors.bgCard);
+    html += buildColorPickerRow('文字', '--color-text', CardState.customColors.text);
+    html += '</div>';
+  }
+
+  html += '<div style="margin-top:8px;display:flex;gap:6px">';
+  html += '<button class="btn btn-sm btn-outline" onclick="exportPalette()">导出色板</button>';
+  html += '<button class="btn btn-sm btn-outline" onclick="importPalette()">导入色板</button>';
+  html += '</div>';
+
+  html += '</div>'; // close collapse-body
+
+  section.innerHTML = html;
+}
+
+function buildColorPickerRow(label, cssVar, currentValue) {
+  return '<div class="color-picker-row">' +
+    '<span class="cp-label">' + label + '</span>' +
+    '<input type="color" value="' + currentValue + '" onchange="updateCustomColor(\'' + cssVar + '\', this.value); this.nextElementSibling.value=this.value;">' +
+    '<input type="text" value="' + currentValue + '" oninput="updateCustomColor(\'' + cssVar + '\', this.value); this.previousElementSibling.value=this.value;" placeholder="#000000" maxlength="7">' +
+    '</div>';
+}
+
+/** Render basic info section inputs from CardState */
+function renderBasicInfoSection() {
+  var section = document.getElementById('basicInfoSection');
+  if (!section) return;
+
+  var typeLabels = { environment: '环境', faction: '势力', location: '地点', stronghold: '据点' };
+  var typeLabel = typeLabels[CardState.cardType] || '环境';
+  var rankOptions = ['凡阶', '人阶', '地阶', '天阶', '仙阶'];
+
+  var html = '<h3>基础信息 · ' + typeLabel + '</h3>';
+
+  html += '<div class="form-row">';
+  html += '<div class="form-group">';
+  html += '<label class="form-label">名称</label>';
+  html += '<input type="text" class="form-input" id="inputName" value="' + escAttr(CardState.name) + '" oninput="updateState(\'name\', this.value)" placeholder="卡牌名称">';
+  html += '</div>';
+  html += '<div class="form-group" style="max-width:100px">';
+  html += '<label class="form-label">位阶</label>';
+  html += '<select class="form-select" id="inputRank" onchange="updateState(\'rank\', this.value)">';
+  for (var i = 0; i < rankOptions.length; i++) {
+    var sel = CardState.rank === rankOptions[i] ? ' selected' : '';
+    html += '<option value="' + rankOptions[i] + '"' + sel + '>' + rankOptions[i] + '</option>';
+  }
+  html += '</select>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '<div class="form-group">';
+  html += '<label class="form-label">描述 / 外观</label>';
+  html += '<textarea class="form-textarea" id="inputDesc" oninput="updateState(\'description\', this.value)" placeholder="支持 ==高亮== **粗体** *斜体*">' + escHtml(CardState.description) + '</textarea>';
+  html += '<span class="form-hint">使用 ==文字== 标记高亮，**文字** 粗体，*文字* 斜体</span>';
+  html += '</div>';
+
+  html += '<div class="form-group">';
+  html += '<label class="form-label">趋向</label>';
+  html += '<textarea class="form-textarea" id="inputTendencies" oninput="updateState(\'tendencies\', this.value)" placeholder="以顿号分隔">' + escHtml(CardState.tendencies) + '</textarea>';
+  html += '</div>';
+
+  section.innerHTML = html;
+}
+
+/** Render type-specific section based on cardType */
+function renderTypeSpecificSection() {
+  var sections = document.querySelectorAll('.type-section');
+  for (var j = 0; j < sections.length; j++) {
+    var sec = sections[j];
+    if (sec.getAttribute('data-type') === CardState.cardType) {
+      sec.classList.add('active');
+    } else {
+      sec.classList.remove('active');
+    }
+  }
+
+  // Render stronghold allies editor
+  if (CardState.cardType === 'stronghold') {
+    var editor = document.getElementById('strAlliesEditor');
+    if (editor) {
+      var html = '';
+      (CardState.strAllies || []).forEach(function(ally, i) {
+        html += renderAllyEditor(i, ally);
+      });
+      editor.innerHTML = html;
+    }
+  }
+}
+
+function renderAllyEditor(index, ally) {
+  return '<div class="ally-edit-box" style="border:1px solid var(--color-border-light); border-left:3px solid var(--color-accent); padding:8px 10px; margin-bottom:6px; background:rgba(255,255,255,0.35);">' +
+    '<div style="display:flex; gap:6px; margin-bottom:4px;">' +
+    '<input type="text" value="' + escAttr(ally.name || '') + '" oninput="updateAlly(' + index + ', \'name\', this.value)" placeholder="盟友名称" style="flex:1; font-size:0.8rem; font-weight:600;">' +
+    '<button class="btn-remove" onclick="removeAlly(' + index + ')" style="font-size:0.65rem; flex-shrink:0;">×</button>' +
+    '</div>' +
+    '<input type="text" value="' + escAttr(ally.desc || '') + '" oninput="updateAlly(' + index + ', \'desc\', this.value)" placeholder="风味文本（支持*斜体* **加粗** ==高亮==）" style="width:100%; font-size:0.72rem; font-style:italic;">' +
+    '</div>';
+}
+
+function addAlly() {
+  if (!CardState.strAllies) CardState.strAllies = [];
+  CardState.strAllies.push({ name: '', desc: '' });
+  renderTypeSpecificSection();
+  renderCardPreview();
+}
+
+function removeAlly(index) {
+  CardState.strAllies.splice(index, 1);
+  renderTypeSpecificSection();
+  renderCardPreview();
+}
+
+function updateAlly(index, field, value) {
+  if (!CardState.strAllies[index]) return;
+  CardState.strAllies[index][field] = value;
+  renderCardPreview();
+}
+
+/** Render the bottom toolbar below card preview */
+function renderBottomToolbar() {
+  var el = document.getElementById('bottomToolbar');
+  if (!el) return;
+
+  var html = '';
+
+  // Row 1: Export & Print buttons + Quick Init
+  html += '<div class="bottom-toolbar-row">';
+  html += '<span class="bottom-toolbar-label">操作</span>';
+  html += '<button class="btn btn-accent" onclick="exportPNG()">导出PNG</button>';
+  html += '<button class="btn btn-primary" onclick="exportJSON()">导出JSON</button>';
+  html += '<button class="btn btn-outline" onclick="importJSON()">导入JSON</button>';
+  html += '<button class="btn btn-outline" onclick="exportStandaloneHTML()">导出HTML</button>';
+  html += '<button class="btn btn-outline" onclick="window.print()">打印</button>';
+  html += '<button class="btn btn-outline" onclick="quickInit()" style="margin-left:auto;">初始化</button>';
+  html += '</div>';
+
+  // Row 2: Archive management toggle
+  html += '<div class="bottom-toolbar-row">';
+  html += '<span class="bottom-toolbar-label">存档</span>';
+  html += '<button class="btn btn-outline" onclick="toggleSlotPanel()" id="slotPanelToggle">展开槽位 ▸</button>';
+  html += '<span id="slotSummary" style="font-size:0.7rem; color:var(--color-text-muted); margin-left:8px;">.../10</span>';
+  html += '</div>';
+
+  // Hidden slot panel
+  html += '<div class="slot-panel" id="slotPanel" style="display:none;"></div>';
+
+  el.innerHTML = html;
+
+  // Async count update via IndexedDB
+  updateSlotSummary();
+}
+
+function quickInit() {
+  if (confirm('确定要初始化吗？当前未保存的数据将丢失。')) {
+    var fresh = JSON.parse(JSON.stringify(DefaultState));
+    Object.keys(fresh).forEach(function(k) { CardState[k] = fresh[k]; });
+    applyPalette('ink');
+    render();
+  }
+}
+
+/* ============================================================
+   BEAUTIFY PANEL — Floating right-side panel
+   ============================================================ */
+
+var beautifySubTab = 'color'; // 'color' or 'ink'
+
+function toggleBeautifyPanel() {
+  var panel = document.getElementById('beautifyPanel');
+  var toggle = document.getElementById('beautifyPanelToggle');
+  if (!panel || !toggle) return;
+  var isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+    toggle.classList.remove('open');
+    toggle.textContent = '美化';
+  } else {
+    renderBeautifyContent();
+    panel.classList.add('open');
+    toggle.classList.add('open');
+    toggle.textContent = '收起';
+  }
+}
+
+function renderBeautifyContent() {
+  var content = document.getElementById('beautifyContent');
+  if (!content) return;
+
+  var html = '';
+
+  // Sub-tabs
+  html += '<div class="beautify-subtabs" style="display:flex; margin-bottom:12px; border-bottom:2px solid var(--color-border);">';
+  html += '<button class="beautify-subtab' + (beautifySubTab === 'color' ? ' active' : '') + '" onclick="beautifySubTab=\'color\'; renderBeautifyContent();" style="flex:1; padding:8px; font-size:0.8rem; font-weight:700; border:none; background:' + (beautifySubTab === 'color' ? 'var(--color-accent-light)' : 'transparent') + '; color:' + (beautifySubTab === 'color' ? 'var(--color-accent)' : 'var(--color-text-muted)') + '; cursor:pointer;">色彩</button>';
+  html += '<button class="beautify-subtab' + (beautifySubTab === 'ink' ? ' active' : '') + '" onclick="beautifySubTab=\'ink\'; renderBeautifyContent();" style="flex:1; padding:8px; font-size:0.8rem; font-weight:700; border:none; background:' + (beautifySubTab === 'ink' ? 'var(--color-accent-light)' : 'transparent') + '; color:' + (beautifySubTab === 'ink' ? 'var(--color-accent)' : 'var(--color-text-muted)') + '; cursor:pointer;">水墨</button>';
+  html += '</div>';
+
+  if (beautifySubTab === 'color') {
+    // Color palette swatches — 2 columns, compact
+    var palettes = [
+      { id:'ink', name:'墨韵', colors:['#1C1E21','#8C3A3A','#F4F1EA'] },
+      { id:'bamboo', name:'苍竹', colors:['#2A3A32','#5B8C85','#F2F0E8'] },
+      { id:'cinnabar', name:'朱砂', colors:['#5C1E1E','#B8543A','#FDF8F0'] },
+      { id:'pinesoot', name:'松烟', colors:['#1A2332','#4A6B8A','#F0F2F0'] },
+      { id:'purplered', name:'绛紫', colors:['#3D1E2A','#8B4A6B','#F8F2F4'] },
+      { id:'goldstone', name:'金石', colors:['#3A3020','#8B6D3A','#F8F4EA'] },
+    ];
+    html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">';
+    palettes.forEach(function(p) {
+      var activeStyle = CardState.palette === p.id ? ' style="border:2px solid var(--color-accent);"' : '';
+      html += '<div onclick="applyPalette(\'' + p.id + '\'); renderBeautifyContent();" class="palette-swatch"' + activeStyle + '>';
+      html += '<div class="swatch-preview" style="display:flex; height:18px; margin-bottom:2px;">';
+      p.colors.forEach(function(c) { html += '<span style="flex:1; background:' + c + ';"></span>'; });
+      html += '</div>';
+      html += '<span style="font-size:0.65rem; font-weight:600;">' + p.name + '</span>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Custom color pickers
+    html += '<div style="margin-top:8px; padding-top:8px; border-top:1px solid var(--color-border-light);">';
+    html += '<button class="btn btn-outline" onclick="applyPalette(\'custom\'); renderBeautifyContent();" style="width:100%; font-size:0.7rem;">自定义取色</button>';
+    if (CardState.palette === 'custom') {
+      html += '<div class="form-row" style="margin-top:6px;">';
+      html += colorPickerHTML2('主色', CardState.customColors.primary, '--color-primary');
+      html += colorPickerHTML2('辅色', CardState.customColors.accent, '--color-accent');
+      html += '</div><div class="form-row">';
+      html += colorPickerHTML2('底色', CardState.customColors.bgCard, '--color-bg-card');
+      html += colorPickerHTML2('文字', CardState.customColors.text, '--color-text');
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // Palette export/import
+    html += '<div style="display:flex; gap:4px; margin-top:8px;">';
+    html += '<button onclick="exportPalette()" class="btn btn-outline" style="flex:1; font-size:0.65rem;">导出</button>';
+    html += '<button onclick="importPalette()" class="btn btn-outline" style="flex:1; font-size:0.65rem;">导入</button>';
+    html += '</div>';
+  } else {
+    // Ink wash presets
+    // Image upload + clear
+    html += '<div style="margin-bottom:8px;">';
+    html += '<input type="file" accept="image/*" onchange="handleImageUpload(event)" style="font-size:0.7rem; width:100%;">';
+    if (CardState.image.src) {
+      html += '<button onclick="clearImage()" class="btn btn-outline" style="width:100%; margin-top:4px; font-size:0.65rem;">清除图片</button>';
+    }
+    html += '</div>';
+
+    // Presets — 2 columns compact grid
+    var inkStyles = [
+      { id:'none', name:'无背景' },
+      { id:'水墨', name:'水墨' }, { id:'青绿', name:'青绿山水' },
+      { id:'朱砂', name:'朱砂印' }, { id:'古卷', name:'古卷' },
+      { id:'淡墨', name:'淡墨' }, { id:'霜华', name:'霜华' },
+      { id:'暮色', name:'暮色' }, { id:'烟雨', name:'烟雨' },
+      { id:'丹青', name:'丹青' }, { id:'残卷', name:'残卷' }
+    ];
+    html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:4px;">';
+    inkStyles.forEach(function(s) {
+      var active = (CardState.image.inkStyle || 'none') === s.id ? ' style="border:2px solid var(--color-accent);"' : '';
+      html += '<button onclick="setInkStyle(\'' + s.id + '\'); renderBeautifyContent();" class="btn btn-outline"' + active + ' style="font-size:0.65rem; padding:6px;">' + s.name + '</button>';
+    });
+    html += '</div>';
+
+    // Opacity + scale sliders
+    html += '<div style="margin-top:8px;">';
+    html += '<label style="font-size:0.7rem;">透明度 <span id="inkOpacityVal">' + Math.round((CardState.image.opacity || 0.18) * 100) + '%</span></label>';
+    html += '<input type="range" min="5" max="40" value="' + Math.round((CardState.image.opacity || 0.18) * 100) + '" oninput="updateInkOpacityBeautify(this.value)" style="width:100%;">';
+    html += '</div>';
+    html += '<div style="margin-top:4px;">';
+    html += '<label style="font-size:0.7rem;">缩放 <span id="inkScaleVal">' + (CardState.image.scale || 100) + '%</span></label>';
+    html += '<input type="range" min="50" max="200" value="' + (CardState.image.scale || 100) + '" oninput="updateInkScaleBeautify(this.value)" style="width:100%;">';
+    html += '</div>';
+
+    // Position editor button
+    if (CardState.image.src && CardState.image.inkStyle !== 'none') {
+      html += '<button class="btn btn-outline btn-sm" onclick="openImageEditor()" style="width:100%;margin-top:6px;">调整图片位置</button>';
+    }
+  }
+
+  content.innerHTML = html;
+}
+
+function colorPickerHTML2(label, value, cssVar) {
+  return '<div style="margin-bottom:4px;"><label style="font-size:0.65rem;">' + label + '</label><input type="color" value="' + value + '" onchange="updateCustomColor(\'' + cssVar + '\', this.value)" style="width:100%; height:28px; padding:1px; border:1px solid var(--color-border); cursor:pointer;"></div>';
+}
+
+function updateInkOpacityBeautify(val) {
+  CardState.image.opacity = val / 100;
+  document.getElementById('inkOpacityVal').textContent = val + '%';
+  renderCardPreview();
+}
+
+function updateInkScaleBeautify(val) {
+  CardState.image.scale = parseInt(val);
+  document.getElementById('inkScaleVal').textContent = val + '%';
+  renderCardPreview();
+}
+
+/* ============================================================
+   SLOT PANEL — Toggle, Render, Edit Note, Save/Load
+   ============================================================ */
+
+function toggleSlotPanel() {
+  var panel = document.getElementById('slotPanel');
+  var toggle = document.getElementById('slotPanelToggle');
+  var isOpen = panel.style.display === 'block';
+  if (isOpen) {
+    panel.style.display = 'none';
+    toggle.textContent = '展开槽位 ▸';
+  } else {
+    renderSlotPanel();
+    panel.style.display = 'block';
+    toggle.textContent = '收起槽位 ▾';
+  }
+}
+
+function renderSlotPanel() {
+  var panel = document.getElementById('slotPanel');
+  if (!panel) return;
+
+  var promises = [];
+  for (var i = 1; i <= 10; i++) {
+    promises.push((function(slotNum) {
+      return getSlotInfo(slotNum).then(function(info) {
+        var cardHtml = '<div class="slot-card">';
+        cardHtml += '<span class="slot-num">槽位 ' + slotNum + '</span>';
+        cardHtml += '<div class="slot-info">';
+        if (info) {
+          var typeLabels = { environment: '环境', faction: '势力', location: '地点', stronghold: '据点' };
+          var typeLabel = typeLabels[info.cardType] || info.cardType;
+          cardHtml += '<span class="slot-title">' + escHtml(info.name || '未命名') + '</span>';
+          cardHtml += '<span class="slot-type">' + typeLabel + '</span>';
+          cardHtml += '<div class="slot-meta">' + formatTime(info.timestamp) + '</div>';
+          cardHtml += '<div class="slot-note" id="slotNote_' + slotNum + '" onclick="editSlotNote(' + slotNum + ')">';
+          cardHtml += (info.note ? '备注: ' + escHtml(info.note) : '+ 添加备注');
+          cardHtml += '</div>';
+        } else {
+          cardHtml += '<span class="slot-title" style="color:var(--color-text-muted);">空槽位</span>';
+        }
+        cardHtml += '</div>';
+        cardHtml += '<div class="slot-actions">';
+        cardHtml += '<button class="btn btn-primary" onclick="saveToSlot(' + slotNum + ')">保存当前</button>';
+        if (info) {
+          cardHtml += '<button class="btn btn-outline" onclick="loadFromSlot(' + slotNum + ')">载入</button>';
+          cardHtml += '<button class="btn btn-outline" onclick="clearSlot(' + slotNum + ')" style="color:var(--color-accent);">删除</button>';
+        }
+        cardHtml += '</div>';
+        cardHtml += '</div>';
+        return { slotNum: slotNum, html: cardHtml };
+      });
+    })(i));
+  }
+
+  Promise.all(promises).then(function(results) {
+    results.sort(function(a, b) { return a.slotNum - b.slotNum; });
+    var html = '';
+    results.forEach(function(r) { html += r.html; });
+    panel.innerHTML = html;
+  });
+}
+
+function editSlotNote(slotNum) {
+  getSlotInfo(slotNum).then(function(info) {
+    if (!info) return;
+
+    var noteEl = document.getElementById('slotNote_' + slotNum);
+    if (!noteEl) return;
+
+    var currentNote = info.note || '';
+    noteEl.innerHTML = '<input type="text" class="slot-note-edit" id="slotNoteInput_' + slotNum + '" value="' + escAttr(currentNote) + '" placeholder="添加备注...">';
+
+    var input = document.getElementById('slotNoteInput_' + slotNum);
+    input.focus();
+    input.select();
+
+    function saveNote() {
+      var newNote = input.value.trim();
+      info.note = newNote;
+      var slotData = {
+        slotNum: slotNum,
+        name: info.name,
+        cardType: info.cardType,
+        timestamp: info.timestamp,
+        note: newNote,
+        data: info.data
+      };
+      openDB().then(function() {
+        return new Promise(function(resolve, reject) {
+          var tx = _db.transaction('slots', 'readwrite');
+          var store = tx.objectStore('slots');
+          store.put(slotData);
+          tx.oncomplete = function() { renderSlotPanel(); resolve(); };
+          tx.onerror = function() { reject(tx.error); };
+        });
+      });
+    }
+
+    input.addEventListener('blur', saveNote);
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { input.blur(); }
+      if (e.key === 'Escape') { renderSlotPanel(); }
+    });
+  });
+}
+
+/* ============================================================
+   DATA SLOTS - IndexedDB Backend
+   ============================================================ */
+
+var DB_NAME = 'xianxia_card_maker';
+var DB_VERSION = 1;
+var _db = null;
+
+function openDB() {
+  return new Promise(function(resolve, reject) {
+    if (_db) { resolve(_db); return; }
+    var request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = function(e) {
+      var db = e.target.result;
+      if (!db.objectStoreNames.contains('slots')) {
+        db.createObjectStore('slots', { keyPath: 'slotNum' });
+      }
+      if (!db.objectStoreNames.contains('active')) {
+        db.createObjectStore('active', { keyPath: 'type' });
+      }
+    };
+    request.onsuccess = function(e) {
+      _db = e.target.result;
+      resolve(_db);
+    };
+    request.onerror = function(e) {
+      reject(e.target.error);
+    };
+  });
+}
+
+function formatTime(ts) {
+  var d = new Date(ts);
+  var pad = function(n) { return String(n).padStart(2, '0'); };
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+function getSlotInfo(slotNum) {
+  return openDB().then(function() {
+    return new Promise(function(resolve, reject) {
+      var tx = _db.transaction('slots', 'readonly');
+      var store = tx.objectStore('slots');
+      var request = store.get(slotNum);
+      request.onsuccess = function() { resolve(request.result || null); };
+      request.onerror = function() { reject(request.error); };
+    });
+  }).catch(function(e) {
+    console.error('getSlotInfo error:', e);
+    return null;
+  });
+}
+
+function saveToSlot(slotNum) {
+  try {
+    return openDB().then(function() {
+      return getSlotInfo(slotNum).then(function(existing) {
+        var slotData = {
+          slotNum: slotNum,
+          name: CardState.name || '未命名',
+          cardType: CardState.cardType,
+          timestamp: Date.now(),
+          note: existing ? (existing.note || '') : '',
+          data: JSON.parse(JSON.stringify(CardState))
+        };
+        return new Promise(function(resolve, reject) {
+          var tx = _db.transaction('slots', 'readwrite');
+          var store = tx.objectStore('slots');
+          store.put(slotData);
+          tx.oncomplete = function() {
+            renderSlotPanel();
+            renderBottomToolbar();
+            resolve();
+          };
+          tx.onerror = function() { reject(tx.error); };
+        });
+      });
+    }).catch(function(e) {
+      console.error('saveToSlot error:', e);
+      alert('保存失败：' + e.message);
+    });
+  } catch(e) {
+    alert('保存失败：' + e.message);
+  }
+}
+
+function updateSlotSummary() {
+  openDB().then(function() {
+    return new Promise(function(resolve, reject) {
+      var tx = _db.transaction('slots', 'readonly');
+      var store = tx.objectStore('slots');
+      var request = store.count();
+      request.onsuccess = function() { resolve(request.result); };
+      request.onerror = function() { reject(request.error); };
+    });
+  }).then(function(filled) {
+    var summaryEl = document.getElementById('slotSummary');
+    if (summaryEl) summaryEl.textContent = filled + '/10 已用';
+  }).catch(function(e) {
+    console.error('updateSlotSummary error:', e);
+  });
+}
+
+function loadFromSlot(slotNum) {
+  getSlotInfo(slotNum).then(function(slotData) {
+    if (!slotData) { alert('槽位为空'); return; }
+    if (!slotData.data) { alert('槽位数据损坏'); return; }
+    var loaded = slotData.data;
+    // Backward compatibility: convert old string-format strAllies to array
+    if (typeof loaded.strAllies === 'string') {
+      loaded.strAllies = loaded.strAllies ? [{ name: loaded.strAllies, desc: '' }] : [];
+    }
+    Object.keys(loaded).forEach(function(k) {
+      CardState[k] = loaded[k];
+    });
+    if (loaded.image && loaded.image.src) {
+      CardState.image = JSON.parse(JSON.stringify(loaded.image));
+    }
+    if (loaded.customColors) {
+      CardState.customColors = JSON.parse(JSON.stringify(loaded.customColors));
+    }
+    if (loaded.traits) {
+      CardState.traits = JSON.parse(JSON.stringify(loaded.traits));
+    }
+    applyPalette(CardState.palette);
+    render();
+  }).catch(function(e) {
+    console.error('loadFromSlot error:', e);
+    alert('槽位数据读取失败：' + e.message);
+  });
+}
+
+function clearSlot(slotNum) {
+  openDB().then(function() {
+    return new Promise(function(resolve, reject) {
+      var tx = _db.transaction('slots', 'readwrite');
+      var store = tx.objectStore('slots');
+      store.delete(slotNum);
+      tx.oncomplete = function() {
+        updateSlotSummary();
+        if (document.getElementById('slotPanel').style.display === 'block') {
+          renderSlotPanel();
+        }
+        resolve();
+      };
+      tx.onerror = function() { reject(tx.error); };
+    });
+  }).catch(function(e) {
+    console.error('clearSlot error:', e);
+  });
+}
+
+/* ============================================================
+   CARD PREVIEW RENDERING
+   ============================================================ */
+
+/** Main card preview renderer */
+function renderCardPreview() {
+  var card = document.getElementById('cardPreview');
+  var inkBg = document.getElementById('cardInkBg');
+
+  // Ink wash background
+  if (card) {
+    card.setAttribute('data-ink-style', CardState.image.inkStyle || 'none');
+  }
+  if (inkBg) {
+    if (CardState.image.src && CardState.image.inkStyle !== 'none') {
+      inkBg.style.backgroundImage = 'url(' + escAttr(CardState.image.src) + ')';
+      inkBg.style.opacity = CardState.image.opacity;
+      inkBg.style.backgroundPosition = CardState.image.posX + '% ' + CardState.image.posY + '%';
+      inkBg.style.backgroundSize = (CardState.image.scale || 100) + '%';
+    } else {
+      inkBg.style.backgroundImage = '';
+      inkBg.style.opacity = '';
+      inkBg.style.backgroundPosition = '';
+      inkBg.style.backgroundSize = '';
+    }
+  }
+
+  // Build left + right columns
+  var cardLeft = document.getElementById('cardLeft');
+  if (cardLeft) cardLeft.innerHTML = renderCardLeftContent();
+
+  // Right column content
+  var cardRight = document.getElementById('cardRight');
+  if (cardRight) cardRight.innerHTML = renderCardRightContent();
+}
+
+/** Render left column: horizontal header + meta fields + description + tendencies */
+function renderCardLeftContent() {
+  var typeLabels = { environment: '环境', faction: '势力', location: '地点', stronghold: '据点' };
+
+  /* Meta item helper — returns empty string if value is blank */
+  function metaItem(label, value, useMarkdown) {
+    if (value == null || value === '') return '';
+    var renderedValue = useMarkdown ? parseMarkdown(String(value)) : escapeHTML(String(value));
+    return '<div class="meta-item">' +
+      '<span class="meta-label">' + escapeHTML(label) + '</span>' +
+      '<span class="meta-value">' + renderedValue + '</span>' +
+      '</div>';
+  }
+
+  var html = '';
+
+  // ---- Horizontal header: name·rank | type+info ----
+  var typeInfo = '';
+  switch (CardState.cardType) {
+    case 'environment':
+      typeInfo = (CardState.envType || '险境') + ' · 难度 ' + (CardState.envDifficulty || 0);
+      break;
+    case 'faction':
+      typeInfo = '势力 · 难度 ' + (CardState.facDifficulty || 0);
+      break;
+    case 'location':
+      typeInfo = '地点';
+      break;
+    case 'stronghold':
+      typeInfo = '据点 · 难度 ' + (CardState.strDifficulty || 0);
+      break;
+  }
+
+  var nameDisplay = CardState.name || '未命名';
+  var rankDisplay = CardState.rank || '';
+  var nameHTML = escHtml(nameDisplay) + (rankDisplay ? '<span class="rank-suffix">·' + escHtml(rankDisplay) + '</span>' : '');
+
+  html += '<div class="card-header-row">';
+  html += '<span class="card-name">' + nameHTML + '</span>';
+  html += '<span class="card-rank-type">';
+  html += '<span class="type-info">' + escapeHTML(typeInfo) + '</span>';
+  html += '</span>';
+  html += '</div>';
+
+  // For location: Description and Tendencies appear above the 8-field grid
+  if (CardState.cardType === 'location') {
+    if (CardState.description) {
+      html += '<div class="card-description">' + parseMarkdown(CardState.description) + '</div>';
+    }
+    if (CardState.tendencies) {
+      html += '<div class="card-tendencies">' + escapeHTML(CardState.tendencies) + '</div>';
+    }
+    if (CardState.description || CardState.tendencies) {
+      html += '<hr style="border:none;border-top:1px dashed var(--color-text-muted);margin:4px 0 10px">';
+    }
+  }
+
+  // ---- Meta fields ----
+  var metaHtml = '';
+
+  switch (CardState.cardType) {
+    case 'environment':
+      // Description first
+      if (CardState.description) {
+        html += '<div class="card-description">' + parseMarkdown(CardState.description) + '</div>';
+      }
+      // Tendencies second
+      if (CardState.tendencies) {
+        html += '<div class="card-tendencies">' + escapeHTML(CardState.tendencies) + '</div>';
+      }
+      // Risks last
+      if (CardState.description || CardState.tendencies) {
+        html += '<hr style="border:none;border-top:1px dashed var(--color-text-muted);margin:4px 0 10px">';
+      }
+      metaHtml += metaItem('潜在风险', CardState.envRisks);
+      break;
+
+    case 'faction':
+      // Description first
+      if (CardState.description) {
+        html += '<div class="card-description">' + parseMarkdown(CardState.description) + '</div>';
+      }
+      // Tendencies second
+      if (CardState.tendencies) {
+        html += '<div class="card-tendencies">' + escapeHTML(CardState.tendencies) + '</div>';
+      }
+      // Risks third
+      if (CardState.description || CardState.tendencies) {
+        html += '<hr style="border:none;border-top:1px dashed var(--color-text-muted);margin:4px 0 10px">';
+      }
+      metaHtml += metaItem('潜在风险', CardState.facRisks);
+      // Allies fourth
+      metaHtml += metaItem('潜在盟友', CardState.facAllies);
+      // Other relations (above faction bar)
+      if (CardState.facOtherRelations && CardState.facOtherRelations.length > 0) {
+        // Sort: faction first, then character, then custom
+        var sortedRels = CardState.facOtherRelations.slice();
+        sortedRels.sort(function(a, b) {
+          var order = { faction: 0, character: 1 };
+          var aOrd = order[a.targetType] != null ? order[a.targetType] : 2;
+          var bOrd = order[b.targetType] != null ? order[b.targetType] : 2;
+          if (aOrd !== bOrd) return aOrd - bOrd;
+          return 0;
+        });
+        var orelHtml = '';
+        sortedRels.forEach(function(rel) {
+          var chipClass = 'other-rel-chip ' + (rel.targetType === 'character' ? 'character' : 'faction');
+          var typeDisplay = rel.targetType === 'faction' ? '势' : rel.targetType === 'character' ? '人' : rel.targetType.charAt(0);
+          orelHtml += '<span class="' + chipClass + '">';
+          orelHtml += '<span class="rel-type">' + typeDisplay + '</span>';
+          orelHtml += escHtml(rel.targetName || '?');
+          orelHtml += ' <span class="rel-value ' + getRelClass(rel.relation) + '">' + rel.relation + '</span>';
+          orelHtml += '</span>';
+        });
+        metaHtml += '<div class="meta-item"><span class="meta-label">其他关系</span><span class="meta-value">' + orelHtml + '</span></div>';
+      }
+      // Faction relations bar — LAST (bottom of left column)
+      metaHtml += '<div class="faction-bar-bottom">' + renderFactionBar() + '</div>';
+      break;
+
+    case 'stronghold':
+      // Description first (same as other card types)
+      if (CardState.description) {
+        html += '<div class="card-description">' + parseMarkdown(CardState.description) + '</div>';
+      }
+      // Tendencies — right after description, like all other card types
+      if (CardState.tendencies) {
+        html += '<div class="card-tendencies">' + escapeHTML(CardState.tendencies) + '</div>';
+      }
+      if (CardState.description || CardState.tendencies) {
+        html += '<hr style="border:none;border-top:1px dashed var(--color-text-muted);margin:4px 0 10px">';
+      }
+      // Allies list
+      if (CardState.strAllies && CardState.strAllies.length > 0) {
+        metaHtml += '<div class="meta-item">';
+        metaHtml += '<span class="meta-label">盟友</span>';
+        metaHtml += '<div class="meta-value">';
+        CardState.strAllies.forEach(function(ally) {
+          metaHtml += '<div class="ally-chip">';
+          metaHtml += '<span class="ally-chip-name">' + escapeHTML(ally.name || '?') + '</span>';
+          metaHtml += '</div>';
+          if (ally.desc) {
+            metaHtml += '<span class="ally-chip-desc">' + parseMarkdown(ally.desc) + '</span>';
+          }
+        });
+        metaHtml += '</div></div>';
+      }
+      break;
+
+    case 'location':
+      var locFields = '';
+      locFields += metaItem('主要地貌', CardState.locTerrain, true);
+      locFields += metaItem('主题', CardState.locTheme, true);
+      locFields += metaItem('存在势力', CardState.locFactions, true);
+      locFields += metaItem('主要环境', CardState.locEnvs, true);
+      locFields += metaItem('主要事件', CardState.locMainEvents, true);
+      locFields += metaItem('危险与冲突', CardState.locDangers, true);
+      locFields += metaItem('发现与盟友', CardState.locDiscoveries, true);
+      locFields += metaItem('宿敌的计划', CardState.locNemesis, true);
+      locFields += metaItem('谜团', CardState.locMysteries, true);
+      locFields += metaItem('谜底', CardState.locTruth, true);
+      metaHtml += '<div class="meta-grid">' + locFields + '</div>';
+      break;
+  }
+
+  html += metaHtml;
+
+  return html;
+}
+
+/** Render right column: traits only */
+function renderCardRightContent() {
+  var html = '';
+
+  // Traits
+  html += renderCardTraitsHTML();
+
+  return html;
+}
+
+/** Render traits as HTML string for the card preview */
+function renderCardTraitsHTML() {
+  if (!CardState.traits || CardState.traits.length === 0) {
+    return '';
+  }
+
+  var typeCSSClass = { '被动': 'type-passive', '反应': 'type-reaction', '主动': 'type-active' };
+  var isStronghold = CardState.cardType === 'stronghold';
+
+  var html = '<div class="card-traits">';
+  for (var i = 0; i < CardState.traits.length; i++) {
+    var t = CardState.traits[i];
+    var name = t.name || '(未命名)';
+    var typeLabel = t.type || '';
+    var typeCls = typeCSSClass[typeLabel] || '';
+    var desc = t.desc || '';
+    var status = t.status || 'inactive';
+
+    html += '<div class="card-trait-item">';
+    html += '<div class="card-trait-header">';
+    html += '<span class="trait-circle-wrap" onclick="toggleTraitStatus(' + i + ')">' + traitCircleSVG(status) + '</span>';
+    // Source badge for stronghold
+    if (isStronghold && t.source) {
+      html += '<span class="card-trait-source">[' + escapeHTML(t.source) + ']</span>';
+    }
+    html += '<span class="card-trait-name">' + escapeHTML(name) + '</span>';
+    if (typeLabel) {
+      html += '<span class="card-trait-type' + (typeCls ? ' ' + typeCls : '') + '">' + escapeHTML(typeLabel) + '</span>';
+    }
+    if (t.type === '主动' && t.cost > 0) {
+      var costLabel = isStronghold && t.costType ? t.costType : '历练点';
+      html += '<span class="card-trait-cost">【耗费' + t.cost + costLabel + '】</span>';
+    }
+    html += '</div>';
+    if (desc) {
+      html += '<div class="card-trait-desc">' + escapeHTML(desc) + '</div>';
+    }
+    if (t.flavor) {
+      html += '<span class="trait-flavor">' + parseMarkdown(t.flavor) + '</span>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+
+  return html;
+}
+
+function escapeHTML(str) {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+}
+
+/* ============================================================
+   COLLAPSIBLE — Toggle accordion sections
+   ============================================================ */
+function toggleCollapse(el) {
+  el.classList.toggle('open');
+  var body = el.nextElementSibling;
+  if (body) body.classList.toggle('open');
+}
+
+/* ============================================================
+   HELPERS — State Update, Escaping, Custom Colors, Palette I/O
+   ============================================================ */
+
+function updateState(path, value) {
+  CardState[path] = value;
+  renderCardPreview();
+}
+
+function escHtml(s) {
+  return escapeHTML(String(s));
+}
+
+function escAttr(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
+function updateCustomColor(cssVar, value) {
+  document.documentElement.style.setProperty(cssVar, value);
+
+  var map = {
+    '--color-primary': 'primary',
+    '--color-accent': 'accent',
+    '--color-bg-card': 'bgCard',
+    '--color-text': 'text'
+  };
+  var key = map[cssVar];
+  if (key) { CardState.customColors[key] = value; }
+}
+
+function exportPalette() {
+  var exportData = {
+    palette: CardState.palette,
+    colors: CardState.palette === 'custom' ? CardState.customColors : null
+  };
+  var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'palette-' + CardState.palette + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importPalette() {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = function (e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      try {
+        var data = JSON.parse(ev.target.result);
+        if (!data.palette) { alert('无效的色板文件：缺少 palette 字段'); return; }
+
+        if (data.palette === 'custom' && data.colors) {
+          CardState.customColors = data.colors;
+          applyPalette('custom');
+        } else {
+          applyPalette(data.palette);
+        }
+        renderCardPreview();
+      } catch (err) {
+        alert('无法解析色板文件：' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+/* ============================================================
+   PNG EXPORT — Fixed for html2canvas compatibility
+   ============================================================ */
+function exportPNG() {
+  var card = document.getElementById('cardPreview');
+  if (!card) return;
+
+  // Temporarily simplify card styling for html2canvas
+  var originalOutline = card.style.outline;
+  var originalBorder = card.style.border;
+
+  card.style.outline = 'none';
+  card.style.border = '2px solid #000';
+
+  var computedBg = window.getComputedStyle(card).backgroundColor;
+
+  html2canvas(card, {
+    scale: 2,
+    backgroundColor: computedBg || '#F4F1EA',
+    useCORS: true,
+    allowTaint: true
+  }).then(function(canvas) {
+    card.style.outline = originalOutline;
+    card.style.border = originalBorder;
+
+    var link = document.createElement('a');
+    link.download = (CardState.name || 'card') + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }).catch(function(err) {
+    card.style.outline = originalOutline;
+    card.style.border = originalBorder;
+    alert('截图失败：' + err.message);
+  });
+}
+
+/* ============================================================
+   JSON EXPORT / IMPORT
+   ============================================================ */
+function exportJSON() {
+  var blob = new Blob([JSON.stringify(CardState, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = (CardState.name || 'card') + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importJSON() {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = function (e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      try {
+        var data = JSON.parse(ev.target.result);
+        if (!data || typeof data !== 'object' || Array.isArray(data)) {
+          alert('无效的卡片文件：JSON 根节点必须是对象');
+          return;
+        }
+        var merged = deepClone(DefaultState);
+        Object.keys(merged).forEach(function (k) {
+          if (data[k] !== undefined) merged[k] = data[k];
+        });
+        // Backward compatibility: convert old string-format strAllies to array
+        if (typeof merged.strAllies === 'string') {
+          merged.strAllies = merged.strAllies ? [{ name: merged.strAllies, desc: '' }] : [];
+        }
+        if (data.image) { merged.image = Object.assign({}, DefaultState.image, data.image); }
+        if (data.customColors) { merged.customColors = Object.assign({}, DefaultState.customColors, data.customColors); }
+        if (data.traits) {
+          merged.traits = data.traits;
+          for (var i = 0; i < merged.traits.length; i++) {
+            if (merged.traits[i].flavor === undefined) merged.traits[i].flavor = '';
+            if (merged.traits[i].source === undefined) merged.traits[i].source = '';
+            if (merged.traits[i].costType === undefined) merged.traits[i].costType = '历练点';
+          }
+        }
+        Object.keys(merged).forEach(function (k) { CardState[k] = merged[k]; });
+        applyPalette(CardState.palette);
+        render();
+      } catch (err) {
+        alert('JSON 文件格式错误：' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+/* ============================================================
+   STANDALONE HTML EXPORT
+   ============================================================ */
+function exportStandaloneHTML() {
+  var stateJSON = JSON.stringify(CardState, null, 2);
+  stateJSON = stateJSON.replace(/<\//g, '<\\/');
+  var palette = CardState.palette;
+  var styleContent = document.querySelector('style').textContent;
+  var cardHTML = document.getElementById('cardPreview').outerHTML;
+
+  var html = '<!DOCTYPE html>\n';
+  html += '<html lang="zh-CN"' + (palette !== 'custom' ? ' data-palette="' + palette + '"' : '') + '>\n';
+  html += '<head>\n';
+  html += '<meta charset="UTF-8">\n';
+  html += '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n';
+  html += '<title>' + escHtml(CardState.name || '卡片') + ' - 逆命仙途</title>\n';
+  html += '<link rel="preconnect" href="https://fonts.googleapis.com">\n';
+  html += '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n';
+  html += '<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&display=swap" rel="stylesheet">\n';
+  html += '<style>\n';
+  html += styleContent;
+  html += '\n/* Viewer overrides: hide non-card UI, show full card */\n';
+  html += 'body { display: flex; justify-content: center; align-items: flex-start; padding: 20px; min-height: 100vh; background: var(--color-body-bg); }\n';
+  html += '.app-container { display: block !important; width: 100%; }\n';
+  html += '.config-panel, .config-tabs, .actions-bar, .bottom-toolbar, .preview-label,\n';
+  html += '.gm-panel, .gm-panel-toggle, .beautify-panel-toggle, .beautify-panel, #imageEditorModal, #configPanel,\n';
+  html += '.collapse-toggle, .collapse-body { display: none !important; }\n';
+  html += '.preview-area { padding: 20px; background: var(--color-body-bg); min-height: auto; }\n';
+  html += '.card-preview { margin: 0 auto; width: 100%; max-width: 1000px; min-height: 600px; height: auto; }\n';
+  html += '.card-trait-name { font-size: 1.1em; }\n';
+  html += '.card-trait-desc { font-size: 0.95em; }\n';
+  html += '.trait-flavor { font-size: 0.9em; }\n';
+  html += '</style>\n';
+  html += '</head>\n';
+  html += '<body>\n';
+  html += '<div class="app-container">\n';
+  html += '<main class="preview-area">\n';
+  html += cardHTML + '\n';
+  html += '</main>\n';
+  html += '</div>\n';
+  html += '<script>\n';
+  html += 'var CardState = ' + stateJSON + ';\n';
+  html += 'var RELATION_LABELS = ' + JSON.stringify(RELATION_LABELS) + ';\n';
+  html += 'function getRelClass(relation) {\n';
+  html += '  var map = { "死敌":"deadly", "交战":"war", "敌对":"hostile", "不和":"unfriendly", "无关":"neutral", "相识":"acquaintance", "友善":"friendly", "合作":"cooperative", "同盟":"allied" };\n';
+  html += '  return map[relation] || "neutral";\n';
+  html += '}\n';
+  html += '\n';
+  html += 'function escHtml(s) {\n';
+  html += '  var d = document.createElement("div");\n';
+  html += '  d.appendChild(document.createTextNode(s));\n';
+  html += '  return d.innerHTML;\n';
+  html += '}\n';
+  html += '\n';
+  html += 'function parseMarkdown(text) {\n';
+  html += '  if (!text) return "";\n';
+  html += '  var html = escHtml(text);\n';
+  html += '  html = html.replace(/==(.+?)==/g, "<mark>$1</mark>");\n';
+  html += '  html = html.replace(/\\*\\*(.+?)\\*\\*/g, "<strong>$1</strong>");\n';
+  html += '  html = html.replace(/\\*(.+?)\\*/g, "<em>$1</em>");\n';
+  html += '  html = html.replace(/\\n/g, "<br>");\n';
+  html += '  return html;\n';
+  html += '}\n';
+  html += '\n';
+  html += 'function traitCircleSVG(status) {\n';
+  html += '  if (status === "active") {\n';
+  html += '    return \'<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="var(--color-accent)" stroke="var(--color-accent)" stroke-width="1.5"/></svg>\';\n';
+  html += '  } else if (status === "crossed") {\n';
+  html += '    return \'<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="var(--color-text-muted)" stroke-width="1.5"/><line x1="4" y1="4" x2="12" y2="12" stroke="var(--color-accent)" stroke-width="1.5"/><line x1="12" y1="4" x2="4" y2="12" stroke="var(--color-accent)" stroke-width="1.5"/></svg>\';\n';
+  html += '  }\n';
+  html += '  return \'<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="var(--color-text-muted)" stroke-width="1.5"/></svg>\';\n';
+  html += '}\n';
+  html += '\n';
+  html += 'function toggleTraitStatus(index) {\n';
+  html += '  var t = CardState.traits[index];\n';
+  html += '  if (t.status === "inactive") t.status = "active";\n';
+  html += '  else if (t.status === "active") t.status = "crossed";\n';
+  html += '  else t.status = "inactive";\n';
+  html += '  renderCardPreview();\n';
+  html += '}\n';
+  html += '\n';
+  html += 'function updateFactionRelation(index) {\n';
+  html += '  CardState.facRelation = CardState.facRelation === index ? -1 : index;\n';
+  html += '  var input = document.getElementById("inputFacRelation");\n';
+  html += '  if (input) input.value = CardState.facRelation;\n';
+  html += '  renderCardPreview();\n';
+  html += '}\n';
+  html += '\n';
+  html += 'function renderCardPreview() {\n';
+  html += '  var card = document.getElementById("cardPreview");\n';
+  html += '  var inkBg = document.getElementById("cardInkBg");\n';
+  html += '  if (card) card.setAttribute("data-ink-style", CardState.image.inkStyle || "none");\n';
+  html += '  if (inkBg) {\n';
+  html += '    if (CardState.image.src && CardState.image.inkStyle !== "none") {\n';
+  html += '      inkBg.style.backgroundImage = "url(" + CardState.image.src + ")";\n';
+  html += '      inkBg.style.opacity = CardState.image.opacity;\n';
+  html += '      inkBg.style.backgroundPosition = CardState.image.posX + "% " + CardState.image.posY + "%";\n';
+  html += '      inkBg.style.backgroundSize = (CardState.image.scale || 100) + "%";\n';
+  html += '    } else {\n';
+  html += '      inkBg.style.backgroundImage = "";\n';
+  html += '      inkBg.style.opacity = "";\n';
+  html += '      inkBg.style.backgroundPosition = "";\n';
+  html += '      inkBg.style.backgroundSize = "";\n';
+  html += '    }\n';
+  html += '  }\n';
+  html += '  // Render left content\n';
+  html += '  var cardLeft = document.getElementById("cardLeft");\n';
+  html += '  if (cardLeft) cardLeft.innerHTML = renderCardLeftContent();\n';
+  html += '  // Render right content\n';
+  html += '  var cardRight = document.getElementById("cardRight");\n';
+  html += '  if (cardRight) cardRight.innerHTML = renderCardRightContent();\n';
+  html += '}\n';
+  html += '\n';
+  html += 'function renderCardLeftContent() {\n';
+  html += '  var html = "";\n';
+  html += '  // Header row\n';
+  html += '  var typeInfo = "";\n';
+  html += '  switch (CardState.cardType) {\n';
+  html += '    case "environment": typeInfo = (CardState.envType || "险境") + " · 难度 " + (CardState.envDifficulty || 0); break;\n';
+  html += '    case "faction": typeInfo = "势力 · 难度 " + (CardState.facDifficulty || 0); break;\n';
+  html += '    case "location": typeInfo = "地点"; break;\n';
+  html += '    case "stronghold": typeInfo = "据点 · 难度 " + (CardState.strDifficulty || 0); break;\n';
+  html += '  }\n';
+  html += '  var nameDisplay = CardState.name || "未命名";\n';
+  html += '  var rankDisplay = CardState.rank || "";\n';
+  html += '  var nameHTML = escHtml(nameDisplay) + (rankDisplay ? \'<span class="rank-suffix">·\' + escHtml(rankDisplay) + \'</span>\' : "");\n';
+  html += '  html += \'<div class="card-header-row">\';\n';
+  html += '  html += \'<span class="card-name">\' + nameHTML + \'</span>\';\n';
+  html += '  html += \'<span class="card-rank-type"><span class="type-info">\' + escHtml(typeInfo) + \'</span></span>\';\n';
+  html += '  html += \'</div>\';\n';
+  html += '  // Location: description + tendencies above grid\n';
+  html += '  if (CardState.cardType === "location") {\n';
+  html += '    if (CardState.description) html += \'<div class="card-description">\' + parseMarkdown(CardState.description) + \'</div>\';\n';
+  html += '    if (CardState.tendencies) html += \'<div class="card-tendencies">\' + escHtml(CardState.tendencies) + \'</div>\';\n';
+  html += '    if (CardState.description || CardState.tendencies) html += \'<hr style="border:none;border-top:1px dashed var(--color-text-muted);margin:4px 0 10px">\';\n';
+  html += '  }\n';
+  html += '  // Meta fields\n';
+  html += '  function metaItem(label, value, useMarkdown) {\n';
+  html += '    if (value == null || value === "") return "";\n';
+  html += '    var renderedValue = useMarkdown ? parseMarkdown(String(value)) : escHtml(String(value));\n';
+  html += '    return \'<div class="meta-item"><span class="meta-label">\' + escHtml(label) + \'</span><span class="meta-value">\' + renderedValue + \'</span></div>\';\n';
+  html += '  }\n';
+  html += '  var metaHtml = "";\n';
+  html += '  switch (CardState.cardType) {\n';
+  html += '    case "environment":\n';
+  html += '      if (CardState.description) html += \'<div class="card-description">\' + parseMarkdown(CardState.description) + \'</div>\';\n';
+  html += '      if (CardState.tendencies) html += \'<div class="card-tendencies">\' + escHtml(CardState.tendencies) + \'</div>\';\n';
+  html += '      metaHtml += metaItem("潜在风险", CardState.envRisks);\n';
+  html += '      break;\n';
+  html += '    case "faction":\n';
+  html += '      if (CardState.description) html += \'<div class="card-description">\' + parseMarkdown(CardState.description) + \'</div>\';\n';
+  html += '      if (CardState.tendencies) html += \'<div class="card-tendencies">\' + escHtml(CardState.tendencies) + \'</div>\';\n';
+  html += '      metaHtml += metaItem("潜在风险", CardState.facRisks);\n';
+  html += '      metaHtml += metaItem("潜在盟友", CardState.facAllies);\n';
+  html += '      // Other relations (above faction bar)\n';
+  html += '      if (CardState.facOtherRelations && CardState.facOtherRelations.length > 0) {\n';
+  html += '        var sortedRels = CardState.facOtherRelations.slice();\n';
+  html += '        sortedRels.sort(function(a, b) { var order = { faction: 0, character: 1 }; var aOrd = order[a.targetType] != null ? order[a.targetType] : 2; var bOrd = order[b.targetType] != null ? order[b.targetType] : 2; if (aOrd !== bOrd) return aOrd - bOrd; return 0; });\n';
+  html += '        var orelHtml = "";\n';
+  html += '        sortedRels.forEach(function(rel) {\n';
+  html += '          var chipClass = "other-rel-chip " + (rel.targetType === "character" ? "character" : "faction");\n';
+  html += '          var typeDisplay = rel.targetType === "faction" ? "势" : rel.targetType === "character" ? "人" : rel.targetType.charAt(0);\n';
+  html += '          orelHtml += \'<span class="\' + chipClass + \'"><span class="rel-type">\' + typeDisplay + \'</span>\' + escHtml(rel.targetName || "?") + \' <span class="rel-value \' + getRelClass(rel.relation) + \'">\' + rel.relation + \'</span></span>\';\n';
+  html += '        });\n';
+  html += '        metaHtml += \'<div class="meta-item"><span class="meta-label">其他关系</span><span class="meta-value">\' + orelHtml + \'</span></div>\';\n';
+  html += '      }\n';
+  html += '      // Faction relations bar — LAST (bottom of left column)\n';
+  html += '      metaHtml += \'<div class="faction-bar-bottom"><div class="faction-relations"><div class="faction-relations-title">—— 当前势力关系 ——</div><div class="faction-track">\';\n';
+  html += '      for (var j = 0; j < RELATION_LABELS.length; j++) {\n';
+  html += '        var flabel = RELATION_LABELS[j];\n';
+  html += '        var fcss = "faction-node";\n';
+  html += '        if (j === CardState.facRelation) fcss += " selected";\n';
+  html += '        if (j <= 3) fcss += " hostile"; else if (j === 4) fcss += " neutral"; else fcss += " friendly";\n';
+  html += '        metaHtml += \'<div class="\' + fcss + \'" onclick="updateFactionRelation(\' + j + \')"><div class="dot"></div><span>\' + flabel + \'</span></div>\';\n';
+  html += '      }\n';
+  html += '      metaHtml += \'</div></div></div>\';\n';
+  html += '      break;\n';
+  html += '    case "stronghold":\n';
+  html += '      if (CardState.description) html += \'<div class="card-description">\' + parseMarkdown(CardState.description) + \'</div>\';\n';
+  html += '      if (CardState.tendencies) html += \'<div class="card-tendencies">\' + escHtml(CardState.tendencies) + \'</div>\';\n';
+  html += '      metaHtml += \'<div class="meta-item"><span class="meta-label">难度</span><span class="meta-value str-difficulty">\' + (CardState.strDifficulty || 0) + \'</span></div>\';\n';
+  html += '      if (CardState.strAllies && CardState.strAllies.length > 0) {\n';
+  html += '        metaHtml += \'<div class="meta-item"><span class="meta-label">盟友</span><div class="meta-value">\';\n';
+  html += '        CardState.strAllies.forEach(function(ally) {\n';
+  html += '          metaHtml += \'<div class="ally-chip"><span class="ally-chip-name">\' + escHtml(ally.name || \'?\') + \'</span></div>\';\n';
+  html += '          if (ally.desc) metaHtml += \'<span class="ally-chip-desc">\' + parseMarkdown(ally.desc) + \'</span>\';\n';
+  html += '        });\n';
+  html += '        metaHtml += \'</div></div>\';\n';
+  html += '      }\n';
+  html += '      break;\n';
+  html += '    case "location":\n';
+  html += '      var locFields = "";\n';
+  html += '      locFields += metaItem("主要地貌", CardState.locTerrain, true);\n';
+  html += '      locFields += metaItem("主题", CardState.locTheme, true);\n';
+  html += '      locFields += metaItem("存在势力", CardState.locFactions, true);\n';
+  html += '      locFields += metaItem("主要环境", CardState.locEnvs, true);\n';
+  html += '      locFields += metaItem("主要事件", CardState.locMainEvents, true);\n';
+  html += '      locFields += metaItem("危险与冲突", CardState.locDangers, true);\n';
+  html += '      locFields += metaItem("发现与盟友", CardState.locDiscoveries, true);\n';
+  html += '      locFields += metaItem("宿敌的计划", CardState.locNemesis, true);\n';
+  html += '      locFields += metaItem("谜团", CardState.locMysteries, true);\n';
+  html += '      locFields += metaItem("谜底", CardState.locTruth, true);\n';
+  html += '      metaHtml += \'<div class="meta-grid">\' + locFields + \'</div>\';\n';
+  html += '      break;\n';
+  html += '  }\n';
+  html += '  html += metaHtml;\n';
+  html += '  return html;\n';
+  html += '}\n';
+  html += '\n';
+  html += 'function renderCardRightContent() {\n';
+  html += '  var html = "";\n';
+  html += '  // Traits\n';
+  html += '  if (CardState.traits && CardState.traits.length > 0) {\n';
+  html += '    var typeCSSClass = { "被动": "type-passive", "反应": "type-reaction", "主动": "type-active" };\n';
+  html += '    var isStronghold = CardState.cardType === "stronghold";\n';
+  html += '    html += \'<div class="card-traits">\';\n';
+  html += '    for (var i = 0; i < CardState.traits.length; i++) {\n';
+  html += '      var t = CardState.traits[i];\n';
+  html += '      var name = t.name || "(未命名)";\n';
+  html += '      var typeLabel = t.type || "";\n';
+  html += '      var typeCls = typeCSSClass[typeLabel] || "";\n';
+  html += '      var desc = t.desc || "";\n';
+  html += '      var status = t.status || "inactive";\n';
+  html += '      html += \'<div class="card-trait-item">\';\n';
+  html += '      html += \'<div class="card-trait-header">\';\n';
+  html += '      html += \'<span class="trait-circle-wrap" onclick="toggleTraitStatus(\' + i + \')">\' + traitCircleSVG(status) + \'</span>\';\n';
+  html += '      if (isStronghold && t.source) html += \'<span class="card-trait-source">[\' + escHtml(t.source) + \']</span>\';\n';
+  html += '      html += \'<span class="card-trait-name">\' + escHtml(name) + \'</span>\';\n';
+  html += '      if (typeLabel) html += \'<span class="card-trait-type\' + (typeCls ? " " + typeCls : "") + \'">\' + escHtml(typeLabel) + \'</span>\';\n';
+  html += '      if (t.type === "主动" && t.cost > 0) { var costLabel = isStronghold && t.costType ? t.costType : "历练点"; html += \'<span class="card-trait-cost">【耗费\' + t.cost + costLabel + \'】</span>\'; }\n';
+  html += '      html += \'</div>\';\n';
+  html += '      if (desc) html += \'<div class="card-trait-desc">\' + escHtml(desc) + \'</div>\';\n';
+  html += '      if (t.flavor) html += \'<span class="trait-flavor">\' + parseMarkdown(t.flavor) + \'</span>\';\n';
+  html += '      html += \'</div>\';\n';
+  html += '    }\n';
+  html += '    html += \'</div>\';\n';
+  html += '  }\n';
+  html += '  return html;\n';
+  html += '}\n';
+  html += '\n';
+  html += '// Override palette for custom mode\n';
+  if (palette === 'custom') {
+    html += 'if (CardState.palette === "custom") {\n';
+    html += '  document.documentElement.style.setProperty("--color-primary", "' + CardState.customColors.primary + '");\n';
+    html += '  document.documentElement.style.setProperty("--color-accent", "' + CardState.customColors.accent + '");\n';
+    html += '  document.documentElement.style.setProperty("--color-bg-card", "' + CardState.customColors.bgCard + '");\n';
+    html += '  document.documentElement.style.setProperty("--color-text", "' + CardState.customColors.text + '");\n';
+    html += '}\n';
+  }
+  html += '\n';
+  html += 'renderCardPreview();\n';
+  html += '<\/script>\n';
+  html += '</body>\n';
+  html += '</html>';
+
+  var blob = new Blob([html], { type: 'text/html;charset=UTF-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.download = (CardState.name || 'card') + '.html';
+  a.href = url;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function updateHeaderSubtitle() {
+  var el = document.querySelector('.config-panel-header .subtitle');
+  if (!el) return;
+  var labels = { environment: '环境 / 探索 · 社交 · 险境 · 事件', faction: '势力 / 宗门 / 组织', location: '地点 / 遗迹 / 洞府', stronghold: '据点 / 基地 / 洞府' };
+  el.textContent = labels[CardState.cardType] || '环境 / 势力 / 地点 / 据点';
+}
+
+function renderCardTypeTabs() {
+  var tabs = document.querySelectorAll('#configTabs .tab-button');
+  for (var i = 0; i < tabs.length; i++) {
+    var tab = tabs[i];
+    if (tab.getAttribute('data-type') === CardState.cardType) {
+      tab.classList.add('active');
+    } else {
+      tab.classList.remove('active');
+    }
+  }
+}
+
+/* ============================================================
+   PALETTE — Apply Color Palette
+   ============================================================ */
+function applyPalette(name) {
+  CardState.palette = name;
+
+  if (name === 'custom') {
+    document.documentElement.style.setProperty('--color-primary', CardState.customColors.primary);
+    document.documentElement.style.setProperty('--color-accent', CardState.customColors.accent);
+    document.documentElement.style.setProperty('--color-bg-card', CardState.customColors.bgCard);
+    document.documentElement.style.setProperty('--color-text', CardState.customColors.text);
+    document.documentElement.removeAttribute('data-palette');
+  } else {
+    document.documentElement.style.removeProperty('--color-primary');
+    document.documentElement.style.removeProperty('--color-accent');
+    document.documentElement.style.removeProperty('--color-bg-card');
+    document.documentElement.style.removeProperty('--color-text');
+    document.documentElement.setAttribute('data-palette', name);
+  }
+}
+
+/* ============================================================
+   CARD TYPE — Switch Card Type
+   ============================================================ */
+function setCardType(type) {
+  if (CardState.cardType === type) return;
+  CardState.cardType = type;
+  render();
+}
+
+/* ============================================================
+   TRAITS — Config Editor
+   ============================================================ */
+function renderTraitsEditor() {
+  var container = document.getElementById('traitsList');
+  if (!container) return;
+
+  var typeOptions = ['被动', '反应', '主动'];
+  var isStronghold = CardState.cardType === 'stronghold';
+  var html = '';
+
+  for (var i = 0; i < CardState.traits.length; i++) {
+    var t = CardState.traits[i];
+    html += '<div class="trait-edit-box">';
+
+    html += '<div class="trait-edit-row">';
+    html += '<input type="text" class="form-input" value="' + escAttr(t.name || '') + '" oninput="updateTrait(' + i + ', \'name\', this.value)" placeholder="特性名称" style="flex:1;font-weight:bold">';
+    html += '<select class="form-select" onchange="updateTrait(' + i + ', \'type\', this.value)" style="max-width:100px">';
+    for (var j = 0; j < typeOptions.length; j++) {
+      var sel = t.type === typeOptions[j] ? ' selected' : '';
+      html += '<option value="' + typeOptions[j] + '"' + sel + '>' + typeOptions[j] + '</option>';
+    }
+    html += '</select>';
+    if (t.type === '主动') {
+      html += '<input type="number" class="form-input" value="' + (t.cost || 0) + '" oninput="updateTrait(' + i + ', \'cost\', parseInt(this.value)||0)" placeholder="耗费" style="max-width:70px" min="0">';
+    }
+    html += '</div>';
+
+    // Stronghold extra fields: source + costType
+    if (isStronghold) {
+      html += '<div class="trait-edit-row" style="margin-top:4px;">';
+      // Source with custom option
+      var srcPresets = ['盟友','机关','其他'];
+      var srcIsCustom = t.source && srcPresets.indexOf(t.source) === -1;
+      html += '<select class="form-select" onchange="updateTraitSource(' + i + ', this.value)" style="flex:1; font-size:0.72rem;">';
+      html += '<option value="">特征来源（可选）</option>';
+      srcPresets.forEach(function(src) {
+        html += '<option value="' + src + '" ' + (t.source===src && !srcIsCustom ? 'selected' : '') + '>' + src + '</option>';
+      });
+      if (srcIsCustom) {
+        html += '<option value="' + escAttr(t.source) + '" selected>' + escHtml(t.source) + '</option>';
+      }
+      html += '<option value="__custom__">+ 自定义...</option>';
+      html += '</select>';
+      // Cost type with custom option
+      var ctPresets = ['历练点','福缘点','储物格','灵气格','血量格','其他资源'];
+      var ctVal = t.costType || '历练点';
+      var ctIsCustom = ctPresets.indexOf(ctVal) === -1;
+      html += '<select class="form-select" onchange="updateTraitCostType(' + i + ', this.value)" style="flex:1; font-size:0.72rem;">';
+      ctPresets.forEach(function(ct) {
+        html += '<option value="' + ct + '" ' + (ctVal===ct && !ctIsCustom ? 'selected' : '') + '>' + ct + '</option>';
+      });
+      if (ctIsCustom) {
+        html += '<option value="' + escAttr(ctVal) + '" selected>' + escHtml(ctVal) + '</option>';
+      }
+      html += '<option value="__custom__">+ 自定义...</option>';
+      html += '</select>';
+      html += '</div>';
+    }
+
+    html += '<textarea class="form-textarea" oninput="updateTrait(' + i + ', \'desc\', this.value)" placeholder="特性描述" style="min-height:48px">' + escHtml(t.desc || '') + '</textarea>';
+
+    html += '<input type="text" class="trait-flavor-input" value="' + escAttr(t.flavor || '') + '" placeholder="风味文字（支持*斜体* **加粗** ==高亮==）" oninput="updateTrait(' + i + ', \'flavor\', this.value)" style="width:100%; margin-top:4px; font-size:0.78rem; font-style:italic;">';
+
+    html += '<div style="text-align:right;margin-top:4px"><button class="btn btn-remove btn-sm" onclick="removeTrait(' + i + ')">删除此特性</button></div>';
+
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+function updateTrait(index, field, value) {
+  CardState.traits[index][field] = value;
+  if (field === 'type') {
+    renderTraitsEditor();
+  }
+  renderCardPreview();
+}
+
+function updateTraitSource(index, value) {
+  if (value === '__custom__') {
+    var custom = prompt('输入特征来源名称：');
+    if (custom && custom.trim()) {
+      CardState.traits[index].source = custom.trim();
+    } else {
+      CardState.traits[index].source = '其他';
+    }
+  } else {
+    CardState.traits[index].source = value;
+  }
+  renderTraitsEditor();
+  renderCardPreview();
+}
+
+function updateTraitCostType(index, value) {
+  if (value === '__custom__') {
+    var custom = prompt('输入消耗类型名称：');
+    if (custom && custom.trim()) {
+      CardState.traits[index].costType = custom.trim();
+    } else {
+      CardState.traits[index].costType = '历练点';
+    }
+  } else {
+    CardState.traits[index].costType = value;
+  }
+  renderTraitsEditor();
+  renderCardPreview();
+}
+
+function toggleTraitStatus(index) {
+  var t = CardState.traits[index];
+  if (t.status === 'inactive') t.status = 'active';
+  else if (t.status === 'active') t.status = 'crossed';
+  else t.status = 'inactive';
+  renderCardPreview();
+}
+
+function addTrait() {
+  CardState.traits.push({
+    name: '', type: '被动', cost: 0, desc: '',
+    status: 'inactive', flavor: '',
+    source: '',
+    costType: '历练点'
+  });
+  render();
+}
+
+function removeTrait(index) {
+  CardState.traits.splice(index, 1);
+  render();
+}
+
+/* ============================================================
+   IMAGE — Render Config Panel Image Section (Ink Wash System)
+   ============================================================ */
+function renderImageSection() {
+  var container = document.getElementById('imageSectionContent');
+  if (!container) return;
+
+  var hasImage = CardState.image.src && CardState.image.src !== '';
+  var html = '';
+
+  // Upload row (always visible)
+  html += '<div class="image-upload-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px">';
+  html += '<input type="file" accept="image/*" id="imageFileInput" onchange="handleImageUpload(event)" style="flex:1;min-width:0;font-size:0.78rem;color:var(--color-text)">';
+  if (hasImage) {
+    html += '<button class="btn btn-remove btn-sm" onclick="clearImage()" title="清除图片">清除</button>';
+  }
+  html += '</div>';
+
+  // Collapsible: 水墨背景
+  html += '<div class="collapse-toggle open" onclick="toggleCollapse(this)">水墨背景</div>';
+  html += '<div class="collapse-body open">';
+
+  // Ink style preset buttons — 11 presets
+  var styles = [
+    { id: 'none', name: '无背景' },
+    { id: '水墨', name: '水墨' },
+    { id: '青绿', name: '青绿' },
+    { id: '朱砂', name: '朱砂' },
+    { id: '古卷', name: '古卷' },
+    { id: '淡墨', name: '淡墨' },
+    { id: '霜华', name: '霜华' },
+    { id: '暮色', name: '暮色' },
+    { id: '烟雨', name: '烟雨' },
+    { id: '丹青', name: '丹青' },
+    { id: '残卷', name: '残卷' }
+  ];
+
+  html += '<div class="ink-style-buttons">';
+  for (var i = 0; i < styles.length; i++) {
+    var s = styles[i];
+    var isActive = CardState.image.inkStyle === s.id;
+    html += '<button class="ink-style-btn' + (isActive ? ' active' : '') + '" onclick="setInkStyle(\'' + s.id + '\')">' + s.name + '</button>';
+  }
+  html += '</div>';
+
+  // Opacity slider + position button (only when image and style selected)
+  if (hasImage && CardState.image.inkStyle !== 'none') {
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;margin-top:8px">';
+    html += '<span style="font-size:0.75rem;color:var(--color-text-muted);white-space:nowrap">透明度</span>';
+    html += '<input type="range" min="5" max="40" value="' + Math.round(CardState.image.opacity * 100) + '" oninput="updateInkOpacity(this.value)" style="flex:1;accent-color:var(--color-accent)">';
+    html += '<span style="font-size:0.72rem;color:var(--color-text-muted);min-width:30px;text-align:right">' + Math.round(CardState.image.opacity * 100) + '%</span>';
+    html += '</div>';
+    html += '<button class="btn btn-outline btn-sm" onclick="openImageEditor()" style="width:100%">调整图片位置</button>';
+  }
+
+  html += '</div>'; // close collapse-body
+
+  container.innerHTML = html;
+}
+
+function setInkStyle(styleId) {
+  CardState.image.inkStyle = styleId;
+  renderCardPreview();
+}
+
+function updateInkOpacity(val) {
+  CardState.image.opacity = parseInt(val) / 100;
+  renderCardPreview();
+}
+
+/* ============================================================
+   IMAGE — Handle File Upload
+   ============================================================ */
+function handleImageUpload(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function (ev) {
+    CardState.image.src = ev.target.result;
+    CardState.image.inkStyle = CardState.image.inkStyle === 'none' ? '水墨' : CardState.image.inkStyle;
+    CardState.image.posX = 50;
+    CardState.image.posY = 50;
+    CardState.image.scale = 100;
+    render();
+    openImageEditor();
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  CardState.image.src = '';
+  CardState.image.inkStyle = 'none';
+  CardState.image.opacity = 0.18;
+  CardState.image.posX = 50;
+  CardState.image.posY = 50;
+  CardState.image.scale = 100;
+  render();
+}
+
+/* ============================================================
+   IMAGE — Simplified Ink Wash Editor Modal
+   ============================================================ */
+function openImageEditor() {
+  var existing = document.getElementById('imageEditorModal');
+  if (existing) existing.remove();
+
+  var hasImage = CardState.image.src && CardState.image.src !== '';
+  if (!hasImage) return;
+
+  var defOpacity = Math.round(CardState.image.opacity * 100);
+  var defX = CardState.image.posX;
+  var defY = CardState.image.posY;
+  var defScale = CardState.image.scale || 100;
+
+  var html = '<div class="editor-modal-overlay" id="imageEditorModal">';
+  html += '<div class="editor-modal-content">';
+
+  // Left: preview pane showing ink wash effect
+  html += '<div class="editor-preview-pane">';
+  html += '<div class="editor-frame">';
+  html += '<div class="editor-ink-preview" id="editorInkPreview" style="background-image:url(\'' + escAttr(CardState.image.src) + '\');opacity:' + CardState.image.opacity + ';background-position:' + defX + '% ' + defY + '%;background-size:' + defScale + '%;"></div>';
+  html += '</div>';
+  html += '</div>';
+
+  // Right: controls
+  html += '<div class="editor-controls-pane">';
+  html += '<p style="font-size:0.78rem;color:var(--color-text-muted);margin-bottom:4px">调整背景图片位置与透明度</p>';
+
+  html += '<label>透明度 <span id="edOpacityVal">' + defOpacity + '%</span></label>';
+  html += '<input type="range" id="edOpacitySlider" min="5" max="40" value="' + defOpacity + '" oninput="updateEditorInkPreview()">';
+
+  html += '<label>水平位置 <span id="edXVal">' + defX + '%</span></label>';
+  html += '<input type="range" id="edXSlider" min="0" max="100" value="' + defX + '" oninput="updateEditorInkPreview()">';
+
+  html += '<label>垂直位置 <span id="edYVal">' + defY + '%</span></label>';
+  html += '<input type="range" id="edYSlider" min="0" max="100" value="' + defY + '" oninput="updateEditorInkPreview()">';
+
+  html += '<label>缩放 <span id="edScaleVal">' + defScale + '%</span></label>';
+  html += '<input type="range" id="edScaleSlider" min="50" max="200" value="' + defScale + '" oninput="updateEditorInkPreview()">';
+
+  html += '<div class="editor-buttons">';
+  html += '<button class="btn btn-primary" onclick="applyImageEdit()">确认</button>';
+  html += '<button class="btn btn-outline" onclick="closeImageEditor()">取消</button>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '</div></div>';
+
+  var div = document.createElement('div');
+  div.innerHTML = html;
+  document.body.appendChild(div.firstElementChild);
+}
+
+function updateEditorInkPreview() {
+  var opacitySlider = document.getElementById('edOpacitySlider');
+  var xSlider = document.getElementById('edXSlider');
+  var ySlider = document.getElementById('edYSlider');
+  var scaleSlider = document.getElementById('edScaleSlider');
+  if (!opacitySlider || !xSlider || !ySlider) return;
+
+  var opacity = parseInt(opacitySlider.value);
+  var x = parseInt(xSlider.value);
+  var y = parseInt(ySlider.value);
+  var scale = scaleSlider ? parseInt(scaleSlider.value) : 100;
+
+  var opVal = document.getElementById('edOpacityVal');
+  if (opVal) opVal.textContent = opacity + '%';
+  var xVal = document.getElementById('edXVal');
+  if (xVal) xVal.textContent = x + '%';
+  var yVal = document.getElementById('edYVal');
+  if (yVal) yVal.textContent = y + '%';
+  var sVal = document.getElementById('edScaleVal');
+  if (sVal) sVal.textContent = scale + '%';
+
+  var preview = document.getElementById('editorInkPreview');
+  if (preview) {
+    preview.style.opacity = opacity / 100;
+    preview.style.backgroundPosition = x + '% ' + y + '%';
+    preview.style.backgroundSize = scale + '%';
+  }
+}
+
+function applyImageEdit() {
+  var opacitySlider = document.getElementById('edOpacitySlider');
+  var xSlider = document.getElementById('edXSlider');
+  var ySlider = document.getElementById('edYSlider');
+  var scaleSlider = document.getElementById('edScaleSlider');
+
+  if (opacitySlider && xSlider && ySlider) {
+    CardState.image.opacity = parseInt(opacitySlider.value) / 100;
+    CardState.image.posX = parseInt(xSlider.value);
+    CardState.image.posY = parseInt(ySlider.value);
+    CardState.image.scale = scaleSlider ? parseInt(scaleSlider.value) : 100;
+  }
+
+  closeImageEditor();
+  renderCardPreview();
+}
+
+function closeImageEditor() {
+  var modal = document.getElementById('imageEditorModal');
+  if (modal) modal.remove();
+  renderCardPreview();
+}
+
+/* ============================================================
+   GM FLOATING SIDEBAR PANEL — Functions
+   ============================================================ */
+
+function getActiveCard(type) {
+  return openDB().then(function() {
+    return new Promise(function(resolve, reject) {
+      var tx = _db.transaction('active', 'readonly');
+      var store = tx.objectStore('active');
+      var request = store.get(type);
+      request.onsuccess = function() {
+        var result = request.result;
+        resolve(result ? result.data : null);
+      };
+      request.onerror = function() { reject(request.error); };
+    });
+  }).catch(function(e) { return null; });
+}
+
+function setActiveCard(type) {
+  var typeMap = { env: 'environment', fac: 'faction', loc: 'location', str: 'stronghold' };
+  if (CardState.cardType !== typeMap[type]) {
+    alert('请先切换到对应的卡片类型');
+    return;
+  }
+  try {
+    return openDB().then(function() {
+      return new Promise(function(resolve, reject) {
+        var tx = _db.transaction('active', 'readwrite');
+        var store = tx.objectStore('active');
+        store.put({
+          type: type,
+          data: JSON.parse(JSON.stringify(CardState))
+        });
+        tx.oncomplete = function() { renderGMPanel(); resolve(); };
+        tx.onerror = function() { reject(tx.error); };
+      });
+    }).catch(function(e) {
+      console.error('setActiveCard error:', e);
+      alert('保存失败：' + e.message);
+    });
+  } catch(e) {
+    alert('保存失败：' + e.message);
+  }
+}
+
+function loadActiveCard(type) {
+  getActiveCard(type).then(function(card) {
+    if (!card) return;
+    Object.keys(card).forEach(function(k) { CardState[k] = card[k]; });
+    applyPalette(CardState.palette);
+    render();
+  });
+}
+
+function clearActiveCard(type) {
+  openDB().then(function() {
+    return new Promise(function(resolve, reject) {
+      var tx = _db.transaction('active', 'readwrite');
+      var store = tx.objectStore('active');
+      store.delete(type);
+      tx.oncomplete = function() { renderGMPanel(); resolve(); };
+      tx.onerror = function() { reject(tx.error); };
+    });
+  }).catch(function(e) { console.error('clearActiveCard error:', e); });
+}
+
+function toggleGMPanel() {
+  var panel = document.getElementById('gmPanel');
+  var toggle = document.getElementById('gmPanelToggle');
+  var isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+    toggle.classList.remove('open');
+    toggle.textContent = '常用速切';
+  } else {
+    panel.classList.add('open');
+    toggle.classList.add('open');
+    toggle.textContent = '收起';
+    renderGMPanel();
+  }
+}
+
+function renderGMPanel() {
+  var panel = document.getElementById('gmPanelContent');
+  if (!panel) return;
+
+  var types = [
+    { key: 'env', label: '环境' },
+    { key: 'fac', label: '势力' },
+    { key: 'loc', label: '地点' },
+    { key: 'str', label: '据点' }
+  ];
+
+  var promises = types.map(function(t) {
+    return getActiveCard(t.key).then(function(card) {
+      return renderGMImportOptions(t.key).then(function(importOpts) {
+        var html = '<div class="gm-card-slot">';
+        html += '<div class="gm-slot-label">' + t.label + '</div>';
+        if (card) {
+          html += '<div class="gm-mini-card" onclick="loadActiveCard(\'' + t.key + '\')" title="点击载入编辑器">';
+          html += '<span class="gm-mini-name">' + escHtml(card.name || '未命名') + '</span>';
+          html += '<span class="gm-mini-meta">' + getTypeLabel(card) + '</span>';
+          html += '</div>';
+          html += '<button class="gm-slot-btn" onclick="event.stopPropagation(); clearActiveCard(\'' + t.key + '\')">清除</button>';
+        } else {
+          html += '<div class="gm-mini-card empty">空</div>';
+        }
+        html += '<button class="gm-slot-btn set" onclick="setActiveCard(\'' + t.key + '\')">设为当前' + t.label + '</button>';
+        html += '<select class="gm-slot-select" onchange="importFromSlotToActive(\'' + t.key + '\', this.value); this.value=\'\';" style="width:100%; font-size:0.62rem; margin-top:4px; padding:2px;">';
+        html += '<option value="">— 从槽位导入 —</option>';
+        html += importOpts;
+        html += '</select>';
+        html += '</div>';
+        return html;
+      });
+    });
+  });
+
+  Promise.all(promises).then(function(results) {
+    panel.innerHTML = results.join('');
+  });
+}
+
+function renderGMImportOptions(type) {
+  var typeMap = { env: 'environment', fac: 'faction', loc: 'location', str: 'stronghold' };
+  var targetType = typeMap[type];
+  var promiseList = [];
+  for (var i = 1; i <= 10; i++) {
+    (function(slotNum) {
+      promiseList.push(getSlotInfo(slotNum).then(function(info) {
+        if (info && info.data && info.data.cardType === targetType) {
+          return '<option value="' + slotNum + '">槽位' + slotNum + ': ' + escHtml(info.name || '?') + '</option>';
+        }
+        return '';
+      }));
+    })(i);
+  }
+  return Promise.all(promiseList).then(function(opts) {
+    return opts.filter(function(o) { return o !== ''; }).join('');
+  });
+}
+
+function importFromSlotToActive(type, slotNum) {
+  if (!slotNum) return;
+  getSlotInfo(parseInt(slotNum)).then(function(info) {
+    if (!info || !info.data) return;
+    openDB().then(function() {
+      return new Promise(function(resolve, reject) {
+        var tx = _db.transaction('active', 'readwrite');
+        var store = tx.objectStore('active');
+        store.put({ type: type, data: info.data });
+        tx.oncomplete = function() { renderGMPanel(); resolve(); };
+        tx.onerror = function() { reject(tx.error); };
+      });
+    });
+  }).catch(function(e) { console.error(e); });
+}
+
+function getTypeLabel(card) {
+  if (card.cardType === 'environment') return (card.envType || '') + ' · 难度' + (card.envDifficulty || '?');
+  if (card.cardType === 'faction') return '难度' + (card.facDifficulty || '?');
+  if (card.cardType === 'location') return '地点';
+  if (card.cardType === 'stronghold') return '据点 · 难度' + (card.strDifficulty || '?');
+  return '';
+}
+
+/* ============================================================
+   INITIALIZATION — DOMContentLoaded
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', function () {
+
+  // Initialize IndexedDB first
+  openDB().then(function() {
+
+  /* ---- Prefill CardState with Demo Data ---- */
+  CardState.cardType = 'environment';
+  CardState.name = '迷雾黑林';
+  CardState.description = '林中常年弥漫着无法散去的黑雾，==据说==有无数修士葬身于此。';
+  CardState.tendencies = '吞噬修士、化为迷宫、夺取造化';
+  CardState.envType = '险境';
+  CardState.envDifficulty = 10;
+  CardState.envRisks = '血魔狼、赤红鹰、鲜血巨蟒';
+  CardState.traits = [
+    {
+      name: '鲜血狂乱',
+      type: '被动',
+      cost: 0,
+      desc: '每次有角色受到严重伤害，都会让主场获得1历练点。',
+      status: 'inactive',
+      flavor: '血雾在林间弥漫，*每一滴*落地的血都在==滋养==这片土地。'
+    },
+    {
+      name: '巨蟒出击',
+      type: '主动',
+      cost: 1,
+      desc: '使用1历练点，在玩家附近涌出巨蟒，需进行普通难度的身法追逐战。',
+      status: 'inactive',
+      flavor: '**嘶嘶**——那是鳞片刮擦树干的声响。'
+    }
+  ];
+
+  /* ---- Apply Default Palette ---- */
+  applyPalette('ink');
+
+  /* ---- Initial Full Render ---- */
+  render();
+
+  /* ---- Tab Button Event Listeners ---- */
+  var tabs = document.querySelectorAll('#configTabs .tab-button');
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].addEventListener('click', function () {
+      var type = this.getAttribute('data-type');
+      if (type) setCardType(type);
+    });
+  }
+
+  /* ---- Add Trait Button ---- */
+  var btnAddTrait = document.getElementById('btnAddTrait');
+  if (btnAddTrait) {
+    btnAddTrait.addEventListener('click', addTrait);
+  }
+
+  }); // end openDB().then()
+
+});
+
+</script>
+
+</body>
+</html>
