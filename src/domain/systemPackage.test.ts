@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures";
-import { findAsset, findModule, validateSystemPackage } from "./systemPackage";
+import { findAsset, findModule, getSectionModuleReferences, validateSystemPackage } from "./systemPackage";
 
 describe("validateSystemPackage", () => {
   it("accepts the minimal demo System Package", () => {
@@ -50,6 +50,17 @@ describe("validateSystemPackage", () => {
       expect(findModule(result.package, "sect-emblem")?.类型).toBe("readOnlyDisplay");
       expect(findModule(result.package, "portrait")?.类型).toBe("imageField");
       expect(findAsset(result.package, "demo-emblem")?.路径).toBe("assets/demo-emblem.svg");
+    }
+  });
+
+  it("accepts rich Flow Layout rows and columns", () => {
+    const result = validateSystemPackage(moduleDemoSystemPackage);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const identitySection = result.package.pages[0].sections[0];
+      expect(identitySection.rows?.[0].columns).toHaveLength(3);
+      expect(getSectionModuleReferences(identitySection)).toEqual(["character-name", "portrait", "sect-emblem"]);
     }
   });
 
@@ -110,6 +121,45 @@ describe("validateSystemPackage", () => {
             {
               ...minimalSystemPackage.pages[0].sections[0],
               modules: ["missing-module"],
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = validateSystemPackage(invalidPackage);
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "MISSING_MODULE_REFERENCE",
+          level: "error",
+        }),
+      ]),
+    );
+  });
+
+  it("reports missing Sheet Module references inside rich Flow Layout placements", () => {
+    const invalidPackage = {
+      ...moduleDemoSystemPackage,
+      pages: [
+        {
+          ...moduleDemoSystemPackage.pages[0],
+          sections: [
+            {
+              ...moduleDemoSystemPackage.pages[0].sections[0],
+              rows: [
+                {
+                  ID: "broken-row",
+                  columns: [
+                    {
+                      ID: "broken-column",
+                      modules: [{ ID: "missing-module" }],
+                    },
+                  ],
+                },
+              ],
             },
           ],
         },

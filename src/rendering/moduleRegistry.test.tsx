@@ -18,7 +18,7 @@ function renderModuleDemo(systemPackage: SystemPackage = moduleDemoSystemPackage
     importNotice: null,
   });
 
-  render(<SheetRenderer systemPackage={systemPackage} />);
+  return render(<SheetRenderer systemPackage={systemPackage} />);
 }
 
 describe("Module Registry rendering", () => {
@@ -45,6 +45,14 @@ describe("Module Registry rendering", () => {
     expect(screen.getByText("只读展示模块不会写入 Character Data。这里适合放规则提示、检查清单或静态说明。")).toBeVisible();
     expect(screen.getByAltText("阶段5示例徽记")).toBeVisible();
     expect(screen.getByRole("button", { name: "上传图片" })).toBeVisible();
+  });
+
+  it("renders rich Flow Layout rows, columns, and module slots", () => {
+    const result = renderModuleDemo(moduleDemoSystemPackage, { "demo-emblem": "data:image/svg+xml;base64,PHN2Zy8+" });
+
+    expect(result.container.querySelector('[data-layout-row-id="identity-main"]')).not.toBeNull();
+    expect(result.container.querySelector('[data-layout-column-id="portrait"]')).not.toBeNull();
+    expect(result.container.querySelector('[data-module-slot-id="background"]')?.getAttribute("style")).toContain("min-height: 180px");
   });
 
   it("updates editable module state by module ID and leaves read-only display unstored", () => {

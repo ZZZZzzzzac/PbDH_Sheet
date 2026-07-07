@@ -212,6 +212,11 @@ exportCharacterJson(characterId)
 
 Sheet Renderer 根据 Flow Layout 和 Module Registry 渲染模块。第一版不单独拆 Layout Renderer；Flow Layout 仍是 Sheet Renderer 的内部职责。
 
+Flow Layout 支持两种 section 形态：
+
+- `modules` 简写：旧包兼容路径，分区内使用自动响应式模块网格。
+- `rows -> columns -> modules`：Author 可以声明行列、列宽、最小列宽、模块摆放位和基础盒模型样式。
+
 ```text
 renderModule({
   moduleConfig,
@@ -231,6 +236,7 @@ renderModule({
 - Sheet Module 不执行跨模块写入。
 - Sheet Module 不直接运行依赖逻辑、检查脚本或存储逻辑。
 - Sheet Module 不知道自己位于哪个页面、分区、行或列；布局信息只由 Sheet Renderer 使用。
+- Sheet Renderer 可以读取布局尺寸和样式，但这些值不进入 Character Data。
 
 ### Dependency Engine 边界
 

@@ -84,16 +84,78 @@ const supportedModuleTypes = new Set([
   "imageField",
 ]);
 
-const sectionSchema = z.object({
-  ID: z.string().min(1),
-  名称: z.string().min(1),
-  modules: z.array(z.string().min(1)).min(1),
+const cssValueSchema = z.string().min(1);
+
+const layoutStyleSchema = z.object({
+  宽度: cssValueSchema.optional(),
+  最小宽度: cssValueSchema.optional(),
+  最大宽度: cssValueSchema.optional(),
+  高度: cssValueSchema.optional(),
+  最小高度: cssValueSchema.optional(),
+  最大高度: cssValueSchema.optional(),
+  间距: cssValueSchema.optional(),
+  外边距: cssValueSchema.optional(),
+  内边距: cssValueSchema.optional(),
+  背景色: cssValueSchema.optional(),
+  边框: cssValueSchema.optional(),
+  圆角: cssValueSchema.optional(),
+  对齐: z.enum(["start", "center", "end", "stretch"]).optional(),
+  垂直对齐: z.enum(["start", "center", "end", "stretch"]).optional(),
 });
+
+const modulePlacementSchema = z.union([
+  z.string().min(1),
+  z.object({
+    ID: z.string().min(1),
+    样式: layoutStyleSchema.optional(),
+  }),
+]);
+
+const flowColumnSchema = z.object({
+  ID: z.string().min(1).optional(),
+  宽度: cssValueSchema.optional(),
+  最小宽度: cssValueSchema.optional(),
+  modules: z.array(modulePlacementSchema).min(1),
+  样式: layoutStyleSchema.optional(),
+});
+
+const flowRowSchema = z.object({
+  ID: z.string().min(1).optional(),
+  columns: z.array(flowColumnSchema).min(1),
+  样式: layoutStyleSchema.optional(),
+});
+
+const sectionSchema = z
+  .object({
+    ID: z.string().min(1),
+    名称: z.string().min(1),
+    modules: z.array(z.string().min(1)).min(1).optional(),
+    rows: z.array(flowRowSchema).min(1).optional(),
+    样式: layoutStyleSchema.optional(),
+  })
+  .superRefine((section, context) => {
+    if (!section.modules && !section.rows) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Section 需要声明 modules 或 rows。",
+        path: ["modules"],
+      });
+    }
+
+    if (section.modules && section.rows) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Section 不能同时声明 modules 和 rows。",
+        path: ["rows"],
+      });
+    }
+  });
 
 const pageSchema = z.object({
   ID: z.string().min(1),
   名称: z.string().min(1),
   sections: z.array(sectionSchema).min(1),
+  样式: layoutStyleSchema.optional(),
 });
 
 const assetSchema = z.object({
@@ -125,6 +187,11 @@ export type ReadOnlyDisplayModule = z.infer<typeof readOnlyDisplayModuleSchema>;
 export type ImageFieldModule = z.infer<typeof imageFieldModuleSchema>;
 export type SheetModule = z.infer<typeof sheetModuleSchema>;
 export type PackageAsset = z.infer<typeof assetSchema>;
+export type LayoutStyle = z.infer<typeof layoutStyleSchema>;
+export type ModulePlacement = z.infer<typeof modulePlacementSchema>;
+export type FlowColumn = z.infer<typeof flowColumnSchema>;
+export type FlowRow = z.infer<typeof flowRowSchema>;
+export type FlowSection = z.infer<typeof sectionSchema>;
 
 export type PackageIssueLevel = "fatal" | "error" | "warning";
 
@@ -239,7 +306,7 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
 
   for (const page of systemPackage.pages) {
     for (const section of page.sections) {
-      for (const moduleId of section.modules) {
+      for (const moduleId of getSectionModuleReferences(section)) {
         if (!moduleIds.has(moduleId)) {
           issues.push({
             level: "error",
@@ -265,4 +332,18 @@ export function findModule(systemPackage: SystemPackage, moduleId: string): Shee
 
 export function findAsset(systemPackage: SystemPackage, assetId: string): PackageAsset | undefined {
   return systemPackage.assets?.find((asset) => asset.ID === assetId);
+}
+
+export function getModulePlacementId(placement: ModulePlacement): string {
+  return typeof placement === "string" ? placement : placement.ID;
+}
+
+export function getSectionModuleReferences(section: FlowSection): string[] {
+  if (section.modules) {
+    return section.modules;
+  }
+
+  return (section.rows ?? []).flatMap((row) =>
+    row.columns.flatMap((column) => column.modules.map((placement) => getModulePlacementId(placement))),
+  );
 }
