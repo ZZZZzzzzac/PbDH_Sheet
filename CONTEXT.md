@@ -28,6 +28,14 @@ _Avoid_: Framework, editor
 A feedback surface that lets an Author inspect the Sheet Tool while developing a System Package.
 _Avoid_: Visual editor
 
+**Character Creation Guide**:
+An Author-defined step-by-step flow that helps a Player create a character by reading guide text, visiting target Sheet Modules, selecting Resource Library entries, using Cards, and running checks.
+_Avoid_: Hard-coded tutorial, arbitrary UI script
+
+**Guide Step**:
+One declared step inside a Character Creation Guide, with Author-written instructions and optional references to pages, Sheet Modules, Resource Libraries, Cards, completion conditions, and allowed framework actions.
+_Avoid_: Custom imperative code
+
 **AI-Readable Documentation**:
 Author-facing documentation structured so an AI assistant can reliably generate, modify, and validate System Packages.
 _Avoid_: Human-only tutorial
@@ -113,7 +121,7 @@ An Author-provided read-only script used only inside a Validation Check to produ
 _Avoid_: Custom sheet logic, state mutation script
 
 **Declarative System Package**:
-A System Package expressed through data, resources, layouts, styles, dependencies, and validation rules rather than arbitrary executable scripts.
+A System Package expressed through data, resources, layouts, styles, guide steps, dependencies, and validation rules rather than arbitrary executable scripts.
 _Avoid_: Script plugin
 
 ## Relationships
@@ -126,6 +134,10 @@ _Avoid_: Script plugin
 - The first-version runtime uses one **Current System Package** at a time.
 - A **Player** may have multiple local **Character Saves** for the **Current System Package**.
 - An **Author Preview** helps an **Author** validate a **System Package** by looking at the resulting **Sheet Tool**.
+- A **System Package** may include a **Character Creation Guide** so a **Player** can create a character through Author-defined steps.
+- A **Character Creation Guide** is runtime guidance over existing **Sheet Modules**, **Resource Libraries**, **Cards**, **Dependency Logic**, and **Validation Checks**; it is not a separate rules engine.
+- A **Guide Step** may request framework actions such as navigating to a page, highlighting a Sheet Module, opening a Resource Library choice, adding a Card, or running a Validation Check.
+- A **Guide Step** may write Character Data only through framework-defined actions already allowed for the target Sheet Module, Card Engine, or Dependency Logic.
 - **AI-Readable Documentation** is a first-version requirement because non-programmer Authors may rely on AI to create System Packages.
 - A **System Package Validator** should be strict about IDs, references, required structural fields, and broken links, but permissive about ordinary **Sheet Values**.
 - **Resource Values** are displayed as provided; the Base Framework does not interpret their game meaning.
@@ -185,6 +197,12 @@ _Avoid_: Script plugin
 > **Dev:** "Can the first version manage many installed systems?"
 > **Domain Expert:** "No. It loads one Current System Package; multi-package management can come later."
 
+> **Dev:** "Is the character creation guide a custom script?"
+> **Domain Expert:** "No. The Author declares guide steps. The Base Framework runs those steps and only uses existing framework actions."
+
+> **Dev:** "Can a guide step decide whether a character build is legal?"
+> **Domain Expert:** "Only simple completion conditions belong in the guide. Rule legality still belongs in Validation Checks."
+
 > **Dev:** "Does a Character Save include image files?"
 > **Domain Expert:** "Usually no for System Package images, but yes for Player-provided portraits or character art."
 
@@ -201,5 +219,6 @@ _Avoid_: Script plugin
 
 - "User" can mean **Author** or **Player**. Use the specific term because their needs and permissions are different.
 - "Feature" can mean either a user-visible outcome or a reusable **Sheet Module**. Prefer naming the underlying module when discussing the Base Framework.
+- "Character creation guide" can mean a static article or an interactive **Character Creation Guide**. Use the formal term when the System Package declares steps that the Base Framework runs.
 - The best timing for **Validation Checks** is unresolved: likely candidates are live preview, manual check, save, import, and export/print.
 - "Custom script" is ambiguous. **Validation Scripts** are allowed for read-only checks; scripts that modify sheet state or implement custom UI behavior are not part of the first-version requirement.

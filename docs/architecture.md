@@ -19,6 +19,7 @@ PbDH Sheet Framework 是一个无服务器 API 的静态 Web 应用。Author 上
 - Base Framework 不提供账号、云同步、系统包市场、服务器 PDF 或在线 AI 生成。
 - Character Data 按模块/字段 ID 存，不按页面布局树存。
 - System Package 是声明式数据包，不能修改 Base Framework 模块代码。
+- Sheet Renderer 在第一版直接负责 Flow Layout，不单独拆 Layout Renderer。
 - 游戏值默认按字符串处理；框架只严格校验结构字段、ID、引用和路径。
 - 复杂规则检查用 JS Validation Scripts，只读输入，输出 issue list。
 
@@ -31,7 +32,7 @@ PbDH Sheet Framework 是一个无服务器 API 的静态 Web 应用。Author 上
 | 离线能力 | 已访问过网页后，可用 PWA 打开应用壳 | 不保证浏览器永不清缓存 |
 | 数据安全 | Character Data 可导出 JSON 备份 | 不做云同步 |
 | Author 体验 | 校验错误给路径、原因、建议和 AI debug | 需要维护系统包文档 |
-| Player 体验 | 本地保存、多角色、导出、打印、卡牌基础操作 | 不做多人同步和自动规则结算 |
+| Player 体验 | 本地保存、多角色、车卡指引、导出、打印、卡牌基础操作 | 不做多人同步和自动规则结算 |
 
 ## 系统上下文
 
@@ -75,13 +76,16 @@ PbDH Sheet Framework
   |     Zustand 运行时状态、actions、运行时数据流枢纽
   |
   +-- sheet-renderer
-  |     Flow Layout、模块注册表、模块组件
+  |     Flow Layout、页面结构渲染、模块注册表、模块组件
   |
   +-- dependency-engine
   |     依赖规则 -> 视图效果 / 数据补丁 / 选项效果
   |
   +-- card-engine
   |     Card Definition + Card Instance 操作
+  |
+  +-- guide-runner
+  |     车卡指引步骤、导航/高亮效果、资源选择请求
   |
   +-- validation-runner
   |     在 Web Worker 中执行 JS 检查
@@ -129,6 +133,19 @@ Sheet Module 事件
   -> 归一化 issue list
   -> 合并 issues 并补充来源信息
   -> 显示报告
+```
+
+### 运行车卡指引
+
+```text
+Player 启动车卡指引
+  -> guide-runner 读取 guide definitions、Character Data、Resource Libraries、Card State
+  -> 计算当前 Guide Step 的说明、目标和完成状态
+  -> state-store 提交导航/高亮/打开资源选择等 view effects
+  -> Player 通过 Sheet Module、Resource Library 或 Card UI 执行动作
+  -> 既有 store actions / dependency-engine / card-engine 更新 Character Data 或 Card State
+  -> guide-runner 重新评估步骤完成状态
+  -> 最终步骤触发 validation-runner
 ```
 
 ### 导出和打印
@@ -193,7 +210,7 @@ exportCharacterJson(characterId)
 
 ### Renderer 与 Module 边界
 
-Sheet Renderer 根据 Flow Layout 和 Module Registry 渲染模块。
+Sheet Renderer 根据 Flow Layout 和 Module Registry 渲染模块。第一版不单独拆 Layout Renderer；Flow Layout 仍是 Sheet Renderer 的内部职责。
 
 ```text
 renderModule({
@@ -213,6 +230,7 @@ renderModule({
 - Sheet Module 不直接调用 Dependency Engine。
 - Sheet Module 不执行跨模块写入。
 - Sheet Module 不直接运行依赖逻辑、检查脚本或存储逻辑。
+- Sheet Module 不知道自己位于哪个页面、分区、行或列；布局信息只由 Sheet Renderer 使用。
 
 ### Dependency Engine 边界
 
@@ -240,6 +258,34 @@ evaluateDependencies({
 - Dependency Engine 由 Zustand store action 调用，Sheet Module 不直接调用它。
 - 所有跨模块变化必须通过 Dependency Engine。
 - MVP 单轮计算，不做链式触发。
+
+### Guide Runner 边界
+
+Guide Runner 运行 Author 声明的 Character Creation Guide，但不实现游戏规则合法性。
+
+```text
+evaluateGuideStep({
+  guideDefinitions,
+  guideProgress,
+  characterData,
+  resourceLibraries,
+  cardState,
+  validationSummary
+})
+  -> guideViewEffects
+  -> guideActionRequests
+  -> completionState
+```
+
+约束：
+
+- Guide Runner 读取 Character Data、Resource Libraries、Card Instance State、Validation Summary 和 guide definitions。
+- Guide Runner 不读取 DOM，不执行 Author 脚本，不直接写 IndexedDB。
+- Guide Runner 输出导航、聚焦、高亮、打开资源库选择、打开卡牌区域、运行检查等请求。
+- Guide Runner 不绕过 Sheet Module、Dependency Engine 或 Card Engine 写 Character Data。
+- 指引里的自动填充必须复用 Dependency Engine 的 data patch 契约和冲突处理。
+- 简单完成条件可由 Guide Runner 判断；复杂规则合法性仍由 Validation Runner 报告。
+- Guide progress 是绑定当前 Character Save 的运行时状态，不是 Sheet Value，也不参与规则检查。
 
 ### Validation Runner 边界
 
@@ -309,6 +355,7 @@ System Package 包含：
 - 页面和 Flow Layout 声明。
 - Sheet Module 声明。
 - 依赖规则。
+- Character Creation Guide 声明。
 - Validation Script 声明。
 - 样式和模块实例 CSS 覆盖。
 - Assets。
@@ -317,9 +364,10 @@ System Package 不能：
 
 - 修改 Base Framework 模块代码。
 - 注入任意 UI 逻辑。
+- 注入车卡指引脚本或自定义 guide UI。
 - 调用外部服务。
 - 绕过框架定义的依赖动作修改 Character Data。
-- 绕过 Validator、Storage Service、Dependency Engine 或 Validation Runner。
+- 绕过 Validator、Storage Service、Dependency Engine、Guide Runner 或 Validation Runner。
 
 ## Sheet Module 边界
 
@@ -345,6 +393,19 @@ Sheet Modules 是框架提供的组件。单个模块：
 - MVP 不支持链式触发。
 
 每条规则应声明 sources 和 targets，用于校验、冲突检测和未来索引优化。
+
+## Guide Runner 边界
+
+车卡指引是集中声明的 System Package 内容。Guide Runner：
+
+- 读取 guide definitions、Guide progress、Character Data、Resource Libraries、Card Instance State 和 Validation Summary。
+- 不读取 DOM，不执行 Author 脚本，不解释完整游戏规则。
+- 输出 guide view effects 和 guide action requests。
+- 不直接执行跨模块 Character Data patch。
+- 允许触发的写入必须经过 Sheet Module action、Dependency Engine 或 Card Engine。
+- 可触发 Validation Runner 生成最终检查报告。
+
+每个 Guide Step 应声明目标页面/模块/资源库/卡牌区域和 completion 条件，用于校验、预览和 AI 辅助生成。
 
 ## Card Engine 边界
 
@@ -408,6 +469,7 @@ Validation Scripts：
 | 大资源包 | 移动端内存压力和图片解码慢 | 懒显示/懒解码、不用 base64、文字 fallback |
 | 浏览器存储清理 | package/cache 丢失 | JSON 导出备份、重新上传 package |
 | 检查脚本 bug | Worker 超时或输出格式错误 | 隔离 Worker、输出归一化、失败转 issue |
+| 车卡指引与依赖重叠 | 指引变成第二套规则引擎 | Guide Runner 只输出流程效果和动作请求，写入复用 Dependency Engine/Card Engine |
 | CSS 覆盖滥用 | 单个模块布局损坏 | 模块级 CSS 作用域、稳定 parts、Author Preview |
 | Package schema 漂移 | 旧包行为异常 | schema version warning、未来迁移 |
 
@@ -421,6 +483,7 @@ Validation Scripts：
 - Flow Layout。
 - 核心 Sheet Modules。
 - 不支持链式触发的集中式 Dependency Engine。
+- 声明式 Guide Runner。
 - 在 Web Worker 中运行 JS Validation Scripts。
 - 支持翻面、旋转和数字指示物的 Card Instance 模型。
 - IndexedDB 持久化。
@@ -430,6 +493,7 @@ Validation Scripts：
 
 - package schema 迁移器。
 - 依赖规则索引和可选链式触发。
+- 如果出现第二个实际布局 adapter（如 Overlay Layout），再评估是否从 Sheet Renderer 抽出独立布局模块。
 - 如果陌生来源包变多，升级更强脚本沙箱。
 - 更丰富的卡牌容器和指示物类型。
 - 如果包体积增长，再引入可选缩略图或打印资源。
@@ -453,3 +517,5 @@ Validation Scripts：
 - [ADR-0009：前端技术基线](adr/0009-frontend-technology-baseline.md)
 - [ADR-0010：模块实例级样式覆盖](adr/0010-module-scoped-style-overrides.md)
 - [ADR-0011：Character Data 值类型分层](adr/0011-character-data-value-types.md)
+- [ADR-0012：Sheet Renderer 负责 Flow Layout](adr/0012-sheet-renderer-owns-flow-layout.md)
+- [ADR-0013：声明式车卡指引](adr/0013-declarative-character-creation-guide.md)
