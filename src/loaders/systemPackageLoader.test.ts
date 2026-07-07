@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { strToU8, zipSync } from "fflate";
-import { minimalSystemPackage } from "../test/fixtures";
+import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures";
 import { loadSystemPackageFromUrl, loadSystemPackageFromZipFile } from "./systemPackageLoader";
 
 describe("loadSystemPackageFromUrl", () => {
@@ -13,8 +13,13 @@ describe("loadSystemPackageFromUrl", () => {
     expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/manifest.json");
     expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/pages.json");
     expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/modules.json");
+    expect(fetchImpl).not.toHaveBeenCalledWith("/system-packages/demo-minimal/assets/readme.txt");
     if (result.ok) {
-      expect(result.package).toEqual(minimalSystemPackage);
+      expect(result.package.manifest).toEqual(minimalSystemPackage.manifest);
+      expect(result.package.pages).toEqual(minimalSystemPackage.pages);
+      expect(result.package.modules).toEqual(minimalSystemPackage.modules);
+      expect(result.package.assets?.[0]).toEqual({ ID: "readme", 路径: "assets/readme.txt", 类型: "text/plain" });
+      expect(result.packageAssets).toBeUndefined();
     }
   });
 
@@ -95,6 +100,33 @@ describe("loadSystemPackageFromUrl", () => {
     if (result.ok) {
       expect(result.package.manifest.ID).toBe("demo-minimal");
       expect(result.package.pages[0].sections[0].modules).toEqual(["character-name"]);
+    }
+  });
+
+  it("loads the phase 5 module demo zip and keeps asset bytes outside System Package", async () => {
+    const result = await loadSystemPackageFromZipFile(createModuleDemoZip());
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.package.manifest.ID).toBe("demo-modules");
+      expect(result.package.modules.map((module) => module.类型)).toEqual([
+        "freeText",
+        "longText",
+        "checkboxResource",
+        "countableResource",
+        "readOnlyDisplay",
+        "readOnlyDisplay",
+        "imageField",
+      ]);
+      expect(result.package.assets?.[0]).toEqual({ ID: "demo-emblem", 路径: "assets/demo-emblem.svg", 类型: "image/svg+xml" });
+      expect(result.packageAssets?.[0]).toEqual(
+        expect.objectContaining({
+          ID: "demo-emblem",
+          路径: "assets/demo-emblem.svg",
+          类型: "image/svg+xml",
+        }),
+      );
+      expect(result.packageAssets?.[0].bytes.length).toBeGreaterThan(0);
     }
   });
 
@@ -220,6 +252,20 @@ function createPackageZip(options: { manifest?: unknown } = {}) {
   });
 }
 
+function createModuleDemoZip() {
+  return zipBlob({
+    "manifest.json": JSON.stringify({
+      ...moduleDemoSystemPackage.manifest,
+      pages: "pages.json",
+      modules: "modules.json",
+      assets: moduleDemoSystemPackage.assets,
+    }),
+    "pages.json": JSON.stringify(moduleDemoSystemPackage.pages),
+    "modules.json": JSON.stringify(moduleDemoSystemPackage.modules),
+    "assets/demo-emblem.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1 1\"></svg>",
+  });
+}
+
 function zipBlob(files: Record<string, string>) {
   const entries = Object.fromEntries(Object.entries(files).map(([path, text]) => [path, strToU8(text)]));
   return new Blob([zipSync(entries)], { type: "application/zip" });
@@ -230,11 +276,14 @@ function createPackageFetch(options: { manifest?: unknown } = {}) {
     "/system-packages/demo-minimal/manifest.json": JSON.stringify(options.manifest ?? createManifest()),
     "/system-packages/demo-minimal/pages.json": JSON.stringify(minimalSystemPackage.pages),
     "/system-packages/demo-minimal/modules.json": JSON.stringify(minimalSystemPackage.modules),
+    "/system-packages/demo-minimal/assets/readme.txt": "hello",
   };
 
   return vi.fn(async (url: string | URL | Request) => {
     const key = String(url);
     const body = files[key];
-    return body === undefined ? new Response("", { status: 404, statusText: "Not Found" }) : new Response(body, { status: 200 });
+    return body === undefined
+      ? new Response("", { status: 404, statusText: "Not Found" })
+      : new Response(body, { status: 200, headers: { "content-type": key.endsWith(".txt") ? "text/plain" : "application/json" } });
   });
 }

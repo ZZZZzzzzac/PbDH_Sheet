@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { minimalSystemPackage } from "../test/fixtures";
-import { createEmptyCharacterData, exportCharacterData, parseCharacterDataJson, updateCharacterValue } from "./characterData";
+import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures";
+import { createEmptyCharacterData, exportCharacterData, parseCharacterDataJson, updateCharacterValue, updatePlayerImage } from "./characterData";
 
 describe("Character Data import/export", () => {
   it("exports values plus System Package identity, not the full System Package", () => {
@@ -14,6 +14,7 @@ describe("Character Data import/export", () => {
     });
     expect(exported.pages).toBeUndefined();
     expect(exported.modules).toBeUndefined();
+    expect(exported.playerImages).toEqual({});
   });
 
   it("imports a previously exported Character Data JSON", () => {
@@ -33,5 +34,42 @@ describe("Character Data import/export", () => {
     if (!result.ok) {
       expect(result.error).toContain("JSON 格式错误");
     }
+  });
+
+  it("seeds default values for stateful modules on a fresh character", () => {
+    const data = createEmptyCharacterData(moduleDemoSystemPackage);
+    const exported = JSON.parse(exportCharacterData(data));
+
+    expect(exported.character.values["character-name"]).toBe("");
+    expect(exported.character.values["background"]).toBe("写下角色的来历。");
+    expect(exported.character.values["conditions"]).toEqual({
+      wounded: false,
+      exhausted: false,
+      inspired: true,
+    });
+    expect(exported.character.values["vitality"]).toEqual({ current: 3, max: 6 });
+    expect(exported.character.values["rule-note"]).toBeUndefined();
+    expect(exported.character.values["sect-emblem"]).toBeUndefined();
+    expect(exported.character.values["portrait"]).toBeUndefined();
+  });
+
+  it("stores player image fields as value references plus portable player image data", () => {
+    const data = updatePlayerImage(createEmptyCharacterData(moduleDemoSystemPackage), "portrait", {
+      id: "portrait-test",
+      name: "portrait.png",
+      mimeType: "image/png",
+      dataUrl: "data:image/png;base64,AA==",
+    });
+    const exported = JSON.parse(exportCharacterData(data));
+    const result = parseCharacterDataJson(exportCharacterData(data), moduleDemoSystemPackage);
+
+    expect(exported.character.values.portrait).toEqual({ kind: "player-image", imageId: "portrait-test" });
+    expect(exported.playerImages["portrait-test"]).toEqual({
+      id: "portrait-test",
+      name: "portrait.png",
+      mimeType: "image/png",
+      dataUrl: "data:image/png;base64,AA==",
+    });
+    expect(result.ok).toBe(true);
   });
 });

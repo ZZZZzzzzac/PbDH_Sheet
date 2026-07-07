@@ -1,9 +1,13 @@
 import { z } from "zod";
 import { validateSystemPackage, type PackageValidationResult } from "../domain/systemPackage";
+import type { RuntimePackageAsset } from "./assetResolver";
 import { createVirtualFileSystemFromZipFile, normalizePackagePath, type PackageVirtualFileSystem } from "./packageVfs";
 
 export const demoSystemPackageUrl = "/system-packages/demo-minimal";
 export const packageManifestPath = "manifest.json";
+export type LoadedPackageAsset = RuntimePackageAsset;
+
+export type PackageLoadResult = PackageValidationResult & { packageAssets?: LoadedPackageAsset[] };
 
 const packageManifestSchema = z.object({
   ID: z.string().min(1),
@@ -26,7 +30,7 @@ const packageManifestSchema = z.object({
 export async function loadSystemPackageFromUrl(
   baseUrl: string = demoSystemPackageUrl,
   fetchImpl: typeof fetch = fetch,
-): Promise<PackageValidationResult> {
+): Promise<PackageLoadResult> {
   const manifest = await fetchPackageJson(`${baseUrl.replace(/\/$/, "")}/${packageManifestPath}`, packageManifestPath, fetchImpl);
   if (!manifest.ok) {
     if (manifest.issue.code === "PACKAGE_FETCH_FAILED") {
@@ -71,7 +75,7 @@ export async function loadSystemPackageFromUrl(
   return normalizeManifestPackage(parsedManifest.data, pages.value, modules.value);
 }
 
-export async function loadSystemPackageFromZipFile(file: Blob): Promise<PackageValidationResult> {
+export async function loadSystemPackageFromZipFile(file: Blob): Promise<PackageLoadResult> {
   const vfsResult = await createVirtualFileSystemFromZipFile(file);
   if (!vfsResult.ok) {
     return { ok: false, issues: vfsResult.issues };
@@ -80,7 +84,7 @@ export async function loadSystemPackageFromZipFile(file: Blob): Promise<PackageV
   return loadSystemPackageFromVfs(vfsResult.vfs);
 }
 
-export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): PackageValidationResult {
+export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): PackageLoadResult {
   const manifestText = vfs.readText(packageManifestPath);
   if (!manifestText.ok) {
     if (manifestText.issue.code === "PACKAGE_FILE_MISSING") {
@@ -128,7 +132,15 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
     return { ok: false, issues: [modulesJson.issue] };
   }
 
-  return normalizeManifestPackage(manifest.data, pagesJson.value, modulesJson.value);
+  const normalized = normalizeManifestPackage(manifest.data, pagesJson.value, modulesJson.value);
+  if (!normalized.ok) {
+    return normalized;
+  }
+
+  return {
+    ...normalized,
+    packageAssets: resolvePackageAssets(manifest.data.assets ?? [], vfs),
+  };
 }
 
 function normalizeManifestPackage(manifest: z.infer<typeof packageManifestSchema>, pages: unknown, modules: unknown): PackageValidationResult {
@@ -208,4 +220,44 @@ async function fetchPackageJson(url: string, path: string, fetchImpl: typeof fet
       },
     };
   }
+}
+
+function resolvePackageAssets(assets: NonNullable<z.infer<typeof packageManifestSchema>["assets"]>, vfs: PackageVirtualFileSystem): LoadedPackageAsset[] {
+  const resolvedAssets: LoadedPackageAsset[] = [];
+
+  for (const asset of assets) {
+    const read = vfs.readBytes(asset.路径);
+    if (!read.ok) {
+      continue;
+    }
+
+    resolvedAssets.push({
+      ID: asset.ID,
+      路径: read.path,
+      类型: asset.类型 ?? inferMimeType(read.path),
+      bytes: read.value,
+    });
+  }
+
+  return resolvedAssets;
+}
+
+function inferMimeType(path: string): string {
+  const lowerPath = path.toLowerCase();
+  if (lowerPath.endsWith(".png")) {
+    return "image/png";
+  }
+  if (lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg")) {
+    return "image/jpeg";
+  }
+  if (lowerPath.endsWith(".webp")) {
+    return "image/webp";
+  }
+  if (lowerPath.endsWith(".svg")) {
+    return "image/svg+xml";
+  }
+  if (lowerPath.endsWith(".txt")) {
+    return "text/plain";
+  }
+  return "application/octet-stream";
 }

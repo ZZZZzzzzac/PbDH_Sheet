@@ -1,6 +1,6 @@
 import type { SystemPackage } from "../domain/systemPackage";
 import { findModule } from "../domain/systemPackage";
-import { FreeTextModule } from "./FreeTextModule";
+import { RenderSheetModule } from "./moduleRegistry";
 
 interface SheetRendererProps {
   systemPackage: SystemPackage;
@@ -27,7 +27,7 @@ export function SheetRenderer({ systemPackage }: SheetRendererProps) {
                   if (!module) {
                     return null;
                   }
-                  return <FreeTextModule key={module.ID} module={module} />;
+                  return <RenderSheetModule key={module.ID} module={module} systemPackage={systemPackage} />;
                 })}
               </div>
             </section>

@@ -1,0 +1,23 @@
+[
+  {
+    "ID": "main",
+    "名称": "阶段5示例角色卡",
+    "sections": [
+      {
+        "ID": "identity",
+        "名称": "身份",
+        "modules": ["character-name", "portrait", "sect-emblem"]
+      },
+      {
+        "ID": "state",
+        "名称": "状态",
+        "modules": ["vitality", "conditions"]
+      },
+      {
+        "ID": "notes",
+        "名称": "记录",
+        "modules": ["background", "rule-note"]
+      }
+    ]
+  }
+]

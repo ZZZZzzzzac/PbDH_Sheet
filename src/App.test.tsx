@@ -9,10 +9,17 @@ const emptyStorage: StorageService = {
     return null;
   },
   async saveCurrentSystemPackage() {},
+  async loadCurrentPackageAssets() {
+    return [];
+  },
   async loadCurrentCharacterData() {
     return null;
   },
   async saveCurrentCharacterData() {},
+  async savePlayerImageBlob() {},
+  async loadPlayerImageBlob() {
+    return null;
+  },
 };
 
 describe("App package error state", () => {
@@ -32,6 +39,7 @@ describe("App package error state", () => {
     });
     useRuntimeStore.setState({
       currentPackage: null,
+      packageAssetUrls: {},
       characterData: null,
       packageIssues: [],
       bootStatus: "idle",

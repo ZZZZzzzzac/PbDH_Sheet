@@ -1,22 +1,23 @@
-import type { FreeTextModule } from "../domain/systemPackage";
+import type { LongTextModule as LongTextModuleConfig } from "../domain/systemPackage";
 import { useTextModuleState } from "./moduleState";
 
-interface FreeTextModuleProps {
-  module: FreeTextModule;
+interface LongTextModuleProps {
+  module: LongTextModuleConfig;
 }
 
-export function FreeTextModule({ module }: FreeTextModuleProps) {
+export function LongTextModule({ module }: LongTextModuleProps) {
   const [value, setValue] = useTextModuleState(module.ID, module.默认值 ?? "");
   const inputId = `module-${module.ID}`;
 
   return (
-    <div className="container" data-module-id={module.ID}>
+    <div className="container container-stack" data-module-id={module.ID} data-module-type={module.类型}>
       <label className="label" htmlFor={inputId}>
         {module.标签}
       </label>
-      <input
+      <textarea
         id={inputId}
-        className="input"
+        className="input textarea"
+        rows={module.行数 ?? 4}
         value={value}
         onChange={(event) => setValue(event.target.value)}
       />

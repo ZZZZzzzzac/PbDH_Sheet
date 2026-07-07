@@ -1,6 +1,13 @@
 import type { PackageIssue } from "../domain/systemPackage";
 import type { PackageVirtualFileSystem } from "./packageVfs";
 
+export interface RuntimePackageAsset {
+  ID: string;
+  路径: string;
+  类型: string;
+  bytes: Uint8Array;
+}
+
 export type AssetResolveResult =
   | {
       ok: true;
@@ -40,6 +47,41 @@ export function createAssetResolver(vfs: PackageVirtualFileSystem): AssetResolve
       };
     },
 
+    revokeAll() {
+      if (typeof URL === "undefined" || typeof URL.revokeObjectURL !== "function") {
+        objectUrls.clear();
+        return;
+      }
+
+      for (const objectUrl of objectUrls) {
+        URL.revokeObjectURL(objectUrl);
+      }
+      objectUrls.clear();
+    },
+  };
+}
+
+export interface RuntimeAssetResolver {
+  urls: Record<string, string>;
+  revokeAll: () => void;
+}
+
+export function createRuntimeAssetResolver(assets: RuntimePackageAsset[]): RuntimeAssetResolver {
+  const objectUrls = new Set<string>();
+  const urls: Record<string, string> = {};
+
+  for (const asset of assets) {
+    const objectUrl = createObjectUrl(asset.bytes, asset.类型);
+    if (!objectUrl) {
+      continue;
+    }
+
+    objectUrls.add(objectUrl);
+    urls[asset.ID] = objectUrl;
+  }
+
+  return {
+    urls,
     revokeAll() {
       if (typeof URL === "undefined" || typeof URL.revokeObjectURL !== "function") {
         objectUrls.clear();

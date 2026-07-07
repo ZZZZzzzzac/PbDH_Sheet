@@ -9,13 +9,19 @@ function createMemoryStorage(cachedPackage: typeof minimalSystemPackage | null =
 } {
   let savedData: Awaited<ReturnType<StorageService["loadCurrentCharacterData"]>> = null;
   let savedPackage = cachedPackage;
+  let savedPackageAssets: Awaited<ReturnType<StorageService["loadCurrentPackageAssets"]>> = [];
+  const playerImages = new Map<string, Awaited<ReturnType<StorageService["loadPlayerImageBlob"]>>>();
 
   return {
     async loadCurrentSystemPackage() {
       return savedPackage;
     },
-    async saveCurrentSystemPackage(systemPackage) {
+    async saveCurrentSystemPackage(systemPackage, packageAssets = []) {
       savedPackage = systemPackage;
+      savedPackageAssets = packageAssets;
+    },
+    async loadCurrentPackageAssets(packageId) {
+      return savedPackage?.manifest.ID === packageId ? savedPackageAssets : [];
     },
     async loadCurrentCharacterData(packageId) {
       if (savedData?.systemPackage.id !== packageId) {
@@ -25,6 +31,12 @@ function createMemoryStorage(cachedPackage: typeof minimalSystemPackage | null =
     },
     async saveCurrentCharacterData(data) {
       savedData = data;
+    },
+    async savePlayerImageBlob(image) {
+      playerImages.set(image.id, image);
+    },
+    async loadPlayerImageBlob(imageId) {
+      return playerImages.get(imageId) ?? null;
     },
     getCachedPackage() {
       return savedPackage;
@@ -43,6 +55,7 @@ describe("runtime store", () => {
     });
     useRuntimeStore.setState({
       currentPackage: null,
+      packageAssetUrls: {},
       characterData: null,
       packageIssues: [],
       bootStatus: "idle",
@@ -107,6 +120,7 @@ describe("runtime store", () => {
 
     useRuntimeStore.setState({
       currentPackage: null,
+      packageAssetUrls: {},
       characterData: null,
       packageIssues: [],
       bootStatus: "idle",

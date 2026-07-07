@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" role="img" aria-labelledby="title desc">
+  <title id="title">阶段5示例徽记</title>
+  <desc id="desc">青绿色圆形徽记和白色折线标记。</desc>
+  <rect width="320" height="200" fill="#eef1f2"/>
+  <circle cx="160" cy="100" r="68" fill="#31565e"/>
+  <path d="M104 103h35l17-33 30 66 19-33h31" fill="none" stroke="#f8faf9" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="160" cy="100" r="82" fill="none" stroke="#d3a733" stroke-width="8"/>
+</svg>

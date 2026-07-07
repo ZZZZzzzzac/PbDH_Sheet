@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 test("minimal loop edits, autosaves, exports and imports Character JSON", async ({ page }, testInfo) => {
@@ -84,6 +84,64 @@ test("uploads a minimal System Package zip and keeps the Character JSON loop", a
   await expect(page.getByLabel("姓名")).toHaveValue("Zip阿青");
 });
 
+test("uploads the phase 5 module demo package and persists simple module state", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await uploadPackage(page, moduleDemoPackagePath());
+
+  await expect(page.getByText("demo-modules")).toBeVisible();
+  await expect(page.getByAltText("阶段5示例徽记")).toBeVisible();
+  await expect(page.getByRole("img", { name: "角色头像" })).toContainText("图片不可用");
+
+  const avatarPath = path.join(testInfo.outputDir, "avatar.png");
+  await mkdir(testInfo.outputDir, { recursive: true });
+  await writeFile(avatarPath, Buffer.from(tinyPngBase64, "base64"));
+  const imageChooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "上传图片" }).click();
+  const imageChooser = await imageChooserPromise;
+  await imageChooser.setFiles(avatarPath);
+  await expect(page.getByAltText("角色头像")).toBeVisible();
+
+  await page.getByLabel("姓名").fill("陆青");
+  await page.getByLabel("背景").fill("第一行\n第二行");
+  await page.getByLabel("受伤").check();
+  await page.getByRole("button", { name: "气力增加" }).click();
+  await page.getByRole("button", { name: "气力增加" }).click();
+  await expect(page.getByRole("textbox", { name: "气力", exact: true })).toHaveValue("5");
+  await expect(page.getByText("已保存")).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText("demo-modules")).toBeVisible();
+  await expect(page.getByLabel("姓名")).toHaveValue("陆青");
+  await expect(page.getByLabel("背景")).toHaveValue("第一行\n第二行");
+  await expect(page.getByLabel("受伤")).toBeChecked();
+  await expect(page.getByRole("textbox", { name: "气力", exact: true })).toHaveValue("5");
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "导出 Character JSON" }).click();
+  const download = await downloadPromise;
+  const exportPath = path.join(testInfo.outputDir, "module-character.json");
+  await download.saveAs(exportPath);
+
+  const exported = JSON.parse(await readFile(exportPath, "utf8"));
+  expect(exported.character.values.background).toBe("第一行\n第二行");
+  expect(exported.character.values.conditions).toMatchObject({ wounded: true, inspired: true });
+  expect(exported.character.values.vitality).toEqual({ current: 5, max: 6 });
+  expect(exported.character.values["rule-note"]).toBeUndefined();
+  expect(exported.character.values["sect-emblem"]).toBeUndefined();
+  expect(exported.character.values.portrait).toMatchObject({ kind: "player-image" });
+  expect(exported.playerImages[exported.character.values.portrait.imageId].dataUrl).toMatch(/^data:image\/png;base64,/);
+
+  await page.getByLabel("姓名").fill("改坏");
+  const characterChooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "导入 Character JSON" }).click();
+  const characterChooser = await characterChooserPromise;
+  await characterChooser.setFiles(exportPath);
+
+  await expect(page.getByLabel("姓名")).toHaveValue("陆青");
+  await expect(page.getByLabel("背景")).toHaveValue("第一行\n第二行");
+  await expect(page.getByAltText("角色头像")).toBeVisible();
+});
+
 const errorFixtures = [
   ["corrupt.zip", "ZIP_READ_FAILED"],
   ["missing-manifest.zip", "MANIFEST_MISSING"],
@@ -125,6 +183,13 @@ function demoPackagePath() {
   return path.join(process.cwd(), "public", "system-packages", "demo-minimal.zip");
 }
 
+function moduleDemoPackagePath() {
+  return path.join(process.cwd(), "public", "system-packages", "demo-modules.zip");
+}
+
 function errorFixturePath(fileName: string) {
   return path.join(process.cwd(), "public", "system-packages", "error-fixtures", fileName);
 }
+
+const tinyPngBase64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=";

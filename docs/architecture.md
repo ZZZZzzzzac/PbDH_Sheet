@@ -452,3 +452,4 @@ Validation Scripts：
 - [ADR-0008：Zustand 状态管理](adr/0008-zustand-state-management.md)
 - [ADR-0009：前端技术基线](adr/0009-frontend-technology-baseline.md)
 - [ADR-0010：模块实例级样式覆盖](adr/0010-module-scoped-style-overrides.md)
+- [ADR-0011：Character Data 值类型分层](adr/0011-character-data-value-types.md)
