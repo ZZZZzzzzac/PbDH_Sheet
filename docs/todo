@@ -1,23 +1,174 @@
-开始 [$grill-with-docs](C:\\Users\\zinge\\.agents\\skills\\grill-with-docs\\SKILL.md) 来建立本仓库的需求/框架/PRD
+## 最小可运行框架搭建路线
 
-在本仓库我打算做一个比较通用的powered by daggerheart规则的角色卡系统. 或者说做一个基础框架, 让不同的pbdh系统作者再这个框架上很容易的搭建他们自己的车卡器
-像这样的桌游/TRPG系统, 通常都是以线下实际纸笔游戏为起点设计, 线上工具其实是一种对线下纸笔的模拟. 也就是说其实不管什么样的规则, 角色卡上的功能无非是: 
-1. 自由输入的文本框(如姓名) 
-2. 可加减的资源(如生命值: 6/6, 有当前值和上限) 
-3. 存在依赖关系的文本(如选择职业A, 才能选择特长B) 
-4. 从一系列备选文本中选择一个(同样也有3的依赖关系)
-5. 绝大部分内容都是纯文本, 可以格式化成json等形式. 少部分功能会用到图片
+原则：先做 vertical slice，不按模块横向铺开。先让“一条完整链路跑通”，哪怕只支持一个自由文本模块。
 
+### 目标 0：最小闭环
 
-而一些功能是不分规则都通用的:
-1. 导入导出
-2. 打印
-3. 上传头像/立绘
-4. 冒险笔记/人物背景
+```text
+打开网页
+  -> 上传或加载最小 System Package
+  -> 渲染一个字段
+  -> 编辑
+  -> 自动保存
+  -> 导出 Character JSON
+```
 
-但很多东西会随着规则的改变和变化:
-1. 不同规则的资源不同, 依赖关系不同
-2. 可能有不同的美术风格和页面布局
-3. 某些规则可能有超出底层框架预设的特殊需求(比如某种规则复杂的资源)
+验收：能从一个最小 System Package 生成一个可编辑的 Sheet Tool，并能导出当前 Character Data。
 
-并且我想让并非程序员的其他pbdh作者能够用这个基础框架搭出他们满意的车卡器, 能够自由调整布局, 颜色, 样式. 也能自由的上传自己规则里的各种资源(职业/特长等等), 并给定依赖关系. 之前可能不得不做成类似一种低代码平台的感觉, 现在有AI我在想是不是可以由基础框架确定好各种接口/文档/可调整的样式等, 然后让ai帮助规则作者把他的意图和资源本文做成类似模板/插件的形式, 加入基础框架里, 形成最后一个合适的车卡器.
+### 阶段 1：项目骨架
+
+实现：
+
+- Vite + React + TypeScript。
+- Zustand。
+- Dexie / IndexedDB 封装。
+- Vitest。
+- Playwright。
+- 基础目录结构。
+
+验收：
+
+- `npm run build` 通过。
+- 单元测试能跑。
+- Playwright 能打开首页。
+
+### 阶段 2：最小 System Package
+
+实现：
+
+- 先不做 zip。
+- 用内置 demo package 或上传单个 JSON。
+- 只支持 manifest、1 个 page、1 个 section、1 个自由文本模块。
+
+验收：
+
+- 能渲染 `姓名: [输入框]`。
+- 结构错误能显示 error。
+
+### 阶段 3：Character Data 和保存
+
+实现：
+
+- `updateModuleValue(moduleId, value)`。
+- Zustand store。
+- IndexedDB autosave。
+- Character JSON export/import。
+
+验收：
+
+- 刷新页面后字段值还在。
+- 导出 JSON 再导入能恢复。
+
+### 阶段 4：真正 package-loader
+
+实现：
+
+- zip 上传。
+- manifest 入口。
+- Virtual File System。
+- asset resolver 雏形。
+
+仍然只支持自由文本模块。
+
+验收：
+
+- 上传 zip 后能渲染同一个 `姓名` 字段。
+- 错误 zip / 缺 manifest 能报 fatal。
+
+### 阶段 5：模块注册表
+
+按顺序补模块，不一次做完：
+
+- 自由文本。
+- 长文本。
+- 勾选资源。
+- 可加减资源。
+- 选择文本。
+- 只读展示。
+- 图片字段。
+
+每个模块都要有：
+
+- schema。
+- renderer。
+- state adapter。
+- 测试。
+- demo package 示例。
+
+### 阶段 6：Dependency Engine
+
+先做最有价值的三类：
+
+- 选择文本 A -> 过滤选择文本 B。
+- 选择文本 A -> 显示/隐藏只读展示或页面。
+- 选择文本 A -> 自动填充自由文本。
+
+暂不做复杂 AND/OR 全能力，不做链式触发。
+
+验收：
+
+- 职业=德鲁伊 -> 子职业只剩德鲁伊选项。
+- 职业=德鲁伊 -> 显示变身说明页。
+- 选择武器 -> 自动填入伤害文本。
+
+### 阶段 7：Validation Scripts
+
+实现：
+
+- 多个 JS checks。
+- Web Worker runner。
+- 输入副本。
+- 输出 `issues[]`。
+- 手动检查按钮。
+- 导出前提示。
+
+验收：
+
+- 脚本返回 error/warning/info。
+- 脚本报错会转成 error issue。
+- 脚本不能改真实 Character Data。
+
+### 阶段 8：Card Engine
+
+分两步：
+
+- 8A：Card Definition -> Card Instance -> 显示/移动/排序/删除。
+- 8B：翻面、横置/竖置、指示物数字。
+
+验收：
+
+- 同一 definition 可创建多个 instance。
+- 刷新后实例状态保留。
+- 移动端不用拖拽也能操作。
+
+### 阶段 9：导出和打印
+
+实现：
+
+- Print Mode。
+- HTML 只读快照。
+- 等待当前显示图片。
+- 浏览器打印。
+
+验收：
+
+- 导出前运行检查。
+- HTML 快照不依赖编辑态。
+- 打印隐藏编辑按钮。
+
+### 暂时不要先做
+
+- 目录包导入。
+- PWA。
+- 模块级 CSS 覆盖。
+- 复杂依赖链。
+- 完整卡牌编辑器。
+- 漂亮 UI。
+- 所有模块一次性做齐。
+
+### 建议首个开发 issue
+
+```text
+实现最小 vertical slice：
+Vite app 能加载内置 demo System Package，渲染一个自由文本 Sheet Module，编辑后写入 Zustand store，并导出 Character JSON。
+```

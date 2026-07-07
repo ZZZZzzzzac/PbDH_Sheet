@@ -1,0 +1,15 @@
+{
+  "kind": "pbdh-character-data",
+  "schemaVersion": "0.1.0",
+  "systemPackage": {
+    "id": "demo-minimal",
+    "version": "0.1.0"
+  },
+  "character": {
+    "id": "current-character",
+    "values": {
+      "character-name": "123"
+    }
+  },
+  "updatedAt": "2026-07-06T09:40:39.508Z"
+}
