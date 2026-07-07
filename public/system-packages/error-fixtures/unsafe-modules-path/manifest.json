@@ -1,0 +1,8 @@
+{
+  "ID": "bad-unsafe-modules-path",
+  "名称": "错误包：不安全路径",
+  "版本": "0.1.0",
+  "schemaVersion": "0.1.0",
+  "pages": "pages.json",
+  "modules": "../modules.json"
+}

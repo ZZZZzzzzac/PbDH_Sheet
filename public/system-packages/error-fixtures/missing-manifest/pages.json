@@ -1,0 +1,13 @@
+[
+  {
+    "ID": "main",
+    "名称": "角色卡",
+    "sections": [
+      {
+        "ID": "identity",
+        "名称": "基础信息",
+        "modules": ["character-name"]
+      }
+    ]
+  }
+]

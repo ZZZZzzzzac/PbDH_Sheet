@@ -1,0 +1,1 @@
+demo-minimal asset fixture

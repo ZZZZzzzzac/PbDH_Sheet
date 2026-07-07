@@ -1,4 +1,4 @@
-import { Download, Upload } from "lucide-react";
+import { Archive, Download, Upload } from "lucide-react";
 import { useEffect, useRef, type ChangeEvent } from "react";
 import { exportCharacterData } from "./domain/characterData";
 import type { PackageIssue } from "./domain/systemPackage";
@@ -35,7 +35,8 @@ function PackageIssuePanel({ issues }: { issues: PackageIssue[] }) {
 }
 
 export default function App() {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const characterFileInputRef = useRef<HTMLInputElement>(null);
+  const packageFileInputRef = useRef<HTMLInputElement>(null);
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
   const characterData = useRuntimeStore((state) => state.characterData);
   const bootStatus = useRuntimeStore((state) => state.bootStatus);
@@ -45,6 +46,7 @@ export default function App() {
   const importNotice = useRuntimeStore((state) => state.importNotice);
   const initialize = useRuntimeStore((state) => state.initialize);
   const importCharacterDataFromText = useRuntimeStore((state) => state.importCharacterDataFromText);
+  const uploadSystemPackageFromFile = useRuntimeStore((state) => state.uploadSystemPackageFromFile);
 
   useEffect(() => {
     void initialize();
@@ -69,6 +71,18 @@ export default function App() {
     event.target.value = "";
   };
 
+  const handlePackageFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    await uploadSystemPackageFromFile(file);
+    event.target.value = "";
+  };
+
+  const hasBlockingPackageIssues = packageIssues.some((issue) => issue.level === "fatal" || issue.level === "error");
+
   return (
     <div className="app-shell">
       <header className="top-bar">
@@ -92,7 +106,9 @@ export default function App() {
                     ? "加载中"
                     : bootStatus === "error"
                       ? "加载错误"
-                      : "就绪"}
+                      : currentPackage
+                        ? "就绪"
+                        : "未加载"}
           </span>
           <button className="icon-button" type="button" onClick={handleExport} aria-label="导出 Character JSON" disabled={!characterData}>
             <Download aria-hidden="true" size={18} />
@@ -101,19 +117,36 @@ export default function App() {
           <button
             className="icon-button"
             type="button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => characterFileInputRef.current?.click()}
             aria-label="导入 Character JSON"
             disabled={!currentPackage}
           >
             <Upload aria-hidden="true" size={18} />
             <span>导入</span>
           </button>
+          <button
+            className="icon-button"
+            type="button"
+            onClick={() => packageFileInputRef.current?.click()}
+            aria-label="导入 System Package zip"
+            disabled={bootStatus === "loading"}
+          >
+            <Archive aria-hidden="true" size={18} />
+            <span>系统包</span>
+          </button>
           <input
-            ref={fileInputRef}
+            ref={characterFileInputRef}
             className="visually-hidden"
             type="file"
             accept="application/json,.json"
             onChange={handleImportFile}
+          />
+          <input
+            ref={packageFileInputRef}
+            className="visually-hidden"
+            type="file"
+            accept=".zip,application/zip,application/x-zip-compressed"
+            onChange={handlePackageFile}
           />
         </div>
       </header>
@@ -138,7 +171,7 @@ export default function App() {
         </div>
       ) : null}
 
-      {bootStatus === "error" ? <PackageIssuePanel issues={packageIssues} /> : null}
+      {bootStatus === "error" || hasBlockingPackageIssues ? <PackageIssuePanel issues={packageIssues} /> : null}
       {currentPackage ? <SheetRenderer systemPackage={currentPackage} /> : null}
     </div>
   );

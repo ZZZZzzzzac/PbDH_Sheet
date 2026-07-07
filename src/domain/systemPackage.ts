@@ -26,10 +26,17 @@ const pageSchema = z.object({
   sections: z.array(sectionSchema).min(1),
 });
 
+const assetSchema = z.object({
+  ID: z.string().min(1),
+  路径: z.string().min(1),
+  类型: z.string().optional(),
+});
+
 const systemPackageSchema = z.object({
   manifest: manifestSchema,
   pages: z.array(pageSchema).min(1),
   modules: z.array(freeTextModuleSchema).min(1),
+  assets: z.array(assetSchema).optional(),
 });
 
 export type SystemPackage = z.infer<typeof systemPackageSchema>;

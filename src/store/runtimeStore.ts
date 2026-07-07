@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { createEmptyCharacterData, parseCharacterDataJson, updateCharacterValue, type CharacterData } from "../domain/characterData";
 import type { PackageIssue, PackageValidationResult, SystemPackage } from "../domain/systemPackage";
-import { loadSystemPackageFromUrl } from "../loaders/systemPackageLoader";
+import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 import { storageService, type StorageService } from "../storage/storageService";
 
 export const autosaveDelayMs = 250;
@@ -18,6 +18,7 @@ interface RuntimeState {
   importError: string | null;
   importNotice: string | null;
   initialize: () => Promise<void>;
+  uploadSystemPackageFromFile: (file: Blob) => Promise<void>;
   updateModuleValue: (moduleId: string, value: string) => void;
   importCharacterDataFromText: (text: string) => Promise<void>;
   clearImportMessage: () => void;
@@ -26,16 +27,42 @@ interface RuntimeState {
 let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
 
 interface RuntimeDependencies {
-  loadSystemPackage: () => Promise<PackageValidationResult>;
+  loadSystemPackageFromFile: (file: Blob) => Promise<PackageValidationResult>;
   storage: StorageService;
 }
 
 const defaultRuntimeDependencies: RuntimeDependencies = {
-  loadSystemPackage: () => loadSystemPackageFromUrl(),
+  loadSystemPackageFromFile: (file) => loadSystemPackageFromZipFile(file),
   storage: storageService,
 };
 
 let runtimeDependencies = defaultRuntimeDependencies;
+
+async function loadPackageIntoState(
+  systemPackage: SystemPackage,
+  issues: PackageIssue[],
+  set: (partial: Partial<RuntimeState>) => void,
+  storageStatus: StorageStatus = "idle",
+) {
+  try {
+    const saved = await runtimeDependencies.storage.loadCurrentCharacterData(systemPackage.manifest.ID);
+    set({
+      currentPackage: systemPackage,
+      characterData: saved ?? createEmptyCharacterData(systemPackage),
+      packageIssues: issues,
+      bootStatus: "ready",
+      storageStatus,
+    });
+  } catch {
+    set({
+      currentPackage: systemPackage,
+      characterData: createEmptyCharacterData(systemPackage),
+      packageIssues: issues,
+      bootStatus: "ready",
+      storageStatus: "error",
+    });
+  }
+}
 
 function scheduleAutosave(
   readSnapshot: () => CharacterData | null,
@@ -70,36 +97,53 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   importNotice: null,
 
   async initialize() {
-    set({ bootStatus: "loading" });
-    const validation = await runtimeDependencies.loadSystemPackage();
+    set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null });
 
-    if (!validation.ok) {
+    try {
+      const cachedPackage = await runtimeDependencies.storage.loadCurrentSystemPackage();
+      if (!cachedPackage) {
+        set({
+          currentPackage: null,
+          characterData: null,
+          packageIssues: [],
+          bootStatus: "ready",
+          storageStatus: "idle",
+        });
+        return;
+      }
+
+      await loadPackageIntoState(cachedPackage, [], set);
+    } catch {
       set({
         currentPackage: null,
         characterData: null,
-        bootStatus: "error",
-        packageIssues: validation.issues,
-      });
-      return;
-    }
-
-    try {
-      const saved = await runtimeDependencies.storage.loadCurrentCharacterData(validation.package.manifest.ID);
-      set({
-        currentPackage: validation.package,
-        characterData: saved ?? createEmptyCharacterData(validation.package),
-        packageIssues: validation.issues,
-        bootStatus: "ready",
-      });
-    } catch {
-      set({
-        currentPackage: validation.package,
-        characterData: createEmptyCharacterData(validation.package),
-        packageIssues: validation.issues,
+        packageIssues: [],
         bootStatus: "ready",
         storageStatus: "error",
       });
     }
+  },
+
+  async uploadSystemPackageFromFile(file) {
+    set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null });
+    const validation = await runtimeDependencies.loadSystemPackageFromFile(file);
+
+    if (!validation.ok) {
+      set((state) => ({
+        bootStatus: state.currentPackage ? "ready" : "error",
+        packageIssues: validation.issues,
+      }));
+      return;
+    }
+
+    let packageCacheStatus: StorageStatus = "idle";
+    try {
+      await runtimeDependencies.storage.saveCurrentSystemPackage(validation.package);
+    } catch {
+      packageCacheStatus = "error";
+    }
+
+    await loadPackageIntoState(validation.package, validation.issues, set, packageCacheStatus);
   },
 
   updateModuleValue(moduleId, value) {

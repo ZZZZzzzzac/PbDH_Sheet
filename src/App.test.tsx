@@ -1,10 +1,14 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import App from "./App";
 import type { StorageService } from "./storage/storageService";
 import { configureRuntimeDependencies, resetRuntimeDependencies, useRuntimeStore } from "./store/runtimeStore";
 
 const emptyStorage: StorageService = {
+  async loadCurrentSystemPackage() {
+    return null;
+  },
+  async saveCurrentSystemPackage() {},
   async loadCurrentCharacterData() {
     return null;
   },
@@ -14,7 +18,7 @@ const emptyStorage: StorageService = {
 describe("App package error state", () => {
   beforeEach(async () => {
     configureRuntimeDependencies({
-      loadSystemPackage: async () => ({
+      loadSystemPackageFromFile: async () => ({
         ok: false,
         issues: [
           {
@@ -43,6 +47,10 @@ describe("App package error state", () => {
 
   it("shows package issues instead of rendering a broken Sheet Tool", async () => {
     render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
 
     expect(await screen.findByRole("alert", { name: "System Package error" })).toHaveTextContent("PACKAGE_SHAPE_INVALID");
     expect(screen.queryByLabelText("Sheet Tool")).not.toBeInTheDocument();

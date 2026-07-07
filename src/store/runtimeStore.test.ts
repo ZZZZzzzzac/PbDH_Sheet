@@ -4,10 +4,19 @@ import type { StorageService } from "../storage/storageService";
 import { minimalSystemPackage } from "../test/fixtures";
 import { configureRuntimeDependencies, resetRuntimeDependencies, useRuntimeStore } from "./runtimeStore";
 
-function createMemoryStorage(): StorageService {
+function createMemoryStorage(cachedPackage: typeof minimalSystemPackage | null = null): StorageService & {
+  getCachedPackage: () => typeof minimalSystemPackage | null;
+} {
   let savedData: Awaited<ReturnType<StorageService["loadCurrentCharacterData"]>> = null;
+  let savedPackage = cachedPackage;
 
   return {
+    async loadCurrentSystemPackage() {
+      return savedPackage;
+    },
+    async saveCurrentSystemPackage(systemPackage) {
+      savedPackage = systemPackage;
+    },
     async loadCurrentCharacterData(packageId) {
       if (savedData?.systemPackage.id !== packageId) {
         return null;
@@ -17,14 +26,20 @@ function createMemoryStorage(): StorageService {
     async saveCurrentCharacterData(data) {
       savedData = data;
     },
+    getCachedPackage() {
+      return savedPackage;
+    },
   };
 }
 
 describe("runtime store", () => {
+  let memoryStorage: ReturnType<typeof createMemoryStorage>;
+
   beforeEach(async () => {
+    memoryStorage = createMemoryStorage();
     configureRuntimeDependencies({
-      loadSystemPackage: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
-      storage: createMemoryStorage(),
+      loadSystemPackageFromFile: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
+      storage: memoryStorage,
     });
     useRuntimeStore.setState({
       currentPackage: null,
@@ -43,8 +58,18 @@ describe("runtime store", () => {
     vi.restoreAllMocks();
   });
 
+  it("starts without a default System Package", () => {
+    expect(useRuntimeStore.getState().bootStatus).toBe("ready");
+    expect(useRuntimeStore.getState().currentPackage).toBeNull();
+    expect(useRuntimeStore.getState().characterData).toBeNull();
+  });
+
   it("updates Character Data through updateModuleValue and autosaves", async () => {
     renderHook(() => useRuntimeStore());
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
 
     act(() => {
       useRuntimeStore.getState().updateModuleValue("character-name", "阿青");
@@ -60,8 +85,37 @@ describe("runtime store", () => {
     const characterData = useRuntimeStore.getState().characterData;
     expect(characterData).not.toBeNull();
     useRuntimeStore.setState({ characterData: characterData ? { ...characterData, character: { id: "current-character", values: {} } } : null });
-    await useRuntimeStore.getState().initialize();
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
 
     expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("阿青");
+  });
+
+  it("loads an uploaded System Package without exposing zip details to runtime state", async () => {
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+
+    expect(useRuntimeStore.getState().currentPackage?.manifest.ID).toBe("demo-minimal");
+    expect(useRuntimeStore.getState().bootStatus).toBe("ready");
+    expect(memoryStorage.getCachedPackage()?.manifest.ID).toBe("demo-minimal");
+  });
+
+  it("restores cached System Package on initialize", async () => {
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+
+    useRuntimeStore.setState({
+      currentPackage: null,
+      characterData: null,
+      packageIssues: [],
+      bootStatus: "idle",
+      storageStatus: "idle",
+    });
+
+    await useRuntimeStore.getState().initialize();
+
+    expect(useRuntimeStore.getState().currentPackage?.manifest.ID).toBe("demo-minimal");
+    expect(useRuntimeStore.getState().characterData?.systemPackage.id).toBe("demo-minimal");
   });
 });
