@@ -1,0 +1,38 @@
+{
+  "ID": "demo-selection",
+  "名称": "资源库选择示例系统包",
+  "版本": "0.1.0",
+  "schemaVersion": "0.1.0",
+  "pages": "pages.json",
+  "modules": "modules.json",
+  "dependencies": "dependencies.json",
+  "resourceLibraries": [
+    {
+      "ID": "classes",
+      "名称": "职业",
+      "路径": "resources/classes.json"
+    },
+    {
+      "ID": "subclasses",
+      "名称": "子职",
+      "路径": "resources/subclasses.json"
+    },
+    {
+      "ID": "domain-cards",
+      "名称": "领域卡",
+      "路径": "resources/domain_cards.json"
+    }
+  ],
+  "assets": [
+    {
+      "ID": "flame-card",
+      "路径": "assets/flame-card.svg",
+      "类型": "image/svg+xml"
+    },
+    {
+      "ID": "shadow-card",
+      "路径": "assets/shadow-card.svg",
+      "类型": "image/svg+xml"
+    }
+  ]
+}

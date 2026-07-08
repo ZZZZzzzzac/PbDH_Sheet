@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createEmptyCharacterData } from "../domain/characterData";
 import type { SystemPackage } from "../domain/systemPackage";
 import { moduleDemoSystemPackage } from "../test/fixtures";
@@ -56,6 +56,10 @@ describe("Module Registry rendering", () => {
     expect(result.container.querySelector("style")?.textContent).toContain('[data-template-page-id="main"] .identity');
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("updates editable module state by module ID and leaves read-only display unstored", () => {
     renderModuleDemo();
 
@@ -105,4 +109,139 @@ describe("Module Registry rendering", () => {
     const values = useRuntimeStore.getState().characterData?.character.values;
     expect(values?.vitality).toEqual({ current: 7, max: 10 });
   });
+
+  it("opens Resource Picker browser and fills target text modules without storing a selection value", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    renderModuleDemo(createResourcePickerPackage());
+
+    fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
+    const dialog = screen.getByRole("dialog", { name: "领域资源库" });
+    expect(dialog).toBeVisible();
+    expect(dialog.querySelector(".resource-table-col-compact")).not.toBeNull();
+    expect(dialog.querySelector(".resource-table-col-fill")).not.toBeNull();
+    expect(screen.queryByRole("columnheader", { name: "ID" })).not.toBeInTheDocument();
+    expect(screen.queryByText("assets/cards/flame.png")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("选择 烈焰"));
+
+    const values = useRuntimeStore.getState().characterData?.character.values;
+    expect(values?.["domain-name"]).toBe("烈焰");
+    expect(values?.["domain-level"]).toBe("1");
+    expect(values?.["domain-choice"]).toBeUndefined();
+    expect(JSON.stringify(values)).not.toContain("resource-selection");
+    expect(JSON.stringify(values)).not.toContain("data:image");
+    expect(screen.getByLabelText("领域名")).toHaveValue("烈焰");
+    expect(logSpy).toHaveBeenCalledWith(
+      "resourceSelected",
+      expect.objectContaining({
+        moduleId: "domain-picker",
+        libraryId: "domains",
+        selectedItemIds: ["flame-1"],
+      }),
+    );
+  });
+
+  it("supports Resource Picker multi-select and default Resource Library filters", () => {
+    renderModuleDemo(createResourcePickerPackage({ multiSelect: true, defaultFilters: { 领域: ["骸骨"] } }));
+
+    fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
+
+    expect(screen.queryByLabelText("选择 烈焰")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("选择 幽影")).toBeVisible();
+    fireEvent.click(screen.getByLabelText("骸骨"));
+    fireEvent.click(screen.getByLabelText("选择 烈焰"));
+    fireEvent.click(screen.getByLabelText("选择 幽影"));
+    fireEvent.click(screen.getByRole("button", { name: "确认选择" }));
+
+    const values = useRuntimeStore.getState().characterData?.character.values;
+    expect(values?.["domain-name"]).toBe("烈焰、幽影");
+    expect(screen.getByLabelText("领域名")).toHaveValue("烈焰、幽影");
+  });
 });
+
+function createResourcePickerPackage(options: { multiSelect?: boolean; defaultFilters?: Record<string, string[]> } = {}): SystemPackage {
+  return {
+    ...moduleDemoSystemPackage,
+    resourceLibraries: [
+      {
+        ID: "domains",
+        名称: "领域",
+        路径: "resources/domains.json",
+        fields: [
+          { key: "ID", label: "ID", visible: true, filterable: true, sortable: true },
+          { key: "名称", label: "名称", visible: true, filterable: true, sortable: true },
+          { key: "领域", label: "领域", visible: true, filterable: true, sortable: true },
+          { key: "等级", label: "等级", visible: true, filterable: true, sortable: true },
+          { key: "卡图", label: "卡图", visible: true, filterable: false, sortable: false },
+        ],
+        entries: [
+          {
+            ID: "flame-1",
+            fields: {
+              ID: "flame-1",
+              名称: "烈焰",
+              领域: "利刃",
+              等级: "1",
+              卡图: "assets/cards/flame.png",
+            },
+          },
+          {
+            ID: "shadow-1",
+            fields: {
+              ID: "shadow-1",
+              名称: "幽影",
+              领域: "骸骨",
+              等级: "1",
+              卡图: "assets/cards/shadow.png",
+            },
+          },
+        ],
+      },
+    ],
+    modules: [
+      ...moduleDemoSystemPackage.modules,
+      {
+        ID: "domain-picker",
+        类型: "resourcePicker",
+        按钮文本: "选择领域",
+        资源库ID: "domains",
+        字段模板: [
+          { 键: "名称", 标签: "卡名", 默认显示: true, 可筛选: false, 可排序: true, 列宽: "fill" },
+          { 键: "领域", 标签: "领域", 默认显示: true, 可筛选: true, 可排序: true, 列宽: "compact" },
+          { 键: "等级", 标签: "等级", 默认显示: true, 可筛选: true, 可排序: true, 列宽: "compact" },
+        ],
+        多选: options.multiSelect,
+        默认查询: options.defaultFilters ? { filters: options.defaultFilters } : undefined,
+      },
+      {
+        ID: "domain-name",
+        类型: "freeText",
+        标签: "领域名",
+      },
+      {
+        ID: "domain-level",
+        类型: "freeText",
+        标签: "等级",
+      },
+    ],
+    dependencies: [
+      {
+        ID: "fill-domain",
+        触发: { 类型: "resourceSelected", 来源模块ID: "domain-picker" },
+        动作: [
+          { 类型: "fillText", 目标模块ID: "domain-name", 资源字段: "名称", 分隔符: "、" },
+          { 类型: "fillText", 目标模块ID: "domain-level", 资源字段: "等级", 分隔符: "、" },
+        ],
+      },
+    ],
+    pages: [
+      {
+        ...moduleDemoSystemPackage.pages[0],
+        layout: {
+          ...moduleDemoSystemPackage.pages[0].layout,
+          htmlContent: `${moduleDemoSystemPackage.pages[0].layout.htmlContent}<pb-module id="domain-picker"></pb-module><pb-module id="domain-name"></pb-module><pb-module id="domain-level"></pb-module>`,
+        },
+      },
+    ],
+  };
+}

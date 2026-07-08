@@ -65,10 +65,10 @@ function renderTemplateNode(systemPackage: SystemPackage, node: ChildNode, key: 
     return null;
   }
 
-  const props = templateElementProps(element, key);
+  const props = templateElementProps(element);
   const children = [...element.childNodes].map((child, index) => renderTemplateNode(systemPackage, child, `${key}-${index}`));
 
-  return createTemplateElement(tagName, props, children);
+  return createTemplateElement(tagName, key, props, children);
 }
 
 function renderModulePlaceholder(systemPackage: SystemPackage, moduleId: string | null, key: string) {
@@ -88,8 +88,8 @@ function renderModulePlaceholder(systemPackage: SystemPackage, moduleId: string 
   );
 }
 
-function templateElementProps(element: Element, key: string) {
-  const props: Record<string, string> = { key };
+function templateElementProps(element: Element) {
+  const props: Record<string, string> = {};
 
   for (const attribute of [...element.attributes]) {
     const name = attribute.name.toLowerCase();
@@ -104,64 +104,64 @@ function templateElementProps(element: Element, key: string) {
   return props;
 }
 
-function createTemplateElement(tagName: string, props: Record<string, string>, children: ReactNode[]) {
+function createTemplateElement(tagName: string, key: string, props: Record<string, string>, children: ReactNode[]) {
   switch (tagName) {
     case "article":
-      return <article {...props}>{children}</article>;
+      return <article key={key} {...props}>{children}</article>;
     case "div":
-      return <div {...props}>{children}</div>;
+      return <div key={key} {...props}>{children}</div>;
     case "em":
-      return <em {...props}>{children}</em>;
+      return <em key={key} {...props}>{children}</em>;
     case "footer":
-      return <footer {...props}>{children}</footer>;
+      return <footer key={key} {...props}>{children}</footer>;
     case "h1":
-      return <h1 {...props}>{children}</h1>;
+      return <h1 key={key} {...props}>{children}</h1>;
     case "h2":
-      return <h2 {...props}>{children}</h2>;
+      return <h2 key={key} {...props}>{children}</h2>;
     case "h3":
-      return <h3 {...props}>{children}</h3>;
+      return <h3 key={key} {...props}>{children}</h3>;
     case "h4":
-      return <h4 {...props}>{children}</h4>;
+      return <h4 key={key} {...props}>{children}</h4>;
     case "h5":
-      return <h5 {...props}>{children}</h5>;
+      return <h5 key={key} {...props}>{children}</h5>;
     case "h6":
-      return <h6 {...props}>{children}</h6>;
+      return <h6 key={key} {...props}>{children}</h6>;
     case "header":
-      return <header {...props}>{children}</header>;
+      return <header key={key} {...props}>{children}</header>;
     case "hr":
-      return <hr {...props} />;
+      return <hr key={key} {...props} />;
     case "img":
-      return <img {...props} />;
+      return <img key={key} {...props} />;
     case "li":
-      return <li {...props}>{children}</li>;
+      return <li key={key} {...props}>{children}</li>;
     case "main":
-      return <main {...props}>{children}</main>;
+      return <main key={key} {...props}>{children}</main>;
     case "ol":
-      return <ol {...props}>{children}</ol>;
+      return <ol key={key} {...props}>{children}</ol>;
     case "p":
-      return <p {...props}>{children}</p>;
+      return <p key={key} {...props}>{children}</p>;
     case "section":
-      return <section {...props}>{children}</section>;
+      return <section key={key} {...props}>{children}</section>;
     case "small":
-      return <small {...props}>{children}</small>;
+      return <small key={key} {...props}>{children}</small>;
     case "span":
-      return <span {...props}>{children}</span>;
+      return <span key={key} {...props}>{children}</span>;
     case "strong":
-      return <strong {...props}>{children}</strong>;
+      return <strong key={key} {...props}>{children}</strong>;
     case "table":
-      return <table {...props}>{children}</table>;
+      return <table key={key} {...props}>{children}</table>;
     case "tbody":
-      return <tbody {...props}>{children}</tbody>;
+      return <tbody key={key} {...props}>{children}</tbody>;
     case "td":
-      return <td {...props}>{children}</td>;
+      return <td key={key} {...props}>{children}</td>;
     case "th":
-      return <th {...props}>{children}</th>;
+      return <th key={key} {...props}>{children}</th>;
     case "thead":
-      return <thead {...props}>{children}</thead>;
+      return <thead key={key} {...props}>{children}</thead>;
     case "tr":
-      return <tr {...props}>{children}</tr>;
+      return <tr key={key} {...props}>{children}</tr>;
     case "ul":
-      return <ul {...props}>{children}</ul>;
+      return <ul key={key} {...props}>{children}</ul>;
     default:
       return null;
   }

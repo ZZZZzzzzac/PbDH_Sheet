@@ -8,7 +8,9 @@ import {
   type PlayerImageData,
   type SheetValue,
 } from "../domain/characterData";
-import type { PackageIssue, SystemPackage } from "../domain/systemPackage";
+import { applyResourceSelectedDependencies } from "../domain/dependencyEngine";
+import type { ResourceLibraryEntry } from "../domain/resourceLibrary";
+import { validateCachedSystemPackage, type PackageIssue, type SystemPackage } from "../domain/systemPackage";
 import { createRuntimeAssetResolver, type RuntimeAssetResolver, type RuntimePackageAsset } from "../loaders/assetResolver";
 import { loadSystemPackageFromZipFile, type PackageLoadResult } from "../loaders/systemPackageLoader";
 import { storageService, type StorageService } from "../storage/storageService";
@@ -30,6 +32,7 @@ interface RuntimeState {
   initialize: () => Promise<void>;
   uploadSystemPackageFromFile: (file: Blob) => Promise<void>;
   updateModuleValue: (moduleId: string, value: SheetValue) => void;
+  commitResourceSelection: (moduleId: string, libraryId: string, entries: ResourceLibraryEntry[]) => void;
   uploadPlayerImage: (moduleId: string, file: File) => Promise<void>;
   importCharacterDataFromText: (text: string) => Promise<void>;
   clearImportMessage: () => void;
@@ -81,6 +84,31 @@ async function loadPackageIntoState(
       storageStatus: "error",
     });
   }
+}
+
+async function clearCachedPackageAndResetState(set: (partial: Partial<RuntimeState>) => void) {
+  activePackageAssetResolver?.revokeAll();
+  activePackageAssetResolver = undefined;
+  let storageStatus: StorageStatus = "idle";
+
+  try {
+    await runtimeDependencies.storage.clearCurrentSystemPackage();
+  } catch {
+    storageStatus = "error";
+  }
+
+  set({
+    currentPackage: null,
+    packageAssetUrls: {},
+    characterData: null,
+    packageIssues: [],
+    bootStatus: "ready",
+    storageStatus,
+    importNotice:
+      storageStatus === "error"
+        ? "缓存的 System Package 读取失败，已回到空白状态。请在浏览器中清理站点数据后重新上传系统包。"
+        : "缓存的 System Package 已失效，已清除。请重新上传系统包。",
+  });
 }
 
 function scheduleAutosave(
@@ -135,16 +163,15 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
         return;
       }
 
-      await loadPackageIntoState(cachedPackage, [], set);
+      const cachedValidation = validateCachedSystemPackage(cachedPackage);
+      if (!cachedValidation.ok) {
+        await clearCachedPackageAndResetState(set);
+        return;
+      }
+
+      await loadPackageIntoState(cachedValidation.package, [], set);
     } catch {
-      set({
-        currentPackage: null,
-        packageAssetUrls: {},
-        characterData: null,
-        packageIssues: [],
-        bootStatus: "ready",
-        storageStatus: "error",
-      });
+      await clearCachedPackageAndResetState(set);
     }
   },
 
@@ -180,6 +207,30 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       importError: null,
       importNotice: null,
     }));
+
+    scheduleAutosave(
+      () => get().characterData,
+      (status) => set({ storageStatus: status }),
+    );
+  },
+
+  commitResourceSelection(moduleId, libraryId, entries) {
+    const currentPackage = get().currentPackage;
+    const characterData = get().characterData;
+    if (!currentPackage || !characterData) {
+      return;
+    }
+
+    set({
+      characterData: applyResourceSelectedDependencies(characterData, currentPackage, {
+        type: "resourceSelected",
+        sourceModuleId: moduleId,
+        libraryId,
+        selectedEntries: entries,
+      }),
+      importError: null,
+      importNotice: null,
+    });
 
     scheduleAutosave(
       () => get().characterData,

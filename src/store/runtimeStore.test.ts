@@ -4,8 +4,8 @@ import type { StorageService } from "../storage/storageService";
 import { minimalSystemPackage } from "../test/fixtures";
 import { configureRuntimeDependencies, resetRuntimeDependencies, useRuntimeStore } from "./runtimeStore";
 
-function createMemoryStorage(cachedPackage: typeof minimalSystemPackage | null = null): StorageService & {
-  getCachedPackage: () => typeof minimalSystemPackage | null;
+function createMemoryStorage(cachedPackage: unknown = null): StorageService & {
+  getCachedPackage: () => unknown;
 } {
   let savedData: Awaited<ReturnType<StorageService["loadCurrentCharacterData"]>> = null;
   let savedPackage = cachedPackage;
@@ -14,14 +14,22 @@ function createMemoryStorage(cachedPackage: typeof minimalSystemPackage | null =
 
   return {
     async loadCurrentSystemPackage() {
-      return savedPackage;
+      return savedPackage as typeof minimalSystemPackage | null;
     },
     async saveCurrentSystemPackage(systemPackage, packageAssets = []) {
       savedPackage = systemPackage;
       savedPackageAssets = packageAssets;
     },
+    async clearCurrentSystemPackage() {
+      savedPackage = null;
+      savedPackageAssets = [];
+    },
     async loadCurrentPackageAssets(packageId) {
-      return savedPackage?.manifest.ID === packageId ? savedPackageAssets : [];
+      const packageIdFromCache =
+        typeof savedPackage === "object" && savedPackage !== null && "manifest" in savedPackage
+          ? (savedPackage as typeof minimalSystemPackage).manifest.ID
+          : undefined;
+      return packageIdFromCache === packageId ? savedPackageAssets : [];
     },
     async loadCurrentCharacterData(packageId) {
       if (savedData?.systemPackage.id !== packageId) {
@@ -131,5 +139,42 @@ describe("runtime store", () => {
 
     expect(useRuntimeStore.getState().currentPackage?.manifest.ID).toBe("demo-minimal");
     expect(useRuntimeStore.getState().characterData?.systemPackage.id).toBe("demo-minimal");
+  });
+
+  it("clears an invalid cached System Package and starts blank", async () => {
+    const staleCachedPackage = {
+      ...minimalSystemPackage,
+      modules: [
+        {
+          ID: "legacy-selection",
+          类型: "selectionText",
+          标签: "旧选择文本",
+        },
+      ],
+    };
+    memoryStorage = createMemoryStorage(staleCachedPackage);
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
+      storage: memoryStorage,
+    });
+    useRuntimeStore.setState({
+      currentPackage: null,
+      packageAssetUrls: {},
+      characterData: null,
+      packageIssues: [],
+      bootStatus: "idle",
+      storageStatus: "idle",
+      importError: null,
+      importNotice: null,
+    });
+
+    await useRuntimeStore.getState().initialize();
+
+    expect(useRuntimeStore.getState().bootStatus).toBe("ready");
+    expect(useRuntimeStore.getState().currentPackage).toBeNull();
+    expect(useRuntimeStore.getState().characterData).toBeNull();
+    expect(useRuntimeStore.getState().packageIssues).toEqual([]);
+    expect(useRuntimeStore.getState().importNotice).toContain("缓存的 System Package 已失效");
+    expect(memoryStorage.getCachedPackage()).toBeNull();
   });
 });

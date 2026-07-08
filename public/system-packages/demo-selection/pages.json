@@ -1,0 +1,11 @@
+[
+  {
+    "ID": "main",
+    "名称": "角色卡",
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/main.html",
+      "css": "layouts/main.css"
+    }
+  }
+]

@@ -27,6 +27,7 @@ export interface StoredPlayerImageBlob {
 export interface StorageService {
   loadCurrentSystemPackage(): Promise<SystemPackage | null>;
   saveCurrentSystemPackage(systemPackage: SystemPackage, packageAssets?: RuntimePackageAsset[]): Promise<void>;
+  clearCurrentSystemPackage(): Promise<void>;
   loadCurrentPackageAssets(packageId: string): Promise<RuntimePackageAsset[]>;
   loadCurrentCharacterData(packageId: string): Promise<CharacterData | null>;
   saveCurrentCharacterData(data: CharacterData): Promise<void>;
@@ -68,6 +69,10 @@ export const storageService: StorageService = {
       data: systemPackage,
       packageAssets,
     });
+  },
+
+  async clearCurrentSystemPackage(): Promise<void> {
+    await db.systemPackages.delete(currentSystemPackageRecordId);
   },
 
   async loadCurrentPackageAssets(packageId: string): Promise<RuntimePackageAsset[]> {

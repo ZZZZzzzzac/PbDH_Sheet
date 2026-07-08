@@ -1,4 +1,11 @@
 import { z } from "zod";
+import {
+  normalizeResourceLibraries,
+  resourceLibraryFieldTemplateSchema,
+  resourceLibraryPackageInputSchema,
+  resourceLibrarySchema,
+  type ResourceLibrary,
+} from "./resourceLibrary";
 
 export const frameworkSchemaVersion = "0.1.0";
 
@@ -66,6 +73,45 @@ const imageFieldModuleSchema = z.object({
   替代文本: z.string().optional(),
 });
 
+const resourcePickerQuerySchema = z.object({
+  filters: z.record(z.string(), z.array(z.string())).optional(),
+  sort: z
+    .object({
+      field: z.string().min(1),
+      direction: z.enum(["asc", "desc"]).optional(),
+    })
+    .optional(),
+});
+
+const resourcePickerModuleSchema = z.object({
+  ID: z.string().min(1),
+  类型: z.literal("resourcePicker"),
+  按钮文本: z.string().min(1),
+  资源库ID: z.string().min(1),
+  字段模板: z.array(resourceLibraryFieldTemplateSchema).optional(),
+  多选: z.boolean().optional(),
+  默认查询: resourcePickerQuerySchema.optional(),
+});
+
+const dependencyRuleSchema = z.object({
+  ID: z.string().min(1),
+  触发: z.object({
+    类型: z.literal("resourceSelected"),
+    来源模块ID: z.string().min(1),
+  }),
+  动作: z
+    .array(
+      z.object({
+        类型: z.literal("fillText"),
+        目标模块ID: z.string().min(1),
+        资源字段: z.string().min(1),
+        选择索引: z.number().int().min(0).optional(),
+        分隔符: z.string().optional(),
+      }),
+    )
+    .min(1),
+});
+
 const sheetModuleSchema = z.discriminatedUnion("类型", [
   freeTextModuleSchema,
   longTextModuleSchema,
@@ -73,6 +119,7 @@ const sheetModuleSchema = z.discriminatedUnion("类型", [
   countableResourceModuleSchema,
   readOnlyDisplayModuleSchema,
   imageFieldModuleSchema,
+  resourcePickerModuleSchema,
 ]);
 
 const supportedModuleTypes = new Set([
@@ -82,6 +129,7 @@ const supportedModuleTypes = new Set([
   "countableResource",
   "readOnlyDisplay",
   "imageField",
+  "resourcePicker",
 ]);
 
 const htmlTemplateLayoutSchema = z.object({
@@ -109,6 +157,8 @@ const systemPackageSchema = z.object({
   pages: z.array(pageSchema).min(1),
   modules: z.array(sheetModuleSchema).min(1),
   assets: z.array(assetSchema).optional(),
+  resourceLibraries: z.array(resourceLibrarySchema).optional(),
+  dependencies: z.array(dependencyRuleSchema).optional(),
 });
 
 const systemPackageEnvelopeSchema = z.object({
@@ -116,6 +166,8 @@ const systemPackageEnvelopeSchema = z.object({
   pages: z.array(pageSchema).min(1),
   modules: z.array(z.unknown()).min(1),
   assets: z.array(assetSchema).optional(),
+  resourceLibraries: z.array(resourceLibraryPackageInputSchema).optional(),
+  dependencies: z.array(dependencyRuleSchema).optional(),
 });
 
 export type SystemPackage = z.infer<typeof systemPackageSchema>;
@@ -125,10 +177,13 @@ export type CheckboxResourceModule = z.infer<typeof checkboxResourceModuleSchema
 export type CountableResourceModule = z.infer<typeof countableResourceModuleSchema>;
 export type ReadOnlyDisplayModule = z.infer<typeof readOnlyDisplayModuleSchema>;
 export type ImageFieldModule = z.infer<typeof imageFieldModuleSchema>;
+export type ResourcePickerModule = z.infer<typeof resourcePickerModuleSchema>;
 export type SheetModule = z.infer<typeof sheetModuleSchema>;
 export type PackageAsset = z.infer<typeof assetSchema>;
 export type HtmlTemplateLayout = z.infer<typeof htmlTemplateLayoutSchema>;
 export type PackagePage = z.infer<typeof pageSchema>;
+export type DependencyRule = z.infer<typeof dependencyRuleSchema>;
+export type { ResourceLibrary };
 
 export type PackageIssueLevel = "fatal" | "error" | "warning";
 
@@ -141,6 +196,10 @@ export interface PackageIssue {
 
 export type PackageValidationResult =
   | { ok: true; package: SystemPackage; issues: PackageIssue[] }
+  | { ok: false; issues: PackageIssue[] };
+
+export type CachedPackageValidationResult =
+  | { ok: true; package: SystemPackage }
   | { ok: false; issues: PackageIssue[] };
 
 export function validateSystemPackage(input: unknown): PackageValidationResult {
@@ -194,7 +253,17 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
     return { ok: false, issues: moduleParseIssues };
   }
 
-  const systemPackage: SystemPackage = { ...parsed.data, modules };
+  const normalizedResourceLibraries = normalizeResourceLibraries(parsed.data.resourceLibraries ?? []);
+  if (!normalizedResourceLibraries.ok) {
+    return { ok: false, issues: normalizedResourceLibraries.issues };
+  }
+
+  const { resourceLibraries: _rawResourceLibraries, ...packageData } = parsed.data;
+  const systemPackage: SystemPackage = {
+    ...packageData,
+    modules,
+    ...(normalizedResourceLibraries.resourceLibraries.length > 0 ? { resourceLibraries: normalizedResourceLibraries.resourceLibraries } : {}),
+  };
   const issues: PackageIssue[] = [];
 
   if (parsed.data.manifest.schemaVersion !== frameworkSchemaVersion) {
@@ -225,6 +294,15 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
         path: `modules.${module.ID}.资源ID`,
       });
     }
+
+    if (module.类型 === "resourcePicker" && !findResourceLibrary(systemPackage, module.资源库ID)) {
+      issues.push({
+        level: "error",
+        code: "MISSING_RESOURCE_LIBRARY_REFERENCE",
+        text: `Resource Picker 引用了不存在的 Resource Library：${module.资源库ID}`,
+        path: `modules.${module.ID}.资源库ID`,
+      });
+    }
   }
 
   const moduleIds = new Set<string>();
@@ -239,6 +317,60 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
       });
     }
     moduleIds.add(module.ID);
+  }
+
+  const moduleById = new Map(systemPackage.modules.map((module) => [module.ID, module]));
+  const dependencyIds = new Set<string>();
+
+  for (const dependency of systemPackage.dependencies ?? []) {
+    if (dependencyIds.has(dependency.ID)) {
+      issues.push({
+        level: "error",
+        code: "DUPLICATE_DEPENDENCY_ID",
+        text: `Dependency Rule ID 重复：${dependency.ID}`,
+        path: `dependencies.${dependency.ID}`,
+      });
+    }
+    dependencyIds.add(dependency.ID);
+
+    const sourceModule = moduleById.get(dependency.触发.来源模块ID);
+    if (!sourceModule) {
+      issues.push({
+        level: "error",
+        code: "MISSING_DEPENDENCY_SOURCE_MODULE",
+        text: `Dependency Rule 引用了不存在的来源模块：${dependency.触发.来源模块ID}`,
+        path: `dependencies.${dependency.ID}.触发.来源模块ID`,
+      });
+    } else if (sourceModule.类型 !== "resourcePicker") {
+      issues.push({
+        level: "error",
+        code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE",
+        text: `resourceSelected 触发源必须是 Resource Picker：${dependency.触发.来源模块ID}`,
+        path: `dependencies.${dependency.ID}.触发.来源模块ID`,
+      });
+    }
+
+    dependency.动作.forEach((action, actionIndex) => {
+      const targetModule = moduleById.get(action.目标模块ID);
+      if (!targetModule) {
+        issues.push({
+          level: "error",
+          code: "MISSING_DEPENDENCY_TARGET_MODULE",
+          text: `Dependency Rule 引用了不存在的目标模块：${action.目标模块ID}`,
+          path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
+        });
+        return;
+      }
+
+      if (targetModule.类型 !== "freeText" && targetModule.类型 !== "longText") {
+        issues.push({
+          level: "error",
+          code: "UNSUPPORTED_DEPENDENCY_TARGET_MODULE",
+          text: `fillText 目标模块必须是 Free Text 或 Long Text：${action.目标模块ID}`,
+          path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
+        });
+      }
+    });
   }
 
   for (const page of systemPackage.pages) {
@@ -265,12 +397,34 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
   return { ok: true, package: systemPackage, issues };
 }
 
+export function validateCachedSystemPackage(input: unknown): CachedPackageValidationResult {
+  const parsed = systemPackageSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      issues: parsed.error.issues.map((issue) => ({
+        level: "fatal",
+        code: "CACHED_PACKAGE_INVALID",
+        text: issue.message,
+        path: issue.path.join("."),
+      })),
+    };
+  }
+
+  return { ok: true, package: parsed.data };
+}
+
 export function findModule(systemPackage: SystemPackage, moduleId: string): SheetModule | undefined {
   return systemPackage.modules.find((module) => module.ID === moduleId);
 }
 
 export function findAsset(systemPackage: SystemPackage, assetId: string): PackageAsset | undefined {
   return systemPackage.assets?.find((asset) => asset.ID === assetId);
+}
+
+export function findResourceLibrary(systemPackage: SystemPackage, libraryId: string): ResourceLibrary | undefined {
+  return systemPackage.resourceLibraries?.find((library) => library.ID === libraryId);
 }
 
 export function getHtmlTemplateModuleReferences(html: string): string[] {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { resourceLibraryReferenceSchema, type ResourceLibraryReference } from "../domain/resourceLibrary";
 import { validateSystemPackage, type PackageValidationResult } from "../domain/systemPackage";
 import type { RuntimePackageAsset } from "./assetResolver";
 import { createVirtualFileSystemFromZipFile, normalizePackagePath, type PackageVirtualFileSystem } from "./packageVfs";
@@ -16,6 +17,7 @@ const packageManifestSchema = z.object({
   schemaVersion: z.string().min(1),
   pages: z.string().min(1),
   modules: z.string().min(1),
+  dependencies: z.string().min(1).optional(),
   assets: z
     .array(
       z.object({
@@ -25,6 +27,7 @@ const packageManifestSchema = z.object({
       }),
     )
     .optional(),
+  resourceLibraries: z.array(resourceLibraryReferenceSchema).optional(),
 });
 
 const pageLayoutReferenceSchema = z.array(
@@ -92,7 +95,19 @@ export async function loadSystemPackageFromUrl(
     return { ok: false, issues: [modules.issue] };
   }
 
-  return normalizeManifestPackage(parsedManifest.data, pagesWithLayouts.value, modules.value);
+  const dependencies = parsedManifest.data.dependencies
+    ? await fetchPackageReferenceJson(baseUrl, parsedManifest.data.dependencies, fetchImpl)
+    : undefined;
+  if (dependencies && !dependencies.ok) {
+    return { ok: false, issues: [dependencies.issue] };
+  }
+
+  const resourceLibraries = await loadResourceLibraryFilesFromUrl(baseUrl, parsedManifest.data.resourceLibraries ?? [], fetchImpl);
+  if (!resourceLibraries.ok) {
+    return { ok: false, issues: [resourceLibraries.issue] };
+  }
+
+  return normalizeManifestPackage(parsedManifest.data, pagesWithLayouts.value, modules.value, resourceLibraries.value, dependencies?.value);
 }
 
 export async function loadSystemPackageFromZipFile(file: Blob): Promise<PackageLoadResult> {
@@ -157,7 +172,17 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
     return { ok: false, issues: [modulesJson.issue] };
   }
 
-  const normalized = normalizeManifestPackage(manifest.data, pagesWithLayouts.value, modulesJson.value);
+  const dependenciesJson = manifest.data.dependencies ? readPackageJsonFile(vfs, manifest.data.dependencies) : undefined;
+  if (dependenciesJson && !dependenciesJson.ok) {
+    return { ok: false, issues: [dependenciesJson.issue] };
+  }
+
+  const resourceLibraries = loadResourceLibraryFilesFromVfs(vfs, manifest.data.resourceLibraries ?? []);
+  if (!resourceLibraries.ok) {
+    return { ok: false, issues: [resourceLibraries.issue] };
+  }
+
+  const normalized = normalizeManifestPackage(manifest.data, pagesWithLayouts.value, modulesJson.value, resourceLibraries.value, dependenciesJson?.value);
   if (!normalized.ok) {
     return normalized;
   }
@@ -168,7 +193,13 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
   };
 }
 
-function normalizeManifestPackage(manifest: z.infer<typeof packageManifestSchema>, pages: unknown, modules: unknown): PackageValidationResult {
+function normalizeManifestPackage(
+  manifest: z.infer<typeof packageManifestSchema>,
+  pages: unknown,
+  modules: unknown,
+  resourceLibraries: Array<ResourceLibraryReference & { entries: unknown }> = [],
+  dependencies?: unknown,
+): PackageValidationResult {
   return validateSystemPackage({
     manifest: {
       ID: manifest.ID,
@@ -179,6 +210,8 @@ function normalizeManifestPackage(manifest: z.infer<typeof packageManifestSchema
     pages,
     modules,
     assets: manifest.assets ?? [],
+    resourceLibraries,
+    dependencies,
   });
 }
 
@@ -335,6 +368,40 @@ function loadPageLayoutFilesFromVfs(vfs: PackageVirtualFileSystem, pages: unknow
   }
 
   return { ok: true as const, value: normalizedPages };
+}
+
+async function loadResourceLibraryFilesFromUrl(
+  baseUrl: string,
+  libraries: ResourceLibraryReference[],
+  fetchImpl: typeof fetch,
+) {
+  const normalizedLibraries = [];
+
+  for (const library of libraries) {
+    const entries = await fetchPackageReferenceJson(baseUrl, library.路径, fetchImpl);
+    if (!entries.ok) {
+      return { ok: false as const, issue: entries.issue };
+    }
+
+    normalizedLibraries.push({ ...library, entries: entries.value });
+  }
+
+  return { ok: true as const, value: normalizedLibraries };
+}
+
+function loadResourceLibraryFilesFromVfs(vfs: PackageVirtualFileSystem, libraries: ResourceLibraryReference[]) {
+  const normalizedLibraries = [];
+
+  for (const library of libraries) {
+    const entries = readPackageJsonFile(vfs, library.路径);
+    if (!entries.ok) {
+      return { ok: false as const, issue: entries.issue };
+    }
+
+    normalizedLibraries.push({ ...library, entries: entries.value });
+  }
+
+  return { ok: true as const, value: normalizedLibraries };
 }
 
 function resolvePackageAssets(assets: NonNullable<z.infer<typeof packageManifestSchema>["assets"]>, vfs: PackageVirtualFileSystem): LoadedPackageAsset[] {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures";
-import { findAsset, findModule, getHtmlTemplateModuleReferences, validateSystemPackage } from "./systemPackage";
+import { findAsset, findModule, findResourceLibrary, getHtmlTemplateModuleReferences, validateSystemPackage } from "./systemPackage";
 
 describe("validateSystemPackage", () => {
   it("accepts the minimal demo System Package", () => {
@@ -92,13 +92,162 @@ describe("validateSystemPackage", () => {
     );
   });
 
+  it("accepts Resource Libraries, Resource Picker references, and dependency fill rules", () => {
+    const packageWithSelection = {
+      ...minimalSystemPackage,
+      resourceLibraries: [
+        {
+          ID: "domains",
+          名称: "领域",
+          路径: "resources/domains.json",
+          entries: [
+            { ID: "blade-1", 名称: "利刃一", 领域: "利刃", 等级: "1" },
+            { ID: "bone-1", 名称: "骸骨一", 领域: "骸骨" },
+          ],
+        },
+      ],
+      modules: [
+        ...minimalSystemPackage.modules,
+        {
+          ID: "domain-pick",
+          类型: "resourcePicker",
+          按钮文本: "选择领域",
+          资源库ID: "domains",
+          字段模板: [
+            { 键: "名称", 标签: "卡名", 默认显示: true, 可筛选: false, 可排序: true },
+            { 键: "领域", 标签: "领域", 默认显示: true, 可筛选: true, 可排序: true },
+          ],
+        },
+        {
+          ID: "domain-name",
+          类型: "freeText",
+          标签: "领域名",
+        },
+      ],
+      dependencies: [
+        {
+          ID: "fill-domain",
+          触发: { 类型: "resourceSelected", 来源模块ID: "domain-pick" },
+          动作: [{ 类型: "fillText", 目标模块ID: "domain-name", 资源字段: "名称" }],
+        },
+      ],
+      pages: [
+        {
+          ...minimalSystemPackage.pages[0],
+          layout: {
+            ...minimalSystemPackage.pages[0].layout,
+            htmlContent: `${minimalSystemPackage.pages[0].layout.htmlContent}<pb-module id="domain-pick"></pb-module><pb-module id="domain-name"></pb-module>`,
+          },
+        },
+      ],
+    };
+
+    const result = validateSystemPackage(packageWithSelection);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const module = findModule(result.package, "domain-pick");
+      expect(module?.类型).toBe("resourcePicker");
+      if (module?.类型 === "resourcePicker") {
+        expect(module.字段模板?.map((field) => field.键)).toEqual(["名称", "领域"]);
+      }
+      expect(findResourceLibrary(result.package, "domains")?.entries[1].fields.等级).toBe("");
+      expect(result.package.dependencies?.[0].动作[0].目标模块ID).toBe("domain-name");
+    }
+  });
+
+  it("reports missing Resource Library references for Resource Picker", () => {
+    const invalidPackage = {
+      ...minimalSystemPackage,
+      modules: [
+        {
+          ID: "choice",
+          类型: "resourcePicker",
+          按钮文本: "选择",
+          资源库ID: "missing-library",
+        },
+      ],
+      pages: [
+        {
+          ...minimalSystemPackage.pages[0],
+          layout: {
+            ...minimalSystemPackage.pages[0].layout,
+            htmlContent: '<main><pb-module id="choice"></pb-module></main>',
+          },
+        },
+      ],
+    };
+
+    const result = validateSystemPackage(invalidPackage);
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "MISSING_RESOURCE_LIBRARY_REFERENCE",
+          level: "error",
+          path: "modules.choice.资源库ID",
+        }),
+      ]),
+    );
+  });
+
+  it("reports invalid Resource Picker dependency references", () => {
+    const invalidPackage = {
+      ...minimalSystemPackage,
+      modules: [
+        ...minimalSystemPackage.modules,
+        {
+          ID: "pick",
+          类型: "resourcePicker",
+          按钮文本: "选择",
+          资源库ID: "domains",
+        },
+        {
+          ID: "image-target",
+          类型: "imageField",
+          标签: "图片",
+        },
+      ],
+      resourceLibraries: [{ ID: "domains", 名称: "领域", 路径: "resources/domains.json", entries: [{ ID: "x" }] }],
+      dependencies: [
+        {
+          ID: "bad-target",
+          触发: { 类型: "resourceSelected", 来源模块ID: "pick" },
+          动作: [{ 类型: "fillText", 目标模块ID: "image-target", 资源字段: "名称" }],
+        },
+      ],
+      pages: [
+        {
+          ...minimalSystemPackage.pages[0],
+          layout: {
+            ...minimalSystemPackage.pages[0].layout,
+            htmlContent: `${minimalSystemPackage.pages[0].layout.htmlContent}<pb-module id="pick"></pb-module><pb-module id="image-target"></pb-module>`,
+          },
+        },
+      ],
+    };
+
+    const result = validateSystemPackage(invalidPackage);
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "UNSUPPORTED_DEPENDENCY_TARGET_MODULE",
+          level: "error",
+        }),
+      ]),
+    );
+  });
+
   it("reports a clear error for unsupported Sheet Module types", () => {
     const invalidPackage = {
       ...minimalSystemPackage,
       modules: [
         {
           ID: "choice",
-          类型: "selectionText",
+          类型: "customWidget",
           标签: "暂不支持",
         },
       ],

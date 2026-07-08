@@ -1,0 +1,38 @@
+[
+  {
+    "ID": "fill-class-from-picker",
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-class" },
+    "动作": [
+      { "类型": "fillText", "目标模块ID": "class-name", "资源字段": "名称" },
+      { "类型": "fillText", "目标模块ID": "class-domains", "资源字段": "领域" },
+      { "类型": "fillText", "目标模块ID": "class-evasion", "资源字段": "初始闪避值" },
+      { "类型": "fillText", "目标模块ID": "class-hp", "资源字段": "初始生命点" },
+      { "类型": "fillText", "目标模块ID": "class-hope", "资源字段": "希望特性" },
+      { "类型": "fillText", "目标模块ID": "class-feature", "资源字段": "职业特性" }
+    ]
+  },
+  {
+    "ID": "fill-subclass-from-picker",
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-subclass" },
+    "动作": [
+      { "类型": "fillText", "目标模块ID": "subclass-name", "资源字段": "名称" },
+      { "类型": "fillText", "目标模块ID": "subclass-spellcast", "资源字段": "施法属性" },
+      { "类型": "fillText", "目标模块ID": "subclass-feature", "资源字段": "描述" }
+    ]
+  },
+  {
+    "ID": "fill-domain-card-from-picker",
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-domain-card" },
+    "动作": [
+      { "类型": "fillText", "目标模块ID": "domain-card-name", "资源字段": "名称" },
+      { "类型": "fillText", "目标模块ID": "domain-card-summary", "资源字段": "描述" }
+    ]
+  },
+  {
+    "ID": "fill-domain-card-list-from-picker",
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-domain-cards" },
+    "动作": [
+      { "类型": "fillText", "目标模块ID": "domain-card-list", "资源字段": "名称", "分隔符": "、" }
+    ]
+  }
+]

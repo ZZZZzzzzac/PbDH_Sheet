@@ -36,6 +36,73 @@ describe("loadSystemPackageFromUrl", () => {
     }
   });
 
+  it("loads Resource Library and Dependency JSON files from static directory and zip packages", async () => {
+    const manifest = {
+      ...createManifest(),
+      dependencies: "dependencies.json",
+      resourceLibraries: [
+        {
+          ID: "domains",
+          名称: "领域",
+          路径: "resources/domains.json",
+        },
+      ],
+    };
+    const modules = [
+      ...minimalSystemPackage.modules,
+      {
+        ID: "domain-pick",
+        类型: "resourcePicker",
+        按钮文本: "选择领域",
+        资源库ID: "domains",
+      },
+      {
+        ID: "domain-name",
+        类型: "freeText",
+        标签: "领域名",
+      },
+    ];
+    const dependencies = [
+      {
+        ID: "fill-domain",
+        触发: { 类型: "resourceSelected", 来源模块ID: "domain-pick" },
+        动作: [{ 类型: "fillText", 目标模块ID: "domain-name", 资源字段: "名称" }],
+      },
+    ];
+    const pages = [
+      {
+        ...minimalSystemPackage.pages[0],
+        layout: {
+          ...minimalSystemPackage.pages[0].layout,
+          htmlContent:
+            '<main><pb-module id="character-name"></pb-module><pb-module id="domain-pick"></pb-module><pb-module id="domain-name"></pb-module></main>',
+        },
+      },
+    ];
+    const resources = [{ ID: "blade-1", 名称: "利刃一", 领域: "利刃" }];
+    const fetchImpl = createPackageFetch({ manifest, modules, pages, resources, dependencies });
+    const directoryResult = await loadSystemPackageFromUrl("/system-packages/demo-minimal", fetchImpl);
+    const zipResult = await loadSystemPackageFromZipFile(
+      createPackageZip({
+        manifest,
+        modules,
+        pages,
+        resources,
+        dependencies,
+      }),
+    );
+
+    expect(directoryResult.ok).toBe(true);
+    expect(zipResult.ok).toBe(true);
+    expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/resources/domains.json");
+    expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/dependencies.json");
+    if (directoryResult.ok && zipResult.ok) {
+      expect(directoryResult.package.resourceLibraries?.[0].entries[0].fields.名称).toBe("利刃一");
+      expect(directoryResult.package.dependencies?.[0].动作[0].目标模块ID).toBe("domain-name");
+      expect(zipResult.package).toEqual(directoryResult.package);
+    }
+  });
+
   it("returns a fatal issue when the static manifest cannot be loaded", async () => {
     const fetchImpl = vi.fn(async () => new Response("", { status: 404, statusText: "Not Found" }));
 
@@ -327,14 +394,18 @@ function createManifest() {
   };
 }
 
-function createPackageZip(options: { manifest?: unknown } = {}) {
+function createPackageZip(
+  options: { manifest?: unknown; modules?: unknown; pages?: typeof minimalSystemPackage.pages; resources?: unknown; dependencies?: unknown } = {},
+) {
   return zipBlob({
     "manifest.json": JSON.stringify(options.manifest ?? createManifest()),
-    "pages.json": packagePagesJson(minimalSystemPackage.pages),
-    "modules.json": JSON.stringify(minimalSystemPackage.modules),
-    "layouts/main.html": minimalSystemPackage.pages[0].layout.htmlContent,
-    "layouts/main.css": minimalSystemPackage.pages[0].layout.cssContent ?? "",
+    "pages.json": packagePagesJson(options.pages ?? minimalSystemPackage.pages),
+    "modules.json": JSON.stringify(options.modules ?? minimalSystemPackage.modules),
+    "layouts/main.html": (options.pages ?? minimalSystemPackage.pages)[0].layout.htmlContent,
+    "layouts/main.css": (options.pages ?? minimalSystemPackage.pages)[0].layout.cssContent ?? "",
     "assets/readme.txt": "hello",
+    ...(options.resources ? { "resources/domains.json": JSON.stringify(options.resources) } : {}),
+    ...(options.dependencies ? { "dependencies.json": JSON.stringify(options.dependencies) } : {}),
   });
 }
 
@@ -359,15 +430,23 @@ function zipBlob(files: Record<string, string>) {
   return new Blob([zipSync(entries)], { type: "application/zip" });
 }
 
-function createPackageFetch(options: { manifest?: unknown; pages?: unknown[] } = {}) {
+function createPackageFetch(options: { manifest?: unknown; modules?: unknown; pages?: unknown[]; resources?: unknown; dependencies?: unknown } = {}) {
+  const pageLayout = (options.pages?.[0] as { layout?: { htmlContent?: string; cssContent?: string } } | undefined)?.layout;
   const files: Record<string, string> = {
     "/system-packages/demo-minimal/manifest.json": JSON.stringify(options.manifest ?? createManifest()),
     "/system-packages/demo-minimal/pages.json": options.pages ? JSON.stringify(options.pages) : packagePagesJson(minimalSystemPackage.pages),
-    "/system-packages/demo-minimal/modules.json": JSON.stringify(minimalSystemPackage.modules),
-    "/system-packages/demo-minimal/layouts/main.html": minimalSystemPackage.pages[0].layout.htmlContent,
-    "/system-packages/demo-minimal/layouts/main.css": minimalSystemPackage.pages[0].layout.cssContent ?? "",
+    "/system-packages/demo-minimal/modules.json": JSON.stringify(options.modules ?? minimalSystemPackage.modules),
+    "/system-packages/demo-minimal/layouts/main.html": pageLayout?.htmlContent ?? minimalSystemPackage.pages[0].layout.htmlContent,
+    "/system-packages/demo-minimal/layouts/main.css": pageLayout?.cssContent ?? minimalSystemPackage.pages[0].layout.cssContent ?? "",
     "/system-packages/demo-minimal/assets/readme.txt": "hello",
   };
+
+  if (options.resources) {
+    files["/system-packages/demo-minimal/resources/domains.json"] = JSON.stringify(options.resources);
+  }
+  if (options.dependencies) {
+    files["/system-packages/demo-minimal/dependencies.json"] = JSON.stringify(options.dependencies);
+  }
 
   return vi.fn(async (url: string | URL | Request) => {
     const key = String(url);

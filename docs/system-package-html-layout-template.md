@@ -6,6 +6,8 @@
 
 本文定义 Author 如何用安全 HTML 和 scoped CSS 声明页面布局。模板只负责摆放已有 Sheet Modules 和无状态装饰，不产生 Character Data，也不定义交互行为。
 
+Resource Picker 与 Dependency Fill 写法见：[System Package Resource Picker 与 Dependency Fill 接口](system-package-resource-picker.md)。
+
 ## 总结构
 
 HTML Layout Template 是：

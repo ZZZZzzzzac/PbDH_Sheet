@@ -72,4 +72,19 @@ describe("Character Data import/export", () => {
     });
     expect(result.ok).toBe(true);
   });
+
+  it("rejects hidden Resource Library selection refs in Character Data", () => {
+    const data = createEmptyCharacterData(moduleDemoSystemPackage);
+    const exported = JSON.parse(exportCharacterData(data));
+    exported.character.values["domain-choice"] = {
+      kind: "resource-selection",
+      mode: "single",
+      libraryId: "domains",
+      selected: [{ libraryId: "domains", entryId: "flame-1", snapshot: { 名称: "烈焰" } }],
+    };
+
+    const result = parseCharacterDataJson(JSON.stringify(exported), moduleDemoSystemPackage);
+
+    expect(result.ok).toBe(false);
+  });
 });

@@ -106,6 +106,7 @@ function seedDefaultModuleValues(systemPackage: SystemPackage): Record<string, S
       }
       case "readOnlyDisplay":
       case "imageField":
+      case "resourcePicker":
         break;
     }
   }

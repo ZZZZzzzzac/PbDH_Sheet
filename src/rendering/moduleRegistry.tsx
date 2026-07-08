@@ -6,6 +6,7 @@ import { FreeTextModule } from "./FreeTextModule";
 import { ImageFieldModule } from "./ImageFieldModule";
 import { LongTextModule } from "./LongTextModule";
 import { ReadOnlyDisplayModule } from "./ReadOnlyDisplayModule";
+import { ResourcePickerModule } from "./ResourcePickerModule";
 
 interface ModuleRendererProps<TModule extends SheetModule> {
   module: TModule;
@@ -25,9 +26,14 @@ export const moduleRegistry: ModuleRegistry = {
   countableResource: CountableResourceModule,
   readOnlyDisplay: ReadOnlyDisplayModule,
   imageField: ImageFieldModule,
+  resourcePicker: ResourcePickerModule,
 };
 
 export function RenderSheetModule({ module, systemPackage }: { module: SheetModule; systemPackage: SystemPackage }) {
-  const Renderer = moduleRegistry[module.类型] as ModuleRenderer<SheetModule>;
+  const Renderer = moduleRegistry[module.类型] as ModuleRenderer<SheetModule> | undefined;
+  if (!Renderer) {
+    return null;
+  }
+
   return <Renderer module={module} systemPackage={systemPackage} />;
 }

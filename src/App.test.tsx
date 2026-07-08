@@ -9,6 +9,7 @@ const emptyStorage: StorageService = {
     return null;
   },
   async saveCurrentSystemPackage() {},
+  async clearCurrentSystemPackage() {},
   async loadCurrentPackageAssets() {
     return [];
   },

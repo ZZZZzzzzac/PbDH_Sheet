@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 336" role="img" aria-label="幽影卡图">
+  <rect width="240" height="336" fill="#edf1f2"/>
+  <rect x="18" y="18" width="204" height="300" fill="#ffffff" stroke="#243438" stroke-width="6"/>
+  <circle cx="120" cy="148" r="58" fill="#31565e"/>
+  <path d="M74 204 C102 188 138 188 166 204 C154 232 86 232 74 204 Z" fill="#607075"/>
+  <text x="120" y="292" text-anchor="middle" fill="#243438" font-family="serif" font-size="32">幽影</text>
+</svg>

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -145,6 +145,89 @@ test("uploads the phase 5 module demo package and persists simple module state",
   await expect(page.getByAltText("角色头像")).toBeVisible();
 });
 
+test("uploads Resource Picker demo and restores filled text through export/import", async ({ page }, testInfo) => {
+  const selectionLogs: unknown[] = [];
+  page.on("console", (message) => {
+    if (!message.text().startsWith("resourceSelected")) {
+      return;
+    }
+
+    void Promise.all(message.args().map((arg) => arg.jsonValue().catch(() => undefined))).then((args) => {
+      selectionLogs.push(args[1]);
+    });
+  });
+
+  await page.goto("/");
+  await expect(page.getByText("未加载")).toBeVisible();
+  await uploadPackage(page, selectionDemoPackagePath());
+
+  await expect(page.getByText("demo-selection")).toBeVisible();
+  const classPicker = page.locator('[data-module-id="pick-class"]');
+  await classPicker.getByRole("button", { name: "选择职业" }).click();
+  const classDialog = page.getByRole("dialog", { name: "职业资源库" });
+  await expect(classDialog).toBeVisible();
+  await expect(classDialog.getByRole("columnheader", { name: "ID" })).toHaveCount(0);
+  await expect(classDialog.getByRole("columnheader", { name: "原名" })).toHaveCount(0);
+  const classColumnWidths = await tableColumnWidths(classDialog);
+  expect(classColumnWidths["领域1"]).toBeLessThan(120);
+  expect(classColumnWidths["职业特性"]).toBeGreaterThan(480);
+  expect(classColumnWidths["职业特性"]).toBeGreaterThan(classColumnWidths["希望特性"]);
+  await page.getByLabel("选择 战士").click();
+  await expect(page.locator('[data-module-id="class-name"]').getByRole("textbox", { name: "职业", exact: true })).toHaveValue("战士");
+  await expect(page.locator('[data-module-id="class-domains"]').getByRole("textbox", { name: "领域", exact: true })).toHaveValue("利刃+骸骨");
+
+  const single = page.locator('[data-module-id="pick-domain-card"]');
+  await single.getByRole("button", { name: "选择领域卡" }).click();
+  await expect(page.getByRole("dialog", { name: "领域卡资源库" })).toBeVisible();
+  await expect(page.getByLabel("选择 灵巧机动")).not.toBeVisible();
+  await page.getByLabel("排序字段").selectOption("名称");
+  await page.getByLabel("选择 卷土重来").click();
+  await expect(page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true })).toHaveValue("卷土重来");
+  await expect(page.getByText("已保存")).toBeVisible();
+
+  await expect.poll(() => selectionLogs.length).toBeGreaterThan(1);
+  expect(selectionLogs.find((item) => (item as { moduleId?: string }).moduleId === "pick-domain-card")).toMatchObject({
+    moduleId: "pick-domain-card",
+    libraryId: "domain-cards",
+    selectedItemIds: ["domain-card:卷土重来"],
+  });
+
+  await page.reload();
+  await expect(page.getByText("demo-selection")).toBeVisible();
+  await expect(page.locator('[data-module-id="class-name"]').getByRole("textbox", { name: "职业", exact: true })).toHaveValue("战士");
+  await expect(page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true })).toHaveValue("卷土重来");
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "导出 Character JSON" }).click();
+  const download = await downloadPromise;
+  const exportPath = path.join(testInfo.outputDir, "selection-character.json");
+  await download.saveAs(exportPath);
+
+  const exportedText = await readFile(exportPath, "utf8");
+  const exported = JSON.parse(exportedText);
+  expect(exported.character.values["class-name"]).toBe("战士");
+  expect(exported.character.values["class-domains"]).toBe("利刃+骸骨");
+  expect(exported.character.values["domain-card-name"]).toBe("卷土重来");
+  expect(exported.character.values["pick-class"]).toBeUndefined();
+  expect(exported.character.values["pick-domain-card"]).toBeUndefined();
+  expect(exportedText).not.toContain("resource-selection");
+  expect(exportedText).not.toContain("assets/flame-card.svg");
+  expect(exportedText).not.toContain("data:image");
+  expect(exportedText).not.toContain("<svg");
+
+  const changedSingle = page.locator('[data-module-id="pick-domain-card"]');
+  await changedSingle.getByRole("button", { name: "选择领域卡" }).click();
+  await page.getByLabel("选择 还不够好").click();
+  await expect(page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true })).toHaveValue("还不够好");
+
+  const characterChooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "导入 Character JSON" }).click();
+  const characterChooser = await characterChooserPromise;
+  await characterChooser.setFiles(exportPath);
+
+  await expect(page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true })).toHaveValue("卷土重来");
+});
+
 test("HTML Layout Template from demo zip stacks columns on small screens", async ({ page }) => {
   await page.goto("/");
   await uploadPackage(page, moduleDemoPackagePath());
@@ -194,11 +277,99 @@ test("invalid System Package zip keeps the current sheet when one is already loa
   await expect(page.getByLabel("姓名")).toHaveValue("阿青");
 });
 
+test("invalid cached System Package is cleared and leaves upload controls usable", async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error.message));
+
+  await page.goto("/");
+  await putInvalidCachedPackage(page);
+  await page.reload();
+
+  await expect(page.getByText("未加载")).toBeVisible();
+  await expect(page.getByText("缓存的 System Package 已失效，已清除。请重新上传系统包。")).toBeVisible();
+  await expect(page.getByRole("button", { name: "导入 System Package zip" })).toBeEnabled();
+  await expect(page.getByLabel("Sheet Tool")).not.toBeVisible();
+  expect(pageErrors).toEqual([]);
+
+  await page.reload();
+  await expect(page.getByText("未加载")).toBeVisible();
+  await expect(page.getByText("缓存的 System Package 已失效")).not.toBeVisible();
+});
+
 async function uploadPackage(page: Page, packagePath: string) {
   const packageChooserPromise = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "导入 System Package zip" }).click();
   const packageChooser = await packageChooserPromise;
   await packageChooser.setFiles(packagePath);
+}
+
+async function tableColumnWidths(container: Locator) {
+  return container.locator(".resource-table").evaluate((table) => {
+    const headers = [...table.querySelectorAll("th")];
+    return Object.fromEntries(headers.map((header) => [header.textContent?.trim() ?? "", header.getBoundingClientRect().width]));
+  });
+}
+
+async function putInvalidCachedPackage(page: Page) {
+  await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("pbdh-sheet");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      if (!db.objectStoreNames.contains("systemPackages")) {
+        db.close();
+        reject(new Error("systemPackages object store missing"));
+        return;
+      }
+
+      const transaction = db.transaction("systemPackages", "readwrite");
+      transaction.objectStore("systemPackages").put({
+        id: "current-system-package",
+        packageId: "stale-selection",
+        data: {
+          manifest: {
+            ID: "stale-selection",
+            名称: "旧包",
+            版本: "1.0.0",
+            schemaVersion: "0.1.0",
+          },
+          pages: [
+            {
+              ID: "main",
+              名称: "Main",
+              layout: {
+                类型: "htmlTemplate",
+                html: "layouts/main.html",
+                htmlContent: '<pb-module id="legacy-selection"></pb-module>',
+              },
+            },
+          ],
+          modules: [
+            {
+              ID: "legacy-selection",
+              类型: "selectionText",
+              标签: "旧选择文本",
+            },
+          ],
+        },
+      });
+      transaction.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      transaction.onerror = () => {
+        db.close();
+        reject(transaction.error);
+      };
+      transaction.onabort = () => {
+        db.close();
+        reject(transaction.error);
+      };
+    });
+  });
 }
 
 function demoPackagePath() {
@@ -207,6 +378,10 @@ function demoPackagePath() {
 
 function moduleDemoPackagePath() {
   return path.join(process.cwd(), "public", "system-packages", "demo-modules.zip");
+}
+
+function selectionDemoPackagePath() {
+  return path.join(process.cwd(), "public", "system-packages", "demo-selection.zip");
 }
 
 function errorFixturePath(fileName: string) {

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 336" role="img" aria-label="烈焰卡图">
+  <rect width="240" height="336" fill="#f6f1e8"/>
+  <rect x="18" y="18" width="204" height="300" fill="#ffffff" stroke="#243438" stroke-width="6"/>
+  <path d="M120 68 C154 112 94 126 134 180 C150 204 132 236 96 248 C104 220 70 206 82 164 C90 136 116 118 120 68 Z" fill="#c4493d"/>
+  <path d="M119 122 C140 154 108 166 128 196 C138 210 130 228 111 237 C113 216 94 206 101 180 C105 160 118 148 119 122 Z" fill="#e0b441"/>
+  <text x="120" y="292" text-anchor="middle" fill="#243438" font-family="serif" font-size="32">烈焰</text>
+</svg>

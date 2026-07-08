@@ -5,7 +5,7 @@
 
 ## 背景
 
-PbDH Sheet Tool 需要大量跨模块联动：选择文本模块筛选其他资源库选项、显示或隐藏模块、根据资源条目字段自动填充文本。依赖逻辑是第一版最复杂的核心部件。
+PbDH Sheet Tool 需要大量跨模块联动：Resource Picker 选择系统资源、筛选其他资源库选项、显示或隐藏模块、根据资源条目字段自动填充文本。依赖逻辑是第一版最复杂的核心部件。
 
 ## 决策
 
@@ -56,3 +56,9 @@ Dependency Engine 是独立核心模块：
 - 多个 System Package 真实需要两步以上依赖链。
 - Author 经常用重复规则绕过单轮限制。
 - Validation Script 频繁被滥用于 UI 依赖提示。
+
+## 追加说明（2026-07-08）
+
+Resource Library 选择不再建模为可见的 `selectionText` Sheet Module。资源选择是一次交互事件：`resourcePicker` 负责打开 Resource Library Browser 并发出临时 `resourceSelected` 事件，Dependency Engine 根据 Author 声明的 dependency rules 生成 data patches，例如把选中条目的字段填入 `freeText` 或 `longText` 模块。
+
+默认情况下，`resourceSelected` 事件不写入 Character Data，也不保存隐藏的资源引用。Character Data 只保存 Dependency Engine 最终写入的 Sheet Values。这样资源选择更接近“帮玩家抄表”的操作，而不是角色数据本身。

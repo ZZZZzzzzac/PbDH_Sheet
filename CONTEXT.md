@@ -53,12 +53,16 @@ The author-provided content of a Resource Library entry field, treated as displa
 _Avoid_: Implied numeric field
 
 **Sheet Module**:
-A reusable author-configured building block such as text, resource, selection, image, or display content.
+A reusable author-configured building block such as text, resource picker, image, or display content.
 _Avoid_: Feature when referring to primitive sheet capabilities
 
 **Resource Library**:
 An Author-defined collection of selectable system resources such as classes, weapons, abilities, traits, or cards.
 _Avoid_: Card deck when referring to the source data
+
+**Resource Picker**:
+A button-like Sheet Module that opens a Resource Library for Player selection and emits a transient selection event for Dependency Logic.
+_Avoid_: Selection Text when the module is only a trigger and should not display or store a selected value
 
 **Card**:
 A PbDH resource presented as a player-usable card, either as text-only content or with card artwork.
@@ -151,6 +155,7 @@ _Avoid_: Script plugin
 - **Resource Values** are displayed as provided; the Base Framework does not interpret their game meaning.
 - A **System Package** composes **Sheet Modules** into pages through **HTML Layout Templates**.
 - A **Resource Library** stores source entries; **Card Presentation** controls how selected entries appear to Players.
+- A **Resource Picker** is an interaction trigger over a **Resource Library**. It does not persist selected resource references into **Character Data** by default.
 - A **Card** is a core PbDH concept and may represent many kinds of resources, not only Daggerheart domain cards.
 - PbDH Cards are ability/resource references, not a card-game rules engine.
 - Player-side Cards are grouped into **Configured Cards**, **Vault Cards**, and **Library Cards**.
@@ -164,6 +169,7 @@ _Avoid_: Script plugin
 - An **HTML Layout Template** may include **Static Layout Content** and module placeholders, but editable Character Data still belongs to **Sheet Modules**.
 - An **HTML Layout Template** must not define interactive form controls or custom behavior; all Player interaction that reads or writes state must use Base Framework **Sheet Modules** or other framework-provided interactive surfaces.
 - **Dependency Logic** helps Players avoid table lookup and text copying, but should not imply full automation of game rules.
+- **Dependency Logic** may consume a Resource Picker selection event and fill existing Sheet Modules with selected Resource Values.
 - A **Validation Check** may read many **Sheet Modules**, but it does not write values back to them.
 - A **Validation Script** may express unusual rule-specific calculations, but it only reads exported sheet data and only outputs a report.
 - A **Declarative System Package** should be enough for first-version sheet behavior; arbitrary scripts that mutate sheet state are outside the first-version requirement.

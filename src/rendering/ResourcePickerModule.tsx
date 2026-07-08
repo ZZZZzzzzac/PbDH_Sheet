@@ -1,0 +1,54 @@
+import { Search } from "lucide-react";
+import { useMemo, useState } from "react";
+import { findResourceLibrary, type ResourcePickerModule as ResourcePickerModuleConfig, type SystemPackage } from "../domain/systemPackage";
+import { getResourceLibraryFields, type ResourceLibraryEntry } from "../domain/resourceLibrary";
+import { useRuntimeStore } from "../store/runtimeStore";
+import { ResourceLibraryBrowser } from "./ResourceLibraryBrowser";
+
+interface ResourcePickerModuleProps {
+  module: ResourcePickerModuleConfig;
+  systemPackage: SystemPackage;
+}
+
+export function ResourcePickerModule({ module, systemPackage }: ResourcePickerModuleProps) {
+  const [open, setOpen] = useState(false);
+  const library = findResourceLibrary(systemPackage, module.资源库ID);
+  const commitResourceSelection = useRuntimeStore((state) => state.commitResourceSelection);
+  const browserFields = useMemo(() => (library ? getResourceLibraryFields(library, module.字段模板) : []), [library, module.字段模板]);
+
+  const commitSelection = (entries: ResourceLibraryEntry[]) => {
+    if (!library) {
+      return;
+    }
+
+    const selectedEntries = module.多选 ? entries : entries.slice(0, 1);
+    console.log("resourceSelected", {
+      moduleId: module.ID,
+      libraryId: library.ID,
+      selectedItemIds: selectedEntries.map((entry) => entry.ID),
+      selectedItemSnapshots: selectedEntries.map((entry) => ({ ...entry.fields })),
+    });
+    commitResourceSelection(module.ID, library.ID, selectedEntries);
+    setOpen(false);
+  };
+
+  return (
+    <div className="container resource-picker-module" data-module-id={module.ID} data-module-type={module.类型}>
+      <button className="icon-button resource-picker-button" type="button" disabled={!library} onClick={() => setOpen(true)}>
+        <Search aria-hidden="true" size={18} />
+        <span>{library ? module.按钮文本 : "资源库不可用"}</span>
+      </button>
+      {open && library ? (
+        <ResourceLibraryBrowser
+          library={library}
+          fields={browserFields}
+          multiSelect={module.多选 ?? false}
+          selectedIds={[]}
+          defaultQuery={module.默认查询}
+          onCommit={commitSelection}
+          onClose={() => setOpen(false)}
+        />
+      ) : null}
+    </div>
+  );
+}
