@@ -1,6 +1,6 @@
 # System Package Selection Text 与 Resource Library 接口
 
-> 过时文档：`selectionText` 模块已被 `resourcePicker` + `resourceSelected` Dependency Fill 取代。新 System Package 应使用 [System Package Resource Picker 与 Dependency Fill 接口](system-package-resource-picker.md)。
+> 过时文档：`selectionText` 模块已被 `resourcePicker` + Dependency Logic v1 取代。新 System Package 应使用 [System Package Resource Picker 与 Dependency Logic v1 接口](system-package-resource-picker.md)。
 
 读者：System Package Author，以及协助 Author 写包的 AI
 

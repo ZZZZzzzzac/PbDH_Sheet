@@ -65,8 +65,11 @@ describe("loadSystemPackageFromUrl", () => {
     const dependencies = [
       {
         ID: "fill-domain",
+        sources: [{ 类型: "resourcePicker", 模块ID: "domain-pick" }],
+        targets: [{ 类型: "module", 模块ID: "domain-name" }],
         触发: { 类型: "resourceSelected", 来源模块ID: "domain-pick" },
-        动作: [{ 类型: "fillText", 目标模块ID: "domain-name", 资源字段: "名称" }],
+        条件: { 类型: "always" },
+        动作: [{ 类型: "fillText", 目标模块ID: "domain-name", 内容: { 类型: "selectedResourceField", 字段: "名称" } }],
       },
     ];
     const pages = [

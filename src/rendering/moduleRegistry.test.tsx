@@ -12,6 +12,10 @@ function renderModuleDemo(systemPackage: SystemPackage = moduleDemoSystemPackage
     packageAssetUrls,
     characterData: createEmptyCharacterData(systemPackage),
     packageIssues: [],
+    derivedReadOnlyDisplayContent: {},
+    moduleVisibility: {},
+    pageVisibility: {},
+    resourcePickerDefaultQueries: {},
     bootStatus: "ready",
     storageStatus: "idle",
     importError: null,
@@ -28,6 +32,10 @@ describe("Module Registry rendering", () => {
       packageAssetUrls: {},
       characterData: null,
       packageIssues: [],
+      derivedReadOnlyDisplayContent: {},
+      moduleVisibility: {},
+      pageVisibility: {},
+      resourcePickerDefaultQueries: {},
       bootStatus: "idle",
       storageStatus: "idle",
       importError: null,
@@ -121,16 +129,21 @@ describe("Module Registry rendering", () => {
     expect(dialog.querySelector(".resource-table-col-fill")).not.toBeNull();
     expect(screen.queryByRole("columnheader", { name: "ID" })).not.toBeInTheDocument();
     expect(screen.queryByText("assets/cards/flame.png")).not.toBeInTheDocument();
+    expect(screen.queryByText("选择领域后显示")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("选择 烈焰"));
 
     const values = useRuntimeStore.getState().characterData?.character.values;
     expect(values?.["domain-name"]).toBe("烈焰");
     expect(values?.["domain-level"]).toBe("1");
+    expect(values?.["domain-display"]).toBeUndefined();
     expect(values?.["domain-choice"]).toBeUndefined();
     expect(JSON.stringify(values)).not.toContain("resource-selection");
     expect(JSON.stringify(values)).not.toContain("data:image");
     expect(screen.getByLabelText("领域名")).toHaveValue("烈焰");
+    expect(screen.getByText("烈焰")).toBeVisible();
+    expect(screen.getByText("选择领域后显示")).toBeVisible();
+    expect(screen.getByText("隐藏页面已显示")).toBeVisible();
     expect(logSpy).toHaveBeenCalledWith(
       "resourceSelected",
       expect.objectContaining({
@@ -156,6 +169,23 @@ describe("Module Registry rendering", () => {
     const values = useRuntimeStore.getState().characterData?.character.values;
     expect(values?.["domain-name"]).toBe("烈焰、幽影");
     expect(screen.getByLabelText("领域名")).toHaveValue("烈焰、幽影");
+  });
+
+  it("applies runtime Resource Picker default filters while leaving them editable", () => {
+    renderModuleDemo(createResourcePickerPackage({ defaultFilters: { 领域: ["骸骨"] } }));
+
+    useRuntimeStore.setState({
+      resourcePickerDefaultQueries: {
+        "domain-picker": { filters: { 领域: ["利刃"] } },
+      },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
+
+    expect(screen.getByLabelText("选择 烈焰")).toBeVisible();
+    expect(screen.queryByLabelText("选择 幽影")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("利刃"));
+    expect(screen.getByLabelText("选择 幽影")).toBeVisible();
   });
 });
 
@@ -223,14 +253,45 @@ function createResourcePickerPackage(options: { multiSelect?: boolean; defaultFi
         类型: "freeText",
         标签: "等级",
       },
+      {
+        ID: "domain-display",
+        类型: "readOnlyDisplay",
+        标签: "领域展示",
+        内容: "等待选择",
+      },
+      {
+        ID: "domain-hidden",
+        类型: "readOnlyDisplay",
+        标签: "隐藏领域提示",
+        内容: "选择领域后显示",
+        默认隐藏: true,
+      },
+      {
+        ID: "domain-page-note",
+        类型: "readOnlyDisplay",
+        标签: "隐藏页面提示",
+        内容: "隐藏页面已显示",
+      },
     ],
     dependencies: [
       {
         ID: "fill-domain",
+        sources: [{ 类型: "resourcePicker", 模块ID: "domain-picker" }],
+        targets: [
+          { 类型: "module", 模块ID: "domain-name" },
+          { 类型: "module", 模块ID: "domain-level" },
+          { 类型: "module", 模块ID: "domain-display" },
+          { 类型: "module", 模块ID: "domain-hidden" },
+          { 类型: "page", 页面ID: "domain-page" },
+        ],
         触发: { 类型: "resourceSelected", 来源模块ID: "domain-picker" },
+        条件: { 类型: "always" },
         动作: [
-          { 类型: "fillText", 目标模块ID: "domain-name", 资源字段: "名称", 分隔符: "、" },
-          { 类型: "fillText", 目标模块ID: "domain-level", 资源字段: "等级", 分隔符: "、" },
+          { 类型: "fillText", 目标模块ID: "domain-name", 内容: { 类型: "selectedResourceField", 字段: "名称", 分隔符: "、" } },
+          { 类型: "fillText", 目标模块ID: "domain-level", 内容: { 类型: "selectedResourceField", 字段: "等级", 分隔符: "、" } },
+          { 类型: "fillText", 目标模块ID: "domain-display", 内容: { 类型: "selectedResourceField", 字段: "名称", 分隔符: "、" } },
+          { 类型: "setVisibility", 目标类型: "module", 目标ID: "domain-hidden", 显示: true },
+          { 类型: "setVisibility", 目标类型: "page", 目标ID: "domain-page", 显示: true },
         ],
       },
     ],
@@ -239,7 +300,17 @@ function createResourcePickerPackage(options: { multiSelect?: boolean; defaultFi
         ...moduleDemoSystemPackage.pages[0],
         layout: {
           ...moduleDemoSystemPackage.pages[0].layout,
-          htmlContent: `${moduleDemoSystemPackage.pages[0].layout.htmlContent}<pb-module id="domain-picker"></pb-module><pb-module id="domain-name"></pb-module><pb-module id="domain-level"></pb-module>`,
+          htmlContent: `${moduleDemoSystemPackage.pages[0].layout.htmlContent}<pb-module id="domain-picker"></pb-module><pb-module id="domain-name"></pb-module><pb-module id="domain-level"></pb-module><pb-module id="domain-display"></pb-module><pb-module id="domain-hidden"></pb-module>`,
+        },
+      },
+      {
+        ID: "domain-page",
+        名称: "领域页",
+        默认隐藏: true,
+        layout: {
+          类型: "htmlTemplate",
+          html: "layouts/domain.html",
+          htmlContent: '<main><pb-module id="domain-page-note"></pb-module></main>',
         },
       },
     ],

@@ -38,6 +38,11 @@ if (-not (Test-Path -LiteralPath "node_modules")) {
   throw "node_modules not found. Run 'npm install' first."
 }
 
+$viteBin = Join-Path $PSScriptRoot "node_modules\.bin\vite.cmd"
+if (-not (Test-Path -LiteralPath $viteBin)) {
+  throw "Vite launcher not found. Run 'npm install' first."
+}
+
 $port = Find-FreePort
 $url = "http://${HostName}:$port"
 
@@ -68,7 +73,10 @@ $openBrowserJob = Start-Job -ScriptBlock {
 } -ArgumentList $HostName, $port, $url
 
 Write-Host "Browser will open when server is ready. Press Ctrl+C to stop."
-npm run dev -- --host $HostName --port $port
+& $viteBin --host $HostName --port $port
+$devExitCode = $LASTEXITCODE
 
 Receive-Job -Job $openBrowserJob -ErrorAction SilentlyContinue | Out-Null
 Remove-Job -Job $openBrowserJob -Force -ErrorAction SilentlyContinue
+
+exit $devExitCode

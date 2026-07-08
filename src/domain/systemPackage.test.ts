@@ -127,8 +127,11 @@ describe("validateSystemPackage", () => {
       dependencies: [
         {
           ID: "fill-domain",
+          sources: [{ 类型: "resourcePicker", 模块ID: "domain-pick" }],
+          targets: [{ 类型: "module", 模块ID: "domain-name" }],
           触发: { 类型: "resourceSelected", 来源模块ID: "domain-pick" },
-          动作: [{ 类型: "fillText", 目标模块ID: "domain-name", 资源字段: "名称" }],
+          条件: { 类型: "always" },
+          动作: [{ 类型: "fillText", 目标模块ID: "domain-name", 内容: { 类型: "selectedResourceField", 字段: "名称" } }],
         },
       ],
       pages: [
@@ -153,6 +156,7 @@ describe("validateSystemPackage", () => {
       }
       expect(findResourceLibrary(result.package, "domains")?.entries[1].fields.等级).toBe("");
       expect(result.package.dependencies?.[0].动作[0].目标模块ID).toBe("domain-name");
+      expect(result.package.dependencies?.[0].sources[0]).toEqual({ 类型: "resourcePicker", 模块ID: "domain-pick" });
     }
   });
 
@@ -213,8 +217,11 @@ describe("validateSystemPackage", () => {
       dependencies: [
         {
           ID: "bad-target",
+          sources: [{ 类型: "resourcePicker", 模块ID: "pick" }],
+          targets: [{ 类型: "module", 模块ID: "image-target" }],
           触发: { 类型: "resourceSelected", 来源模块ID: "pick" },
-          动作: [{ 类型: "fillText", 目标模块ID: "image-target", 资源字段: "名称" }],
+          条件: { 类型: "always" },
+          动作: [{ 类型: "fillText", 目标模块ID: "image-target", 内容: { 类型: "selectedResourceField", 字段: "名称" } }],
         },
       ],
       pages: [
@@ -235,6 +242,56 @@ describe("validateSystemPackage", () => {
       expect.arrayContaining([
         expect.objectContaining({
           code: "UNSUPPORTED_DEPENDENCY_TARGET_MODULE",
+          level: "error",
+        }),
+      ]),
+    );
+  });
+
+  it("reports unsupported countableResource dependency triggers clearly", () => {
+    const invalidPackage = {
+      ...minimalSystemPackage,
+      modules: [
+        ...minimalSystemPackage.modules,
+        {
+          ID: "vitality",
+          类型: "countableResource",
+          标签: "气力",
+        },
+        {
+          ID: "note",
+          类型: "freeText",
+          标签: "提示",
+        },
+      ],
+      dependencies: [
+        {
+          ID: "bad-counter",
+          sources: [{ 类型: "countableResource", 模块ID: "vitality" }],
+          targets: [{ 类型: "module", 模块ID: "note" }],
+          触发: { 类型: "countableChanged", 来源模块ID: "vitality" },
+          条件: { 类型: "always" },
+          动作: [{ 类型: "fillText", 目标模块ID: "note", 内容: "不支持" }],
+        },
+      ],
+      pages: [
+        {
+          ...minimalSystemPackage.pages[0],
+          layout: {
+            ...minimalSystemPackage.pages[0].layout,
+            htmlContent: `${minimalSystemPackage.pages[0].layout.htmlContent}<pb-module id="vitality"></pb-module><pb-module id="note"></pb-module>`,
+          },
+        },
+      ],
+    };
+
+    const result = validateSystemPackage(invalidPackage);
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "UNSUPPORTED_DEPENDENCY_TRIGGER",
           level: "error",
         }),
       ]),

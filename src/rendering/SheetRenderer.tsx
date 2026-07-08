@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { SystemPackage } from "../domain/systemPackage";
 import { findModule } from "../domain/systemPackage";
+import { useRuntimeStore } from "../store/runtimeStore";
 import { RenderSheetModule } from "./moduleRegistry";
 
 interface SheetRendererProps {
@@ -45,7 +46,7 @@ const reactAttributeNames = new Map([
   ["rowspan", "rowSpan"],
 ]);
 
-function renderTemplateNode(systemPackage: SystemPackage, node: ChildNode, key: string): ReactNode {
+function renderTemplateNode(systemPackage: SystemPackage, node: ChildNode, key: string, moduleVisibility: Record<string, boolean>): ReactNode {
   if (node.nodeType === 3) {
     return node.textContent;
   }
@@ -58,7 +59,7 @@ function renderTemplateNode(systemPackage: SystemPackage, node: ChildNode, key: 
   const tagName = element.tagName.toLowerCase();
 
   if (tagName === "pb-module") {
-    return renderModulePlaceholder(systemPackage, element.getAttribute("id"), key);
+    return renderModulePlaceholder(systemPackage, element.getAttribute("id"), key, moduleVisibility);
   }
 
   if (!allowedTemplateTags.has(tagName)) {
@@ -66,18 +67,21 @@ function renderTemplateNode(systemPackage: SystemPackage, node: ChildNode, key: 
   }
 
   const props = templateElementProps(element);
-  const children = [...element.childNodes].map((child, index) => renderTemplateNode(systemPackage, child, `${key}-${index}`));
+  const children = [...element.childNodes].map((child, index) => renderTemplateNode(systemPackage, child, `${key}-${index}`, moduleVisibility));
 
   return createTemplateElement(tagName, key, props, children);
 }
 
-function renderModulePlaceholder(systemPackage: SystemPackage, moduleId: string | null, key: string) {
+function renderModulePlaceholder(systemPackage: SystemPackage, moduleId: string | null, key: string, moduleVisibility: Record<string, boolean>) {
   if (!moduleId) {
     return null;
   }
 
   const module = findModule(systemPackage, moduleId);
   if (!module) {
+    return null;
+  }
+  if (!isRuntimeVisible(module.默认隐藏, moduleVisibility[module.ID])) {
     return null;
   }
 
@@ -167,9 +171,9 @@ function createTemplateElement(tagName: string, key: string, props: Record<strin
   }
 }
 
-function renderHtmlTemplate(systemPackage: SystemPackage, html: string) {
+function renderHtmlTemplate(systemPackage: SystemPackage, html: string, moduleVisibility: Record<string, boolean>) {
   const document = new DOMParser().parseFromString(html, "text/html");
-  return [...document.body.childNodes].map((node, index) => renderTemplateNode(systemPackage, node, String(index)));
+  return [...document.body.childNodes].map((node, index) => renderTemplateNode(systemPackage, node, String(index), moduleVisibility));
 }
 
 function scopeTemplateCss(pageId: string, css?: string): string {
@@ -244,14 +248,23 @@ function cssStringEscape(value: string): string {
 }
 
 export function SheetRenderer({ systemPackage }: SheetRendererProps) {
+  const pageVisibility = useRuntimeStore((state) => state.pageVisibility);
+  const moduleVisibility = useRuntimeStore((state) => state.moduleVisibility);
+
   return (
     <main className="sheet-tool" aria-label="Sheet Tool">
-      {systemPackage.pages.map((page) => (
-        <article className="sheet-page" data-template-page-id={page.ID} key={page.ID}>
-          <style>{scopeTemplateCss(page.ID, page.layout.cssContent)}</style>
-          {renderHtmlTemplate(systemPackage, page.layout.htmlContent)}
-        </article>
-      ))}
+      {systemPackage.pages.map((page) =>
+        isRuntimeVisible(page.默认隐藏, pageVisibility[page.ID]) ? (
+          <article className="sheet-page" data-template-page-id={page.ID} key={page.ID}>
+            <style>{scopeTemplateCss(page.ID, page.layout.cssContent)}</style>
+            {renderHtmlTemplate(systemPackage, page.layout.htmlContent, moduleVisibility)}
+          </article>
+        ) : null,
+      )}
     </main>
   );
+}
+
+function isRuntimeVisible(defaultHidden: boolean | undefined, runtimeVisible: boolean | undefined): boolean {
+  return runtimeVisible ?? !defaultHidden;
 }

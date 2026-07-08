@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import {
+  type CheckboxState,
   createEmptyCharacterData,
   parseCharacterDataJson,
   updateCharacterValue,
@@ -8,8 +9,8 @@ import {
   type PlayerImageData,
   type SheetValue,
 } from "../domain/characterData";
-import { applyResourceSelectedDependencies } from "../domain/dependencyEngine";
-import type { ResourceLibraryEntry } from "../domain/resourceLibrary";
+import { applyDependencyResultToCharacterData, evaluateDependencies, type DependencyEvaluationResult } from "../domain/dependencyEngine";
+import type { ResourceLibraryEntry, ResourceLibraryQuery } from "../domain/resourceLibrary";
 import { validateCachedSystemPackage, type PackageIssue, type SystemPackage } from "../domain/systemPackage";
 import { createRuntimeAssetResolver, type RuntimeAssetResolver, type RuntimePackageAsset } from "../loaders/assetResolver";
 import { loadSystemPackageFromZipFile, type PackageLoadResult } from "../loaders/systemPackageLoader";
@@ -25,6 +26,10 @@ interface RuntimeState {
   packageAssetUrls: Record<string, string>;
   packageIssues: PackageIssue[];
   characterData: CharacterData | null;
+  derivedReadOnlyDisplayContent: Record<string, string>;
+  moduleVisibility: Record<string, boolean>;
+  pageVisibility: Record<string, boolean>;
+  resourcePickerDefaultQueries: Record<string, ResourceLibraryQuery>;
   bootStatus: BootStatus;
   storageStatus: StorageStatus;
   importError: string | null;
@@ -33,6 +38,7 @@ interface RuntimeState {
   uploadSystemPackageFromFile: (file: Blob) => Promise<void>;
   updateModuleValue: (moduleId: string, value: SheetValue) => void;
   commitResourceSelection: (moduleId: string, libraryId: string, entries: ResourceLibraryEntry[]) => void;
+  commitCheckboxChange: (moduleId: string, optionId: string, checked: boolean, checkboxState: CheckboxState) => void;
   uploadPlayerImage: (moduleId: string, file: File) => Promise<void>;
   importCharacterDataFromText: (text: string) => Promise<void>;
   clearImportMessage: () => void;
@@ -70,6 +76,10 @@ async function loadPackageIntoState(
       currentPackage: systemPackage,
       packageAssetUrls: activePackageAssetResolver.urls,
       characterData: saved ?? createEmptyCharacterData(systemPackage),
+      derivedReadOnlyDisplayContent: {},
+      moduleVisibility: {},
+      pageVisibility: {},
+      resourcePickerDefaultQueries: {},
       packageIssues: issues,
       bootStatus: "ready",
       storageStatus,
@@ -79,6 +89,10 @@ async function loadPackageIntoState(
       currentPackage: systemPackage,
       packageAssetUrls: activePackageAssetResolver.urls,
       characterData: createEmptyCharacterData(systemPackage),
+      derivedReadOnlyDisplayContent: {},
+      moduleVisibility: {},
+      pageVisibility: {},
+      resourcePickerDefaultQueries: {},
       packageIssues: issues,
       bootStatus: "ready",
       storageStatus: "error",
@@ -101,6 +115,10 @@ async function clearCachedPackageAndResetState(set: (partial: Partial<RuntimeSta
     currentPackage: null,
     packageAssetUrls: {},
     characterData: null,
+    derivedReadOnlyDisplayContent: {},
+    moduleVisibility: {},
+    pageVisibility: {},
+    resourcePickerDefaultQueries: {},
     packageIssues: [],
     bootStatus: "ready",
     storageStatus,
@@ -139,6 +157,10 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   packageAssetUrls: {},
   packageIssues: [],
   characterData: null,
+  derivedReadOnlyDisplayContent: {},
+  moduleVisibility: {},
+  pageVisibility: {},
+  resourcePickerDefaultQueries: {},
   bootStatus: "idle",
   storageStatus: "idle",
   importError: null,
@@ -156,6 +178,10 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
           currentPackage: null,
           packageAssetUrls: {},
           characterData: null,
+          derivedReadOnlyDisplayContent: {},
+          moduleVisibility: {},
+          pageVisibility: {},
+          resourcePickerDefaultQueries: {},
           packageIssues: [],
           bootStatus: "ready",
           storageStatus: "idle",
@@ -221,16 +247,52 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       return;
     }
 
-    set({
-      characterData: applyResourceSelectedDependencies(characterData, currentPackage, {
+    const result = evaluateDependencies(characterData, currentPackage, {
         type: "resourceSelected",
         sourceModuleId: moduleId,
         libraryId,
         selectedEntries: entries,
-      }),
+    });
+    warnDependencyIssues(result);
+
+    set((state) => ({
+      characterData: applyDependencyResultToCharacterData(characterData, result),
+      ...mergeDependencyRuntimeState(state, result),
       importError: null,
       importNotice: null,
+    }));
+
+    if (Object.keys(result.dataPatches).length > 0) {
+      scheduleAutosave(
+        () => get().characterData,
+        (status) => set({ storageStatus: status }),
+      );
+    }
+  },
+
+  commitCheckboxChange(moduleId, optionId, checked, checkboxState) {
+    const currentPackage = get().currentPackage;
+    const characterData = get().characterData;
+    if (!currentPackage || !characterData) {
+      return;
+    }
+
+    const dataWithCheckboxState = updateCharacterValue(characterData, moduleId, checkboxState);
+    const result = evaluateDependencies(dataWithCheckboxState, currentPackage, {
+      type: "checkboxChanged",
+      sourceModuleId: moduleId,
+      optionId,
+      checked,
+      checkboxState,
     });
+    warnDependencyIssues(result);
+
+    set((state) => ({
+      characterData: applyDependencyResultToCharacterData(dataWithCheckboxState, result),
+      ...mergeDependencyRuntimeState(state, result),
+      importError: null,
+      importNotice: null,
+    }));
 
     scheduleAutosave(
       () => get().characterData,
@@ -300,6 +362,10 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
 
     set({
       characterData: result.data,
+      derivedReadOnlyDisplayContent: {},
+      moduleVisibility: {},
+      pageVisibility: {},
+      resourcePickerDefaultQueries: {},
       importError: null,
       importNotice: "Character Data 已导入。",
     });
@@ -323,6 +389,53 @@ export function configureRuntimeDependencies(dependencies: RuntimeDependencies) 
 
 export function resetRuntimeDependencies() {
   runtimeDependencies = defaultRuntimeDependencies;
+}
+
+function warnDependencyIssues(result: DependencyEvaluationResult) {
+  for (const warning of result.warnings) {
+    console.warn(warning);
+  }
+}
+
+function mergeDependencyRuntimeState(
+  state: RuntimeState,
+  result: DependencyEvaluationResult,
+): Pick<RuntimeState, "derivedReadOnlyDisplayContent" | "moduleVisibility" | "pageVisibility" | "resourcePickerDefaultQueries"> {
+  return {
+    derivedReadOnlyDisplayContent: {
+      ...state.derivedReadOnlyDisplayContent,
+      ...result.readOnlyDisplayContent,
+    },
+    moduleVisibility: {
+      ...state.moduleVisibility,
+      ...result.moduleVisibility,
+    },
+    pageVisibility: {
+      ...state.pageVisibility,
+      ...result.pageVisibility,
+    },
+    resourcePickerDefaultQueries: mergeResourcePickerDefaultQueries(state.resourcePickerDefaultQueries, result.resourcePickerDefaultQueries),
+  };
+}
+
+function mergeResourcePickerDefaultQueries(
+  current: Record<string, ResourceLibraryQuery>,
+  updates: Record<string, ResourceLibraryQuery>,
+): Record<string, ResourceLibraryQuery> {
+  const next = { ...current };
+
+  for (const [moduleId, query] of Object.entries(updates)) {
+    next[moduleId] = {
+      ...next[moduleId],
+      ...query,
+      filters: {
+        ...(next[moduleId]?.filters ?? {}),
+        ...(query.filters ?? {}),
+      },
+    };
+  }
+
+  return next;
 }
 
 function createPlayerImageId(moduleId: string) {

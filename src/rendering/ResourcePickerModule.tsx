@@ -1,7 +1,7 @@
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { findResourceLibrary, type ResourcePickerModule as ResourcePickerModuleConfig, type SystemPackage } from "../domain/systemPackage";
-import { getResourceLibraryFields, type ResourceLibraryEntry } from "../domain/resourceLibrary";
+import { getResourceLibraryFields, type ResourceLibraryEntry, type ResourceLibraryQuery } from "../domain/resourceLibrary";
 import { useRuntimeStore } from "../store/runtimeStore";
 import { ResourceLibraryBrowser } from "./ResourceLibraryBrowser";
 
@@ -14,7 +14,12 @@ export function ResourcePickerModule({ module, systemPackage }: ResourcePickerMo
   const [open, setOpen] = useState(false);
   const library = findResourceLibrary(systemPackage, module.资源库ID);
   const commitResourceSelection = useRuntimeStore((state) => state.commitResourceSelection);
+  const runtimeDefaultQuery = useRuntimeStore((state) => state.resourcePickerDefaultQueries[module.ID]);
   const browserFields = useMemo(() => (library ? getResourceLibraryFields(library, module.字段模板) : []), [library, module.字段模板]);
+  const defaultQuery = useMemo(
+    () => mergeResourcePickerQuery(module.默认查询, runtimeDefaultQuery),
+    [module.默认查询, runtimeDefaultQuery],
+  );
 
   const commitSelection = (entries: ResourceLibraryEntry[]) => {
     if (!library) {
@@ -44,11 +49,27 @@ export function ResourcePickerModule({ module, systemPackage }: ResourcePickerMo
           fields={browserFields}
           multiSelect={module.多选 ?? false}
           selectedIds={[]}
-          defaultQuery={module.默认查询}
+          defaultQuery={defaultQuery}
           onCommit={commitSelection}
           onClose={() => setOpen(false)}
         />
       ) : null}
     </div>
   );
+}
+
+function mergeResourcePickerQuery(baseQuery: ResourceLibraryQuery | undefined, runtimeQuery: ResourceLibraryQuery | undefined): ResourceLibraryQuery | undefined {
+  if (!baseQuery && !runtimeQuery) {
+    return undefined;
+  }
+
+  return {
+    ...baseQuery,
+    ...runtimeQuery,
+    filters: {
+      ...(baseQuery?.filters ?? {}),
+      ...(runtimeQuery?.filters ?? {}),
+    },
+    sort: runtimeQuery?.sort ?? baseQuery?.sort,
+  };
 }

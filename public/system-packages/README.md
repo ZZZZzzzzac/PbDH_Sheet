@@ -12,4 +12,4 @@
 - 用户上传包和用户缓存不放这里；后续由 Loader 和 IndexedDB 处理。
 
 HTML Layout Template 写法见 [System Package HTML Layout Template 接口](../../docs/system-package-html-layout-template.md)。
-Resource Picker 与 Dependency Fill 写法见 [System Package Resource Picker 与 Dependency Fill 接口](../../docs/system-package-resource-picker.md)。
+Resource Picker 与 Dependency Logic v1 写法见 [System Package Resource Picker 与 Dependency Logic v1 接口](../../docs/system-package-resource-picker.md)。

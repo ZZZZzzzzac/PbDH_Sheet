@@ -10,13 +10,13 @@ type CheckboxState = Record<string, boolean>;
 
 export function CheckboxResourceModule({ module }: CheckboxResourceModuleProps) {
   const rawValue = useRuntimeStore((state) => state.characterData?.character.values[module.ID]);
-  const updateModuleValue = useRuntimeStore((state) => state.updateModuleValue);
+  const commitCheckboxChange = useRuntimeStore((state) => state.commitCheckboxChange);
   const fallback = Object.fromEntries(module.选项.map((option) => [option.ID, option.默认选中 ?? false]));
   const value = readModuleState<CheckboxState>(rawValue, fallback);
   const labelId = `module-${module.ID}-label`;
 
   const setChecked = (optionId: string, checked: boolean) => {
-    updateModuleValue(module.ID, { ...value, [optionId]: checked });
+    commitCheckboxChange(module.ID, optionId, checked, { ...value, [optionId]: checked });
   };
 
   return (

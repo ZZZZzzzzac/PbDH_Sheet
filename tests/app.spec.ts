@@ -172,9 +172,26 @@ test("uploads Resource Picker demo and restores filled text through export/impor
   expect(classColumnWidths["领域1"]).toBeLessThan(120);
   expect(classColumnWidths["职业特性"]).toBeGreaterThan(480);
   expect(classColumnWidths["职业特性"]).toBeGreaterThan(classColumnWidths["希望特性"]);
-  await page.getByLabel("选择 战士").click();
-  await expect(page.locator('[data-module-id="class-name"]').getByRole("textbox", { name: "职业", exact: true })).toHaveValue("战士");
-  await expect(page.locator('[data-module-id="class-domains"]').getByRole("textbox", { name: "领域", exact: true })).toHaveValue("利刃+骸骨");
+  await page.getByLabel("选择 德鲁伊").click();
+  await expect(page.locator('[data-module-id="class-name"]').getByRole("textbox", { name: "职业", exact: true })).toHaveValue("德鲁伊");
+  await expect(page.locator('[data-module-id="class-domains"]').getByRole("textbox", { name: "领域", exact: true })).toHaveValue("贤者+奥术");
+  await expect(page.getByText(/你成长的社群为何如此依赖自然/)).toBeVisible();
+  await expect(page.locator('[data-module-id="druid-shape-note"]')).toBeVisible();
+  await expect(page.locator('[data-template-page-id="druid-shape-page"]')).toBeVisible();
+
+  await page.locator('[data-module-id="pick-subclass"]').getByRole("button", { name: "选择子职" }).click();
+  const subclassDialog = page.getByRole("dialog", { name: "子职资源库" });
+  await expect(subclassDialog).toBeVisible();
+  await expect(page.getByLabel("选择 元素结社-基础")).toBeVisible();
+  await expect(page.getByLabel("选择 勇气呼唤-基础")).not.toBeVisible();
+  await subclassDialog.getByRole("checkbox", { name: "德鲁伊" }).uncheck();
+  await expect(page.getByLabel("选择 勇气呼唤-基础")).toBeVisible();
+  await page.getByRole("button", { name: "关闭资源库" }).click();
+
+  await page.getByLabel("显示背景提示").check();
+  await expect(page.locator('[data-module-id="background-helper"]').getByRole("textbox", { name: "背景提示", exact: true })).toHaveValue(
+    "把职业背景问题复制到角色背景时，可以先回答其中一个问题，再改写成自己的经历。",
+  );
 
   const single = page.locator('[data-module-id="pick-domain-card"]');
   await single.getByRole("button", { name: "选择领域卡" }).click();
@@ -194,8 +211,9 @@ test("uploads Resource Picker demo and restores filled text through export/impor
 
   await page.reload();
   await expect(page.getByText("demo-selection")).toBeVisible();
-  await expect(page.locator('[data-module-id="class-name"]').getByRole("textbox", { name: "职业", exact: true })).toHaveValue("战士");
+  await expect(page.locator('[data-module-id="class-name"]').getByRole("textbox", { name: "职业", exact: true })).toHaveValue("德鲁伊");
   await expect(page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true })).toHaveValue("卷土重来");
+  await expect(page.locator('[data-template-page-id="druid-shape-page"]')).toHaveCount(0);
 
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "导出 Character JSON" }).click();
@@ -205,10 +223,14 @@ test("uploads Resource Picker demo and restores filled text through export/impor
 
   const exportedText = await readFile(exportPath, "utf8");
   const exported = JSON.parse(exportedText);
-  expect(exported.character.values["class-name"]).toBe("战士");
-  expect(exported.character.values["class-domains"]).toBe("利刃+骸骨");
+  expect(exported.character.values["class-name"]).toBe("德鲁伊");
+  expect(exported.character.values["class-domains"]).toBe("贤者+奥术");
   expect(exported.character.values["domain-card-name"]).toBe("卷土重来");
+  expect(exported.character.values["background-helper"]).toBe("把职业背景问题复制到角色背景时，可以先回答其中一个问题，再改写成自己的经历。");
+  expect(exported.character.values["class-background-questions"]).toBeUndefined();
+  expect(exported.character.values["druid-shape-note"]).toBeUndefined();
   expect(exported.character.values["pick-class"]).toBeUndefined();
+  expect(exported.character.values["pick-subclass"]).toBeUndefined();
   expect(exported.character.values["pick-domain-card"]).toBeUndefined();
   expect(exportedText).not.toContain("resource-selection");
   expect(exportedText).not.toContain("assets/flame-card.svg");

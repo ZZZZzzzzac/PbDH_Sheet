@@ -1,0 +1,15 @@
+.druid-demo {
+  display: grid;
+  gap: 18px;
+  padding: 28px;
+}
+
+.druid-demo-header {
+  border-bottom: 1px solid #d8dfe1;
+  padding-bottom: 14px;
+}
+
+.druid-demo-grid {
+  display: grid;
+  gap: 12px;
+}

@@ -16,23 +16,25 @@ const manifestSchema = z.object({
   schemaVersion: z.string().min(1),
 });
 
-const freeTextModuleSchema = z.object({
+const sheetModuleBaseSchema = z.object({
   ID: z.string().min(1),
+  默认隐藏: z.boolean().optional(),
+});
+
+const freeTextModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("freeText"),
   标签: z.string().min(1),
   默认值: z.string().optional(),
 });
 
-const longTextModuleSchema = z.object({
-  ID: z.string().min(1),
+const longTextModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("longText"),
   标签: z.string().min(1),
   默认值: z.string().optional(),
   行数: z.number().int().min(2).max(20).optional(),
 });
 
-const checkboxResourceModuleSchema = z.object({
-  ID: z.string().min(1),
+const checkboxResourceModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("checkboxResource"),
   标签: z.string().min(1),
   选项: z
@@ -46,8 +48,7 @@ const checkboxResourceModuleSchema = z.object({
     .min(1),
 });
 
-const countableResourceModuleSchema = z.object({
-  ID: z.string().min(1),
+const countableResourceModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("countableResource"),
   标签: z.string().min(1),
   最小值: z.number().int().optional(),
@@ -57,8 +58,7 @@ const countableResourceModuleSchema = z.object({
   最大值可改: z.boolean().optional(),
 });
 
-const readOnlyDisplayModuleSchema = z.object({
-  ID: z.string().min(1),
+const readOnlyDisplayModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("readOnlyDisplay"),
   标签: z.string().min(1),
   内容: z.string().min(1).optional(),
@@ -66,8 +66,7 @@ const readOnlyDisplayModuleSchema = z.object({
   替代文本: z.string().optional(),
 });
 
-const imageFieldModuleSchema = z.object({
-  ID: z.string().min(1),
+const imageFieldModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("imageField"),
   标签: z.string().min(1),
   替代文本: z.string().optional(),
@@ -83,8 +82,7 @@ const resourcePickerQuerySchema = z.object({
     .optional(),
 });
 
-const resourcePickerModuleSchema = z.object({
-  ID: z.string().min(1),
+const resourcePickerModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("resourcePicker"),
   按钮文本: z.string().min(1),
   资源库ID: z.string().min(1),
@@ -93,23 +91,105 @@ const resourcePickerModuleSchema = z.object({
   默认查询: resourcePickerQuerySchema.optional(),
 });
 
-const dependencyRuleSchema = z.object({
-  ID: z.string().min(1),
-  触发: z.object({
+const dependencySourceSchema = z.discriminatedUnion("类型", [
+  z.object({
+    类型: z.literal("resourcePicker"),
+    模块ID: z.string().min(1),
+  }),
+  z.object({
+    类型: z.literal("checkboxResource"),
+    模块ID: z.string().min(1),
+  }),
+]);
+
+const dependencyTargetSchema = z.discriminatedUnion("类型", [
+  z.object({
+    类型: z.literal("module"),
+    模块ID: z.string().min(1),
+  }),
+  z.object({
+    类型: z.literal("page"),
+    页面ID: z.string().min(1),
+  }),
+]);
+
+const dependencyTriggerSchema = z.discriminatedUnion("类型", [
+  z.object({
     类型: z.literal("resourceSelected"),
     来源模块ID: z.string().min(1),
   }),
-  动作: z
-    .array(
-      z.object({
-        类型: z.literal("fillText"),
-        目标模块ID: z.string().min(1),
-        资源字段: z.string().min(1),
-        选择索引: z.number().int().min(0).optional(),
-        分隔符: z.string().optional(),
-      }),
-    )
-    .min(1),
+  z.object({
+    类型: z.literal("checkboxChanged"),
+    来源模块ID: z.string().min(1),
+  }),
+]);
+
+const dependencyConditionSchema = z.discriminatedUnion("类型", [
+  z.object({
+    类型: z.literal("always"),
+  }),
+  z.object({
+    类型: z.literal("selectedResourceFieldEquals"),
+    字段: z.string().min(1),
+    值: z.string(),
+  }),
+  z.object({
+    类型: z.literal("selectedResourceFieldIn"),
+    字段: z.string().min(1),
+    值: z.array(z.string()).min(1),
+  }),
+  z.object({
+    类型: z.literal("selectedResourceFieldNotEquals"),
+    字段: z.string().min(1),
+    值: z.string(),
+  }),
+  z.object({
+    类型: z.literal("checkboxOptionChecked"),
+    选项ID: z.string().min(1),
+  }),
+  z.object({
+    类型: z.literal("checkboxOptionUnchecked"),
+    选项ID: z.string().min(1),
+  }),
+]);
+
+const fillTextContentSchema = z.union([
+  z.string(),
+  z.object({
+    类型: z.literal("selectedResourceField"),
+    字段: z.string().min(1),
+    选择索引: z.number().int().min(0).optional(),
+    分隔符: z.string().optional(),
+  }),
+]);
+
+const dependencyActionSchema = z.discriminatedUnion("类型", [
+  z.object({
+    类型: z.literal("fillText"),
+    目标模块ID: z.string().min(1),
+    内容: fillTextContentSchema,
+  }),
+  z.object({
+    类型: z.literal("setVisibility"),
+    目标类型: z.enum(["page", "module"]),
+    目标ID: z.string().min(1),
+    显示: z.boolean(),
+  }),
+  z.object({
+    类型: z.literal("setResourceDefaultFilter"),
+    目标模块ID: z.string().min(1),
+    字段: z.string().min(1),
+    值: z.array(z.string()).min(1),
+  }),
+]);
+
+const dependencyRuleSchema = z.object({
+  ID: z.string().min(1),
+  sources: z.array(dependencySourceSchema).min(1),
+  targets: z.array(dependencyTargetSchema).min(1),
+  触发: dependencyTriggerSchema,
+  条件: dependencyConditionSchema.optional(),
+  动作: z.array(dependencyActionSchema).min(1),
 });
 
 const sheetModuleSchema = z.discriminatedUnion("类型", [
@@ -143,6 +223,7 @@ const htmlTemplateLayoutSchema = z.object({
 const pageSchema = z.object({
   ID: z.string().min(1),
   名称: z.string().min(1),
+  默认隐藏: z.boolean().optional(),
   layout: htmlTemplateLayoutSchema,
 });
 
@@ -167,7 +248,7 @@ const systemPackageEnvelopeSchema = z.object({
   modules: z.array(z.unknown()).min(1),
   assets: z.array(assetSchema).optional(),
   resourceLibraries: z.array(resourceLibraryPackageInputSchema).optional(),
-  dependencies: z.array(dependencyRuleSchema).optional(),
+  dependencies: z.array(z.unknown()).optional(),
 });
 
 export type SystemPackage = z.infer<typeof systemPackageSchema>;
@@ -183,6 +264,11 @@ export type PackageAsset = z.infer<typeof assetSchema>;
 export type HtmlTemplateLayout = z.infer<typeof htmlTemplateLayoutSchema>;
 export type PackagePage = z.infer<typeof pageSchema>;
 export type DependencyRule = z.infer<typeof dependencyRuleSchema>;
+export type DependencySource = z.infer<typeof dependencySourceSchema>;
+export type DependencyTarget = z.infer<typeof dependencyTargetSchema>;
+export type DependencyTrigger = z.infer<typeof dependencyTriggerSchema>;
+export type DependencyCondition = z.infer<typeof dependencyConditionSchema>;
+export type DependencyAction = z.infer<typeof dependencyActionSchema>;
 export type { ResourceLibrary };
 
 export type PackageIssueLevel = "fatal" | "error" | "warning";
@@ -201,6 +287,82 @@ export type PackageValidationResult =
 export type CachedPackageValidationResult =
   | { ok: true; package: SystemPackage }
   | { ok: false; issues: PackageIssue[] };
+
+type DependencyParseResult =
+  | { ok: true; dependencies: DependencyRule[] }
+  | { ok: false; issues: PackageIssue[] };
+
+function parseDependencyRules(inputs: unknown[]): DependencyParseResult {
+  const dependencies: DependencyRule[] = [];
+  const issues: PackageIssue[] = [];
+
+  inputs.forEach((input, index) => {
+    const unsupportedIssue = detectUnsupportedDependencySource(input, index);
+    if (unsupportedIssue) {
+      issues.push(unsupportedIssue);
+      return;
+    }
+
+    const parsedDependency = dependencyRuleSchema.safeParse(input);
+    if (!parsedDependency.success) {
+      issues.push(
+        ...parsedDependency.error.issues.map((issue) => ({
+          level: "fatal" as const,
+          code: "PACKAGE_SHAPE_INVALID",
+          text: issue.message,
+          path: ["dependencies", index, ...issue.path].join("."),
+        })),
+      );
+      return;
+    }
+
+    dependencies.push(parsedDependency.data);
+  });
+
+  if (issues.length > 0) {
+    return { ok: false, issues };
+  }
+
+  return { ok: true, dependencies };
+}
+
+function detectUnsupportedDependencySource(input: unknown, index: number): PackageIssue | undefined {
+  if (!isRecord(input)) {
+    return undefined;
+  }
+
+  const trigger = isRecord(input.触发) ? input.触发 : undefined;
+  if (isUnsupportedCounterType(trigger?.类型)) {
+    return {
+      level: "error",
+      code: "UNSUPPORTED_DEPENDENCY_TRIGGER",
+      text: "Dependency Logic v1 不支持 countableResource/counter 触发源。",
+      path: `dependencies.${index}.触发.类型`,
+    };
+  }
+
+  if (Array.isArray(input.sources)) {
+    const sourceIndex = input.sources.findIndex((source) => isRecord(source) && isUnsupportedCounterType(source.类型));
+    if (sourceIndex !== -1) {
+      return {
+        level: "error",
+        code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE",
+        text: "Dependency Logic v1 不支持 countableResource/counter 触发源。",
+        path: `dependencies.${index}.sources.${sourceIndex}.类型`,
+      };
+    }
+  }
+
+  return undefined;
+}
+
+function isUnsupportedCounterType(value: unknown): boolean {
+  return value === "countableResource" || value === "countableChanged" || value === "counter" || value === "counterChanged";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 export function validateSystemPackage(input: unknown): PackageValidationResult {
   const parsed = systemPackageEnvelopeSchema.safeParse(input);
@@ -253,15 +415,21 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
     return { ok: false, issues: moduleParseIssues };
   }
 
+  const parsedDependencies = parseDependencyRules(parsed.data.dependencies ?? []);
+  if (!parsedDependencies.ok) {
+    return { ok: false, issues: parsedDependencies.issues };
+  }
+
   const normalizedResourceLibraries = normalizeResourceLibraries(parsed.data.resourceLibraries ?? []);
   if (!normalizedResourceLibraries.ok) {
     return { ok: false, issues: normalizedResourceLibraries.issues };
   }
 
-  const { resourceLibraries: _rawResourceLibraries, ...packageData } = parsed.data;
+  const { resourceLibraries: _rawResourceLibraries, dependencies: _rawDependencies, ...packageData } = parsed.data;
   const systemPackage: SystemPackage = {
     ...packageData,
     modules,
+    ...(parsedDependencies.dependencies.length > 0 ? { dependencies: parsedDependencies.dependencies } : {}),
     ...(normalizedResourceLibraries.resourceLibraries.length > 0 ? { resourceLibraries: normalizedResourceLibraries.resourceLibraries } : {}),
   };
   const issues: PackageIssue[] = [];
@@ -320,6 +488,7 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
   }
 
   const moduleById = new Map(systemPackage.modules.map((module) => [module.ID, module]));
+  const pageById = new Map(systemPackage.pages.map((page) => [page.ID, page]));
   const dependencyIds = new Set<string>();
 
   for (const dependency of systemPackage.dependencies ?? []) {
@@ -333,6 +502,48 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
     }
     dependencyIds.add(dependency.ID);
 
+    dependency.sources.forEach((source, sourceIndex) => {
+      const sourceModule = moduleById.get(source.模块ID);
+      if (!sourceModule) {
+        issues.push({
+          level: "error",
+          code: "MISSING_DEPENDENCY_SOURCE_MODULE",
+          text: `Dependency Rule sources 引用了不存在的模块：${source.模块ID}`,
+          path: `dependencies.${dependency.ID}.sources.${sourceIndex}.模块ID`,
+        });
+        return;
+      }
+
+      if (sourceModule.类型 !== source.类型) {
+        issues.push({
+          level: "error",
+          code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE",
+          text: `Dependency Rule source 类型与模块类型不匹配：${source.模块ID}`,
+          path: `dependencies.${dependency.ID}.sources.${sourceIndex}.类型`,
+        });
+      }
+    });
+
+    dependency.targets.forEach((target, targetIndex) => {
+      if (target.类型 === "module" && !moduleById.has(target.模块ID)) {
+        issues.push({
+          level: "error",
+          code: "MISSING_DEPENDENCY_TARGET_MODULE",
+          text: `Dependency Rule targets 引用了不存在的模块：${target.模块ID}`,
+          path: `dependencies.${dependency.ID}.targets.${targetIndex}.模块ID`,
+        });
+      }
+
+      if (target.类型 === "page" && !pageById.has(target.页面ID)) {
+        issues.push({
+          level: "error",
+          code: "MISSING_DEPENDENCY_TARGET_PAGE",
+          text: `Dependency Rule targets 引用了不存在的页面：${target.页面ID}`,
+          path: `dependencies.${dependency.ID}.targets.${targetIndex}.页面ID`,
+        });
+      }
+    });
+
     const sourceModule = moduleById.get(dependency.触发.来源模块ID);
     if (!sourceModule) {
       issues.push({
@@ -341,34 +552,122 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
         text: `Dependency Rule 引用了不存在的来源模块：${dependency.触发.来源模块ID}`,
         path: `dependencies.${dependency.ID}.触发.来源模块ID`,
       });
-    } else if (sourceModule.类型 !== "resourcePicker") {
+    } else if (dependency.触发.类型 === "resourceSelected" && sourceModule.类型 !== "resourcePicker") {
       issues.push({
         level: "error",
         code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE",
         text: `resourceSelected 触发源必须是 Resource Picker：${dependency.触发.来源模块ID}`,
         path: `dependencies.${dependency.ID}.触发.来源模块ID`,
       });
+    } else if (dependency.触发.类型 === "checkboxChanged" && sourceModule.类型 !== "checkboxResource") {
+      issues.push({
+        level: "error",
+        code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE",
+        text: `checkboxChanged 触发源必须是 Checkbox Resource：${dependency.触发.来源模块ID}`,
+        path: `dependencies.${dependency.ID}.触发.来源模块ID`,
+      });
+    }
+
+    const hasDeclaredTriggerSource = dependency.sources.some((source) => source.模块ID === dependency.触发.来源模块ID);
+    if (!hasDeclaredTriggerSource) {
+      issues.push({
+        level: "error",
+        code: "MISSING_DEPENDENCY_TRIGGER_SOURCE_DECLARATION",
+        text: `Dependency Rule sources 必须声明触发来源模块：${dependency.触发.来源模块ID}`,
+        path: `dependencies.${dependency.ID}.sources`,
+      });
+    }
+
+    if (isResourceCondition(dependency.条件) && dependency.触发.类型 !== "resourceSelected") {
+      issues.push({
+        level: "error",
+        code: "UNSUPPORTED_DEPENDENCY_CONDITION",
+        text: `selectedResourceField 条件只能用于 resourceSelected 触发：${dependency.ID}`,
+        path: `dependencies.${dependency.ID}.条件.类型`,
+      });
+    }
+
+    if (isCheckboxCondition(dependency.条件) && dependency.触发.类型 !== "checkboxChanged") {
+      issues.push({
+        level: "error",
+        code: "UNSUPPORTED_DEPENDENCY_CONDITION",
+        text: `checkbox option 条件只能用于 checkboxChanged 触发：${dependency.ID}`,
+        path: `dependencies.${dependency.ID}.条件.类型`,
+      });
     }
 
     dependency.动作.forEach((action, actionIndex) => {
-      const targetModule = moduleById.get(action.目标模块ID);
-      if (!targetModule) {
-        issues.push({
-          level: "error",
-          code: "MISSING_DEPENDENCY_TARGET_MODULE",
-          text: `Dependency Rule 引用了不存在的目标模块：${action.目标模块ID}`,
-          path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
-        });
-        return;
+      if (action.类型 === "fillText") {
+        const targetModule = moduleById.get(action.目标模块ID);
+        if (!targetModule) {
+          issues.push({
+            level: "error",
+            code: "MISSING_DEPENDENCY_TARGET_MODULE",
+            text: `Dependency Rule 引用了不存在的目标模块：${action.目标模块ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
+          });
+          return;
+        }
+
+        if (targetModule.类型 !== "freeText" && targetModule.类型 !== "longText" && targetModule.类型 !== "readOnlyDisplay") {
+          issues.push({
+            level: "error",
+            code: "UNSUPPORTED_DEPENDENCY_TARGET_MODULE",
+            text: `fillText 目标模块必须是 Free Text、Long Text 或 ReadOnly Display：${action.目标模块ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
+          });
+        }
+
+        if (typeof action.内容 !== "string" && dependency.触发.类型 !== "resourceSelected") {
+          issues.push({
+            level: "error",
+            code: "UNSUPPORTED_DEPENDENCY_ACTION_CONTENT",
+            text: `selectedResourceField 内容只能用于 resourceSelected 触发：${dependency.ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.内容.类型`,
+          });
+        }
       }
 
-      if (targetModule.类型 !== "freeText" && targetModule.类型 !== "longText") {
-        issues.push({
-          level: "error",
-          code: "UNSUPPORTED_DEPENDENCY_TARGET_MODULE",
-          text: `fillText 目标模块必须是 Free Text 或 Long Text：${action.目标模块ID}`,
-          path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
-        });
+      if (action.类型 === "setVisibility") {
+        if (action.目标类型 === "module" && !moduleById.has(action.目标ID)) {
+          issues.push({
+            level: "error",
+            code: "MISSING_DEPENDENCY_TARGET_MODULE",
+            text: `setVisibility 引用了不存在的目标模块：${action.目标ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标ID`,
+          });
+        }
+
+        if (action.目标类型 === "page" && !pageById.has(action.目标ID)) {
+          issues.push({
+            level: "error",
+            code: "MISSING_DEPENDENCY_TARGET_PAGE",
+            text: `setVisibility 引用了不存在的目标页面：${action.目标ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标ID`,
+          });
+        }
+      }
+
+      if (action.类型 === "setResourceDefaultFilter") {
+        const targetModule = moduleById.get(action.目标模块ID);
+        if (!targetModule) {
+          issues.push({
+            level: "error",
+            code: "MISSING_DEPENDENCY_TARGET_MODULE",
+            text: `setResourceDefaultFilter 引用了不存在的目标模块：${action.目标模块ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
+          });
+          return;
+        }
+
+        if (targetModule.类型 !== "resourcePicker") {
+          issues.push({
+            level: "error",
+            code: "UNSUPPORTED_DEPENDENCY_TARGET_MODULE",
+            text: `setResourceDefaultFilter 目标模块必须是 Resource Picker：${action.目标模块ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
+          });
+        }
       }
     });
   }
@@ -425,6 +724,18 @@ export function findAsset(systemPackage: SystemPackage, assetId: string): Packag
 
 export function findResourceLibrary(systemPackage: SystemPackage, libraryId: string): ResourceLibrary | undefined {
   return systemPackage.resourceLibraries?.find((library) => library.ID === libraryId);
+}
+
+function isResourceCondition(condition: DependencyCondition | undefined): boolean {
+  return (
+    condition?.类型 === "selectedResourceFieldEquals" ||
+    condition?.类型 === "selectedResourceFieldIn" ||
+    condition?.类型 === "selectedResourceFieldNotEquals"
+  );
+}
+
+function isCheckboxCondition(condition: DependencyCondition | undefined): boolean {
+  return condition?.类型 === "checkboxOptionChecked" || condition?.类型 === "checkboxOptionUnchecked";
 }
 
 export function getHtmlTemplateModuleReferences(html: string): string[] {
