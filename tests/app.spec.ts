@@ -168,9 +168,17 @@ test("uploads Resource Picker demo and restores filled text through export/impor
   await expect(classDialog).toBeVisible();
   await expect(classDialog.getByRole("columnheader", { name: "ID" })).toHaveCount(0);
   await expect(classDialog.getByRole("columnheader", { name: "原名" })).toHaveCount(0);
+  await expect.poll(() => resourceDialogWidth(classDialog)).toBeGreaterThan(1120);
+  await expect.poll(() => resourceControlsWidth(classDialog)).toBeLessThan(190);
+  await expect.poll(() => resourceTableHasHorizontalOverflow(classDialog)).toBe(false);
+  expect(await resourceTableCellPadding(classDialog)).toEqual({
+    paddingTop: "8px",
+    paddingRight: "4px",
+    paddingBottom: "8px",
+    paddingLeft: "4px",
+  });
   const classColumnWidths = await tableColumnWidths(classDialog);
-  expect(classColumnWidths["领域1"]).toBeLessThan(120);
-  expect(classColumnWidths["职业特性"]).toBeGreaterThan(480);
+  expect(classColumnWidths["领域1"]).toBeLessThan(classColumnWidths["希望特性"]);
   expect(classColumnWidths["职业特性"]).toBeGreaterThan(classColumnWidths["希望特性"]);
   await page.getByLabel("选择 德鲁伊").click();
   await expect(page.locator('[data-module-id="class-name"]').getByRole("textbox", { name: "职业", exact: true })).toHaveValue("德鲁伊");
@@ -329,6 +337,30 @@ async function tableColumnWidths(container: Locator) {
   return container.locator(".resource-table").evaluate((table) => {
     const headers = [...table.querySelectorAll("th")];
     return Object.fromEntries(headers.map((header) => [header.textContent?.trim() ?? "", header.getBoundingClientRect().width]));
+  });
+}
+
+async function resourceDialogWidth(container: Locator) {
+  return container.evaluate((dialog) => dialog.getBoundingClientRect().width);
+}
+
+async function resourceControlsWidth(container: Locator) {
+  return container.locator(".resource-controls").evaluate((controls) => controls.getBoundingClientRect().width);
+}
+
+async function resourceTableHasHorizontalOverflow(container: Locator) {
+  return container.locator(".resource-table-wrap").evaluate((wrapper) => wrapper.scrollWidth > wrapper.clientWidth + 1);
+}
+
+async function resourceTableCellPadding(container: Locator) {
+  return container.locator(".resource-table td").first().evaluate((cell) => {
+    const style = getComputedStyle(cell);
+    return {
+      paddingTop: style.paddingTop,
+      paddingRight: style.paddingRight,
+      paddingBottom: style.paddingBottom,
+      paddingLeft: style.paddingLeft,
+    };
   });
 }
 

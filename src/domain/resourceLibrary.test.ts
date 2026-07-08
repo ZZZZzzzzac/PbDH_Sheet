@@ -63,12 +63,12 @@ describe("Resource Library normalization", () => {
     }
   });
 
-  it("infers semantic field widths from field names and sampled lengths", () => {
-    expect(inferResourceFieldWidth("等级", ["1", "2"])).toBe("compact");
-    expect(inferResourceFieldWidth("名称", ["战士", "吟游诗人"])).toBe("normal");
-    expect(inferResourceFieldWidth("描述", ["短描述"])).toBe("fill");
-    expect(inferResourceFieldWidth("备注", ["这是一段比较长的资源字段内容，应该给更多表格空间"])).toBe("fill");
-    expect(inferResourceFieldWidth("备注", ["中等长度字段文本内容"])).toBe("wide");
+  it("infers semantic field widths from sampled value lengths only", () => {
+    expect(inferResourceFieldWidth(["1", "2"])).toBe("compact");
+    expect(inferResourceFieldWidth(["战士", "吟游诗人"])).toBe("normal");
+    expect(inferResourceFieldWidth(["短描述"])).toBe("compact");
+    expect(inferResourceFieldWidth(["这是一段比较长的资源字段内容，应该给更多表格空间"])).toBe("fill");
+    expect(inferResourceFieldWidth(["中等长度字段文本内容"])).toBe("wide");
   });
 
   it("reports invalid library shapes and missing or duplicate entry IDs", () => {

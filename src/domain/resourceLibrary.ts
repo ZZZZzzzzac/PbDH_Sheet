@@ -200,7 +200,7 @@ function buildFieldMetadata(key: string, isComplex: boolean, values: string[]): 
     visible: true,
     filterable: !isComplex,
     sortable: !isComplex,
-    width: inferResourceFieldWidth(key, values),
+    width: inferResourceFieldWidth(values),
   };
 }
 
@@ -222,22 +222,12 @@ export function getResourceLibraryFields(
       visible: template.默认显示 ?? true,
       filterable: template.可筛选 ?? inferred?.filterable ?? true,
       sortable: template.可排序 ?? inferred?.sortable ?? true,
-      width: template.列宽 ?? inferred?.width ?? inferResourceFieldWidth(template.键, library.entries.map((entry) => entry.fields[template.键] ?? "")),
+      width: template.列宽 ?? inferred?.width ?? inferResourceFieldWidth(library.entries.map((entry) => entry.fields[template.键] ?? "")),
     };
   });
 }
 
-export function inferResourceFieldWidth(key: string, values: string[] = []): ResourceLibraryFieldWidth {
-  if (isLongResourceFieldKey(key)) {
-    return "fill";
-  }
-  if (key === "名称" || key.toLowerCase() === "name") {
-    return "normal";
-  }
-  if (isCompactResourceFieldKey(key)) {
-    return "compact";
-  }
-
+export function inferResourceFieldWidth(values: string[] = []): ResourceLibraryFieldWidth {
   const p90Length = percentile(values.map((value) => stringDisplayLength(value)).filter((length) => length > 0), 0.9);
   if (p90Length >= 40) {
     return "fill";
@@ -313,14 +303,6 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 function isComplexResourceValue(value: unknown): boolean {
   return typeof value === "object" && value !== null;
-}
-
-function isCompactResourceFieldKey(key: string): boolean {
-  return /^(ID|id)$/.test(key) || /(等级|类型|领域|属性|回想|消耗|费用|数量|主职|施法属性|生命|闪避)$/.test(key);
-}
-
-function isLongResourceFieldKey(key: string): boolean {
-  return /(描述|效果|简介|特性|规则|文本|说明|问题|内容)$/.test(key);
 }
 
 function stringDisplayLength(value: string): number {

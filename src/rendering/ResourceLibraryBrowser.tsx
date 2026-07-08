@@ -35,7 +35,6 @@ export function ResourceLibraryBrowser({
   const browserFields = fields ?? library.fields;
   const tableFields = browserFields.filter((field) => field.visible);
   const tableColumnFields = normalizeTableColumnWidths(tableFields);
-  const tableMinWidth = tableMinimumWidth(tableColumnFields);
   const filterableFields = browserFields.filter((field) => field.filterable);
   const sortableFields = browserFields.filter((field) => field.sortable);
   const rows = useMemo(() => queryResourceLibraryEntries(library, { filters, sort }), [filters, library, sort]);
@@ -141,10 +140,10 @@ export function ResourceLibraryBrowser({
           </aside>
 
           <div className="resource-table-wrap">
-            <table className="resource-table" style={{ minWidth: `${tableMinWidth}px` }}>
+            <table className="resource-table">
               <colgroup>
                 {tableColumnFields.map((field) => (
-                  <col className={`resource-table-col-${field.effectiveWidth}`} key={field.key} />
+                  <col className={`resource-table-col-${field.effectiveWidth}`} key={field.key} style={{ width: field.columnWidth }} />
                 ))}
               </colgroup>
               <thead>
@@ -203,30 +202,32 @@ function normalizeSort(sort: ResourceLibraryQuery["sort"] | undefined) {
   return sort ? { field: sort.field, direction: sort.direction ?? "asc" } : undefined;
 }
 
-type TableColumnField = ResourceLibraryField & { effectiveWidth: NonNullable<ResourceLibraryField["width"]> };
+type TableColumnField = ResourceLibraryField & {
+  effectiveWidth: NonNullable<ResourceLibraryField["width"]>;
+  columnWidth: string;
+};
 
-const resourceTableColumnWidths = {
-  compact: 84,
-  normal: 150,
-  wide: 260,
-  fill: 520,
+const resourceTableColumnWidthWeights = {
+  compact: 0.7,
+  normal: 1.4,
+  wide: 2.2,
+  fill: 5.5,
 } as const;
 
 function normalizeTableColumnWidths(fields: ResourceLibraryField[]): TableColumnField[] {
   const lastFillIndex = fields.reduce((lastIndex, field, index) => ((field.width ?? "normal") === "fill" ? index : lastIndex), -1);
 
-  return fields.map((field, index) => {
+  const effectiveFields = fields.map((field, index) => {
     const width = field.width ?? "normal";
     return {
       ...field,
       effectiveWidth: width === "fill" && index !== lastFillIndex ? "wide" : width,
     };
   });
-}
+  const totalWeight = effectiveFields.reduce((sum, field) => sum + resourceTableColumnWidthWeights[field.effectiveWidth], 0) || 1;
 
-function tableMinimumWidth(fields: TableColumnField[]) {
-  return Math.max(
-    760,
-    fields.reduce((sum, field) => sum + resourceTableColumnWidths[field.effectiveWidth], 0),
-  );
+  return effectiveFields.map((field) => ({
+    ...field,
+    columnWidth: `${(resourceTableColumnWidthWeights[field.effectiveWidth] / totalWeight) * 100}%`,
+  }));
 }
