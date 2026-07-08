@@ -19,7 +19,7 @@ PbDH Sheet Framework 是一个无服务器 API 的静态 Web 应用。Author 上
 - Base Framework 不提供账号、云同步、系统包市场、服务器 PDF 或在线 AI 生成。
 - Character Data 按模块/字段 ID 存，不按页面布局树存。
 - System Package 是声明式数据包，不能修改 Base Framework 模块代码。
-- Sheet Renderer 在第一版直接负责 Flow Layout，不单独拆 Layout Renderer。
+- Sheet Renderer 在第一版渲染 HTML Layout Template，并在 `<pb-module>` 占位符处挂载 Sheet Modules。
 - 游戏值默认按字符串处理；框架只严格校验结构字段、ID、引用和路径。
 - 复杂规则检查用 JS Validation Scripts，只读输入，输出 issue list。
 
@@ -76,7 +76,7 @@ PbDH Sheet Framework
   |     Zustand 运行时状态、actions、运行时数据流枢纽
   |
   +-- sheet-renderer
-  |     Flow Layout、页面结构渲染、模块注册表、模块组件
+  |     HTML Layout Template、页面结构渲染、模块注册表、模块组件
   |
   +-- dependency-engine
   |     依赖规则 -> 视图效果 / 数据补丁 / 选项效果
@@ -210,12 +210,9 @@ exportCharacterJson(characterId)
 
 ### Renderer 与 Module 边界
 
-Sheet Renderer 根据 Flow Layout 和 Module Registry 渲染模块。第一版不单独拆 Layout Renderer；Flow Layout 仍是 Sheet Renderer 的内部职责。
+Sheet Renderer 根据 HTML Layout Template 和 Module Registry 渲染模块。模板负责页面结构、静态装饰和 CSS 布局；`<pb-module>` 占位符负责挂载框架提供的 Sheet Modules。
 
-Flow Layout 支持两种 section 形态：
-
-- `modules` 简写：旧包兼容路径，分区内使用自动响应式模块网格。
-- `rows -> columns -> modules`：Author 可以声明行列、列宽、最小列宽、模块摆放位和基础盒模型样式。
+Author-facing 接口见：[System Package HTML Layout Template 接口](system-package-html-layout-template.md)。
 
 ```text
 renderModule({
@@ -235,8 +232,9 @@ renderModule({
 - Sheet Module 不直接调用 Dependency Engine。
 - Sheet Module 不执行跨模块写入。
 - Sheet Module 不直接运行依赖逻辑、检查脚本或存储逻辑。
-- Sheet Module 不知道自己位于哪个页面、分区、行或列；布局信息只由 Sheet Renderer 使用。
-- Sheet Renderer 可以读取布局尺寸和样式，但这些值不进入 Character Data。
+- Sheet Module 不知道自己位于哪个模板容器中；布局信息只由 Sheet Renderer 使用。
+- Sheet Renderer 可以读取模板结构和 scoped CSS，但这些值不进入 Character Data。
+- HTML Layout Template 不能声明交互控件或自定义行为；所有读写状态的交互必须来自框架模块或框架交互面。
 
 ### Dependency Engine 边界
 
@@ -358,7 +356,7 @@ System Package 包含：
 
 - manifest 入口文件。
 - Resource Libraries。
-- 页面和 Flow Layout 声明。
+- 页面和 HTML Layout Template 声明。
 - Sheet Module 声明。
 - 依赖规则。
 - Character Creation Guide 声明。
@@ -486,7 +484,7 @@ Validation Scripts：
 - 静态托管应用 + PWA 应用壳。
 - zip 上传和可选目录包。
 - 基于 manifest 的 System Package。
-- Flow Layout。
+- HTML Layout Template + scoped CSS。
 - 核心 Sheet Modules。
 - 不支持链式触发的集中式 Dependency Engine。
 - 声明式 Guide Runner。
@@ -499,7 +497,7 @@ Validation Scripts：
 
 - package schema 迁移器。
 - 依赖规则索引和可选链式触发。
-- 如果出现第二个实际布局 adapter（如 Overlay Layout），再评估是否从 Sheet Renderer 抽出独立布局模块。
+- 如果出现第二个实际布局 adapter，再评估是否从 Sheet Renderer 抽出独立布局模块。
 - 如果陌生来源包变多，升级更强脚本沙箱。
 - 更丰富的卡牌容器和指示物类型。
 - 如果包体积增长，再引入可选缩略图或打印资源。
@@ -523,5 +521,6 @@ Validation Scripts：
 - [ADR-0009：前端技术基线](adr/0009-frontend-technology-baseline.md)
 - [ADR-0010：模块实例级样式覆盖](adr/0010-module-scoped-style-overrides.md)
 - [ADR-0011：Character Data 值类型分层](adr/0011-character-data-value-types.md)
-- [ADR-0012：Sheet Renderer 负责 Flow Layout](adr/0012-sheet-renderer-owns-flow-layout.md)
+- [ADR-0012：Sheet Renderer 负责 Flow Layout（已被 ADR-0014 取代）](adr/0012-sheet-renderer-owns-flow-layout.md)
 - [ADR-0013：声明式车卡指引](adr/0013-declarative-character-creation-guide.md)
+- [ADR-0014：HTML Layout Template 是主要作者布局模型](adr/0014-html-layout-template-primary-layout.md)

@@ -2,102 +2,10 @@
   {
     "ID": "main",
     "名称": "阶段5示例角色卡",
-    "样式": {
-      "最大宽度": "1040px"
-    },
-    "sections": [
-      {
-        "ID": "identity",
-        "名称": "身份",
-        "样式": {
-          "间距": "18px"
-        },
-        "rows": [
-          {
-            "ID": "identity-main",
-            "columns": [
-              {
-                "ID": "identity-fields",
-                "宽度": "2fr",
-                "最小宽度": "260px",
-                "modules": ["character-name"]
-              },
-              {
-                "ID": "portrait",
-                "宽度": "180px",
-                "最小宽度": "160px",
-                "modules": [
-                  {
-                    "ID": "portrait",
-                    "样式": {
-                      "最小高度": "220px"
-                    }
-                  }
-                ]
-              },
-              {
-                "ID": "emblem",
-                "宽度": "1fr",
-                "最小宽度": "180px",
-                "modules": ["sect-emblem"]
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "ID": "state",
-        "名称": "状态",
-        "rows": [
-          {
-            "ID": "state-main",
-            "columns": [
-              {
-                "ID": "vitality",
-                "宽度": "1fr",
-                "最小宽度": "260px",
-                "modules": ["vitality"]
-              },
-              {
-                "ID": "conditions",
-                "宽度": "1fr",
-                "最小宽度": "260px",
-                "modules": ["conditions"]
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "ID": "notes",
-        "名称": "记录",
-        "rows": [
-          {
-            "ID": "notes-main",
-            "columns": [
-              {
-                "ID": "background",
-                "宽度": "2fr",
-                "最小宽度": "320px",
-                "modules": [
-                  {
-                    "ID": "background",
-                    "样式": {
-                      "最小高度": "180px"
-                    }
-                  }
-                ]
-              },
-              {
-                "ID": "rule-note",
-                "宽度": "1fr",
-                "最小宽度": "240px",
-                "modules": ["rule-note"]
-              }
-            ]
-          }
-        ]
-      }
-    ]
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/main.html",
+      "css": "layouts/main.css"
+    }
   }
 ]

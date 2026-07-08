@@ -1,0 +1,51 @@
+.demo-sheet {
+  display: grid;
+  gap: 20px;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.demo-header {
+  display: grid;
+  gap: 8px;
+}
+
+.demo-eyebrow {
+  margin: 0;
+  color: #5a747a;
+  font-size: 0.8rem;
+  letter-spacing: 0;
+}
+
+.demo-header h1 {
+  margin: 0;
+}
+
+.demo-section {
+  display: grid;
+  gap: 16px;
+}
+
+.identity {
+  grid-template-columns: 2fr 180px 1fr;
+}
+
+.state {
+  grid-template-columns: 1fr 1fr;
+}
+
+.notes {
+  grid-template-columns: 2fr 1fr;
+}
+
+.notes [data-module-slot-id="background"] {
+  min-height: 180px;
+}
+
+@media (max-width: 640px) {
+  .identity,
+  .state,
+  .notes {
+    grid-template-columns: 1fr;
+  }
+}

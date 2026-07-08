@@ -47,12 +47,13 @@ describe("Module Registry rendering", () => {
     expect(screen.getByRole("button", { name: "上传图片" })).toBeVisible();
   });
 
-  it("renders rich Flow Layout rows, columns, and module slots", () => {
+  it("renders HTML Layout Template content and module slots", () => {
     const result = renderModuleDemo(moduleDemoSystemPackage, { "demo-emblem": "data:image/svg+xml;base64,PHN2Zy8+" });
 
-    expect(result.container.querySelector('[data-layout-row-id="identity-main"]')).not.toBeNull();
-    expect(result.container.querySelector('[data-layout-column-id="portrait"]')).not.toBeNull();
-    expect(result.container.querySelector('[data-module-slot-id="background"]')?.getAttribute("style")).toContain("min-height: 180px");
+    expect(result.container.querySelector(".demo-sheet")).not.toBeNull();
+    expect(result.container.querySelector(".identity")).not.toBeNull();
+    expect(result.container.querySelector('[data-module-slot-id="background"]')).not.toBeNull();
+    expect(result.container.querySelector("style")?.textContent).toContain('[data-template-page-id="main"] .identity');
   });
 
   it("updates editable module state by module ID and leaves read-only display unstored", () => {

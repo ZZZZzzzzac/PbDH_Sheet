@@ -84,78 +84,18 @@ const supportedModuleTypes = new Set([
   "imageField",
 ]);
 
-const cssValueSchema = z.string().min(1);
-
-const layoutStyleSchema = z.object({
-  宽度: cssValueSchema.optional(),
-  最小宽度: cssValueSchema.optional(),
-  最大宽度: cssValueSchema.optional(),
-  高度: cssValueSchema.optional(),
-  最小高度: cssValueSchema.optional(),
-  最大高度: cssValueSchema.optional(),
-  间距: cssValueSchema.optional(),
-  外边距: cssValueSchema.optional(),
-  内边距: cssValueSchema.optional(),
-  背景色: cssValueSchema.optional(),
-  边框: cssValueSchema.optional(),
-  圆角: cssValueSchema.optional(),
-  对齐: z.enum(["start", "center", "end", "stretch"]).optional(),
-  垂直对齐: z.enum(["start", "center", "end", "stretch"]).optional(),
+const htmlTemplateLayoutSchema = z.object({
+  类型: z.literal("htmlTemplate"),
+  html: z.string().min(1),
+  css: z.string().min(1).optional(),
+  htmlContent: z.string().min(1),
+  cssContent: z.string().optional(),
 });
-
-const modulePlacementSchema = z.union([
-  z.string().min(1),
-  z.object({
-    ID: z.string().min(1),
-    样式: layoutStyleSchema.optional(),
-  }),
-]);
-
-const flowColumnSchema = z.object({
-  ID: z.string().min(1).optional(),
-  宽度: cssValueSchema.optional(),
-  最小宽度: cssValueSchema.optional(),
-  modules: z.array(modulePlacementSchema).min(1),
-  样式: layoutStyleSchema.optional(),
-});
-
-const flowRowSchema = z.object({
-  ID: z.string().min(1).optional(),
-  columns: z.array(flowColumnSchema).min(1),
-  样式: layoutStyleSchema.optional(),
-});
-
-const sectionSchema = z
-  .object({
-    ID: z.string().min(1),
-    名称: z.string().min(1),
-    modules: z.array(z.string().min(1)).min(1).optional(),
-    rows: z.array(flowRowSchema).min(1).optional(),
-    样式: layoutStyleSchema.optional(),
-  })
-  .superRefine((section, context) => {
-    if (!section.modules && !section.rows) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Section 需要声明 modules 或 rows。",
-        path: ["modules"],
-      });
-    }
-
-    if (section.modules && section.rows) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Section 不能同时声明 modules 和 rows。",
-        path: ["rows"],
-      });
-    }
-  });
 
 const pageSchema = z.object({
   ID: z.string().min(1),
   名称: z.string().min(1),
-  sections: z.array(sectionSchema).min(1),
-  样式: layoutStyleSchema.optional(),
+  layout: htmlTemplateLayoutSchema,
 });
 
 const assetSchema = z.object({
@@ -187,11 +127,8 @@ export type ReadOnlyDisplayModule = z.infer<typeof readOnlyDisplayModuleSchema>;
 export type ImageFieldModule = z.infer<typeof imageFieldModuleSchema>;
 export type SheetModule = z.infer<typeof sheetModuleSchema>;
 export type PackageAsset = z.infer<typeof assetSchema>;
-export type LayoutStyle = z.infer<typeof layoutStyleSchema>;
-export type ModulePlacement = z.infer<typeof modulePlacementSchema>;
-export type FlowColumn = z.infer<typeof flowColumnSchema>;
-export type FlowRow = z.infer<typeof flowRowSchema>;
-export type FlowSection = z.infer<typeof sectionSchema>;
+export type HtmlTemplateLayout = z.infer<typeof htmlTemplateLayoutSchema>;
+export type PackagePage = z.infer<typeof pageSchema>;
 
 export type PackageIssueLevel = "fatal" | "error" | "warning";
 
@@ -305,16 +242,18 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
   }
 
   for (const page of systemPackage.pages) {
-    for (const section of page.sections) {
-      for (const moduleId of getSectionModuleReferences(section)) {
-        if (!moduleIds.has(moduleId)) {
-          issues.push({
-            level: "error",
-            code: "MISSING_MODULE_REFERENCE",
-            text: `Section 引用了不存在的 Sheet Module：${moduleId}`,
-            path: `pages.${page.ID}.sections.${section.ID}.modules`,
-          });
-        }
+    const htmlIssues = validateHtmlTemplate(page.layout.htmlContent, `pages.${page.ID}.layout.html`);
+    issues.push(...htmlIssues);
+    issues.push(...validateTemplateCss(page.layout.cssContent, `pages.${page.ID}.layout.css`));
+
+    for (const moduleId of getHtmlTemplateModuleReferences(page.layout.htmlContent)) {
+      if (!moduleIds.has(moduleId)) {
+        issues.push({
+          level: "error",
+          code: "MISSING_MODULE_REFERENCE",
+          text: `HTML Layout Template 引用了不存在的 Sheet Module：${moduleId}`,
+          path: `pages.${page.ID}.layout.html`,
+        });
       }
     }
   }
@@ -334,16 +273,180 @@ export function findAsset(systemPackage: SystemPackage, assetId: string): Packag
   return systemPackage.assets?.find((asset) => asset.ID === assetId);
 }
 
-export function getModulePlacementId(placement: ModulePlacement): string {
-  return typeof placement === "string" ? placement : placement.ID;
+export function getHtmlTemplateModuleReferences(html: string): string[] {
+  const matches = html.matchAll(/<pb-module\b[^>]*\bid\s*=\s*["']([^"']+)["'][^>]*>/gi);
+  return [...matches].map((match) => match[1]);
 }
 
-export function getSectionModuleReferences(section: FlowSection): string[] {
-  if (section.modules) {
-    return section.modules;
+const forbiddenHtmlTags = new Set(["button", "form", "input", "script", "select", "textarea"]);
+const allowedGlobalHtmlAttributes = new Set(["aria-label", "class", "title"]);
+const allowedHtmlAttributesByTag = new Map([
+  ["img", new Set(["alt", "src"])],
+  ["pb-module", new Set(["id"])],
+  ["td", new Set(["colspan", "rowspan"])],
+  ["th", new Set(["colspan", "rowspan"])],
+]);
+const allowedHtmlTags = new Set([
+  "article",
+  "div",
+  "em",
+  "footer",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "header",
+  "hr",
+  "img",
+  "li",
+  "main",
+  "ol",
+  "p",
+  "pb-module",
+  "section",
+  "small",
+  "span",
+  "strong",
+  "table",
+  "tbody",
+  "td",
+  "th",
+  "thead",
+  "tr",
+  "ul",
+]);
+
+function validateHtmlTemplate(html: string, path: string): PackageIssue[] {
+  const issues: PackageIssue[] = [];
+  const tagMatches = html.matchAll(/<\/?\s*([a-z][a-z0-9-]*)\b([^>]*)>/gi);
+
+  for (const match of tagMatches) {
+    if (match[0].startsWith("</")) {
+      continue;
+    }
+
+    const tagName = match[1].toLowerCase();
+    const attributes = (match[2] ?? "").replace(/\/\s*$/, "");
+
+    if (forbiddenHtmlTags.has(tagName)) {
+      issues.push({
+        level: "error",
+        code: "HTML_TEMPLATE_FORBIDDEN_TAG",
+        text: `HTML Layout Template 禁止使用交互或脚本标签：${tagName}`,
+        path,
+      });
+      continue;
+    }
+
+    if (!allowedHtmlTags.has(tagName)) {
+      issues.push({
+        level: "error",
+        code: "HTML_TEMPLATE_UNSUPPORTED_TAG",
+        text: `HTML Layout Template 不支持标签：${tagName}`,
+        path,
+      });
+    }
+
+    if (/\son[a-z]+\s*=/i.test(attributes)) {
+      issues.push({
+        level: "error",
+        code: "HTML_TEMPLATE_FORBIDDEN_EVENT_HANDLER",
+        text: `HTML Layout Template 禁止事件属性：${tagName}`,
+        path,
+      });
+    }
+
+    const attributeIssues = validateHtmlTemplateAttributes(tagName, attributes, path);
+    issues.push(...attributeIssues);
   }
 
-  return (section.rows ?? []).flatMap((row) =>
-    row.columns.flatMap((column) => column.modules.map((placement) => getModulePlacementId(placement))),
-  );
+  return issues;
+}
+
+function validateHtmlTemplateAttributes(tagName: string, attributes: string, path: string): PackageIssue[] {
+  const issues: PackageIssue[] = [];
+  const tagAttributes = allowedHtmlAttributesByTag.get(tagName);
+  const attributeMatches = attributes.matchAll(/\s+([^\s"'=<>`]+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s"'=<>`]+))?/g);
+  let moduleId: string | undefined;
+
+  for (const match of attributeMatches) {
+    const attributeName = match[1].toLowerCase();
+    const attributeValue = match[2]?.replace(/^["']|["']$/g, "");
+
+    if (tagName === "pb-module" && attributeName === "id") {
+      moduleId = attributeValue;
+    }
+
+    const isAllowedAttribute =
+      tagAttributes?.has(attributeName) || (tagName !== "pb-module" && (attributeName.startsWith("data-") || allowedGlobalHtmlAttributes.has(attributeName)));
+
+    if (isAllowedAttribute) {
+      if (tagName === "img" && attributeName === "src" && attributeValue && isExternalResourceReference(attributeValue)) {
+        issues.push({
+          level: "error",
+          code: "HTML_TEMPLATE_EXTERNAL_RESOURCE",
+          text: `HTML Layout Template 禁止外部资源：${attributeValue}`,
+          path,
+        });
+      }
+      continue;
+    }
+
+    issues.push({
+      level: "error",
+      code: "HTML_TEMPLATE_UNSUPPORTED_ATTRIBUTE",
+      text: `HTML Layout Template 不支持属性：${tagName}.${attributeName}`,
+      path,
+    });
+  }
+
+  if (tagName === "pb-module" && !moduleId) {
+    issues.push({
+      level: "error",
+      code: "HTML_TEMPLATE_MODULE_ID_MISSING",
+      text: "HTML Layout Template 的 pb-module 缺少 id 属性。",
+      path,
+    });
+  }
+
+  return issues;
+}
+
+function validateTemplateCss(css: string | undefined, path: string): PackageIssue[] {
+  if (!css) {
+    return [];
+  }
+
+  const issues: PackageIssue[] = [];
+
+  if (/@import\b/i.test(css)) {
+    issues.push({
+      level: "error",
+      code: "CSS_TEMPLATE_IMPORT_FORBIDDEN",
+      text: "HTML Layout Template CSS 禁止 @import。",
+      path,
+    });
+  }
+
+  const urlMatches = css.matchAll(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*?))\s*\)/gi);
+  for (const match of urlMatches) {
+    const value = (match[1] ?? match[2] ?? match[3] ?? "").trim();
+
+    if (isExternalResourceReference(value)) {
+      issues.push({
+        level: "error",
+        code: "CSS_TEMPLATE_EXTERNAL_RESOURCE",
+        text: `HTML Layout Template CSS 禁止外部资源：${value}`,
+        path,
+      });
+    }
+  }
+
+  return issues;
+}
+
+function isExternalResourceReference(value: string): boolean {
+  return /^[a-z][a-z0-9+.-]*:/i.test(value) || value.startsWith("//") || value.startsWith("/");
 }

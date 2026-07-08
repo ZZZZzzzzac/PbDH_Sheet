@@ -1,6 +1,6 @@
 # ADR-0012: Sheet Renderer Owns Flow Layout
 
-状态：Accepted
+状态：Superseded by [ADR-0014](0014-html-layout-template-primary-layout.md)
 日期：2026-07-07
 
 ## 背景

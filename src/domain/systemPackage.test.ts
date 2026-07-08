@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures";
-import { findAsset, findModule, getSectionModuleReferences, validateSystemPackage } from "./systemPackage";
+import { findAsset, findModule, getHtmlTemplateModuleReferences, validateSystemPackage } from "./systemPackage";
 
 describe("validateSystemPackage", () => {
   it("accepts the minimal demo System Package", () => {
@@ -53,14 +53,21 @@ describe("validateSystemPackage", () => {
     }
   });
 
-  it("accepts rich Flow Layout rows and columns", () => {
+  it("accepts HTML Layout Template module placeholders", () => {
     const result = validateSystemPackage(moduleDemoSystemPackage);
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      const identitySection = result.package.pages[0].sections[0];
-      expect(identitySection.rows?.[0].columns).toHaveLength(3);
-      expect(getSectionModuleReferences(identitySection)).toEqual(["character-name", "portrait", "sect-emblem"]);
+      const html = result.package.pages[0].layout.htmlContent;
+      expect(getHtmlTemplateModuleReferences(html)).toEqual([
+        "character-name",
+        "portrait",
+        "sect-emblem",
+        "vitality",
+        "conditions",
+        "background",
+        "rule-note",
+      ]);
     }
   });
 
@@ -111,18 +118,16 @@ describe("validateSystemPackage", () => {
     );
   });
 
-  it("reports a visible error for a missing Sheet Module reference", () => {
+  it("reports a visible error for a missing Sheet Module reference in HTML Layout Template", () => {
     const invalidPackage = {
       ...minimalSystemPackage,
       pages: [
         {
           ...minimalSystemPackage.pages[0],
-          sections: [
-            {
-              ...minimalSystemPackage.pages[0].sections[0],
-              modules: ["missing-module"],
-            },
-          ],
+          layout: {
+            ...minimalSystemPackage.pages[0].layout,
+            htmlContent: "<main><pb-module id=\"missing-module\"></pb-module></main>",
+          },
         },
       ],
     };
@@ -140,28 +145,16 @@ describe("validateSystemPackage", () => {
     );
   });
 
-  it("reports missing Sheet Module references inside rich Flow Layout placements", () => {
+  it("rejects custom form controls inside HTML Layout Template", () => {
     const invalidPackage = {
       ...moduleDemoSystemPackage,
       pages: [
         {
           ...moduleDemoSystemPackage.pages[0],
-          sections: [
-            {
-              ...moduleDemoSystemPackage.pages[0].sections[0],
-              rows: [
-                {
-                  ID: "broken-row",
-                  columns: [
-                    {
-                      ID: "broken-column",
-                      modules: [{ ID: "missing-module" }],
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
+          layout: {
+            ...moduleDemoSystemPackage.pages[0].layout,
+            htmlContent: "<main><input value=\"bad\" /></main>",
+          },
         },
       ],
     };
@@ -172,7 +165,105 @@ describe("validateSystemPackage", () => {
     expect(result.issues).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          code: "MISSING_MODULE_REFERENCE",
+          code: "HTML_TEMPLATE_FORBIDDEN_TAG",
+          level: "error",
+        }),
+      ]),
+    );
+  });
+
+  it("rejects event handler attributes inside HTML Layout Template", () => {
+    const invalidPackage = {
+      ...moduleDemoSystemPackage,
+      pages: [
+        {
+          ...moduleDemoSystemPackage.pages[0],
+          layout: {
+            ...moduleDemoSystemPackage.pages[0].layout,
+            htmlContent: "<main><section onclick=\"bad()\"><pb-module id=\"character-name\"></pb-module></section></main>",
+          },
+        },
+      ],
+    };
+
+    const result = validateSystemPackage(invalidPackage);
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "HTML_TEMPLATE_FORBIDDEN_EVENT_HANDLER",
+          level: "error",
+        }),
+      ]),
+    );
+  });
+
+  it("rejects unsupported tags and attributes inside HTML Layout Template", () => {
+    const invalidPackage = {
+      ...moduleDemoSystemPackage,
+      pages: [
+        {
+          ...moduleDemoSystemPackage.pages[0],
+          layout: {
+            ...moduleDemoSystemPackage.pages[0].layout,
+            htmlContent: "<main><label style=\"display:grid\"><pb-module></pb-module></label></main>",
+          },
+        },
+      ],
+    };
+
+    const result = validateSystemPackage(invalidPackage);
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "HTML_TEMPLATE_UNSUPPORTED_TAG",
+          level: "error",
+        }),
+        expect.objectContaining({
+          code: "HTML_TEMPLATE_UNSUPPORTED_ATTRIBUTE",
+          level: "error",
+        }),
+        expect.objectContaining({
+          code: "HTML_TEMPLATE_MODULE_ID_MISSING",
+          level: "error",
+        }),
+      ]),
+    );
+  });
+
+  it("rejects external resources in HTML Layout Template and CSS", () => {
+    const invalidPackage = {
+      ...moduleDemoSystemPackage,
+      pages: [
+        {
+          ...moduleDemoSystemPackage.pages[0],
+          layout: {
+            ...moduleDemoSystemPackage.pages[0].layout,
+            htmlContent: "<main><img src=\"https://example.com/bad.png\" alt=\"bad\" /></main>",
+            cssContent: "@import url(\"https://example.com/bad.css\"); .demo { background-image: url(/bad.png); }",
+          },
+        },
+      ],
+    };
+
+    const result = validateSystemPackage(invalidPackage);
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "HTML_TEMPLATE_EXTERNAL_RESOURCE",
+          level: "error",
+        }),
+        expect.objectContaining({
+          code: "CSS_TEMPLATE_IMPORT_FORBIDDEN",
+          level: "error",
+        }),
+        expect.objectContaining({
+          code: "CSS_TEMPLATE_EXTERNAL_RESOURCE",
           level: "error",
         }),
       ]),

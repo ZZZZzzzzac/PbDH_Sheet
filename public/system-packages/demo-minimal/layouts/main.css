@@ -1,0 +1,11 @@
+.minimal-sheet {
+  display: grid;
+  gap: 16px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.minimal-identity {
+  display: grid;
+  gap: 12px;
+}

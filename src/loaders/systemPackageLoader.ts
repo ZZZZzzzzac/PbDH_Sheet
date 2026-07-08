@@ -27,6 +27,21 @@ const packageManifestSchema = z.object({
     .optional(),
 });
 
+const pageLayoutReferenceSchema = z.array(
+  z
+    .object({
+      ID: z.string().optional(),
+      layout: z
+        .object({
+          类型: z.literal("htmlTemplate"),
+          html: z.string().min(1),
+          css: z.string().min(1).optional(),
+        })
+        .optional(),
+    })
+    .passthrough(),
+);
+
 export async function loadSystemPackageFromUrl(
   baseUrl: string = demoSystemPackageUrl,
   fetchImpl: typeof fetch = fetch,
@@ -67,12 +82,17 @@ export async function loadSystemPackageFromUrl(
     return { ok: false, issues: [pages.issue] };
   }
 
+  const pagesWithLayouts = await loadPageLayoutFilesFromUrl(baseUrl, pages.value, fetchImpl);
+  if (!pagesWithLayouts.ok) {
+    return { ok: false, issues: [pagesWithLayouts.issue] };
+  }
+
   const modules = await fetchPackageReferenceJson(baseUrl, parsedManifest.data.modules, fetchImpl);
   if (!modules.ok) {
     return { ok: false, issues: [modules.issue] };
   }
 
-  return normalizeManifestPackage(parsedManifest.data, pages.value, modules.value);
+  return normalizeManifestPackage(parsedManifest.data, pagesWithLayouts.value, modules.value);
 }
 
 export async function loadSystemPackageFromZipFile(file: Blob): Promise<PackageLoadResult> {
@@ -127,12 +147,17 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
     return { ok: false, issues: [pagesJson.issue] };
   }
 
+  const pagesWithLayouts = loadPageLayoutFilesFromVfs(vfs, pagesJson.value);
+  if (!pagesWithLayouts.ok) {
+    return { ok: false, issues: [pagesWithLayouts.issue] };
+  }
+
   const modulesJson = readPackageJsonFile(vfs, manifest.data.modules);
   if (!modulesJson.ok) {
     return { ok: false, issues: [modulesJson.issue] };
   }
 
-  const normalized = normalizeManifestPackage(manifest.data, pagesJson.value, modulesJson.value);
+  const normalized = normalizeManifestPackage(manifest.data, pagesWithLayouts.value, modulesJson.value);
   if (!normalized.ok) {
     return normalized;
   }
@@ -191,7 +216,25 @@ async function fetchPackageReferenceJson(baseUrl: string, packagePath: string, f
   return fetchPackageJson(`${baseUrl.replace(/\/$/, "")}/${normalized.path}`, normalized.path, fetchImpl);
 }
 
+async function fetchPackageReferenceText(baseUrl: string, packagePath: string, fetchImpl: typeof fetch) {
+  const normalized = normalizePackagePath(packagePath);
+  if (!normalized.ok) {
+    return { ok: false as const, issue: normalized.issue };
+  }
+
+  return fetchPackageText(`${baseUrl.replace(/\/$/, "")}/${normalized.path}`, normalized.path, fetchImpl);
+}
+
 async function fetchPackageJson(url: string, path: string, fetchImpl: typeof fetch) {
+  const text = await fetchPackageText(url, path, fetchImpl);
+  if (!text.ok) {
+    return text;
+  }
+
+  return parsePackageJson(text.value, path, path === packageManifestPath ? "MANIFEST_JSON_INVALID" : "PACKAGE_JSON_INVALID");
+}
+
+async function fetchPackageText(url: string, path: string, fetchImpl: typeof fetch) {
   try {
     const response = await fetchImpl(url);
 
@@ -208,7 +251,7 @@ async function fetchPackageJson(url: string, path: string, fetchImpl: typeof fet
     }
 
     const text = await response.text();
-    return parsePackageJson(text, path, path === packageManifestPath ? "MANIFEST_JSON_INVALID" : "PACKAGE_JSON_INVALID");
+    return { ok: true as const, path, value: text };
   } catch {
     return {
       ok: false as const,
@@ -220,6 +263,78 @@ async function fetchPackageJson(url: string, path: string, fetchImpl: typeof fet
       },
     };
   }
+}
+
+async function loadPageLayoutFilesFromUrl(baseUrl: string, pages: unknown, fetchImpl: typeof fetch) {
+  const parsed = pageLayoutReferenceSchema.safeParse(pages);
+  if (!parsed.success) {
+    return { ok: true as const, value: pages };
+  }
+
+  const normalizedPages = [];
+  for (const page of parsed.data) {
+    if (!page.layout) {
+      normalizedPages.push(page);
+      continue;
+    }
+
+    const html = await fetchPackageReferenceText(baseUrl, page.layout.html, fetchImpl);
+    if (!html.ok) {
+      return { ok: false as const, issue: html.issue };
+    }
+
+    const css = page.layout.css ? await fetchPackageReferenceText(baseUrl, page.layout.css, fetchImpl) : undefined;
+    if (css && !css.ok) {
+      return { ok: false as const, issue: css.issue };
+    }
+
+    normalizedPages.push({
+      ...page,
+      layout: {
+        ...page.layout,
+        htmlContent: html.value,
+        cssContent: css?.value,
+      },
+    });
+  }
+
+  return { ok: true as const, value: normalizedPages };
+}
+
+function loadPageLayoutFilesFromVfs(vfs: PackageVirtualFileSystem, pages: unknown) {
+  const parsed = pageLayoutReferenceSchema.safeParse(pages);
+  if (!parsed.success) {
+    return { ok: true as const, value: pages };
+  }
+
+  const normalizedPages = [];
+  for (const page of parsed.data) {
+    if (!page.layout) {
+      normalizedPages.push(page);
+      continue;
+    }
+
+    const html = vfs.readText(page.layout.html);
+    if (!html.ok) {
+      return { ok: false as const, issue: html.issue };
+    }
+
+    const css = page.layout.css ? vfs.readText(page.layout.css) : undefined;
+    if (css && !css.ok) {
+      return { ok: false as const, issue: css.issue };
+    }
+
+    normalizedPages.push({
+      ...page,
+      layout: {
+        ...page.layout,
+        htmlContent: html.value,
+        cssContent: css?.value,
+      },
+    });
+  }
+
+  return { ok: true as const, value: normalizedPages };
 }
 
 function resolvePackageAssets(assets: NonNullable<z.infer<typeof packageManifestSchema>["assets"]>, vfs: PackageVirtualFileSystem): LoadedPackageAsset[] {

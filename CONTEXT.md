@@ -100,9 +100,17 @@ _Avoid_: Multi-package workspace
 Read-only text or image content shown inside a Sheet Tool.
 _Avoid_: Separate feature, rules engine
 
+**HTML Layout Template**:
+The primary Author-provided layout model that arranges Sheet Modules through safe static HTML, module placeholders, and scoped CSS.
+_Avoid_: Custom app code, arbitrary web page
+
+**Static Layout Content**:
+Author-provided non-interactive headings, explanatory text, dividers, and decorative content inside an HTML Layout Template.
+_Avoid_: Sheet Value, custom form control
+
 **Flow Layout**:
-A page layout model that arranges Sheet Modules through pages, sections, rows, and columns.
-_Avoid_: Pixel positioning
+A superseded JSON layout proposal that arranged Sheet Modules through pages, sections, rows, and columns.
+_Avoid_: Current author-facing layout model
 
 **Overlay Layout**:
 A future page layout model that places Sheet Modules over a fixed background sheet image using coordinates.
@@ -141,7 +149,7 @@ _Avoid_: Script plugin
 - **AI-Readable Documentation** is a first-version requirement because non-programmer Authors may rely on AI to create System Packages.
 - A **System Package Validator** should be strict about IDs, references, required structural fields, and broken links, but permissive about ordinary **Sheet Values**.
 - **Resource Values** are displayed as provided; the Base Framework does not interpret their game meaning.
-- A **System Package** composes **Sheet Modules** into pages and sections.
+- A **System Package** composes **Sheet Modules** into pages through **HTML Layout Templates**.
 - A **Resource Library** stores source entries; **Card Presentation** controls how selected entries appear to Players.
 - A **Card** is a core PbDH concept and may represent many kinds of resources, not only Daggerheart domain cards.
 - PbDH Cards are ability/resource references, not a card-game rules engine.
@@ -153,11 +161,13 @@ _Avoid_: Script plugin
 - First-version **Character Data** stores text and state. System images should be referenced rather than copied, but Player-provided portraits or character art may be stored with the Character Data.
 - System Package distribution is file/package based in the first version; package marketplaces, publishing platforms, and full source-code exports are outside the first-version requirement.
 - **Display Content**, adventure notes, names, and rule reference pages are all uses of **Sheet Modules**, not separate base features.
+- An **HTML Layout Template** may include **Static Layout Content** and module placeholders, but editable Character Data still belongs to **Sheet Modules**.
+- An **HTML Layout Template** must not define interactive form controls or custom behavior; all Player interaction that reads or writes state must use Base Framework **Sheet Modules** or other framework-provided interactive surfaces.
 - **Dependency Logic** helps Players avoid table lookup and text copying, but should not imply full automation of game rules.
 - A **Validation Check** may read many **Sheet Modules**, but it does not write values back to them.
 - A **Validation Script** may express unusual rule-specific calculations, but it only reads exported sheet data and only outputs a report.
 - A **Declarative System Package** should be enough for first-version sheet behavior; arbitrary scripts that mutate sheet state are outside the first-version requirement.
-- First-version **System Packages** use **Flow Layout**; **Overlay Layout** is a future option and should not affect module data, dependencies, or validation.
+- First-version **System Packages** use **HTML Layout Templates** as the only Author-facing layout model; **Flow Layout** is superseded and should not be expanded.
 
 ## Example Dialogue
 

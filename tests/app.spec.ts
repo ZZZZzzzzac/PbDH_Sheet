@@ -89,6 +89,9 @@ test("uploads the phase 5 module demo package and persists simple module state",
   await uploadPackage(page, moduleDemoPackagePath());
 
   await expect(page.getByText("demo-modules")).toBeVisible();
+  await expect(page.locator(".demo-sheet")).toBeVisible();
+  await expect(page.locator(".identity")).toBeVisible();
+  await expect(page.locator('[data-module-slot-id="background"]')).toBeVisible();
   await expect(page.getByAltText("阶段5示例徽记")).toBeVisible();
   await expect(page.getByRole("img", { name: "角色头像" })).toContainText("图片不可用");
 
@@ -140,6 +143,25 @@ test("uploads the phase 5 module demo package and persists simple module state",
   await expect(page.getByLabel("姓名")).toHaveValue("陆青");
   await expect(page.getByLabel("背景")).toHaveValue("第一行\n第二行");
   await expect(page.getByAltText("角色头像")).toBeVisible();
+});
+
+test("HTML Layout Template from demo zip stacks columns on small screens", async ({ page }) => {
+  await page.goto("/");
+  await uploadPackage(page, moduleDemoPackagePath());
+
+  const identitySection = page.locator(".identity");
+  await expect(identitySection).toBeVisible();
+  await expect(page.getByLabel("姓名")).toBeVisible();
+  await expect(page.getByRole("img", { name: "角色头像" })).toBeVisible();
+  await expect(page.getByAltText("阶段5示例徽记")).toBeVisible();
+
+  await expect(page.locator(".identity > .module-slot")).toHaveCount(3);
+  await page.setViewportSize({ width: 480, height: 900 });
+  await expect
+    .poll(async () =>
+      identitySection.evaluate((element) => getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length),
+    )
+    .toBe(1);
 });
 
 const errorFixtures = [

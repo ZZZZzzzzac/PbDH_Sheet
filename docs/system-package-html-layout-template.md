@@ -1,0 +1,124 @@
+# System Package HTML Layout Template 接口
+
+状态：设计决策  
+适用 schemaVersion：`0.1.0`  
+读者：System Package Author，以及协助 Author 写包的 AI
+
+本文定义 Author 如何用安全 HTML 和 scoped CSS 声明页面布局。模板只负责摆放已有 Sheet Modules 和无状态装饰，不产生 Character Data，也不定义交互行为。
+
+## 总结构
+
+HTML Layout Template 是：
+
+```text
+page layout -> html file + css file
+html file -> Static Layout Content + <pb-module id="...">
+```
+
+System Package 页面引用布局文件：
+
+```json
+{
+  "ID": "main",
+  "名称": "角色卡",
+  "layout": {
+    "类型": "htmlTemplate",
+    "html": "layouts/main.html",
+    "css": "layouts/main.css"
+  }
+}
+```
+
+## HTML 示例
+
+```html
+<main class="sheet">
+  <header class="hero">
+    <h1>调查员档案</h1>
+    <p>先填写身份，再选择能力。</p>
+  </header>
+
+  <section class="identity">
+    <pb-module id="name-textbox"></pb-module>
+    <pb-module id="portrait"></pb-module>
+  </section>
+
+  <section class="notes">
+    <h2>记录</h2>
+    <pb-module id="background"></pb-module>
+    <pb-module id="rule-note"></pb-module>
+  </section>
+</main>
+```
+
+## CSS 示例
+
+```css
+.sheet {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: grid;
+  gap: 20px;
+}
+
+.identity {
+  display: grid;
+  grid-template-columns: 2fr 180px;
+  gap: 16px;
+}
+
+.notes {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .identity,
+  .notes {
+    grid-template-columns: 1fr;
+  }
+}
+```
+
+## 允许内容
+
+- 布局容器：`main`、`section`、`article`、`header`、`footer`、`div`。
+- 静态内容：`h1`-`h6`、`p`、`span`、`strong`、`em`、`small`、`hr`。
+- 列表和表格类静态结构：`ul`、`ol`、`li`、`table`、`thead`、`tbody`、`tr`、`th`、`td`。
+- 装饰图片：`img`，资源必须来自 System Package assets。
+- 模块占位符：`<pb-module id="module-id"></pb-module>`。
+
+## 允许属性
+
+- 通用属性：`class`、`title`、`aria-label`、`data-*`。
+- `pb-module`：只允许 `id`。
+- `img`：只允许 `src`、`alt`。
+- `td`、`th`：可额外使用 `colspan`、`rowspan`。
+- 样式必须写入 CSS 文件；HTML 内不允许 `style` 属性。
+
+## 禁止内容
+
+- 自定义交互控件：`input`、`button`、`select`、`textarea`、`form`。
+- 脚本：`script`、事件属性、内联 JS、外部 JS。
+- 外部资源：外链 CSS、外链字体、外链图片、外部 `@import`。
+- 全局污染：直接影响 `html`、`body`、app shell、导入导出按钮、存档 UI。
+
+## 校验规则
+
+- `layout.类型` 必须是 `htmlTemplate`。
+- `layout.html` 必须指向包内 HTML 文件。
+- `layout.css` 可选；填写时必须指向包内 CSS 文件。
+- 每个 `<pb-module id="...">` 必须引用 `modules.json` 中存在的 Sheet Module ID。
+- HTML 中禁止的标签和属性会导致导入失败。
+- CSS 会被框架 scope 到当前 Sheet Tool；不能影响框架 UI 或其他包。
+- Layout 不进入 Character Data；Character Data 仍按 Sheet Module ID 存值。
+
+## 生成清单
+
+1. 先在 `modules.json` 定义所有 Sheet Modules，并固定每个模块 `ID`。
+2. 在 HTML 模板里用 `<pb-module id="...">` 摆放这些模块。
+3. 用静态 HTML 写标题、说明、装饰和分隔。
+4. 用 CSS Grid/Flex/media query 做行列和响应式。
+5. 不写任何自定义表单控件；需要新交互时，新增或扩展 Sheet Module。
+6. 导入包后看 Validator；有模块引用错误先查 `<pb-module id>` 拼写。

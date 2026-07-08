@@ -12,6 +12,8 @@ describe("loadSystemPackageFromUrl", () => {
     expect(result.ok).toBe(true);
     expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/manifest.json");
     expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/pages.json");
+    expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/layouts/main.html");
+    expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/layouts/main.css");
     expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/modules.json");
     expect(fetchImpl).not.toHaveBeenCalledWith("/system-packages/demo-minimal/assets/readme.txt");
     if (result.ok) {
@@ -72,6 +74,57 @@ describe("loadSystemPackageFromUrl", () => {
     );
   });
 
+  it("returns a fatal issue when a static HTML layout file cannot be loaded", async () => {
+    const fetchImpl = createPackageFetch({
+      pages: [
+        {
+          ID: "main",
+          名称: "角色卡",
+          layout: {
+            类型: "htmlTemplate",
+            html: "layouts/missing.html",
+          },
+        },
+      ],
+    });
+
+    const result = await loadSystemPackageFromUrl("/system-packages/demo-minimal", fetchImpl);
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "PACKAGE_FETCH_FAILED",
+          level: "fatal",
+          path: "layouts/missing.html",
+        }),
+      ]),
+    );
+  });
+
+  it("loads a static HTML layout without optional CSS", async () => {
+    const fetchImpl = createPackageFetch({
+      pages: [
+        {
+          ID: "main",
+          名称: "角色卡",
+          layout: {
+            类型: "htmlTemplate",
+            html: "layouts/main.html",
+          },
+        },
+      ],
+    });
+
+    const result = await loadSystemPackageFromUrl("/system-packages/demo-minimal", fetchImpl);
+
+    expect(result.ok).toBe(true);
+    expect(fetchImpl).not.toHaveBeenCalledWith("/system-packages/demo-minimal/layouts/main.css");
+    if (result.ok) {
+      expect(result.package.pages[0].layout.cssContent).toBeUndefined();
+    }
+  });
+
   it("rejects unsafe static package references", async () => {
     const fetchImpl = createPackageFetch({
       manifest: {
@@ -99,7 +152,8 @@ describe("loadSystemPackageFromUrl", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.package.manifest.ID).toBe("demo-minimal");
-      expect(result.package.pages[0].sections[0].modules).toEqual(["character-name"]);
+      expect(result.package.pages[0].layout.类型).toBe("htmlTemplate");
+      expect(result.package.pages[0].layout.htmlContent).toContain("<pb-module id=\"character-name\"");
     }
   });
 
@@ -192,6 +246,36 @@ describe("loadSystemPackageFromUrl", () => {
     );
   });
 
+  it("returns a fatal issue when a zip HTML layout file is missing", async () => {
+    const result = await loadSystemPackageFromZipFile(
+      zipBlob({
+        "manifest.json": JSON.stringify(createManifest()),
+        "pages.json": JSON.stringify([
+          {
+            ID: "main",
+            名称: "角色卡",
+            layout: {
+              类型: "htmlTemplate",
+              html: "layouts/missing.html",
+            },
+          },
+        ]),
+        "modules.json": JSON.stringify(minimalSystemPackage.modules),
+      }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "PACKAGE_FILE_MISSING",
+          level: "fatal",
+          path: "layouts/missing.html",
+        }),
+      ]),
+    );
+  });
+
   it("rejects unsafe manifest paths", async () => {
     const result = await loadSystemPackageFromZipFile(
       createPackageZip({
@@ -246,8 +330,10 @@ function createManifest() {
 function createPackageZip(options: { manifest?: unknown } = {}) {
   return zipBlob({
     "manifest.json": JSON.stringify(options.manifest ?? createManifest()),
-    "pages.json": JSON.stringify(minimalSystemPackage.pages),
+    "pages.json": packagePagesJson(minimalSystemPackage.pages),
     "modules.json": JSON.stringify(minimalSystemPackage.modules),
+    "layouts/main.html": minimalSystemPackage.pages[0].layout.htmlContent,
+    "layouts/main.css": minimalSystemPackage.pages[0].layout.cssContent ?? "",
     "assets/readme.txt": "hello",
   });
 }
@@ -260,8 +346,10 @@ function createModuleDemoZip() {
       modules: "modules.json",
       assets: moduleDemoSystemPackage.assets,
     }),
-    "pages.json": JSON.stringify(moduleDemoSystemPackage.pages),
+    "pages.json": packagePagesJson(moduleDemoSystemPackage.pages),
     "modules.json": JSON.stringify(moduleDemoSystemPackage.modules),
+    "layouts/main.html": moduleDemoSystemPackage.pages[0].layout.htmlContent,
+    "layouts/main.css": moduleDemoSystemPackage.pages[0].layout.cssContent ?? "",
     "assets/demo-emblem.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1 1\"></svg>",
   });
 }
@@ -271,11 +359,13 @@ function zipBlob(files: Record<string, string>) {
   return new Blob([zipSync(entries)], { type: "application/zip" });
 }
 
-function createPackageFetch(options: { manifest?: unknown } = {}) {
+function createPackageFetch(options: { manifest?: unknown; pages?: unknown[] } = {}) {
   const files: Record<string, string> = {
     "/system-packages/demo-minimal/manifest.json": JSON.stringify(options.manifest ?? createManifest()),
-    "/system-packages/demo-minimal/pages.json": JSON.stringify(minimalSystemPackage.pages),
+    "/system-packages/demo-minimal/pages.json": options.pages ? JSON.stringify(options.pages) : packagePagesJson(minimalSystemPackage.pages),
     "/system-packages/demo-minimal/modules.json": JSON.stringify(minimalSystemPackage.modules),
+    "/system-packages/demo-minimal/layouts/main.html": minimalSystemPackage.pages[0].layout.htmlContent,
+    "/system-packages/demo-minimal/layouts/main.css": minimalSystemPackage.pages[0].layout.cssContent ?? "",
     "/system-packages/demo-minimal/assets/readme.txt": "hello",
   };
 
@@ -286,4 +376,17 @@ function createPackageFetch(options: { manifest?: unknown } = {}) {
       ? new Response("", { status: 404, statusText: "Not Found" })
       : new Response(body, { status: 200, headers: { "content-type": key.endsWith(".txt") ? "text/plain" : "application/json" } });
   });
+}
+
+function packagePagesJson(pages: Array<{ layout: { 类型: "htmlTemplate"; html: string; css?: string } } & Record<string, unknown>>) {
+  return JSON.stringify(
+    pages.map((page) => ({
+      ...page,
+      layout: {
+        类型: page.layout.类型,
+        html: page.layout.html,
+        css: page.layout.css,
+      },
+    })),
+  );
 }

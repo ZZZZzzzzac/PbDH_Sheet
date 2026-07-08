@@ -1,117 +1,255 @@
-import type { CSSProperties } from "react";
-import type { FlowColumn, FlowRow, FlowSection, LayoutStyle, ModulePlacement, SystemPackage } from "../domain/systemPackage";
-import { findModule, getModulePlacementId } from "../domain/systemPackage";
+import type { ReactNode } from "react";
+import type { SystemPackage } from "../domain/systemPackage";
+import { findModule } from "../domain/systemPackage";
 import { RenderSheetModule } from "./moduleRegistry";
 
 interface SheetRendererProps {
   systemPackage: SystemPackage;
 }
 
-function toLayoutStyle(style?: LayoutStyle): CSSProperties | undefined {
-  if (!style) {
-    return undefined;
+const allowedTemplateTags = new Set([
+  "article",
+  "div",
+  "em",
+  "footer",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "header",
+  "hr",
+  "img",
+  "li",
+  "main",
+  "ol",
+  "p",
+  "section",
+  "small",
+  "span",
+  "strong",
+  "table",
+  "tbody",
+  "td",
+  "th",
+  "thead",
+  "tr",
+  "ul",
+]);
+
+const allowedTemplateAttributes = new Set(["alt", "aria-label", "class", "colspan", "rowspan", "src", "title"]);
+const reactAttributeNames = new Map([
+  ["class", "className"],
+  ["colspan", "colSpan"],
+  ["rowspan", "rowSpan"],
+]);
+
+function renderTemplateNode(systemPackage: SystemPackage, node: ChildNode, key: string): ReactNode {
+  if (node.nodeType === 3) {
+    return node.textContent;
   }
 
-  return {
-    width: style.宽度,
-    minWidth: style.最小宽度,
-    maxWidth: style.最大宽度,
-    height: style.高度,
-    minHeight: style.最小高度,
-    maxHeight: style.最大高度,
-    gap: style.间距,
-    margin: style.外边距,
-    padding: style.内边距,
-    backgroundColor: style.背景色,
-    border: style.边框,
-    borderRadius: style.圆角,
-    justifyItems: style.对齐,
-    alignItems: style.垂直对齐,
-  };
+  if (node.nodeType !== 1) {
+    return null;
+  }
+
+  const element = node as Element;
+  const tagName = element.tagName.toLowerCase();
+
+  if (tagName === "pb-module") {
+    return renderModulePlaceholder(systemPackage, element.getAttribute("id"), key);
+  }
+
+  if (!allowedTemplateTags.has(tagName)) {
+    return null;
+  }
+
+  const props = templateElementProps(element, key);
+  const children = [...element.childNodes].map((child, index) => renderTemplateNode(systemPackage, child, `${key}-${index}`));
+
+  return createTemplateElement(tagName, props, children);
 }
 
-function columnTrack(column: FlowColumn): string {
-  const width = column.宽度 ?? "1fr";
-  return column.最小宽度 ? `minmax(min(100%, ${column.最小宽度}), ${width})` : width;
-}
+function renderModulePlaceholder(systemPackage: SystemPackage, moduleId: string | null, key: string) {
+  if (!moduleId) {
+    return null;
+  }
 
-function renderModulePlacement(systemPackage: SystemPackage, placement: ModulePlacement, index: number) {
-  const moduleId = getModulePlacementId(placement);
   const module = findModule(systemPackage, moduleId);
   if (!module) {
     return null;
   }
 
-  const placementStyle = typeof placement === "string" ? undefined : placement.样式;
-
   return (
-    <div className="module-slot" data-module-slot-id={module.ID} key={`${module.ID}-${index}`} style={toLayoutStyle(placementStyle)}>
+    <div className="module-slot" data-module-slot-id={module.ID} key={key}>
       <RenderSheetModule module={module} systemPackage={systemPackage} />
     </div>
   );
 }
 
-function sectionContentStyle(section: FlowSection): CSSProperties | undefined {
-  return section.样式?.间距 ? { gap: section.样式.间距 } : undefined;
-}
+function templateElementProps(element: Element, key: string) {
+  const props: Record<string, string> = { key };
 
-function renderLegacySection(systemPackage: SystemPackage, section: FlowSection) {
-  return (
-    <div className="module-grid" style={sectionContentStyle(section)}>
-      {(section.modules ?? []).map((moduleId, index) => renderModulePlacement(systemPackage, moduleId, index))}
-    </div>
-  );
-}
-
-function renderFlowRow(systemPackage: SystemPackage, row: FlowRow, rowIndex: number) {
-  const rowStyle: CSSProperties = toLayoutStyle(row.样式) ?? {};
-  rowStyle.gridTemplateColumns = row.columns.map((column) => columnTrack(column)).join(" ");
-
-  return (
-    <div className="flow-row" data-layout-row-id={row.ID ?? rowIndex} key={row.ID ?? rowIndex} style={rowStyle}>
-      {row.columns.map((column, columnIndex) => renderFlowColumn(systemPackage, column, columnIndex))}
-    </div>
-  );
-}
-
-function renderFlowColumn(systemPackage: SystemPackage, column: FlowColumn, columnIndex: number) {
-  return (
-    <div className="flow-column" data-layout-column-id={column.ID ?? columnIndex} key={column.ID ?? columnIndex} style={toLayoutStyle(column.样式)}>
-      {column.modules.map((placement, placementIndex) => renderModulePlacement(systemPackage, placement, placementIndex))}
-    </div>
-  );
-}
-
-function renderSectionLayout(systemPackage: SystemPackage, section: FlowSection) {
-  if (!section.rows) {
-    return renderLegacySection(systemPackage, section);
+  for (const attribute of [...element.attributes]) {
+    const name = attribute.name.toLowerCase();
+    if (name.startsWith("on")) {
+      continue;
+    }
+    if (name.startsWith("data-") || allowedTemplateAttributes.has(name)) {
+      props[reactAttributeNames.get(name) ?? name] = attribute.value;
+    }
   }
 
-  return (
-    <div className="flow-rows" style={sectionContentStyle(section)}>
-      {section.rows.map((row, rowIndex) => renderFlowRow(systemPackage, row, rowIndex))}
-    </div>
-  );
+  return props;
+}
+
+function createTemplateElement(tagName: string, props: Record<string, string>, children: ReactNode[]) {
+  switch (tagName) {
+    case "article":
+      return <article {...props}>{children}</article>;
+    case "div":
+      return <div {...props}>{children}</div>;
+    case "em":
+      return <em {...props}>{children}</em>;
+    case "footer":
+      return <footer {...props}>{children}</footer>;
+    case "h1":
+      return <h1 {...props}>{children}</h1>;
+    case "h2":
+      return <h2 {...props}>{children}</h2>;
+    case "h3":
+      return <h3 {...props}>{children}</h3>;
+    case "h4":
+      return <h4 {...props}>{children}</h4>;
+    case "h5":
+      return <h5 {...props}>{children}</h5>;
+    case "h6":
+      return <h6 {...props}>{children}</h6>;
+    case "header":
+      return <header {...props}>{children}</header>;
+    case "hr":
+      return <hr {...props} />;
+    case "img":
+      return <img {...props} />;
+    case "li":
+      return <li {...props}>{children}</li>;
+    case "main":
+      return <main {...props}>{children}</main>;
+    case "ol":
+      return <ol {...props}>{children}</ol>;
+    case "p":
+      return <p {...props}>{children}</p>;
+    case "section":
+      return <section {...props}>{children}</section>;
+    case "small":
+      return <small {...props}>{children}</small>;
+    case "span":
+      return <span {...props}>{children}</span>;
+    case "strong":
+      return <strong {...props}>{children}</strong>;
+    case "table":
+      return <table {...props}>{children}</table>;
+    case "tbody":
+      return <tbody {...props}>{children}</tbody>;
+    case "td":
+      return <td {...props}>{children}</td>;
+    case "th":
+      return <th {...props}>{children}</th>;
+    case "thead":
+      return <thead {...props}>{children}</thead>;
+    case "tr":
+      return <tr {...props}>{children}</tr>;
+    case "ul":
+      return <ul {...props}>{children}</ul>;
+    default:
+      return null;
+  }
+}
+
+function renderHtmlTemplate(systemPackage: SystemPackage, html: string) {
+  const document = new DOMParser().parseFromString(html, "text/html");
+  return [...document.body.childNodes].map((node, index) => renderTemplateNode(systemPackage, node, String(index)));
+}
+
+function scopeTemplateCss(pageId: string, css?: string): string {
+  if (!css) {
+    return "";
+  }
+
+  const scope = `[data-template-page-id="${cssStringEscape(pageId)}"]`;
+  return scopeCssBlock(css, scope);
+}
+
+function scopeCssBlock(css: string, scope: string): string {
+  let result = "";
+  let cursor = 0;
+
+  while (cursor < css.length) {
+    const openIndex = css.indexOf("{", cursor);
+    if (openIndex === -1) {
+      result += css.slice(cursor);
+      break;
+    }
+
+    const selector = css.slice(cursor, openIndex).trim();
+    const closeIndex = findMatchingBrace(css, openIndex);
+    if (closeIndex === -1) {
+      result += css.slice(cursor);
+      break;
+    }
+
+    const body = css.slice(openIndex + 1, closeIndex);
+    if (selector.startsWith("@media")) {
+      result += `${selector} {${scopeCssBlock(body, scope)}}`;
+    } else if (selector.startsWith("@")) {
+      result += `${selector} {${body}}`;
+    } else if (selector) {
+      result += `${scopeSelectors(selector, scope)} {${body}}`;
+    }
+
+    cursor = closeIndex + 1;
+  }
+
+  return result;
+}
+
+function findMatchingBrace(css: string, openIndex: number): number {
+  let depth = 0;
+
+  for (let index = openIndex; index < css.length; index += 1) {
+    if (css[index] === "{") {
+      depth += 1;
+    }
+    if (css[index] === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+
+  return -1;
+}
+
+function scopeSelectors(selectors: string, scope: string): string {
+  return selectors
+    .split(",")
+    .map((selector) => `${scope} ${selector.trim()}`)
+    .join(", ");
+}
+
+function cssStringEscape(value: string): string {
+  return value.replace(/["\\]/g, "\\$&");
 }
 
 export function SheetRenderer({ systemPackage }: SheetRendererProps) {
   return (
     <main className="sheet-tool" aria-label="Sheet Tool">
       {systemPackage.pages.map((page) => (
-        <article className="sheet-page" key={page.ID} style={toLayoutStyle(page.样式)}>
-          <header className="page-header">
-            <div>
-              <p className="eyebrow">{systemPackage.manifest.名称}</p>
-              <h1>{page.名称}</h1>
-            </div>
-          </header>
-
-          {page.sections.map((section) => (
-            <section className="sheet-section" key={section.ID} aria-labelledby={`section-${section.ID}`} style={toLayoutStyle(section.样式)}>
-              <h2 id={`section-${section.ID}`}>{section.名称}</h2>
-              {renderSectionLayout(systemPackage, section)}
-            </section>
-          ))}
+        <article className="sheet-page" data-template-page-id={page.ID} key={page.ID}>
+          <style>{scopeTemplateCss(page.ID, page.layout.cssContent)}</style>
+          {renderHtmlTemplate(systemPackage, page.layout.htmlContent)}
         </article>
       ))}
     </main>

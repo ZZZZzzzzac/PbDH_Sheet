@@ -2,9 +2,28 @@ import type { SystemPackage } from "../domain/systemPackage";
 import manifest from "../../public/system-packages/demo-minimal/manifest.json";
 import pages from "../../public/system-packages/demo-minimal/pages.json";
 import modules from "../../public/system-packages/demo-minimal/modules.json";
+import minimalLayoutCss from "../../public/system-packages/demo-minimal/layouts/main.css?raw";
+import minimalLayoutHtml from "../../public/system-packages/demo-minimal/layouts/main.html?raw";
 import moduleDemoManifest from "../../public/system-packages/demo-modules/manifest.json";
 import moduleDemoPages from "../../public/system-packages/demo-modules/pages.json";
 import moduleDemoModules from "../../public/system-packages/demo-modules/modules.json";
+import moduleDemoLayoutCss from "../../public/system-packages/demo-modules/layouts/main.css?raw";
+import moduleDemoLayoutHtml from "../../public/system-packages/demo-modules/layouts/main.html?raw";
+
+function withHtmlTemplateContent<TPage extends { layout: { html: string; css?: string } }>(
+  pagesInput: TPage[],
+  htmlContent: string,
+  cssContent?: string,
+) {
+  return pagesInput.map((page) => ({
+    ...page,
+    layout: {
+      ...page.layout,
+      htmlContent,
+      cssContent,
+    },
+  }));
+}
 
 export const minimalSystemPackage = {
   manifest: {
@@ -13,7 +32,7 @@ export const minimalSystemPackage = {
     版本: manifest.版本,
     schemaVersion: manifest.schemaVersion,
   },
-  pages,
+  pages: withHtmlTemplateContent(pages, minimalLayoutHtml, minimalLayoutCss),
   modules,
   assets: manifest.assets,
 } as SystemPackage;
@@ -25,7 +44,7 @@ export const moduleDemoSystemPackage = {
     版本: moduleDemoManifest.版本,
     schemaVersion: moduleDemoManifest.schemaVersion,
   },
-  pages: moduleDemoPages,
+  pages: withHtmlTemplateContent(moduleDemoPages, moduleDemoLayoutHtml, moduleDemoLayoutCss),
   modules: moduleDemoModules,
   assets: moduleDemoManifest.assets,
 } as SystemPackage;

@@ -216,31 +216,6 @@ h2 {
   font-size: 1rem;
 }
 
-.module-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-  gap: 16px;
-}
-
-.flow-rows {
-  display: grid;
-  gap: 16px;
-}
-
-.flow-row {
-  display: grid;
-  gap: 16px;
-  align-items: stretch;
-  min-width: 0;
-}
-
-.flow-column {
-  display: grid;
-  align-content: start;
-  gap: 16px;
-  min-width: 0;
-}
-
 .module-slot {
   min-width: 0;
 }
@@ -464,10 +439,6 @@ fieldset.container {
 
   .container {
     grid-template-columns: 1fr;
-  }
-
-  .flow-row {
-    grid-template-columns: 1fr !important;
   }
 
   .label {

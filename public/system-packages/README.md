@@ -10,3 +10,5 @@
 - 示例包必须通过 `src/domain/systemPackage.ts` 的结构校验。
 - 不放运行时生成的 Character Data，不放测试输出。
 - 用户上传包和用户缓存不放这里；后续由 Loader 和 IndexedDB 处理。
+
+HTML Layout Template 写法见 [System Package HTML Layout Template 接口](../../docs/system-package-html-layout-template.md)。

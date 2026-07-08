@@ -1,5 +1,7 @@
 # Flow Layout Customization PRD and Issue Drafts
 
+状态：Superseded by [ADR-0014: HTML Layout Template Is the Primary Author Layout Model](adr/0014-html-layout-template-primary-layout.md). This file is retained only as historical issue context for #33-#36.
+
 GitHub publication status: not published locally because `gh` is not installed in this workspace.
 
 Recommended labels for the PRD issue: `enhancement`, `needs-triage`.
