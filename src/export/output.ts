@@ -223,8 +223,7 @@ body.snapshot-body {
   pointer-events: none;
 }
 .snapshot-shell .top-bar,
-.snapshot-shell .runtime-strip,
-.snapshot-shell .save-manager,
+.snapshot-shell .top-menu-bar,
 .snapshot-shell .print-preview-bar,
 .snapshot-shell .message,
 .snapshot-shell .resource-dialog-backdrop,
@@ -247,6 +246,28 @@ body.snapshot-body {
   page-break-inside: avoid;
 }
 @media print {
+  @page {
+    margin: 8mm 4mm 10mm;
+  }
+
+  .snapshot-shell .card-table-surface {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(0, var(--play-card-width)));
+    align-items: start;
+    align-content: start;
+    gap: 4px;
+    padding: 0;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible;
+  }
+  .snapshot-shell .play-card {
+    position: relative;
+    left: auto !important;
+    top: auto !important;
+    z-index: auto !important;
+    transform: none !important;
+  }
   .snapshot-shell .sheet-page,
   .sheet-page {
     break-after: page;

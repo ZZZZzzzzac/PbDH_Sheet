@@ -1,6 +1,14 @@
 import { Layers, X } from "lucide-react";
 import { useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
-import { createCardTableLayout, defaultCardWidthPx, maxCardWidthPx, minCardWidthPx, type CardInstance, type CardTableLayout } from "../domain/cardEngine";
+import {
+  clampCardTablePosition,
+  createCardTableLayout,
+  defaultCardWidthPx,
+  maxCardWidthPx,
+  minCardWidthPx,
+  type CardInstance,
+  type CardTableLayout,
+} from "../domain/cardEngine";
 import { type ResourceLibraryEntry, summarizeResourceEntry } from "../domain/resourceLibrary";
 import { findResourceLibrary, type CardTableModule as CardTableModuleConfig, type SystemPackage } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
@@ -37,10 +45,12 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
   const setCardTableCardWidth = useRuntimeStore((state) => state.setCardTableCardWidth);
   const visibleInstances = instances.filter((instance) => instance.tableModuleId === module.ID).sort(compareCards);
   const [surfaceWidthPx, setSurfaceWidthPx] = useState(0);
+  const [surfaceViewportHeightPx, setSurfaceViewportHeightPx] = useState(0);
   const tableLayout = createCardTableLayout({
     surfaceWidthPx: surfaceWidthPx || 800,
     cardCount: visibleInstances.length,
     preferredCardWidthPx: cardWidthPx,
+    minSurfaceHeightPx: surfaceViewportHeightPx,
   });
 
   useLayoutEffect(() => {
@@ -49,20 +59,26 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
       return;
     }
 
-    const updateSurfaceWidth = () => {
+    const updateSurfaceSize = () => {
+      const rect = table.getBoundingClientRect();
       setSurfaceWidthPx(Math.max(0, table.clientWidth));
+      setSurfaceViewportHeightPx(Math.max(420, window.innerHeight - rect.top - 16));
     };
 
-    updateSurfaceWidth();
+    updateSurfaceSize();
 
     if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", updateSurfaceWidth);
-      return () => window.removeEventListener("resize", updateSurfaceWidth);
+      window.addEventListener("resize", updateSurfaceSize);
+      return () => window.removeEventListener("resize", updateSurfaceSize);
     }
 
-    const observer = new ResizeObserver(updateSurfaceWidth);
+    window.addEventListener("resize", updateSurfaceSize);
+    const observer = new ResizeObserver(updateSurfaceSize);
     observer.observe(table);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateSurfaceSize);
+    };
   }, []);
 
   const clearLongPressTimer = () => {
@@ -116,7 +132,8 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
     if (moved) {
       clearLongPressTimer();
     }
-    updateCardInstancePosition(event.currentTarget.dataset.cardInstanceId ?? dragState.instanceId, point.xPct - dragState.offsetXPct, point.yPct - dragState.offsetYPct);
+    const nextPosition = clampCardTablePosition(tableLayout, nextXPct, nextYPct);
+    updateCardInstancePosition(event.currentTarget.dataset.cardInstanceId ?? dragState.instanceId, nextPosition.xPct, nextPosition.yPct);
   };
 
   const endDrag = (event: PointerEvent<HTMLElement>) => {
@@ -143,15 +160,20 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
 
   return (
     <section className="card-table-module" data-module-id={module.ID} data-module-type={module.类型}>
-      <header className="card-table-header">
-        <div>
-          <p className="eyebrow">Card Table</p>
-          <h2>{module.标签}</h2>
-        </div>
-        <div className="card-table-actions">
-          <span className="card-count">{visibleInstances.length} 张</span>
+      <div
+        className="card-table-surface"
+        ref={tableRef}
+        style={cardTableSurfaceStyle(tableLayout)}
+        aria-label={`${module.标签}自由桌面`}
+        onPointerDown={closeCardMenu}
+      >
+        <div className="card-table-actions card-table-side-actions" onPointerDown={(event) => event.stopPropagation()}>
+          <button className="card-action-button" type="button" onClick={() => tidyCardTable(module.ID, tableLayout)}>
+            <Layers aria-hidden="true" size={16} />
+            <span>整理</span>
+          </button>
           <label className="card-size-control">
-            <span>卡牌大小</span>
+            <span>大小</span>
             <input
               type="range"
               min={minCardWidthPx}
@@ -163,19 +185,8 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
             />
             <output>{cardWidthPx}px</output>
           </label>
-          <button className="card-action-button" type="button" onClick={() => tidyCardTable(module.ID, tableLayout)}>
-            <Layers aria-hidden="true" size={16} />
-            <span>整理</span>
-          </button>
+          <span className="card-count">{visibleInstances.length} 张</span>
         </div>
-      </header>
-      <div
-        className="card-table-surface"
-        ref={tableRef}
-        style={cardTableSurfaceStyle(tableLayout)}
-        aria-label={`${module.标签}自由桌面`}
-        onPointerDown={closeCardMenu}
-      >
         {visibleInstances.length === 0 ? <p className="card-table-empty">选择卡牌后会放到这里。</p> : null}
         {visibleInstances.map((instance) => (
           <CardView
@@ -342,6 +353,7 @@ function TextCard({ definition, fallbackName }: { definition?: ResourceLibraryEn
 function cardTableSurfaceStyle(layout: CardTableLayout): CSSProperties {
   return {
     "--play-card-width": `${layout.cardWidthPx}px`,
+    height: `${layout.surfaceHeightPx}px`,
     minHeight: `${layout.surfaceHeightPx}px`,
   } as CSSProperties;
 }

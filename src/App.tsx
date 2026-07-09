@@ -22,6 +22,10 @@ function downloadText(text: string, fileName: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
+function nextFrame() {
+  return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+}
+
 function PackageIssuePanel({ issues }: { issues: PackageIssue[] }) {
   return (
     <section className="error-panel" role="alert" aria-label="System Package error">
@@ -103,7 +107,6 @@ export default function App() {
   const activeCharacterSaveId = useRuntimeStore((state) => state.activeCharacterSaveId);
   const cardTableCardWidths = useRuntimeStore((state) => state.cardTableCardWidths);
   const bootStatus = useRuntimeStore((state) => state.bootStatus);
-  const storageStatus = useRuntimeStore((state) => state.storageStatus);
   const packageIssues = useRuntimeStore((state) => state.packageIssues);
   const validationIssues = useRuntimeStore((state) => state.validationIssues);
   const validationStatus = useRuntimeStore((state) => state.validationStatus);
@@ -151,7 +154,6 @@ export default function App() {
 
     if (kind === "html") {
       await preparePrintableContent();
-      await new Promise((resolve) => requestAnimationFrame(resolve));
       const printableRoot = document.querySelector(".sheet-tool");
       await waitForVisibleImages(printableRoot ?? document);
       downloadText(buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined), `${characterData.character.id}.html`, "text/html");
@@ -159,7 +161,6 @@ export default function App() {
     }
 
     await preparePrintableContent();
-    await new Promise((resolve) => requestAnimationFrame(resolve));
     await waitForVisibleImages(document.querySelector(".sheet-tool") ?? document);
     window.print();
   };
@@ -180,6 +181,10 @@ export default function App() {
       return;
     }
 
+    setPrintMode(true);
+    await nextFrame();
+    await nextFrame();
+
     for (const module of currentPackage.modules) {
       if (module.类型 === "cardTable") {
         const cardCount = characterData?.cards.instances.filter((instance) => instance.tableModuleId === module.ID).length ?? 0;
@@ -193,7 +198,7 @@ export default function App() {
         );
       }
     }
-    setPrintMode(true);
+    await nextFrame();
   };
 
   const handleValidation = async () => {
@@ -252,6 +257,8 @@ export default function App() {
   };
 
   const hasBlockingPackageIssues = packageIssues.some((issue) => issue.level === "fatal" || issue.level === "error");
+  const activeCharacterSaveName = characterSaves.find((save) => save.id === activeCharacterSaveId)?.name ?? "无角色存档";
+  const systemPackageLabel = currentPackage ? `${currentPackage.manifest.名称} · v${currentPackage.manifest.版本}` : bootStatus === "loading" ? "系统包加载中" : "未加载系统包";
 
   return (
     <div className={`app-shell${printMode ? " print-mode" : ""}`}>
@@ -264,68 +271,123 @@ export default function App() {
           </div>
         </div>
 
-        <div className="toolbar" aria-label="Character Data actions">
-          <span className={`status-pill status-${storageStatus}`} aria-live="polite">
-            {storageStatus === "saving"
-              ? "保存中"
-              : storageStatus === "saved"
-                ? "已保存"
-                : storageStatus === "error"
-                  ? "保存错误"
-                  : bootStatus === "loading"
-                    ? "加载中"
-                    : bootStatus === "error"
-                      ? "加载错误"
-                      : currentPackage
-                        ? "就绪"
-                        : "未加载"}
-          </span>
-          <button className="icon-button" type="button" onClick={() => void beginOutput("json")} aria-label="导出 Character JSON" disabled={!characterData}>
-            <Download aria-hidden="true" size={18} />
-            <span>JSON</span>
-          </button>
-          <button className="icon-button" type="button" onClick={() => void beginOutput("html")} aria-label="导出 HTML snapshot" disabled={!characterData}>
-            <FileText aria-hidden="true" size={18} />
-            <span>HTML</span>
-          </button>
-          <button className="icon-button" type="button" onClick={() => void preparePrintableContent()} aria-label="进入导出预览" disabled={!characterData}>
-            <Printer aria-hidden="true" size={18} />
-            <span>预览</span>
-          </button>
-          <button className="icon-button" type="button" onClick={() => void beginOutput("print")} aria-label="浏览器打印" disabled={!characterData}>
-            <Printer aria-hidden="true" size={18} />
-            <span>打印</span>
-          </button>
-          <button
-            className="icon-button"
-            type="button"
-            onClick={handleValidation}
-            aria-label="运行 Validation Checks"
-            disabled={!characterData || validationStatus === "running"}
-          >
-            <ShieldCheck aria-hidden="true" size={18} />
-            <span>{validationStatus === "running" ? "检查中" : "检查"}</span>
-          </button>
-          <button
-            className="icon-button"
-            type="button"
-            onClick={() => characterFileInputRef.current?.click()}
-            aria-label="导入 Character JSON"
-            disabled={!currentPackage}
-          >
-            <Upload aria-hidden="true" size={18} />
-            <span>导入</span>
-          </button>
-          <button
-            className="icon-button"
-            type="button"
-            onClick={() => packageFileInputRef.current?.click()}
-            aria-label="导入 System Package zip"
-            disabled={bootStatus === "loading"}
-          >
-            <Archive aria-hidden="true" size={18} />
-            <span>系统包</span>
-          </button>
+        <nav className="top-menu-bar" aria-label="Sheet Tool actions">
+          <div className="top-menu">
+            <button className="menu-trigger" type="button" aria-haspopup="true">
+              <Archive aria-hidden="true" size={17} />
+              <span className="menu-trigger-text">{systemPackageLabel}</span>
+            </button>
+            <div className="menu-panel" role="menu">
+              <button
+                className="menu-item"
+                type="button"
+                onClick={() => packageFileInputRef.current?.click()}
+                aria-label="导入 System Package zip"
+                disabled={bootStatus === "loading"}
+              >
+                <Upload aria-hidden="true" size={16} />
+                <span>导入系统包</span>
+              </button>
+              <button
+                className="menu-item"
+                type="button"
+                onClick={handleValidation}
+                aria-label="运行 Validation Checks"
+                disabled={!characterData || validationStatus === "running"}
+              >
+                <ShieldCheck aria-hidden="true" size={16} />
+                <span>{validationStatus === "running" ? "检查中" : "检查"}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="top-menu">
+            <button className="menu-trigger" type="button" aria-haspopup="true" disabled={!currentPackage || !characterData}>
+              <span className="menu-trigger-text">当前存档 {activeCharacterSaveName}</span>
+            </button>
+            <div className="menu-panel" role="menu">
+              <label className="menu-field menu-field-compact">
+                <select
+                  className="menu-select"
+                  aria-label="选择 Character Save"
+                  value={activeCharacterSaveId ?? ""}
+                  onChange={(event) => void switchCharacterSave(event.target.value)}
+                  disabled={characterSaves.length === 0}
+                >
+                  {characterSaves.map((save) => (
+                    <option value={save.id} key={save.id}>
+                      {save.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button className="menu-item" type="button" onClick={() => void handleCreateSave()} aria-label="新建 Character Save" disabled={!currentPackage}>
+                <Plus aria-hidden="true" size={16} />
+                <span>新建</span>
+              </button>
+              <button
+                className="menu-item"
+                type="button"
+                onClick={() => void handleRenameSave()}
+                aria-label="重命名 Character Save"
+                disabled={!activeCharacterSaveId}
+              >
+                <Type aria-hidden="true" size={16} />
+                <span>重命名</span>
+              </button>
+              <button
+                className="menu-item"
+                type="button"
+                onClick={() => void handleDuplicateSave()}
+                aria-label="复制 Character Save"
+                disabled={!activeCharacterSaveId}
+              >
+                <Copy aria-hidden="true" size={16} />
+                <span>复制</span>
+              </button>
+              <button
+                className="menu-item danger"
+                type="button"
+                onClick={() => void handleDeleteSave()}
+                aria-label="删除 Character Save"
+                disabled={!activeCharacterSaveId}
+              >
+                <Trash2 aria-hidden="true" size={16} />
+                <span>删除</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="top-menu">
+            <button className="menu-trigger" type="button" aria-haspopup="true" disabled={!characterData}>
+              <Download aria-hidden="true" size={17} />
+              <span className="menu-trigger-text">导出</span>
+            </button>
+            <div className="menu-panel menu-panel-right" role="menu">
+              <button className="menu-item" type="button" onClick={() => void beginOutput("print")} aria-label="浏览器打印" disabled={!characterData}>
+                <Printer aria-hidden="true" size={16} />
+                <span>打印</span>
+              </button>
+              <button
+                className="menu-item"
+                type="button"
+                onClick={() => characterFileInputRef.current?.click()}
+                aria-label="导入 Character JSON"
+                disabled={!currentPackage}
+              >
+                <Upload aria-hidden="true" size={16} />
+                <span>导入</span>
+              </button>
+              <button className="menu-item" type="button" onClick={() => void beginOutput("json")} aria-label="导出 Character JSON" disabled={!characterData}>
+                <Download aria-hidden="true" size={16} />
+                <span>导出 JSON</span>
+              </button>
+              <button className="menu-item" type="button" onClick={() => void beginOutput("html")} aria-label="导出 HTML snapshot" disabled={!characterData}>
+                <FileText aria-hidden="true" size={16} />
+                <span>导出 HTML</span>
+              </button>
+            </div>
+          </div>
           <input
             ref={characterFileInputRef}
             className="visually-hidden"
@@ -340,41 +402,8 @@ export default function App() {
             accept=".zip,application/zip,application/x-zip-compressed"
             onChange={handlePackageFile}
           />
-        </div>
+        </nav>
       </header>
-
-      {currentPackage && characterData ? (
-        <section className="save-manager" aria-label="Character Saves">
-          <select
-            className="save-select"
-            aria-label="选择 Character Save"
-            value={activeCharacterSaveId ?? ""}
-            onChange={(event) => void switchCharacterSave(event.target.value)}
-          >
-            {characterSaves.map((save) => (
-              <option value={save.id} key={save.id}>
-                {save.name}
-              </option>
-            ))}
-          </select>
-          <button className="icon-button secondary-button" type="button" onClick={() => void handleCreateSave()} aria-label="新建 Character Save">
-            <Plus aria-hidden="true" size={16} />
-            <span>新建</span>
-          </button>
-          <button className="icon-button secondary-button" type="button" onClick={() => void handleRenameSave()} aria-label="重命名 Character Save">
-            <Type aria-hidden="true" size={16} />
-            <span>重命名</span>
-          </button>
-          <button className="icon-button secondary-button" type="button" onClick={() => void handleDuplicateSave()} aria-label="复制 Character Save">
-            <Copy aria-hidden="true" size={16} />
-            <span>复制</span>
-          </button>
-          <button className="icon-button secondary-button" type="button" onClick={() => void handleDeleteSave()} aria-label="删除 Character Save">
-            <Trash2 aria-hidden="true" size={16} />
-            <span>删除</span>
-          </button>
-        </section>
-      ) : null}
 
       {printMode ? (
         <section className="print-preview-bar" aria-label="导出预览">
@@ -387,14 +416,6 @@ export default function App() {
             <span>打印</span>
           </button>
         </section>
-      ) : null}
-
-      {currentPackage ? (
-        <div className="runtime-strip">
-          <span>{currentPackage.manifest.名称}</span>
-          <span>{currentPackage.manifest.ID}</span>
-          <span>v{currentPackage.manifest.版本}</span>
-        </div>
       ) : null}
 
       {importError ? (

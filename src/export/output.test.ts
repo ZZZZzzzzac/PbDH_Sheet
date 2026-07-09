@@ -44,6 +44,31 @@ describe("HTML snapshot export/import", () => {
     expect(html).not.toContain("编辑按钮");
   });
 
+  it("includes print-only Card Table grid rules so browser PDF output does not reuse absolute drag positions", () => {
+    const data = createEmptyCharacterData(minimalSystemPackage);
+    document.body.innerHTML = `
+      <main class="sheet-tool" aria-label="Sheet Tool">
+        <article class="sheet-page" data-template-page-id="cards">
+          <section class="card-table-module">
+            <div class="card-table-surface" style="--play-card-width: 250px;">
+              <article class="play-card" style="left: 80%; top: 90%; transform: rotate(4deg);">A</article>
+            </div>
+          </section>
+        </article>
+      </main>`;
+
+    const html = buildReadonlyHtmlSnapshot(data, document.querySelector(".sheet-tool")!);
+
+    expect(html).toContain(".snapshot-shell .card-table-surface");
+    expect(html).toContain("@page");
+    expect(html).toContain("margin: 8mm 4mm 10mm");
+    expect(html).toContain("grid-template-columns: repeat(auto-fill, minmax(0, var(--play-card-width)))");
+    expect(html).toContain("gap: 4px");
+    expect(html).toContain("padding: 0");
+    expect(html).toContain("left: auto !important");
+    expect(html).toContain("transform: none !important");
+  });
+
   it("imports HTML snapshots through the Character JSON compatibility path", () => {
     const data = updateCharacterValue(createEmptyCharacterData(minimalSystemPackage), "character-name", "阿青");
     const result = parseCharacterDataText(buildReadonlyHtmlSnapshot(data), minimalSystemPackage);

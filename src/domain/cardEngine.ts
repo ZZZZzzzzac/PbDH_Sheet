@@ -27,6 +27,7 @@ export interface CreateCardInstanceInput {
 }
 
 export interface CardTableLayout {
+  surfaceWidthPx: number;
   cardWidthPx: number;
   cardHeightPx: number;
   surfaceHeightPx: number;
@@ -41,6 +42,7 @@ export interface CardTableLayoutInput {
   surfaceWidthPx: number;
   cardCount: number;
   preferredCardWidthPx?: number;
+  minSurfaceHeightPx?: number;
 }
 
 const cardAspectHeightPerWidth = 88 / 63;
@@ -107,10 +109,12 @@ export function createCardTableLayout(input: CardTableLayoutInput): CardTableLay
   const rows = Math.max(1, Math.ceil(Math.max(0, input.cardCount) / columns));
   const surfaceHeightPx = Math.max(
     defaultCardSurfaceHeightPx,
+    input.minSurfaceHeightPx ?? 0,
     defaultCardInsetPx * 2 + rows * cardHeightPx + Math.max(0, rows - 1) * defaultCardGapPx,
   );
 
   return {
+    surfaceWidthPx,
     cardWidthPx,
     cardHeightPx,
     surfaceHeightPx,
@@ -119,6 +123,16 @@ export function createCardTableLayout(input: CardTableLayoutInput): CardTableLay
     insetYPct: (defaultCardInsetPx / surfaceHeightPx) * 100,
     stepXPct: ((cardWidthPx + defaultCardGapPx) / surfaceWidthPx) * 100,
     stepYPct: ((cardHeightPx + defaultCardGapPx) / surfaceHeightPx) * 100,
+  };
+}
+
+export function clampCardTablePosition(layout: CardTableLayout, xPct: number, yPct: number): { xPct: number; yPct: number } {
+  const maxXPct = 100 - (layout.cardWidthPx / layout.surfaceWidthPx) * 100;
+  const maxYPct = 100 - (layout.cardHeightPx / layout.surfaceHeightPx) * 100;
+
+  return {
+    xPct: clampPctRange(xPct, 0, maxXPct),
+    yPct: clampPctRange(yPct, 0, maxYPct),
   };
 }
 
@@ -154,6 +168,7 @@ export function tidyCardTable(data: CharacterData, tableModuleId: string, layout
 }
 
 const legacyCardTableLayout: CardTableLayout = {
+  surfaceWidthPx: 800,
   cardWidthPx: defaultCardWidthPx,
   cardHeightPx: defaultCardWidthPx * cardAspectHeightPerWidth,
   surfaceHeightPx: defaultCardSurfaceHeightPx,
@@ -177,6 +192,12 @@ function nextZIndex(instances: CardInstance[]): number {
 
 function clampPct(value: number): number {
   return Math.min(96, Math.max(0, Number.isFinite(value) ? value : 0));
+}
+
+function clampPctRange(value: number, min: number, max: number): number {
+  const safeValue = Number.isFinite(value) ? value : min;
+  const safeMax = Math.max(min, Number.isFinite(max) ? max : min);
+  return Math.min(safeMax, Math.max(min, safeValue));
 }
 
 function updateCardInstances(data: CharacterData, instances: CardInstance[]): CharacterData {

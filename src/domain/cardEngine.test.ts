@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { minimalSystemPackage } from "../test/fixtures";
 import { createEmptyCharacterData } from "./characterData";
-import { createCardInstance, createCardTableLayout, deleteCardInstance, tidyCardTable, updateCardInstancePosition, updateCardInstanceState } from "./cardEngine";
+import {
+  clampCardTablePosition,
+  createCardInstance,
+  createCardTableLayout,
+  deleteCardInstance,
+  tidyCardTable,
+  updateCardInstancePosition,
+  updateCardInstanceState,
+} from "./cardEngine";
 
 describe("cardEngine", () => {
   it("creates separate Card Instances from the same Card Definition", () => {
@@ -94,5 +102,30 @@ describe("cardEngine", () => {
     expect(instances[1].xPct - instances[0].xPct).toBeGreaterThan(cardWidthPct);
     expect(instances[2].yPct - instances[0].yPct).toBeGreaterThan(cardHeightPct);
     expect(layout.surfaceHeightPx).toBeGreaterThan(520);
+  });
+
+  it("clamps dragged cards so the full card stays inside the table", () => {
+    const layout = createCardTableLayout({
+      surfaceWidthPx: 800,
+      cardCount: 1,
+      preferredCardWidthPx: 200,
+    });
+
+    const clamped = clampCardTablePosition(layout, 99, 99);
+
+    expect(clamped.xPct).toBeCloseTo(75);
+    expect(clamped.yPct).toBeCloseTo(46.28);
+  });
+
+  it("can expand the Card Table layout to the remaining viewport height", () => {
+    const layout = createCardTableLayout({
+      surfaceWidthPx: 800,
+      cardCount: 1,
+      preferredCardWidthPx: 200,
+      minSurfaceHeightPx: 900,
+    });
+
+    expect(layout.surfaceHeightPx).toBe(900);
+    expect(clampCardTablePosition(layout, 99, 99).yPct).toBeCloseTo(68.96);
   });
 });

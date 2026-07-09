@@ -5,6 +5,7 @@ import App from "./App";
 import type { StorageService } from "./storage/storageService";
 import { configureRuntimeDependencies, resetRuntimeDependencies, useRuntimeStore } from "./store/runtimeStore";
 import { minimalSystemPackage } from "./test/fixtures";
+import type { SystemPackage } from "./domain/systemPackage";
 
 function createEmptyStorage(): StorageService {
   const saves = new Map<string, Parameters<StorageService["saveCharacterSave"]>[0]>();
@@ -276,4 +277,74 @@ describe("App Validation Checks", () => {
 
     await waitFor(() => expect(printSpy).toHaveBeenCalled());
   });
+
+  it("retidies Card Tables after print mode changes the table width", async () => {
+    const cardTablePackage = createCardTablePackage();
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({
+        ok: true,
+        package: cardTablePackage,
+        issues: [],
+      }),
+      storage: createEmptyStorage(),
+      runValidationChecks: async () => [],
+    });
+    const printSpy = vi.fn();
+    Object.defineProperty(window, "print", { value: printSpy, configurable: true });
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains("card-table-surface")) {
+        return document.querySelector(".app-shell.print-mode") ? 600 : 1000;
+      }
+      return 0;
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+    const tidySpy = vi.fn();
+    act(() => {
+      useRuntimeStore.setState({ tidyCardTable: tidySpy });
+    });
+
+    await user.click(screen.getByRole("button", { name: "浏览器打印" }));
+
+    await waitFor(() => expect(printSpy).toHaveBeenCalled());
+    expect(tidySpy).toHaveBeenCalledWith("print-card-table", expect.objectContaining({ surfaceWidthPx: 600 }));
+  });
 });
+
+function createCardTablePackage(): SystemPackage {
+  return {
+    ...minimalSystemPackage,
+    pages: [
+      {
+        ID: "print-card-page",
+        名称: "Print Cards",
+        layout: {
+          类型: "htmlTemplate",
+          html: "layouts/print-cards.html",
+          htmlContent: '<pb-module id="print-card-table"></pb-module>',
+        },
+      },
+    ],
+    modules: [
+      {
+        ID: "print-card-table",
+        类型: "cardTable",
+        标签: "打印卡牌桌面",
+        资源库ID: "print-cards",
+      },
+    ],
+    resourceLibraries: [
+      {
+        ID: "print-cards",
+        名称: "打印卡牌",
+        路径: "resources/print-cards.json",
+        fields: [],
+        entries: [],
+      },
+    ],
+  };
+}
