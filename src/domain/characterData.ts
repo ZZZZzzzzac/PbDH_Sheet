@@ -90,7 +90,7 @@ export type CharacterImportResult =
   | { ok: true; data: CharacterData }
   | { ok: false; error: string };
 
-export function createEmptyCharacterData(systemPackage: SystemPackage): CharacterData {
+export function createEmptyCharacterData(systemPackage: SystemPackage, characterId = createCharacterId()): CharacterData {
   return {
     kind: "pbdh-character-data",
     schemaVersion: characterDataSchemaVersion,
@@ -99,7 +99,7 @@ export function createEmptyCharacterData(systemPackage: SystemPackage): Characte
       version: systemPackage.manifest.版本,
     },
     character: {
-      id: "current-character",
+      id: characterId,
       values: seedDefaultModuleValues(systemPackage),
     },
     cards: {
@@ -108,6 +108,11 @@ export function createEmptyCharacterData(systemPackage: SystemPackage): Characte
     playerImages: {},
     updatedAt: new Date().toISOString(),
   };
+}
+
+export function createCharacterId(): string {
+  const random = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  return `character-${random}`;
 }
 
 function seedDefaultModuleValues(systemPackage: SystemPackage): Record<string, SheetValue> {

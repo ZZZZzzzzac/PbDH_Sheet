@@ -151,6 +151,35 @@ h2 {
   font-size: 0.9rem;
 }
 
+.save-manager,
+.print-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px clamp(16px, 4vw, 48px);
+  background: #f8faf9;
+  border-bottom: 1px solid #cdd5d7;
+}
+
+.save-select {
+  min-width: min(280px, 100%);
+  min-height: 40px;
+  border: 1px solid #c4ccce;
+  background: #ffffff;
+  color: #202426;
+  padding: 0 10px;
+}
+
+.print-preview-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  justify-content: flex-end;
+  background: #243438;
+  color: #ffffff;
+}
+
 .runtime-strip span {
   padding-right: 10px;
   border-right: 1px solid #aebabc;
@@ -611,6 +640,30 @@ fieldset.container {
   justify-content: flex-end;
 }
 
+.card-size-control {
+  display: inline-grid;
+  grid-template-columns: auto minmax(96px, 132px) 48px;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid #c4ccce;
+  background: #ffffff;
+  color: #425056;
+  font-size: 0.9rem;
+}
+
+.card-size-control input {
+  width: 100%;
+  accent-color: #31565e;
+}
+
+.card-size-control output {
+  color: #607075;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
 .card-count {
   padding: 4px 8px;
   border: 1px solid #c4ccce;
@@ -621,6 +674,7 @@ fieldset.container {
 
 .card-table-surface {
   position: relative;
+  --play-card-width: 250px;
   min-width: 0;
   min-height: 520px;
   overflow: hidden;
@@ -646,8 +700,8 @@ fieldset.container {
 
 .play-card {
   position: absolute;
-  width: min(250px, calc(100% - 32px));
-  min-width: 180px;
+  width: min(var(--play-card-width), calc(100% - 32px));
+  min-width: 0;
   border: 1px solid #243438;
   background: #ffffff;
   box-shadow: 0 10px 24px rgba(32, 36, 38, 0.24);
@@ -692,7 +746,8 @@ fieldset.container {
 
 .play-card-text {
   display: grid;
-  gap: 10px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
   aspect-ratio: 63 / 88;
   min-height: 0;
   overflow: hidden;
@@ -701,16 +756,29 @@ fieldset.container {
 }
 
 .play-card-text h4 {
-  margin: 0 0 4px;
+  margin: 0 0 8px;
   color: #202426;
   font-size: 1.05rem;
 }
 
-.play-card-text header p,
-.play-card-recall {
-  margin: 0;
+.play-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.play-card-tag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 20px;
+  padding: 1px 6px;
+  border: 1px solid #d8d0b8;
+  background: #f8f0d9;
   color: #607075;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .play-card-description {
@@ -825,6 +893,14 @@ fieldset.container {
   border-bottom: 1px solid #d8dfe1;
 }
 
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .validation-dialog-header h2 {
   font-size: 1rem;
 }
@@ -932,5 +1008,91 @@ fieldset.container {
 
   .card-table-surface {
     min-height: 420px;
+  }
+
+  .card-size-control {
+    grid-template-columns: auto minmax(72px, 1fr) 44px;
+    flex: 1 1 220px;
+  }
+}
+
+.print-mode .top-bar,
+.print-mode .runtime-strip,
+.print-mode .save-manager,
+.print-mode .resource-picker-module,
+.print-mode .image-actions,
+.print-mode .card-table-actions,
+.print-mode .play-card-delete {
+  display: none;
+}
+
+.print-mode .sheet-tool {
+  padding: 0;
+}
+
+.print-mode .sheet-page {
+  border: 0;
+  background: #ffffff;
+}
+
+.print-mode .card-table-surface {
+  overflow: visible;
+  background: #ffffff;
+}
+
+.print-mode .sheet-page,
+.print-mode .module-slot,
+.print-mode .container,
+.print-mode .image,
+.print-mode .card-table-module,
+.print-mode .play-card {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  .top-bar,
+  .runtime-strip,
+  .save-manager,
+  .print-preview-bar,
+  .message,
+  .validation-dialog-backdrop,
+  .resource-dialog-backdrop,
+  .resource-picker-module,
+  .image-actions,
+  .card-table-actions,
+  .play-card-delete {
+    display: none !important;
+  }
+
+  .sheet-tool {
+    padding: 0;
+  }
+
+  .sheet-page {
+    break-after: page;
+    break-inside: avoid;
+    page-break-after: always;
+    page-break-inside: avoid;
+    border: 0;
+    background: #ffffff;
+  }
+
+  .module-slot,
+  .container,
+  .image,
+  .card-table-module,
+  .play-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .card-table-surface {
+    overflow: visible;
+    background: #ffffff;
   }
 }

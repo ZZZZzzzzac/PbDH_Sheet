@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { minimalSystemPackage } from "../test/fixtures";
 import { createEmptyCharacterData } from "./characterData";
-import { createCardInstance, deleteCardInstance, tidyCardTable, updateCardInstancePosition, updateCardInstanceState } from "./cardEngine";
+import { createCardInstance, createCardTableLayout, deleteCardInstance, tidyCardTable, updateCardInstancePosition, updateCardInstanceState } from "./cardEngine";
 
 describe("cardEngine", () => {
   it("creates separate Card Instances from the same Card Definition", () => {
@@ -69,5 +69,30 @@ describe("cardEngine", () => {
     const tidied = tidyCardTable(withMoved, "domain-card-table");
 
     expect(tidied.cards.instances[0]).toEqual(expect.objectContaining({ xPct: 4, yPct: 6, rotation: 0 }));
+  });
+
+  it("tidies cards using measured card width and surface size so cards do not overlap", () => {
+    const data = Array.from({ length: 6 }).reduce(
+      (nextData, _item, index) =>
+        createCardInstance(nextData, {
+          instanceId: `instance-${index}`,
+          tableModuleId: "domain-card-table",
+          libraryId: "domain-cards",
+          definitionId: `domain-card:${index}`,
+        }),
+      createEmptyCharacterData(minimalSystemPackage),
+    );
+    const surfaceWidthPx = 568;
+    const layout = createCardTableLayout({ surfaceWidthPx, cardCount: data.cards.instances.length });
+
+    const tidied = tidyCardTable(data, "domain-card-table", layout);
+    const instances = tidied.cards.instances;
+    const cardWidthPct = (layout.cardWidthPx / surfaceWidthPx) * 100;
+    const cardHeightPct = (layout.cardHeightPx / layout.surfaceHeightPx) * 100;
+
+    expect(layout.columns).toBe(2);
+    expect(instances[1].xPct - instances[0].xPct).toBeGreaterThan(cardWidthPct);
+    expect(instances[2].yPct - instances[0].yPct).toBeGreaterThan(cardHeightPct);
+    expect(layout.surfaceHeightPx).toBeGreaterThan(520);
   });
 });

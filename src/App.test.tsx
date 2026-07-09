@@ -1,29 +1,73 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import type { StorageService } from "./storage/storageService";
 import { configureRuntimeDependencies, resetRuntimeDependencies, useRuntimeStore } from "./store/runtimeStore";
 import { minimalSystemPackage } from "./test/fixtures";
 
-const emptyStorage: StorageService = {
-  async loadCurrentSystemPackage() {
-    return null;
-  },
-  async saveCurrentSystemPackage() {},
-  async clearCurrentSystemPackage() {},
-  async loadCurrentPackageAssets() {
-    return [];
-  },
-  async loadCurrentCharacterData() {
-    return null;
-  },
-  async saveCurrentCharacterData() {},
-  async savePlayerImageBlob() {},
-  async loadPlayerImageBlob() {
-    return null;
-  },
-};
+function createEmptyStorage(): StorageService {
+  const saves = new Map<string, Parameters<StorageService["saveCharacterSave"]>[0]>();
+  const active = new Map<string, string>();
+
+  return {
+    async loadCurrentSystemPackage() {
+      return null;
+    },
+    async saveCurrentSystemPackage() {},
+    async clearCurrentSystemPackage() {},
+    async loadCurrentPackageAssets() {
+      return [];
+    },
+    async loadCurrentCharacterData(packageId) {
+      const activeId = active.get(packageId);
+      return activeId ? (saves.get(activeId)?.data ?? null) : null;
+    },
+    async saveCurrentCharacterData(data) {
+      const saveId = active.get(data.systemPackage.id) ?? data.character.id;
+      saves.set(saveId, {
+        id: saveId,
+        packageId: data.systemPackage.id,
+        name: "未命名角色",
+        updatedAt: data.updatedAt,
+        data,
+      });
+      active.set(data.systemPackage.id, saveId);
+    },
+    async listCharacterSaves(packageId) {
+      return [...saves.values()].filter((save) => save.packageId === packageId).map(({ data: _data, ...summary }) => summary);
+    },
+    async loadCharacterSave(packageId, saveId) {
+      const save = saves.get(saveId);
+      return save?.packageId === packageId ? save.data : null;
+    },
+    async saveCharacterSave(record) {
+      saves.set(record.id, record);
+    },
+    async renameCharacterSave(packageId, saveId, name) {
+      const save = saves.get(saveId);
+      if (save?.packageId === packageId) {
+        saves.set(saveId, { ...save, name });
+      }
+    },
+    async deleteCharacterSave(packageId, saveId) {
+      const save = saves.get(saveId);
+      if (save?.packageId === packageId) {
+        saves.delete(saveId);
+      }
+    },
+    async loadActiveCharacterSaveId(packageId) {
+      return active.get(packageId) ?? null;
+    },
+    async setActiveCharacterSaveId(packageId, saveId) {
+      active.set(packageId, saveId);
+    },
+    async savePlayerImageBlob() {},
+    async loadPlayerImageBlob() {
+      return null;
+    },
+  };
+}
 
 describe("App package error state", () => {
   beforeEach(async () => {
@@ -38,7 +82,7 @@ describe("App package error state", () => {
           },
         ],
       }),
-      storage: emptyStorage,
+      storage: createEmptyStorage(),
     });
     useRuntimeStore.setState({
       currentPackage: null,
@@ -49,6 +93,7 @@ describe("App package error state", () => {
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      cardTableCardWidths: {},
       validationIssues: [],
       validationStatus: "idle",
       bootStatus: "idle",
@@ -75,7 +120,14 @@ describe("App package error state", () => {
 });
 
 describe("App Validation Checks", () => {
+  let anchorClickSpy: ReturnType<typeof vi.spyOn>;
+  let createObjectUrlSpy: ReturnType<typeof vi.spyOn>;
+  let revokeObjectUrlSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
+    anchorClickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    createObjectUrlSpy = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:test");
+    revokeObjectUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
     configureRuntimeDependencies({
       loadSystemPackageFromFile: async () => ({
         ok: true,
@@ -91,7 +143,7 @@ describe("App Validation Checks", () => {
         },
         issues: [],
       }),
-      storage: emptyStorage,
+      storage: createEmptyStorage(),
       runValidationChecks: async () => [
         {
           level: "error",
@@ -110,6 +162,7 @@ describe("App Validation Checks", () => {
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      cardTableCardWidths: {},
       validationIssues: [],
       validationStatus: "idle",
       bootStatus: "idle",
@@ -121,6 +174,7 @@ describe("App Validation Checks", () => {
 
   afterEach(() => {
     resetRuntimeDependencies();
+    vi.restoreAllMocks();
   });
 
   it("runs Validation Checks only after the manual check button is clicked", async () => {
@@ -147,7 +201,7 @@ describe("App Validation Checks", () => {
   it("keeps the manual check button clickable when a package has no Validation Checks", async () => {
     configureRuntimeDependencies({
       loadSystemPackageFromFile: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
-      storage: emptyStorage,
+      storage: createEmptyStorage(),
     });
     const user = userEvent.setup();
     render(<App />);
@@ -162,5 +216,64 @@ describe("App Validation Checks", () => {
     await user.click(checkButton);
 
     expect(await screen.findByRole("dialog", { name: "Validation Report" })).toHaveTextContent("未发现问题");
+  });
+
+  it("lets Players cancel output after pre-output Validation Check issues", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+
+    await user.click(screen.getByRole("button", { name: "导出 Character JSON" }));
+
+    expect(await screen.findByRole("dialog", { name: "Validation Report" })).toHaveTextContent("MANUAL_CHECK_RAN");
+    await user.click(screen.getByRole("button", { name: "取消输出" }));
+
+    expect(anchorClickSpy).not.toHaveBeenCalled();
+  });
+
+  it("continues output after advisory pre-output Validation Check issues", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+
+    await user.click(screen.getByRole("button", { name: "导出 Character JSON" }));
+    await user.click(await screen.findByRole("button", { name: "继续输出" }));
+
+    expect(anchorClickSpy).toHaveBeenCalledTimes(1);
+    expect(createObjectUrlSpy).toHaveBeenCalled();
+    expect(revokeObjectUrlSpy).toHaveBeenCalledWith("blob:test");
+  });
+
+  it("invokes the browser print boundary after clean pre-output checks", async () => {
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({
+        ok: true,
+        package: {
+          ...minimalSystemPackage,
+          validationChecks: [{ ID: "clean-check", 脚本: "checks/clean.js", scriptContent: "module.exports = () => [];" }],
+        },
+        issues: [],
+      }),
+      storage: createEmptyStorage(),
+      runValidationChecks: async () => [],
+    });
+    const printSpy = vi.fn();
+    Object.defineProperty(window, "print", { value: printSpy, configurable: true });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+
+    await user.click(screen.getByRole("button", { name: "浏览器打印" }));
+
+    await waitFor(() => expect(printSpy).toHaveBeenCalled());
   });
 });

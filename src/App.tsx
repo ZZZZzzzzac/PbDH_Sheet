@@ -1,13 +1,17 @@
-import { Archive, Download, ShieldCheck, Upload } from "lucide-react";
+import { Archive, Copy, Download, FileText, Plus, Printer, ShieldCheck, Trash2, Type, Upload } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { exportCharacterData } from "./domain/characterData";
+import { createCardTableLayout } from "./domain/cardEngine";
 import type { PackageIssue } from "./domain/systemPackage";
 import type { ValidationIssue } from "./domain/validationRunner";
+import { buildReadonlyHtmlSnapshot, waitForVisibleImages } from "./export/output";
 import { SheetRenderer } from "./rendering/SheetRenderer";
 import { useRuntimeStore } from "./store/runtimeStore";
 
-function downloadCharacterJson(jsonText: string, fileName: string) {
-  const blob = new Blob([jsonText], { type: "application/json" });
+type OutputKind = "json" | "html" | "print";
+
+function downloadText(text: string, fileName: string, type: string) {
+  const blob = new Blob([text], { type });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -35,7 +39,17 @@ function PackageIssuePanel({ issues }: { issues: PackageIssue[] }) {
   );
 }
 
-function ValidationIssueDialog({ issues, open, onClose }: { issues: ValidationIssue[]; open: boolean; onClose: () => void }) {
+function ValidationIssueDialog({
+  issues,
+  open,
+  onClose,
+  onContinue,
+}: {
+  issues: ValidationIssue[];
+  open: boolean;
+  onClose: () => void;
+  onContinue?: () => void;
+}) {
   if (!open) {
     return null;
   }
@@ -45,9 +59,16 @@ function ValidationIssueDialog({ issues, open, onClose }: { issues: ValidationIs
       <section className="validation-dialog" role="dialog" aria-modal="true" aria-label="Validation Report">
         <header className="validation-dialog-header">
           <h2>检查报告</h2>
-          <button className="icon-button secondary-button" type="button" onClick={onClose} aria-label="关闭检查报告">
-            <span>关闭</span>
-          </button>
+          <div className="dialog-actions">
+            {onContinue ? (
+              <button className="icon-button" type="button" onClick={onContinue} aria-label="继续输出">
+                <span>继续</span>
+              </button>
+            ) : null}
+            <button className="icon-button secondary-button" type="button" onClick={onClose} aria-label={onContinue ? "取消输出" : "关闭检查报告"}>
+              <span>{onContinue ? "取消" : "关闭"}</span>
+            </button>
+          </div>
         </header>
         <div className="validation-dialog-body">
           {issues.length === 0 ? (
@@ -74,8 +95,13 @@ export default function App() {
   const characterFileInputRef = useRef<HTMLInputElement>(null);
   const packageFileInputRef = useRef<HTMLInputElement>(null);
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
+  const [pendingOutput, setPendingOutput] = useState<OutputKind | null>(null);
+  const [printMode, setPrintMode] = useState(false);
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
   const characterData = useRuntimeStore((state) => state.characterData);
+  const characterSaves = useRuntimeStore((state) => state.characterSaves);
+  const activeCharacterSaveId = useRuntimeStore((state) => state.activeCharacterSaveId);
+  const cardTableCardWidths = useRuntimeStore((state) => state.cardTableCardWidths);
   const bootStatus = useRuntimeStore((state) => state.bootStatus);
   const storageStatus = useRuntimeStore((state) => state.storageStatus);
   const packageIssues = useRuntimeStore((state) => state.packageIssues);
@@ -84,21 +110,90 @@ export default function App() {
   const importError = useRuntimeStore((state) => state.importError);
   const importNotice = useRuntimeStore((state) => state.importNotice);
   const initialize = useRuntimeStore((state) => state.initialize);
+  const createCharacterSave = useRuntimeStore((state) => state.createCharacterSave);
+  const switchCharacterSave = useRuntimeStore((state) => state.switchCharacterSave);
+  const renameCharacterSave = useRuntimeStore((state) => state.renameCharacterSave);
+  const duplicateCharacterSave = useRuntimeStore((state) => state.duplicateCharacterSave);
+  const deleteCharacterSave = useRuntimeStore((state) => state.deleteCharacterSave);
   const importCharacterDataFromText = useRuntimeStore((state) => state.importCharacterDataFromText);
   const uploadSystemPackageFromFile = useRuntimeStore((state) => state.uploadSystemPackageFromFile);
   const runValidationChecks = useRuntimeStore((state) => state.runValidationChecks);
+  const runPreOutputValidation = useRuntimeStore((state) => state.runPreOutputValidation);
+  const tidyCardTable = useRuntimeStore((state) => state.tidyCardTable);
 
   useEffect(() => {
     void initialize();
   }, [initialize]);
 
-  const handleExport = () => {
+  useEffect(() => {
+    if (!printMode) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setPrintMode(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [printMode]);
+
+  const performOutput = async (kind: OutputKind) => {
     if (!characterData) {
       return;
     }
 
-    const jsonText = exportCharacterData(characterData);
-    downloadCharacterJson(jsonText, `${characterData.character.id}.json`);
+    if (kind === "json") {
+      downloadText(exportCharacterData(characterData), `${characterData.character.id}.json`, "application/json");
+      return;
+    }
+
+    if (kind === "html") {
+      await preparePrintableContent();
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const printableRoot = document.querySelector(".sheet-tool");
+      await waitForVisibleImages(printableRoot ?? document);
+      downloadText(buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined), `${characterData.character.id}.html`, "text/html");
+      return;
+    }
+
+    await preparePrintableContent();
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    await waitForVisibleImages(document.querySelector(".sheet-tool") ?? document);
+    window.print();
+  };
+
+  const beginOutput = async (kind: OutputKind) => {
+    const result = await runPreOutputValidation();
+    if (result.shouldPrompt) {
+      setPendingOutput(kind);
+      setValidationDialogOpen(true);
+      return;
+    }
+
+    await performOutput(kind);
+  };
+
+  const preparePrintableContent = async () => {
+    if (!currentPackage) {
+      return;
+    }
+
+    for (const module of currentPackage.modules) {
+      if (module.类型 === "cardTable") {
+        const cardCount = characterData?.cards.instances.filter((instance) => instance.tableModuleId === module.ID).length ?? 0;
+        tidyCardTable(
+          module.ID,
+          createCardTableLayout({
+            surfaceWidthPx: readCardTableSurfaceWidth(module.ID),
+            cardCount,
+            preferredCardWidthPx: cardTableCardWidths[module.ID],
+          }),
+        );
+      }
+    }
+    setPrintMode(true);
   };
 
   const handleValidation = async () => {
@@ -116,6 +211,36 @@ export default function App() {
     event.target.value = "";
   };
 
+  const handleCreateSave = async () => {
+    const name = window.prompt("新角色存档名称", "未命名角色")?.trim();
+    await createCharacterSave(name || "未命名角色");
+  };
+
+  const handleRenameSave = async () => {
+    if (!activeCharacterSaveId) {
+      return;
+    }
+    const currentName = characterSaves.find((save) => save.id === activeCharacterSaveId)?.name ?? "未命名角色";
+    const name = window.prompt("角色存档名称", currentName)?.trim();
+    if (name) {
+      await renameCharacterSave(activeCharacterSaveId, name);
+    }
+  };
+
+  const handleDuplicateSave = async () => {
+    if (!activeCharacterSaveId) {
+      return;
+    }
+    await duplicateCharacterSave(activeCharacterSaveId);
+  };
+
+  const handleDeleteSave = async () => {
+    if (!activeCharacterSaveId || !window.confirm("删除当前角色存档？")) {
+      return;
+    }
+    await deleteCharacterSave(activeCharacterSaveId);
+  };
+
   const handlePackageFile = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
@@ -129,7 +254,7 @@ export default function App() {
   const hasBlockingPackageIssues = packageIssues.some((issue) => issue.level === "fatal" || issue.level === "error");
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${printMode ? " print-mode" : ""}`}>
       <header className="top-bar">
         <div className="brand-block">
           <span className="brand-mark">PbDH</span>
@@ -155,9 +280,21 @@ export default function App() {
                         ? "就绪"
                         : "未加载"}
           </span>
-          <button className="icon-button" type="button" onClick={handleExport} aria-label="导出 Character JSON" disabled={!characterData}>
+          <button className="icon-button" type="button" onClick={() => void beginOutput("json")} aria-label="导出 Character JSON" disabled={!characterData}>
             <Download aria-hidden="true" size={18} />
-            <span>导出</span>
+            <span>JSON</span>
+          </button>
+          <button className="icon-button" type="button" onClick={() => void beginOutput("html")} aria-label="导出 HTML snapshot" disabled={!characterData}>
+            <FileText aria-hidden="true" size={18} />
+            <span>HTML</span>
+          </button>
+          <button className="icon-button" type="button" onClick={() => void preparePrintableContent()} aria-label="进入导出预览" disabled={!characterData}>
+            <Printer aria-hidden="true" size={18} />
+            <span>预览</span>
+          </button>
+          <button className="icon-button" type="button" onClick={() => void beginOutput("print")} aria-label="浏览器打印" disabled={!characterData}>
+            <Printer aria-hidden="true" size={18} />
+            <span>打印</span>
           </button>
           <button
             className="icon-button"
@@ -193,7 +330,7 @@ export default function App() {
             ref={characterFileInputRef}
             className="visually-hidden"
             type="file"
-            accept="application/json,.json"
+            accept="application/json,text/html,.json,.html,.htm"
             onChange={handleImportFile}
           />
           <input
@@ -205,6 +342,52 @@ export default function App() {
           />
         </div>
       </header>
+
+      {currentPackage && characterData ? (
+        <section className="save-manager" aria-label="Character Saves">
+          <select
+            className="save-select"
+            aria-label="选择 Character Save"
+            value={activeCharacterSaveId ?? ""}
+            onChange={(event) => void switchCharacterSave(event.target.value)}
+          >
+            {characterSaves.map((save) => (
+              <option value={save.id} key={save.id}>
+                {save.name}
+              </option>
+            ))}
+          </select>
+          <button className="icon-button secondary-button" type="button" onClick={() => void handleCreateSave()} aria-label="新建 Character Save">
+            <Plus aria-hidden="true" size={16} />
+            <span>新建</span>
+          </button>
+          <button className="icon-button secondary-button" type="button" onClick={() => void handleRenameSave()} aria-label="重命名 Character Save">
+            <Type aria-hidden="true" size={16} />
+            <span>重命名</span>
+          </button>
+          <button className="icon-button secondary-button" type="button" onClick={() => void handleDuplicateSave()} aria-label="复制 Character Save">
+            <Copy aria-hidden="true" size={16} />
+            <span>复制</span>
+          </button>
+          <button className="icon-button secondary-button" type="button" onClick={() => void handleDeleteSave()} aria-label="删除 Character Save">
+            <Trash2 aria-hidden="true" size={16} />
+            <span>删除</span>
+          </button>
+        </section>
+      ) : null}
+
+      {printMode ? (
+        <section className="print-preview-bar" aria-label="导出预览">
+          <span>导出预览</span>
+          <button className="icon-button secondary-button" type="button" onClick={() => setPrintMode(false)} aria-label="退出导出预览">
+            <span>退出</span>
+          </button>
+          <button className="icon-button" type="button" onClick={() => void beginOutput("print")} aria-label="从预览打印">
+            <Printer aria-hidden="true" size={18} />
+            <span>打印</span>
+          </button>
+        </section>
+      ) : null}
 
       {currentPackage ? (
         <div className="runtime-strip">
@@ -227,8 +410,31 @@ export default function App() {
       ) : null}
 
       {bootStatus === "error" || hasBlockingPackageIssues ? <PackageIssuePanel issues={packageIssues} /> : null}
-      <ValidationIssueDialog issues={validationIssues} open={validationDialogOpen} onClose={() => setValidationDialogOpen(false)} />
+      <ValidationIssueDialog
+        issues={validationIssues}
+        open={validationDialogOpen}
+        onClose={() => {
+          setPendingOutput(null);
+          setValidationDialogOpen(false);
+        }}
+        onContinue={
+          pendingOutput
+            ? () => {
+                const output = pendingOutput;
+                setPendingOutput(null);
+                setValidationDialogOpen(false);
+                void performOutput(output);
+              }
+            : undefined
+        }
+      />
       {currentPackage ? <SheetRenderer systemPackage={currentPackage} /> : null}
     </div>
   );
+}
+
+function readCardTableSurfaceWidth(moduleId: string): number {
+  const moduleElement = [...document.querySelectorAll<HTMLElement>(".card-table-module")].find((element) => element.dataset.moduleId === moduleId);
+  const surface = moduleElement?.querySelector<HTMLElement>(".card-table-surface");
+  return surface?.clientWidth ?? 800;
 }

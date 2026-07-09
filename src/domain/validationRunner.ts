@@ -73,9 +73,46 @@ function canUseValidationWorker() {
 
 function executeValidationScriptInWorker(scriptContent: string, input: ScriptInput): Promise<unknown> {
   const workerSource = `
-${deepFreeze.toString()}
-${isRecord.toString()}
-${executeValidationScriptDirect.toString()}
+function isRecord(value) {
+  return typeof value === "object" && value !== null;
+}
+function deepFreeze(value) {
+  if (!isRecord(value) && !Array.isArray(value)) {
+    return value;
+  }
+  Object.freeze(value);
+  for (const child of Object.values(value)) {
+    if ((isRecord(child) || Array.isArray(child)) && !Object.isFrozen(child)) {
+      deepFreeze(child);
+    }
+  }
+  return value;
+}
+async function executeValidationScriptDirect(scriptContent, input) {
+  const module = { exports: {} };
+  const exports = module.exports;
+  const runner = new Function(
+    "module",
+    "exports",
+    "input",
+    '"use strict";\\n' +
+      'const document = undefined;\\n' +
+      'const window = undefined;\\n' +
+      'const self = undefined;\\n' +
+      'const globalThis = undefined;\\n' +
+      'const fetch = undefined;\\n' +
+      'const XMLHttpRequest = undefined;\\n' +
+      'const importScripts = undefined;\\n' +
+      'const Worker = undefined;\\n' +
+      scriptContent +
+      '\\nconst validationCheck = module.exports && (module.exports.default || module.exports.run || module.exports);\\n' +
+      'if (typeof validationCheck !== "function") {\\n' +
+      '  throw new Error("Validation Script must assign a function to module.exports.");\\n' +
+      '}\\n' +
+      'return validationCheck(input);',
+  );
+  return await runner(module, exports, input);
+}
 self.onmessage = async (event) => {
   try {
     const input = deepFreeze(event.data.input);
