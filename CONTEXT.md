@@ -32,6 +32,10 @@ _Avoid_: Visual editor
 An Author-defined step-by-step flow that helps a Player create a character by reading guide text, visiting target Sheet Modules, selecting Resource Library entries, using Cards, and running checks.
 _Avoid_: Hard-coded tutorial, arbitrary UI script
 
+**Questionnaire Character Creation**:
+A future Player-facing character creation aid that asks preference or psychometric-style questions, scores the answers, and recommends suitable Resource Library entries or character creation paths without directly filling the sheet.
+_Avoid_: Character Creation Guide, personality test as rules authority, automatic build generator
+
 **Guide Step**:
 One declared step inside a Character Creation Guide, with Author-written instructions and optional references to pages, Sheet Modules, Resource Libraries, Cards, completion conditions, and allowed framework actions.
 _Avoid_: Custom imperative code
@@ -148,6 +152,9 @@ _Avoid_: Script plugin
 - An **Author Preview** helps an **Author** validate a **System Package** by looking at the resulting **Sheet Tool**.
 - A **System Package** may include a **Character Creation Guide** so a **Player** can create a character through Author-defined steps.
 - A **Character Creation Guide** is runtime guidance over existing **Sheet Modules**, **Resource Libraries**, **Cards**, **Dependency Logic**, and **Validation Checks**; it is not a separate rules engine.
+- **Questionnaire Character Creation** is distinct from a **Character Creation Guide**: it discovers Player preferences and recommends resources or paths, while a Character Creation Guide walks a Player through known creation tasks.
+- **Questionnaire Character Creation** should not write Character Data directly. If it later offers apply actions, those actions must reuse framework-approved Sheet Module, Dependency Engine, Card Engine, or Guide Runner actions.
+- **Questionnaire Character Creation** is a future plan, not part of the first-version requirement.
 - A **Guide Step** may request framework actions such as navigating to a page, highlighting a Sheet Module, opening a Resource Library choice, adding a Card, or running a Validation Check.
 - A **Guide Step** may write Character Data only through framework-defined actions already allowed for the target Sheet Module, Card Engine, or Dependency Logic.
 - **AI-Readable Documentation** is a first-version requirement because non-programmer Authors may rely on AI to create System Packages.
@@ -231,10 +238,14 @@ _Avoid_: Script plugin
 > **Dev:** "Should a card level be parsed as a number?"
 > **Domain Expert:** "No. Resource Values are strings by default; if a System Package needs numeric interpretation, that belongs in Validation Checks."
 
+> **Dev:** "Is Questionnaire Character Creation just another Character Creation Guide?"
+> **Domain Expert:** "No. A Character Creation Guide helps a Player execute known steps; Questionnaire Character Creation asks preference questions to recommend suitable resources or creation paths."
+
 ## Flagged Ambiguities
 
 - "User" can mean **Author** or **Player**. Use the specific term because their needs and permissions are different.
 - "Feature" can mean either a user-visible outcome or a reusable **Sheet Module**. Prefer naming the underlying module when discussing the Base Framework.
 - "Character creation guide" can mean a static article or an interactive **Character Creation Guide**. Use the formal term when the System Package declares steps that the Base Framework runs.
+- "Questionnaire character creation" can mean recommendation, automatic character generation, or a quiz-like guide UI. In this project it currently means preference discovery and resource recommendation only.
 - The best timing for **Validation Checks** is unresolved: likely candidates are live preview, manual check, save, import, and export/print.
 - "Custom script" is ambiguous. **Validation Scripts** are allowed for read-only checks; scripts that modify sheet state or implement custom UI behavior are not part of the first-version requirement.
