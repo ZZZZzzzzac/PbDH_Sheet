@@ -12,6 +12,7 @@ import {
 import { applyDependencyResultToCharacterData, evaluateDependencies, type DependencyEvaluationResult } from "../domain/dependencyEngine";
 import type { ResourceLibraryEntry, ResourceLibraryQuery } from "../domain/resourceLibrary";
 import { validateCachedSystemPackage, type PackageIssue, type SystemPackage } from "../domain/systemPackage";
+import { runValidationChecks as runValidationChecksDomain, type ValidationIssue } from "../domain/validationRunner";
 import { createRuntimeAssetResolver, type RuntimeAssetResolver, type RuntimePackageAsset } from "../loaders/assetResolver";
 import { loadSystemPackageFromZipFile, type PackageLoadResult } from "../loaders/systemPackageLoader";
 import { storageService, type StorageService } from "../storage/storageService";
@@ -20,6 +21,7 @@ export const autosaveDelayMs = 250;
 
 type BootStatus = "idle" | "loading" | "ready" | "error";
 type StorageStatus = "idle" | "saving" | "saved" | "error";
+type ValidationStatus = "idle" | "running" | "complete";
 
 interface RuntimeState {
   currentPackage: SystemPackage | null;
@@ -30,6 +32,8 @@ interface RuntimeState {
   moduleVisibility: Record<string, boolean>;
   pageVisibility: Record<string, boolean>;
   resourcePickerDefaultQueries: Record<string, ResourceLibraryQuery>;
+  validationIssues: ValidationIssue[];
+  validationStatus: ValidationStatus;
   bootStatus: BootStatus;
   storageStatus: StorageStatus;
   importError: string | null;
@@ -39,6 +43,7 @@ interface RuntimeState {
   updateModuleValue: (moduleId: string, value: SheetValue) => void;
   commitResourceSelection: (moduleId: string, libraryId: string, entries: ResourceLibraryEntry[]) => void;
   commitCheckboxChange: (moduleId: string, optionId: string, checked: boolean, checkboxState: CheckboxState) => void;
+  runValidationChecks: () => Promise<void>;
   uploadPlayerImage: (moduleId: string, file: File) => Promise<void>;
   importCharacterDataFromText: (text: string) => Promise<void>;
   clearImportMessage: () => void;
@@ -50,11 +55,13 @@ let activePackageAssetResolver: RuntimeAssetResolver | undefined;
 interface RuntimeDependencies {
   loadSystemPackageFromFile: (file: Blob) => Promise<PackageLoadResult>;
   storage: StorageService;
+  runValidationChecks: typeof runValidationChecksDomain;
 }
 
 const defaultRuntimeDependencies: RuntimeDependencies = {
   loadSystemPackageFromFile: (file) => loadSystemPackageFromZipFile(file),
   storage: storageService,
+  runValidationChecks: runValidationChecksDomain,
 };
 
 let runtimeDependencies = defaultRuntimeDependencies;
@@ -80,6 +87,8 @@ async function loadPackageIntoState(
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      validationIssues: [],
+      validationStatus: "idle",
       packageIssues: issues,
       bootStatus: "ready",
       storageStatus,
@@ -93,6 +102,8 @@ async function loadPackageIntoState(
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      validationIssues: [],
+      validationStatus: "idle",
       packageIssues: issues,
       bootStatus: "ready",
       storageStatus: "error",
@@ -119,6 +130,8 @@ async function clearCachedPackageAndResetState(set: (partial: Partial<RuntimeSta
     moduleVisibility: {},
     pageVisibility: {},
     resourcePickerDefaultQueries: {},
+    validationIssues: [],
+    validationStatus: "idle",
     packageIssues: [],
     bootStatus: "ready",
     storageStatus,
@@ -161,6 +174,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   moduleVisibility: {},
   pageVisibility: {},
   resourcePickerDefaultQueries: {},
+  validationIssues: [],
+  validationStatus: "idle",
   bootStatus: "idle",
   storageStatus: "idle",
   importError: null,
@@ -182,6 +197,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
           moduleVisibility: {},
           pageVisibility: {},
           resourcePickerDefaultQueries: {},
+          validationIssues: [],
+          validationStatus: "idle",
           packageIssues: [],
           bootStatus: "ready",
           storageStatus: "idle",
@@ -300,6 +317,33 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     );
   },
 
+  async runValidationChecks() {
+    const currentPackage = get().currentPackage;
+    const characterData = get().characterData;
+    if (!currentPackage || !characterData) {
+      set({ validationIssues: [], validationStatus: "complete" });
+      return;
+    }
+
+    const checks = currentPackage.validationChecks ?? [];
+    if (checks.length === 0) {
+      set({ validationIssues: [], validationStatus: "complete" });
+      return;
+    }
+
+    set({ validationStatus: "running" });
+    const validationIssues = await runtimeDependencies.runValidationChecks({
+      characterData,
+      resourceLibraries: currentPackage.resourceLibraries ?? [],
+      packageMetadata: {
+        id: currentPackage.manifest.ID,
+        version: currentPackage.manifest.版本,
+      },
+      checks,
+    });
+    set({ validationIssues, validationStatus: "complete" });
+  },
+
   async uploadPlayerImage(moduleId, file) {
     const characterData = get().characterData;
     if (!characterData) {
@@ -366,6 +410,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      validationIssues: [],
+      validationStatus: "idle",
       importError: null,
       importNotice: "Character Data 已导入。",
     });
@@ -383,8 +429,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   },
 }));
 
-export function configureRuntimeDependencies(dependencies: RuntimeDependencies) {
-  runtimeDependencies = dependencies;
+export function configureRuntimeDependencies(dependencies: Partial<RuntimeDependencies>) {
+  runtimeDependencies = { ...defaultRuntimeDependencies, ...dependencies };
 }
 
 export function resetRuntimeDependencies() {

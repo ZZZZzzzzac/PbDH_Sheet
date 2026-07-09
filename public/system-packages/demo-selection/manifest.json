@@ -6,6 +6,12 @@
   "pages": "pages.json",
   "modules": "modules.json",
   "dependencies": "dependencies.json",
+  "validationChecks": [
+    {
+      "ID": "class-subclass-domain",
+      "脚本": "checks/class-subclass-domain.js"
+    }
+  ],
   "resourceLibraries": [
     {
       "ID": "classes",

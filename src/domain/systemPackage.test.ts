@@ -160,6 +160,30 @@ describe("validateSystemPackage", () => {
     }
   });
 
+  it("accepts Validation Check declarations with loaded script content", () => {
+    const packageWithValidation = {
+      ...minimalSystemPackage,
+      validationChecks: [
+        {
+          ID: "demo-check",
+          脚本: "checks/demo.js",
+          scriptContent: "module.exports = () => [];",
+        },
+      ],
+    };
+
+    const result = validateSystemPackage(packageWithValidation);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.package.validationChecks?.[0]).toEqual({
+        ID: "demo-check",
+        脚本: "checks/demo.js",
+        scriptContent: "module.exports = () => [];",
+      });
+    }
+  });
+
   it("reports missing Resource Library references for Resource Picker", () => {
     const invalidPackage = {
       ...minimalSystemPackage,

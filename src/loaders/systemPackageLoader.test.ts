@@ -106,6 +106,29 @@ describe("loadSystemPackageFromUrl", () => {
     }
   });
 
+  it("loads Validation Script files from static directory and zip packages", async () => {
+    const manifest = {
+      ...createManifest(),
+      validationChecks: [{ ID: "demo-check", 脚本: "checks/demo.js" }],
+    };
+    const validationScripts = { "checks/demo.js": "module.exports = () => [];" };
+    const fetchImpl = createPackageFetch({ manifest, validationScripts });
+    const directoryResult = await loadSystemPackageFromUrl("/system-packages/demo-minimal", fetchImpl);
+    const zipResult = await loadSystemPackageFromZipFile(createPackageZip({ manifest, validationScripts }));
+
+    expect(directoryResult.ok).toBe(true);
+    expect(zipResult.ok).toBe(true);
+    expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/checks/demo.js");
+    if (directoryResult.ok && zipResult.ok) {
+      expect(directoryResult.package.validationChecks?.[0]).toEqual({
+        ID: "demo-check",
+        脚本: "checks/demo.js",
+        scriptContent: "module.exports = () => [];",
+      });
+      expect(zipResult.package).toEqual(directoryResult.package);
+    }
+  });
+
   it("returns a fatal issue when the static manifest cannot be loaded", async () => {
     const fetchImpl = vi.fn(async () => new Response("", { status: 404, statusText: "Not Found" }));
 
@@ -398,7 +421,14 @@ function createManifest() {
 }
 
 function createPackageZip(
-  options: { manifest?: unknown; modules?: unknown; pages?: typeof minimalSystemPackage.pages; resources?: unknown; dependencies?: unknown } = {},
+  options: {
+    manifest?: unknown;
+    modules?: unknown;
+    pages?: typeof minimalSystemPackage.pages;
+    resources?: unknown;
+    dependencies?: unknown;
+    validationScripts?: Record<string, string>;
+  } = {},
 ) {
   return zipBlob({
     "manifest.json": JSON.stringify(options.manifest ?? createManifest()),
@@ -409,6 +439,7 @@ function createPackageZip(
     "assets/readme.txt": "hello",
     ...(options.resources ? { "resources/domains.json": JSON.stringify(options.resources) } : {}),
     ...(options.dependencies ? { "dependencies.json": JSON.stringify(options.dependencies) } : {}),
+    ...(options.validationScripts ?? {}),
   });
 }
 
@@ -433,7 +464,16 @@ function zipBlob(files: Record<string, string>) {
   return new Blob([zipSync(entries)], { type: "application/zip" });
 }
 
-function createPackageFetch(options: { manifest?: unknown; modules?: unknown; pages?: unknown[]; resources?: unknown; dependencies?: unknown } = {}) {
+function createPackageFetch(
+  options: {
+    manifest?: unknown;
+    modules?: unknown;
+    pages?: unknown[];
+    resources?: unknown;
+    dependencies?: unknown;
+    validationScripts?: Record<string, string>;
+  } = {},
+) {
   const pageLayout = (options.pages?.[0] as { layout?: { htmlContent?: string; cssContent?: string } } | undefined)?.layout;
   const files: Record<string, string> = {
     "/system-packages/demo-minimal/manifest.json": JSON.stringify(options.manifest ?? createManifest()),
@@ -449,6 +489,9 @@ function createPackageFetch(options: { manifest?: unknown; modules?: unknown; pa
   }
   if (options.dependencies) {
     files["/system-packages/demo-minimal/dependencies.json"] = JSON.stringify(options.dependencies);
+  }
+  for (const [path, text] of Object.entries(options.validationScripts ?? {})) {
+    files[`/system-packages/demo-minimal/${path}`] = text;
   }
 
   return vi.fn(async (url: string | URL | Request) => {

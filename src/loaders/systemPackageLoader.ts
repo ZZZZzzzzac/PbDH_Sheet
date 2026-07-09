@@ -28,6 +28,14 @@ const packageManifestSchema = z.object({
     )
     .optional(),
   resourceLibraries: z.array(resourceLibraryReferenceSchema).optional(),
+  validationChecks: z
+    .array(
+      z.object({
+        ID: z.string().min(1),
+        脚本: z.string().min(1),
+      }),
+    )
+    .optional(),
 });
 
 const pageLayoutReferenceSchema = z.array(
@@ -107,7 +115,12 @@ export async function loadSystemPackageFromUrl(
     return { ok: false, issues: [resourceLibraries.issue] };
   }
 
-  return normalizeManifestPackage(parsedManifest.data, pagesWithLayouts.value, modules.value, resourceLibraries.value, dependencies?.value);
+  const validationChecks = await loadValidationScriptFilesFromUrl(baseUrl, parsedManifest.data.validationChecks ?? [], fetchImpl);
+  if (!validationChecks.ok) {
+    return { ok: false, issues: [validationChecks.issue] };
+  }
+
+  return normalizeManifestPackage(parsedManifest.data, pagesWithLayouts.value, modules.value, resourceLibraries.value, dependencies?.value, validationChecks.value);
 }
 
 export async function loadSystemPackageFromZipFile(file: Blob): Promise<PackageLoadResult> {
@@ -182,7 +195,19 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
     return { ok: false, issues: [resourceLibraries.issue] };
   }
 
-  const normalized = normalizeManifestPackage(manifest.data, pagesWithLayouts.value, modulesJson.value, resourceLibraries.value, dependenciesJson?.value);
+  const validationChecks = loadValidationScriptFilesFromVfs(vfs, manifest.data.validationChecks ?? []);
+  if (!validationChecks.ok) {
+    return { ok: false, issues: [validationChecks.issue] };
+  }
+
+  const normalized = normalizeManifestPackage(
+    manifest.data,
+    pagesWithLayouts.value,
+    modulesJson.value,
+    resourceLibraries.value,
+    dependenciesJson?.value,
+    validationChecks.value,
+  );
   if (!normalized.ok) {
     return normalized;
   }
@@ -199,6 +224,7 @@ function normalizeManifestPackage(
   modules: unknown,
   resourceLibraries: Array<ResourceLibraryReference & { entries: unknown }> = [],
   dependencies?: unknown,
+  validationChecks?: Array<{ ID: string; 脚本: string; scriptContent: string }>,
 ): PackageValidationResult {
   return validateSystemPackage({
     manifest: {
@@ -212,6 +238,7 @@ function normalizeManifestPackage(
     assets: manifest.assets ?? [],
     resourceLibraries,
     dependencies,
+    validationChecks,
   });
 }
 
@@ -402,6 +429,43 @@ function loadResourceLibraryFilesFromVfs(vfs: PackageVirtualFileSystem, librarie
   }
 
   return { ok: true as const, value: normalizedLibraries };
+}
+
+async function loadValidationScriptFilesFromUrl(
+  baseUrl: string,
+  checks: NonNullable<z.infer<typeof packageManifestSchema>["validationChecks"]>,
+  fetchImpl: typeof fetch,
+) {
+  const normalizedChecks = [];
+
+  for (const check of checks) {
+    const script = await fetchPackageReferenceText(baseUrl, check.脚本, fetchImpl);
+    if (!script.ok) {
+      return { ok: false as const, issue: script.issue };
+    }
+
+    normalizedChecks.push({ ...check, 脚本: script.path, scriptContent: script.value });
+  }
+
+  return { ok: true as const, value: normalizedChecks };
+}
+
+function loadValidationScriptFilesFromVfs(
+  vfs: PackageVirtualFileSystem,
+  checks: NonNullable<z.infer<typeof packageManifestSchema>["validationChecks"]>,
+) {
+  const normalizedChecks = [];
+
+  for (const check of checks) {
+    const script = vfs.readText(check.脚本);
+    if (!script.ok) {
+      return { ok: false as const, issue: script.issue };
+    }
+
+    normalizedChecks.push({ ...check, 脚本: script.path, scriptContent: script.value });
+  }
+
+  return { ok: true as const, value: normalizedChecks };
 }
 
 function resolvePackageAssets(assets: NonNullable<z.infer<typeof packageManifestSchema>["assets"]>, vfs: PackageVirtualFileSystem): LoadedPackageAsset[] {

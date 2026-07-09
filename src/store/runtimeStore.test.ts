@@ -70,6 +70,8 @@ describe("runtime store", () => {
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      validationIssues: [],
+      validationStatus: "idle",
       bootStatus: "idle",
       storageStatus: "idle",
       importError: null,
@@ -139,6 +141,8 @@ describe("runtime store", () => {
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      validationIssues: [],
+      validationStatus: "idle",
       bootStatus: "idle",
       storageStatus: "idle",
     });
@@ -174,6 +178,8 @@ describe("runtime store", () => {
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      validationIssues: [],
+      validationStatus: "idle",
       bootStatus: "idle",
       storageStatus: "idle",
       importError: null,
@@ -188,5 +194,54 @@ describe("runtime store", () => {
     expect(useRuntimeStore.getState().packageIssues).toEqual([]);
     expect(useRuntimeStore.getState().importNotice).toContain("缓存的 System Package 已失效");
     expect(memoryStorage.getCachedPackage()).toBeNull();
+  });
+
+  it("runs Validation Checks through the runtime store", async () => {
+    const packageWithChecks = {
+      ...minimalSystemPackage,
+      validationChecks: [
+        {
+          ID: "demo-check",
+          脚本: "checks/demo.js",
+          scriptContent: "module.exports = () => [];",
+        },
+      ],
+    };
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: packageWithChecks, issues: [] }),
+      storage: memoryStorage,
+      runValidationChecks: async () => [
+        {
+          level: "warning",
+          text: "需要检查职业",
+          code: "CLASS_REVIEW",
+          source: "demo-check",
+        },
+      ],
+    });
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+      await useRuntimeStore.getState().runValidationChecks();
+    });
+
+    expect(useRuntimeStore.getState().validationStatus).toBe("complete");
+    expect(useRuntimeStore.getState().validationIssues).toEqual([
+      expect.objectContaining({
+        level: "warning",
+        code: "CLASS_REVIEW",
+        source: "demo-check",
+      }),
+    ]);
+  });
+
+  it("completes with no issues when the current package has no Validation Checks", async () => {
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+      await useRuntimeStore.getState().runValidationChecks();
+    });
+
+    expect(useRuntimeStore.getState().validationStatus).toBe("complete");
+    expect(useRuntimeStore.getState().validationIssues).toEqual([]);
   });
 });

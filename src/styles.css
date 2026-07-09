@@ -599,6 +599,79 @@ fieldset.container {
   padding-left: 20px;
 }
 
+.validation-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 4vw, 32px);
+  background: rgba(32, 36, 38, 0.42);
+}
+
+.validation-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(720px, 100%);
+  max-height: min(560px, 90vh);
+  border: 1px solid #aebabc;
+  background: #fbfcfc;
+  box-shadow: 0 20px 60px rgba(32, 36, 38, 0.22);
+}
+
+.validation-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #d8dfe1;
+}
+
+.validation-dialog-header h2 {
+  font-size: 1rem;
+}
+
+.validation-dialog-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+}
+
+.validation-dialog-body ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.validation-empty {
+  margin: 0;
+  color: #23543c;
+}
+
+.validation-issue {
+  line-height: 1.45;
+}
+
+.validation-error {
+  color: #7b2721;
+}
+
+.validation-warning {
+  color: #7a5d00;
+}
+
+.validation-info {
+  color: #23543c;
+}
+
+.validation-source {
+  margin-left: 8px;
+  color: #607075;
+  font-size: 0.86rem;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

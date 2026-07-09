@@ -233,6 +233,12 @@ const assetSchema = z.object({
   类型: z.string().optional(),
 });
 
+const validationCheckSchema = z.object({
+  ID: z.string().min(1),
+  脚本: z.string().min(1),
+  scriptContent: z.string().min(1),
+});
+
 const systemPackageSchema = z.object({
   manifest: manifestSchema,
   pages: z.array(pageSchema).min(1),
@@ -240,6 +246,7 @@ const systemPackageSchema = z.object({
   assets: z.array(assetSchema).optional(),
   resourceLibraries: z.array(resourceLibrarySchema).optional(),
   dependencies: z.array(dependencyRuleSchema).optional(),
+  validationChecks: z.array(validationCheckSchema).optional(),
 });
 
 const systemPackageEnvelopeSchema = z.object({
@@ -249,6 +256,7 @@ const systemPackageEnvelopeSchema = z.object({
   assets: z.array(assetSchema).optional(),
   resourceLibraries: z.array(resourceLibraryPackageInputSchema).optional(),
   dependencies: z.array(z.unknown()).optional(),
+  validationChecks: z.array(validationCheckSchema).optional(),
 });
 
 export type SystemPackage = z.infer<typeof systemPackageSchema>;
@@ -269,6 +277,7 @@ export type DependencyTarget = z.infer<typeof dependencyTargetSchema>;
 export type DependencyTrigger = z.infer<typeof dependencyTriggerSchema>;
 export type DependencyCondition = z.infer<typeof dependencyConditionSchema>;
 export type DependencyAction = z.infer<typeof dependencyActionSchema>;
+export type ValidationCheck = z.infer<typeof validationCheckSchema>;
 export type { ResourceLibrary };
 
 export type PackageIssueLevel = "fatal" | "error" | "warning";
