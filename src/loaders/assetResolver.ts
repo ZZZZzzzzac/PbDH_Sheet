@@ -78,6 +78,7 @@ export function createRuntimeAssetResolver(assets: RuntimePackageAsset[]): Runti
 
     objectUrls.add(objectUrl);
     urls[asset.ID] = objectUrl;
+    urls[asset.路径] = objectUrl;
   }
 
   return {

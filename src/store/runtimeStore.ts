@@ -1,5 +1,13 @@
 import { create } from "zustand";
 import {
+  bringCardInstanceToFront as bringCardInstanceToFrontDomain,
+  createCardInstance,
+  deleteCardInstance as deleteCardInstanceDomain,
+  tidyCardTable as tidyCardTableDomain,
+  updateCardInstancePosition as updateCardInstancePositionDomain,
+  updateCardInstanceState as updateCardInstanceStateDomain,
+} from "../domain/cardEngine";
+import {
   type CheckboxState,
   createEmptyCharacterData,
   parseCharacterDataJson,
@@ -43,6 +51,11 @@ interface RuntimeState {
   updateModuleValue: (moduleId: string, value: SheetValue) => void;
   commitResourceSelection: (moduleId: string, libraryId: string, entries: ResourceLibraryEntry[]) => void;
   commitCheckboxChange: (moduleId: string, optionId: string, checked: boolean, checkboxState: CheckboxState) => void;
+  updateCardInstancePosition: (instanceId: string, xPct: number, yPct: number) => void;
+  bringCardInstanceToFront: (instanceId: string) => void;
+  updateCardInstanceState: (instanceId: string, cardState: string) => void;
+  tidyCardTable: (tableModuleId: string) => void;
+  deleteCardInstance: (instanceId: string) => void;
   runValidationChecks: () => Promise<void>;
   uploadPlayerImage: (moduleId: string, file: File) => Promise<void>;
   importCharacterDataFromText: (text: string) => Promise<void>;
@@ -82,7 +95,7 @@ async function loadPackageIntoState(
     set({
       currentPackage: systemPackage,
       packageAssetUrls: activePackageAssetResolver.urls,
-      characterData: saved ?? createEmptyCharacterData(systemPackage),
+      characterData: ensureCardState(saved) ?? createEmptyCharacterData(systemPackage),
       derivedReadOnlyDisplayContent: {},
       moduleVisibility: {},
       pageVisibility: {},
@@ -273,13 +286,19 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     warnDependencyIssues(result);
 
     set((state) => ({
-      characterData: applyDependencyResultToCharacterData(characterData, result),
+      characterData: createCardInstancesFromSelection(
+        applyDependencyResultToCharacterData(characterData, result),
+        currentPackage,
+        moduleId,
+        libraryId,
+        entries,
+      ),
       ...mergeDependencyRuntimeState(state, result),
       importError: null,
       importNotice: null,
     }));
 
-    if (Object.keys(result.dataPatches).length > 0) {
+    if (Object.keys(result.dataPatches).length > 0 || hasCardCreationTarget(currentPackage, moduleId)) {
       scheduleAutosave(
         () => get().characterData,
         (status) => set({ storageStatus: status }),
@@ -307,6 +326,91 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     set((state) => ({
       characterData: applyDependencyResultToCharacterData(dataWithCheckboxState, result),
       ...mergeDependencyRuntimeState(state, result),
+      importError: null,
+      importNotice: null,
+    }));
+
+    scheduleAutosave(
+      () => get().characterData,
+      (status) => set({ storageStatus: status }),
+    );
+  },
+
+  updateCardInstancePosition(instanceId, xPct, yPct) {
+    if (!get().characterData) {
+      return;
+    }
+
+    set((state) => ({
+      characterData: state.characterData ? updateCardInstancePositionDomain(state.characterData, instanceId, xPct, yPct) : null,
+      importError: null,
+      importNotice: null,
+    }));
+
+    scheduleAutosave(
+      () => get().characterData,
+      (status) => set({ storageStatus: status }),
+    );
+  },
+
+  bringCardInstanceToFront(instanceId) {
+    if (!get().characterData) {
+      return;
+    }
+
+    set((state) => ({
+      characterData: state.characterData ? bringCardInstanceToFrontDomain(state.characterData, instanceId) : null,
+      importError: null,
+      importNotice: null,
+    }));
+
+    scheduleAutosave(
+      () => get().characterData,
+      (status) => set({ storageStatus: status }),
+    );
+  },
+
+  updateCardInstanceState(instanceId, cardState) {
+    if (!get().characterData) {
+      return;
+    }
+
+    set((state) => ({
+      characterData: state.characterData ? updateCardInstanceStateDomain(state.characterData, instanceId, cardState) : null,
+      importError: null,
+      importNotice: null,
+    }));
+
+    scheduleAutosave(
+      () => get().characterData,
+      (status) => set({ storageStatus: status }),
+    );
+  },
+
+  tidyCardTable(tableModuleId) {
+    if (!get().characterData) {
+      return;
+    }
+
+    set((state) => ({
+      characterData: state.characterData ? tidyCardTableDomain(state.characterData, tableModuleId) : null,
+      importError: null,
+      importNotice: null,
+    }));
+
+    scheduleAutosave(
+      () => get().characterData,
+      (status) => set({ storageStatus: status }),
+    );
+  },
+
+  deleteCardInstance(instanceId) {
+    if (!get().characterData) {
+      return;
+    }
+
+    set((state) => ({
+      characterData: state.characterData ? deleteCardInstanceDomain(state.characterData, instanceId) : null,
       importError: null,
       importNotice: null,
     }));
@@ -405,7 +509,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     }
 
     set({
-      characterData: result.data,
+      characterData: ensureCardState(result.data),
       derivedReadOnlyDisplayContent: {},
       moduleVisibility: {},
       pageVisibility: {},
@@ -482,6 +586,53 @@ function mergeResourcePickerDefaultQueries(
   }
 
   return next;
+}
+
+function ensureCardState(data: CharacterData | null): CharacterData | null {
+  if (!data) {
+    return null;
+  }
+
+  return {
+    ...data,
+    cards: data.cards ?? { instances: [] },
+  };
+}
+
+function createCardInstancesFromSelection(
+  data: CharacterData,
+  systemPackage: SystemPackage,
+  moduleId: string,
+  libraryId: string,
+  entries: ResourceLibraryEntry[],
+): CharacterData {
+  const sourceModule = systemPackage.modules.find((module) => module.ID === moduleId);
+  if (sourceModule?.类型 !== "resourcePicker" || !sourceModule.创建卡牌) {
+    return data;
+  }
+  const cardCreation = sourceModule.创建卡牌;
+
+  return entries.reduce(
+    (nextData, entry) =>
+      createCardInstance(nextData, {
+        instanceId: createCardInstanceId(entry.ID),
+        tableModuleId: cardCreation.卡牌桌面模块ID,
+        libraryId,
+        definitionId: entry.ID,
+        state: cardCreation.默认状态,
+      }),
+    data,
+  );
+}
+
+function hasCardCreationTarget(systemPackage: SystemPackage, moduleId: string): boolean {
+  const sourceModule = systemPackage.modules.find((module) => module.ID === moduleId);
+  return sourceModule?.类型 === "resourcePicker" && Boolean(sourceModule.创建卡牌);
+}
+
+function createCardInstanceId(definitionId: string) {
+  const random = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  return `${definitionId}:${random}`;
 }
 
 function createPlayerImageId(moduleId: string) {

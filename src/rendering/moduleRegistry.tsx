@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import type { SheetModule, SystemPackage } from "../domain/systemPackage";
+import { CardTableModule } from "./CardTableModule";
 import { CheckboxResourceModule } from "./CheckboxResourceModule";
 import { CountableResourceModule } from "./CountableResourceModule";
 import { FreeTextModule } from "./FreeTextModule";
@@ -26,6 +27,7 @@ export const moduleRegistry: ModuleRegistry = {
   countableResource: CountableResourceModule,
   readOnlyDisplay: ReadOnlyDisplayModule,
   imageField: ImageFieldModule,
+  cardTable: CardTableModule,
   resourcePicker: ResourcePickerModule,
 };
 

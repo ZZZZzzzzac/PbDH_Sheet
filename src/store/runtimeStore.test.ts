@@ -244,4 +244,65 @@ describe("runtime store", () => {
     expect(useRuntimeStore.getState().validationStatus).toBe("complete");
     expect(useRuntimeStore.getState().validationIssues).toEqual([]);
   });
+
+  it("creates a Card Instance when a Resource Picker has a card creation target", async () => {
+    const packageWithCards = {
+      ...minimalSystemPackage,
+      resourceLibraries: [
+        {
+          ID: "domain-cards",
+          名称: "领域卡",
+          路径: "resources/domain_cards.json",
+          fields: [
+            { key: "ID", label: "ID", visible: true, filterable: true, sortable: true },
+            { key: "名称", label: "名称", visible: true, filterable: true, sortable: true },
+          ],
+          entries: [{ ID: "domain-card:符文护符", fields: { ID: "domain-card:符文护符", 名称: "符文护符" } }],
+        },
+      ],
+      modules: [
+        ...minimalSystemPackage.modules,
+        {
+          ID: "pick-domain-card",
+          类型: "resourcePicker",
+          按钮文本: "选择领域卡",
+          资源库ID: "domain-cards",
+          创建卡牌: { 卡牌桌面模块ID: "domain-card-table", 默认状态: "configured" },
+        },
+        {
+          ID: "domain-card-table",
+          类型: "cardTable",
+          标签: "领域卡牌桌面",
+          资源库ID: "domain-cards",
+        },
+      ],
+    } as typeof minimalSystemPackage;
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: packageWithCards, issues: [] }),
+      storage: memoryStorage,
+    });
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+
+    act(() => {
+      useRuntimeStore.getState().commitResourceSelection("pick-domain-card", "domain-cards", [
+        { ID: "domain-card:符文护符", fields: { ID: "domain-card:符文护符", 名称: "符文护符" } },
+      ]);
+    });
+
+    expect(useRuntimeStore.getState().characterData?.cards.instances).toEqual([
+      expect.objectContaining({
+        tableModuleId: "domain-card-table",
+        libraryId: "domain-cards",
+        definitionId: "domain-card:符文护符",
+        state: "configured",
+      }),
+    ]);
+
+    await waitFor(() => {
+      expect(useRuntimeStore.getState().storageStatus).toBe("saved");
+    });
+  });
 });

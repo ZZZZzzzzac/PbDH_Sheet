@@ -208,6 +208,10 @@ test("uploads Resource Picker demo and restores filled text through export/impor
   await page.getByLabel("排序字段").selectOption("名称");
   await page.getByLabel("选择 卷土重来").click();
   await expect(page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true })).toHaveValue("卷土重来");
+  await expect(page.locator('[data-module-id="domain-card-table"]')).toBeVisible();
+  await expect(page.getByAltText("卷土重来")).toBeVisible();
+  await page.locator(".play-card", { has: page.getByAltText("卷土重来") }).click({ button: "right" });
+  await page.getByRole("menuitem", { name: "标记为宝库" }).click();
   await expect(page.getByText("已保存")).toBeVisible();
 
   await expect.poll(() => selectionLogs.length).toBeGreaterThan(1);
@@ -234,6 +238,14 @@ test("uploads Resource Picker demo and restores filled text through export/impor
   expect(exported.character.values["class-name"]).toBe("德鲁伊");
   expect(exported.character.values["class-domains"]).toBe("贤者+奥术");
   expect(exported.character.values["domain-card-name"]).toBe("卷土重来");
+  expect(exported.cards.instances).toEqual([
+    expect.objectContaining({
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: "domain-card:卷土重来",
+      state: "vault",
+    }),
+  ]);
   expect(exported.character.values["background-helper"]).toBe("把职业背景问题复制到角色背景时，可以先回答其中一个问题，再改写成自己的经历。");
   expect(exported.character.values["class-background-questions"]).toBeUndefined();
   expect(exported.character.values["druid-shape-note"]).toBeUndefined();
@@ -256,6 +268,7 @@ test("uploads Resource Picker demo and restores filled text through export/impor
   await characterChooser.setFiles(exportPath);
 
   await expect(page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true })).toHaveValue("卷土重来");
+  await expect(page.locator(".play-card", { has: page.getByAltText("卷土重来") })).toBeVisible();
 });
 
 test("HTML Layout Template from demo zip stacks columns on small screens", async ({ page }) => {

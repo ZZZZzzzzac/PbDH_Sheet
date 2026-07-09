@@ -184,6 +184,84 @@ describe("validateSystemPackage", () => {
     }
   });
 
+  it("accepts Card Table modules and Resource Picker card creation targets", () => {
+    const packageWithCards = {
+      ...minimalSystemPackage,
+      assets: [{ ID: "assets/card.png", 路径: "assets/card.png", 类型: "image/png" }],
+      resourceLibraries: [
+        {
+          ID: "domain-cards",
+          名称: "领域卡",
+          路径: "resources/domain_cards.json",
+          entries: [{ ID: "domain-card:符文护符", 名称: "符文护符", 等级: "1", 卡图: "assets/card.png" }],
+        },
+      ],
+      modules: [
+        ...minimalSystemPackage.modules,
+        {
+          ID: "pick-domain-card",
+          类型: "resourcePicker",
+          按钮文本: "选择领域卡",
+          资源库ID: "domain-cards",
+          创建卡牌: { 卡牌桌面模块ID: "domain-card-table", 默认状态: "configured" },
+        },
+        {
+          ID: "domain-card-table",
+          类型: "cardTable",
+          标签: "领域卡牌桌面",
+          资源库ID: "domain-cards",
+        },
+      ],
+      pages: [
+        {
+          ...minimalSystemPackage.pages[0],
+          layout: {
+            ...minimalSystemPackage.pages[0].layout,
+            htmlContent: `${minimalSystemPackage.pages[0].layout.htmlContent}<pb-module id="pick-domain-card"></pb-module><pb-module id="domain-card-table"></pb-module>`,
+          },
+        },
+      ],
+    };
+
+    const result = validateSystemPackage(packageWithCards);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(findModule(result.package, "domain-card-table")?.类型).toBe("cardTable");
+      const picker = findModule(result.package, "pick-domain-card");
+      expect(picker?.类型).toBe("resourcePicker");
+      if (picker?.类型 === "resourcePicker") {
+        expect(picker.创建卡牌?.卡牌桌面模块ID).toBe("domain-card-table");
+      }
+    }
+  });
+
+  it("reports missing Card artwork asset references", () => {
+    const invalidPackage = {
+      ...minimalSystemPackage,
+      resourceLibraries: [
+        {
+          ID: "domain-cards",
+          名称: "领域卡",
+          路径: "resources/domain_cards.json",
+          entries: [{ ID: "domain-card:符文护符", 名称: "符文护符", 等级: "1", 卡图: "assets/missing.png" }],
+        },
+      ],
+    };
+
+    const result = validateSystemPackage(invalidPackage);
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "MISSING_CARD_ART_ASSET_REFERENCE",
+          level: "error",
+        }),
+      ]),
+    );
+  });
+
   it("reports missing Resource Library references for Resource Picker", () => {
     const invalidPackage = {
       ...minimalSystemPackage,

@@ -72,6 +72,13 @@ const imageFieldModuleSchema = sheetModuleBaseSchema.extend({
   替代文本: z.string().optional(),
 });
 
+const cardTableModuleSchema = sheetModuleBaseSchema.extend({
+  类型: z.literal("cardTable"),
+  标签: z.string().min(1),
+  资源库ID: z.string().min(1),
+  状态选项: z.array(z.string().min(1)).optional(),
+});
+
 const resourcePickerQuerySchema = z.object({
   filters: z.record(z.string(), z.array(z.string())).optional(),
   sort: z
@@ -89,6 +96,12 @@ const resourcePickerModuleSchema = sheetModuleBaseSchema.extend({
   字段模板: z.array(resourceLibraryFieldTemplateSchema).optional(),
   多选: z.boolean().optional(),
   默认查询: resourcePickerQuerySchema.optional(),
+  创建卡牌: z
+    .object({
+      卡牌桌面模块ID: z.string().min(1),
+      默认状态: z.string().min(1).optional(),
+    })
+    .optional(),
 });
 
 const dependencySourceSchema = z.discriminatedUnion("类型", [
@@ -199,6 +212,7 @@ const sheetModuleSchema = z.discriminatedUnion("类型", [
   countableResourceModuleSchema,
   readOnlyDisplayModuleSchema,
   imageFieldModuleSchema,
+  cardTableModuleSchema,
   resourcePickerModuleSchema,
 ]);
 
@@ -209,6 +223,7 @@ const supportedModuleTypes = new Set([
   "countableResource",
   "readOnlyDisplay",
   "imageField",
+  "cardTable",
   "resourcePicker",
 ]);
 
@@ -266,6 +281,7 @@ export type CheckboxResourceModule = z.infer<typeof checkboxResourceModuleSchema
 export type CountableResourceModule = z.infer<typeof countableResourceModuleSchema>;
 export type ReadOnlyDisplayModule = z.infer<typeof readOnlyDisplayModuleSchema>;
 export type ImageFieldModule = z.infer<typeof imageFieldModuleSchema>;
+export type CardTableModule = z.infer<typeof cardTableModuleSchema>;
 export type ResourcePickerModule = z.infer<typeof resourcePickerModuleSchema>;
 export type SheetModule = z.infer<typeof sheetModuleSchema>;
 export type PackageAsset = z.infer<typeof assetSchema>;
@@ -452,7 +468,7 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
     });
   }
 
-  const assetIds = new Set((systemPackage.assets ?? []).map((asset) => asset.ID));
+  const assetRefs = new Set((systemPackage.assets ?? []).flatMap((asset) => [asset.ID, asset.路径]));
   for (const module of systemPackage.modules) {
     if (module.类型 === "readOnlyDisplay" && !module.内容 && !module.资源ID) {
       issues.push({
@@ -463,7 +479,7 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
       });
     }
 
-    if (module.类型 === "readOnlyDisplay" && module.资源ID && !assetIds.has(module.资源ID)) {
+    if (module.类型 === "readOnlyDisplay" && module.资源ID && !assetRefs.has(module.资源ID)) {
       issues.push({
         level: "error",
         code: "MISSING_ASSET_REFERENCE",
@@ -477,6 +493,15 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
         level: "error",
         code: "MISSING_RESOURCE_LIBRARY_REFERENCE",
         text: `Resource Picker 引用了不存在的 Resource Library：${module.资源库ID}`,
+        path: `modules.${module.ID}.资源库ID`,
+      });
+    }
+
+    if (module.类型 === "cardTable" && !findResourceLibrary(systemPackage, module.资源库ID)) {
+      issues.push({
+        level: "error",
+        code: "MISSING_RESOURCE_LIBRARY_REFERENCE",
+        text: `Card Table 引用了不存在的 Resource Library：${module.资源库ID}`,
         path: `modules.${module.ID}.资源库ID`,
       });
     }
@@ -678,6 +703,58 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
           });
         }
       }
+    });
+  }
+
+  for (const module of systemPackage.modules) {
+    if (module.类型 !== "resourcePicker" || !module.创建卡牌) {
+      continue;
+    }
+
+    const targetModule = moduleById.get(module.创建卡牌.卡牌桌面模块ID);
+    if (!targetModule) {
+      issues.push({
+        level: "error",
+        code: "MISSING_CARD_TABLE_REFERENCE",
+        text: `Resource Picker 创建卡牌引用了不存在的 Card Table：${module.创建卡牌.卡牌桌面模块ID}`,
+        path: `modules.${module.ID}.创建卡牌.卡牌桌面模块ID`,
+      });
+      continue;
+    }
+
+    if (targetModule.类型 !== "cardTable") {
+      issues.push({
+        level: "error",
+        code: "UNSUPPORTED_CARD_TABLE_REFERENCE",
+        text: `Resource Picker 创建卡牌目标必须是 Card Table：${module.创建卡牌.卡牌桌面模块ID}`,
+        path: `modules.${module.ID}.创建卡牌.卡牌桌面模块ID`,
+      });
+      continue;
+    }
+
+    if (targetModule.资源库ID !== module.资源库ID) {
+      issues.push({
+        level: "error",
+        code: "CARD_TABLE_LIBRARY_MISMATCH",
+        text: `Resource Picker 与 Card Table 必须引用同一个 Resource Library：${module.ID}`,
+        path: `modules.${module.ID}.创建卡牌.卡牌桌面模块ID`,
+      });
+    }
+  }
+
+  for (const library of systemPackage.resourceLibraries ?? []) {
+    library.entries.forEach((entry, entryIndex) => {
+      const cardArtRef = entry.fields.卡图;
+      if (!cardArtRef || assetRefs.has(cardArtRef)) {
+        return;
+      }
+
+      issues.push({
+        level: "error",
+        code: "MISSING_CARD_ART_ASSET_REFERENCE",
+        text: `Card Definition 引用了不存在的卡图 Asset：${cardArtRef}`,
+        path: `resourceLibraries.${library.ID}.entries.${entryIndex}.卡图`,
+      });
     });
   }
 

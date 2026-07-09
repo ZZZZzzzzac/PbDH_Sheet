@@ -31,6 +31,141 @@
   ],
   "assets": [
     {
+      "ID": "assets/domain-level-1/艾娃之书.png",
+      "路径": "assets/domain-level-1/艾娃之书.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/不可侵犯.png",
+      "路径": "assets/domain-level-1/不可侵犯.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/符文护符.png",
+      "路径": "assets/domain-level-1/符文护符.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/还不够好.png",
+      "路径": "assets/domain-level-1/还不够好.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/豪言壮语.png",
+      "路径": "assets/domain-level-1/豪言壮语.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/解忧消难.png",
+      "路径": "assets/domain-level-1/解忧消难.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/卷土重来.png",
+      "路径": "assets/domain-level-1/卷土重来.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/灵巧机动.png",
+      "路径": "assets/domain-level-1/灵巧机动.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/妙手空空.png",
+      "路径": "assets/domain-level-1/妙手空空.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/滂沱剑雨.png",
+      "路径": "assets/domain-level-1/滂沱剑雨.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/欺瞒熟手.png",
+      "路径": "assets/domain-level-1/欺瞒熟手.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/奇异伪装.png",
+      "路径": "assets/domain-level-1/奇异伪装.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/墙面行走.png",
+      "路径": "assets/domain-level-1/墙面行走.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/释放混沌.png",
+      "路径": "assets/domain-level-1/释放混沌.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/提法之书.png",
+      "路径": "assets/domain-level-1/提法之书.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/铁骨铮铮.png",
+      "路径": "assets/domain-level-1/铁骨铮铮.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/吾身为盾.png",
+      "路径": "assets/domain-level-1/吾身为盾.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/先见之明.png",
+      "路径": "assets/domain-level-1/先见之明.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/心醉神迷.png",
+      "路径": "assets/domain-level-1/心醉神迷.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/修复之触.png",
+      "路径": "assets/domain-level-1/修复之触.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/旋风猛袭.png",
+      "路径": "assets/domain-level-1/旋风猛袭.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/曳光信标.png",
+      "路径": "assets/domain-level-1/曳光信标.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/伊利亚特之书.png",
+      "路径": "assets/domain-level-1/伊利亚特之书.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/有力推击.png",
+      "路径": "assets/domain-level-1/有力推击.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/怨毒缠绕.png",
+      "路径": "assets/domain-level-1/怨毒缠绕.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/追猎才能.png",
+      "路径": "assets/domain-level-1/追猎才能.png",
+      "类型": "image/png"
+    },
+    {
+      "ID": "assets/domain-level-1/自然之语.png",
+      "路径": "assets/domain-level-1/自然之语.png",
+      "类型": "image/png"
+    },
+    {
       "ID": "flame-card",
       "路径": "assets/flame-card.svg",
       "类型": "image/svg+xml"

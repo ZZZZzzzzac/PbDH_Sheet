@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures";
+import { createCardInstance } from "./cardEngine";
 import { createEmptyCharacterData, exportCharacterData, parseCharacterDataJson, updateCharacterValue, updatePlayerImage } from "./characterData";
 
 describe("Character Data import/export", () => {
@@ -12,6 +13,7 @@ describe("Character Data import/export", () => {
       id: "demo-minimal",
       version: "0.1.0",
     });
+    expect(exported.cards).toEqual({ instances: [] });
     expect(exported.pages).toBeUndefined();
     expect(exported.modules).toBeUndefined();
     expect(exported.playerImages).toEqual({});
@@ -51,6 +53,41 @@ describe("Character Data import/export", () => {
     expect(exported.character.values["rule-note"]).toBeUndefined();
     expect(exported.character.values["sect-emblem"]).toBeUndefined();
     expect(exported.character.values["portrait"]).toBeUndefined();
+    expect(exported.cards).toEqual({ instances: [] });
+  });
+
+  it("exports and imports Card Instance state", () => {
+    const data = createCardInstance(createEmptyCharacterData(minimalSystemPackage), {
+      instanceId: "card-instance-1",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: "domain-card:符文护符",
+    });
+    const result = parseCharacterDataJson(exportCharacterData(data), minimalSystemPackage);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.cards.instances).toEqual([
+        expect.objectContaining({
+          instanceId: "card-instance-1",
+          definitionId: "domain-card:符文护符",
+          state: "configured",
+          tableModuleId: "domain-card-table",
+        }),
+      ]);
+    }
+  });
+
+  it("imports older Character Data without card state as an empty Card State", () => {
+    const exported = JSON.parse(exportCharacterData(createEmptyCharacterData(minimalSystemPackage)));
+    delete exported.cards;
+
+    const result = parseCharacterDataJson(JSON.stringify(exported), minimalSystemPackage);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.cards).toEqual({ instances: [] });
+    }
   });
 
   it("stores player image fields as value references plus portable player image data", () => {

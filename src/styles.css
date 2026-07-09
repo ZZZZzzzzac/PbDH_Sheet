@@ -178,9 +178,9 @@ h2 {
 }
 
 .sheet-tool {
-  width: min(100%, 1120px);
-  margin: 0 auto;
-  padding: clamp(18px, 4vw, 44px);
+  width: 100%;
+  margin: 0;
+  padding: clamp(12px, 2vw, 28px);
 }
 
 .sheet-page {
@@ -582,6 +582,203 @@ fieldset.container {
   color: #607075;
 }
 
+.card-table-module {
+  display: grid;
+  grid-template-rows: auto minmax(360px, 1fr);
+  gap: 14px;
+  min-height: 100%;
+}
+
+.card-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #cfd7d9;
+  background: #ffffff;
+}
+
+.card-table-header h2 {
+  font-size: 1.15rem;
+}
+
+.card-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.card-count {
+  padding: 4px 8px;
+  border: 1px solid #c4ccce;
+  background: #f8faf9;
+  color: #425056;
+  font-size: 0.9rem;
+}
+
+.card-table-surface {
+  position: relative;
+  min-width: 0;
+  min-height: 520px;
+  overflow: hidden;
+  border: 1px solid #cfd7d9;
+  background:
+    linear-gradient(90deg, rgba(49, 86, 94, 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(49, 86, 94, 0.08) 1px, transparent 1px),
+    #eef4f1;
+  background-size: 32px 32px;
+  touch-action: none;
+}
+
+.card-table-empty {
+  position: absolute;
+  inset: 16px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border: 1px dashed #aebabc;
+  color: #607075;
+  background: rgba(255, 255, 255, 0.64);
+}
+
+.play-card {
+  position: absolute;
+  width: min(250px, calc(100% - 32px));
+  min-width: 180px;
+  border: 1px solid #243438;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(32, 36, 38, 0.24);
+  cursor: grab;
+  transform-origin: center center;
+  user-select: none;
+}
+
+.play-card:active {
+  cursor: grabbing;
+}
+
+.play-card-delete {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #c9302c;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(32, 36, 38, 0.28);
+}
+
+.play-card-delete:hover {
+  background: #9f231f;
+}
+
+.play-card-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  background: #e2e8e9;
+}
+
+.play-card-text {
+  display: grid;
+  gap: 10px;
+  aspect-ratio: 63 / 88;
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px;
+  background: #fffdf7;
+}
+
+.play-card-text h4 {
+  margin: 0 0 4px;
+  color: #202426;
+  font-size: 1.05rem;
+}
+
+.play-card-text header p,
+.play-card-recall {
+  margin: 0;
+  color: #607075;
+  font-size: 0.9rem;
+}
+
+.play-card-description {
+  margin: 0;
+  color: #202426;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  border: 0;
+  border-right: 1px solid #d8dfe1;
+  background: #ffffff;
+  color: #243438;
+  cursor: pointer;
+}
+
+.card-action-button:last-child {
+  border-right: 0;
+}
+
+.card-action-button:hover {
+  background: #edf6f1;
+}
+
+.card-action-button.danger {
+  color: #8c2822;
+}
+
+.card-context-menu {
+  position: fixed;
+  z-index: 100;
+  display: grid;
+  min-width: 148px;
+  padding: 6px;
+  border: 1px solid #243438;
+  background: #ffffff;
+  box-shadow: 0 14px 32px rgba(32, 36, 38, 0.28);
+}
+
+.card-context-menu button {
+  min-height: 34px;
+  border: 0;
+  padding: 0 10px;
+  background: transparent;
+  color: #243438;
+  text-align: left;
+  cursor: pointer;
+}
+
+.card-context-menu button:hover {
+  background: #edf6f1;
+}
+
+.card-context-menu button.danger {
+  color: #8c2822;
+}
+
 .error-panel {
   margin: clamp(18px, 4vw, 44px);
   padding: 18px;
@@ -731,5 +928,9 @@ fieldset.container {
   .counter .value {
     grid-column: 1 / -1;
     text-align: center;
+  }
+
+  .card-table-surface {
+    min-height: 420px;
   }
 }
