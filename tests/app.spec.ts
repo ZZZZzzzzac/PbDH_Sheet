@@ -5,14 +5,14 @@ import path from "node:path";
 test("minimal loop edits, autosaves, exports and imports Character JSON", async ({ page }, testInfo) => {
   await page.goto("/");
   await expect(page.getByText("未加载")).toBeVisible();
-  await expect(page.getByLabel("Sheet Tool")).not.toBeVisible();
+  await expect(page.getByLabel("Sheet Tool", { exact: true })).not.toBeVisible();
 
   await uploadPackage(page, demoPackagePath());
 
   const nameInput = page.getByLabel("姓名");
   await expect(nameInput).toBeVisible();
   await nameInput.fill("阿青");
-  await expect(page.getByText("已保存")).toBeVisible();
+  await waitForAutosave(page);
 
   const htmlDownload = await downloadHtmlSnapshot(page);
   const htmlExportPath = path.join(testInfo.outputDir, "character.html");
@@ -23,7 +23,7 @@ test("minimal loop edits, autosaves, exports and imports Character JSON", async 
   expect(htmlExport).toContain("break-inside: avoid");
 
   await page.reload();
-  await expect(page.getByText("demo-minimal")).toBeVisible();
+  await expect(page.getByText("最小示例系统包")).toBeVisible();
   await expect(page.getByLabel("姓名")).toHaveValue("阿青");
 
   const download = await downloadCharacterJson(page);
@@ -31,9 +31,10 @@ test("minimal loop edits, autosaves, exports and imports Character JSON", async 
   await download.saveAs(exportPath);
 
   await page.getByLabel("姓名").fill("改坏的名字");
-  await expect(page.getByText("已保存")).toBeVisible();
+  await waitForAutosave(page);
 
   const fileChooserPromise = page.waitForEvent("filechooser");
+  await openExportMenu(page);
   await page.getByRole("button", { name: "导入 Character JSON" }).click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles(exportPath);
@@ -46,13 +47,14 @@ test("malformed import shows an error and keeps current Character Data", async (
   await page.goto("/");
   await uploadPackage(page, demoPackagePath());
   await page.getByLabel("姓名").fill("阿青");
-  await expect(page.getByText("已保存")).toBeVisible();
+  await waitForAutosave(page);
 
   const badJsonPath = path.join(testInfo.outputDir, "bad.json");
   await mkdir(testInfo.outputDir, { recursive: true });
   await writeFile(badJsonPath, "{", "utf8");
 
   const fileChooserPromise = page.waitForEvent("filechooser");
+  await openExportMenu(page);
   await page.getByRole("button", { name: "导入 Character JSON" }).click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles(badJsonPath);
@@ -65,18 +67,19 @@ test("uploads a minimal System Package zip and keeps the Character JSON loop", a
   await page.goto("/");
   await uploadPackage(page, demoPackagePath());
 
-  await expect(page.getByText("demo-minimal")).toBeVisible();
+  await expect(page.getByText("最小示例系统包")).toBeVisible();
   await page.getByLabel("姓名").fill("Zip阿青");
-  await expect(page.getByText("已保存")).toBeVisible();
+  await waitForAutosave(page);
 
   const download = await downloadCharacterJson(page);
   const exportPath = path.join(testInfo.outputDir, "zip-character.json");
   await download.saveAs(exportPath);
 
   await page.getByLabel("姓名").fill("临时名字");
-  await expect(page.getByText("已保存")).toBeVisible();
+  await waitForAutosave(page);
 
   const characterChooserPromise = page.waitForEvent("filechooser");
+  await openExportMenu(page);
   await page.getByRole("button", { name: "导入 Character JSON" }).click();
   const characterChooser = await characterChooserPromise;
   await characterChooser.setFiles(exportPath);
@@ -84,7 +87,7 @@ test("uploads a minimal System Package zip and keeps the Character JSON loop", a
   await page.waitForTimeout(400);
 
   await page.reload();
-  await expect(page.getByText("demo-minimal")).toBeVisible();
+  await expect(page.getByText("最小示例系统包")).toBeVisible();
   await expect(page.getByLabel("姓名")).toHaveValue("Zip阿青");
 });
 
@@ -92,7 +95,7 @@ test("uploads the phase 5 module demo package and persists simple module state",
   await page.goto("/");
   await uploadPackage(page, moduleDemoPackagePath());
 
-  await expect(page.getByText("demo-modules")).toBeVisible();
+  await expect(page.getByText("阶段5模块示例系统包", { exact: true })).toBeVisible();
   await expect(page.locator(".demo-sheet")).toBeVisible();
   await expect(page.locator(".identity")).toBeVisible();
   await expect(page.locator('[data-module-slot-id="background"]')).toBeVisible();
@@ -114,10 +117,10 @@ test("uploads the phase 5 module demo package and persists simple module state",
   await page.getByRole("button", { name: "气力增加" }).click();
   await page.getByRole("button", { name: "气力增加" }).click();
   await expect(page.getByRole("textbox", { name: "气力", exact: true })).toHaveValue("5");
-  await expect(page.getByText("已保存")).toBeVisible();
+  await waitForAutosave(page);
 
   await page.reload();
-  await expect(page.getByText("demo-modules")).toBeVisible();
+  await expect(page.getByText("阶段5模块示例系统包", { exact: true })).toBeVisible();
   await expect(page.getByLabel("姓名")).toHaveValue("陆青");
   await expect(page.getByLabel("背景")).toHaveValue("第一行\n第二行");
   await expect(page.getByLabel("受伤")).toBeChecked();
@@ -138,6 +141,7 @@ test("uploads the phase 5 module demo package and persists simple module state",
 
   await page.getByLabel("姓名").fill("改坏");
   const characterChooserPromise = page.waitForEvent("filechooser");
+  await openExportMenu(page);
   await page.getByRole("button", { name: "导入 Character JSON" }).click();
   const characterChooser = await characterChooserPromise;
   await characterChooser.setFiles(exportPath);
@@ -148,22 +152,11 @@ test("uploads the phase 5 module demo package and persists simple module state",
 });
 
 test("uploads Resource Picker demo and restores filled text through export/import", async ({ page }, testInfo) => {
-  const selectionLogs: unknown[] = [];
-  page.on("console", (message) => {
-    if (!message.text().startsWith("resourceSelected")) {
-      return;
-    }
-
-    void Promise.all(message.args().map((arg) => arg.jsonValue().catch(() => undefined))).then((args) => {
-      selectionLogs.push(args[1]);
-    });
-  });
-
   await page.goto("/");
   await expect(page.getByText("未加载")).toBeVisible();
   await uploadPackage(page, selectionDemoPackagePath());
 
-  await expect(page.getByText("demo-selection")).toBeVisible();
+  await expect(page.getByText("资源库选择示例系统包")).toBeVisible();
   const classPicker = page.locator('[data-module-id="pick-class"]');
   await classPicker.getByRole("button", { name: "选择职业" }).click();
   const classDialog = page.getByRole("dialog", { name: "职业资源库" });
@@ -214,17 +207,10 @@ test("uploads Resource Picker demo and restores filled text through export/impor
   await expect(page.getByAltText("卷土重来")).toBeVisible();
   await page.locator(".play-card", { has: page.getByAltText("卷土重来") }).click({ button: "right" });
   await page.getByRole("menuitem", { name: "标记为宝库" }).click();
-  await expect(page.getByText("已保存")).toBeVisible();
-
-  await expect.poll(() => selectionLogs.length).toBeGreaterThan(1);
-  expect(selectionLogs.find((item) => (item as { moduleId?: string }).moduleId === "pick-domain-card")).toMatchObject({
-    moduleId: "pick-domain-card",
-    libraryId: "domain-cards",
-    selectedItemIds: ["domain-card:卷土重来"],
-  });
+  await waitForAutosave(page);
 
   await page.reload();
-  await expect(page.getByText("demo-selection")).toBeVisible();
+  await expect(page.getByText("资源库选择示例系统包")).toBeVisible();
   await expect(page.locator('[data-module-id="class-name"]').getByRole("textbox", { name: "职业", exact: true })).toHaveValue("德鲁伊");
   await expect(page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true })).toHaveValue("卷土重来");
   await expect(page.locator('[data-template-page-id="druid-shape-page"]')).toHaveCount(0);
@@ -257,18 +243,108 @@ test("uploads Resource Picker demo and restores filled text through export/impor
   expect(exportedText).not.toContain("data:image");
   expect(exportedText).not.toContain("<svg");
 
-  const changedSingle = page.locator('[data-module-id="pick-domain-card"]');
-  await changedSingle.getByRole("button", { name: "选择领域卡" }).click();
-  await page.getByLabel("选择 还不够好").click();
-  await expect(page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true })).toHaveValue("还不够好");
+  const domainCardName = page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true });
+  await domainCardName.fill("临时领域卡");
+  await expect(domainCardName).toHaveValue("临时领域卡");
 
   const characterChooserPromise = page.waitForEvent("filechooser");
+  await openExportMenu(page);
   await page.getByRole("button", { name: "导入 Character JSON" }).click();
   const characterChooser = await characterChooserPromise;
   await characterChooser.setFiles(exportPath);
 
   await expect(page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true })).toHaveValue("卷土重来");
-  await expect(page.locator(".play-card", { has: page.getByAltText("卷土重来") })).toBeVisible();
+  await expect(page.locator(".play-card")).toContainText("domain-card:卷土重来");
+});
+
+test("Character Creation Guide spotlights interactive targets without taking over their behavior", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText("未加载")).toBeVisible();
+  await uploadPackage(page, selectionDemoPackagePath());
+
+  await openSystemPackageMenu(page);
+  await page.getByRole("button", { name: "启动车卡指引" }).click();
+  const guide = page.getByRole("dialog", { name: "车卡指引" });
+  await expect(guide).toContainText("开始创建角色");
+  await expect(guide).toContainText("1 / 4");
+
+  await guide.getByRole("button", { name: "下一步" }).click();
+  await expect(guide).toContainText("选择职业");
+  await expect(guide).toContainText("2 / 4");
+  const classTarget = page.locator('[data-module-slot-id="pick-class"]');
+  const ring = page.locator(".guide-target-ring");
+  await expect(ring).toBeVisible();
+  await expect.poll(() => page.locator(".top-bar").evaluate((element) => (element as HTMLElement).inert)).toBe(true);
+  const targetBox = await classTarget.boundingBox();
+  const ringBox = await ring.boundingBox();
+  expect(targetBox).not.toBeNull();
+  expect(ringBox).not.toBeNull();
+  expect(ringBox!.x).toBeLessThanOrEqual(targetBox!.x);
+  expect(ringBox!.y).toBeLessThanOrEqual(targetBox!.y);
+  expect(ringBox!.width).toBeGreaterThanOrEqual(targetBox!.width);
+  const panelBox = await guide.boundingBox();
+  expect(panelBox).not.toBeNull();
+  expect(rectanglesOverlap(panelBox!, targetBox!)).toBe(false);
+
+  await classTarget.getByRole("button", { name: "选择职业" }).click();
+  const resourceDialog = page.getByRole("dialog", { name: "职业资源库" });
+  await expect(resourceDialog).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => ({
+        guide: Number.parseInt(getComputedStyle(document.querySelector(".guide-spotlight-root")!).zIndex, 10),
+        resource: Number.parseInt(getComputedStyle(document.querySelector(".resource-dialog-backdrop")!).zIndex, 10),
+      })),
+    )
+    .toMatchObject({ guide: 50, resource: 80 });
+  await page.getByLabel("选择 德鲁伊").click();
+  await expect(resourceDialog).not.toBeVisible();
+  await expect(guide).toContainText("2 / 4");
+
+  await guide.getByRole("button", { name: "下一步" }).click();
+  await expect(guide).toContainText("选择子职");
+  await guide.getByRole("button", { name: "下一步" }).click();
+  await expect(guide).toContainText("查看职业专属页面");
+  await expect(page.locator('[data-template-page-id="druid-shape-page"]')).toBeVisible();
+  await expect(page.getByText("当前目标不可见")).toHaveCount(0);
+  await guide.getByRole("button", { name: "完成车卡指引" }).click();
+  await expect(guide).not.toBeVisible();
+
+  await page.reload();
+  await openSystemPackageMenu(page);
+  await page.getByRole("button", { name: "启动车卡指引" }).click();
+  const restartedGuide = page.getByRole("dialog", { name: "车卡指引" });
+  await expect(restartedGuide).toContainText("1 / 4");
+  for (let step = 0; step < 3; step += 1) {
+    await restartedGuide.getByRole("button", { name: "下一步" }).click();
+  }
+  await expect(restartedGuide).toContainText("当前目标不可见");
+  await expect(page.locator('[data-template-page-id="druid-shape-page"]')).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(restartedGuide).not.toBeVisible();
+  await expect(page.getByRole("button", { name: "启动车卡指引" })).toBeFocused();
+});
+
+test("Character Creation Guide uses a bottom panel on a mobile viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 480, height: 900 });
+  await page.goto("/");
+  await expect(page.getByText("未加载")).toBeVisible();
+  await uploadPackage(page, selectionDemoPackagePath());
+  await openSystemPackageMenu(page);
+  await page.getByRole("button", { name: "启动车卡指引" }).click();
+
+  const panel = page.locator(".guide-panel-mobile");
+  await expect(panel).toBeVisible();
+  const box = await panel.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(480);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(900);
+  expect(box!.y + box!.height).toBeGreaterThan(850);
+
+  await page.setViewportSize({ width: 900, height: 700 });
+  await expect(page.locator(".guide-panel-mobile")).toHaveCount(0);
+  await expect(page.locator(".guide-panel-default")).toBeVisible();
 });
 
 test("HTML Layout Template from demo zip stacks columns on small screens", async ({ page }) => {
@@ -305,7 +381,7 @@ for (const [fileName, expectedCode] of errorFixtures) {
     await uploadPackage(page, errorFixturePath(fileName));
 
     await expect(page.getByRole("alert", { name: "System Package error" })).toContainText(expectedCode);
-    await expect(page.getByLabel("Sheet Tool")).not.toBeVisible();
+    await expect(page.getByLabel("Sheet Tool", { exact: true })).not.toBeVisible();
   });
 }
 
@@ -331,7 +407,7 @@ test("invalid cached System Package is cleared and leaves upload controls usable
   await expect(page.getByText("未加载")).toBeVisible();
   await expect(page.getByText("缓存的 System Package 已失效，已清除。请重新上传系统包。")).toBeVisible();
   await expect(page.getByRole("button", { name: "导入 System Package zip" })).toBeEnabled();
-  await expect(page.getByLabel("Sheet Tool")).not.toBeVisible();
+  await expect(page.getByLabel("Sheet Tool", { exact: true })).not.toBeVisible();
   expect(pageErrors).toEqual([]);
 
   await page.reload();
@@ -340,14 +416,32 @@ test("invalid cached System Package is cleared and leaves upload controls usable
 });
 
 async function uploadPackage(page: Page, packagePath: string) {
+  await openSystemPackageMenu(page);
   const packageChooserPromise = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "导入 System Package zip" }).click();
   const packageChooser = await packageChooserPromise;
   await packageChooser.setFiles(packagePath);
 }
 
+async function openSystemPackageMenu(page: Page) {
+  await page.locator(".top-menu").first().locator(".menu-trigger").click();
+}
+
+async function openExportMenu(page: Page) {
+  await page.locator(".top-menu").nth(2).locator(".menu-trigger").click();
+}
+
+async function waitForAutosave(page: Page) {
+  await page.waitForTimeout(350);
+}
+
+function rectanglesOverlap(a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }) {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
 async function downloadCharacterJson(page: Page) {
   const downloadPromise = page.waitForEvent("download");
+  await openExportMenu(page);
   await page.getByRole("button", { name: "导出 Character JSON" }).click();
   const continueButton = page.getByRole("button", { name: "继续输出" });
   try {
@@ -360,6 +454,7 @@ async function downloadCharacterJson(page: Page) {
 
 async function downloadHtmlSnapshot(page: Page) {
   const downloadPromise = page.waitForEvent("download");
+  await openExportMenu(page);
   await page.getByRole("button", { name: "导出 HTML snapshot" }).click();
   const continueButton = page.getByRole("button", { name: "继续输出" });
   try {

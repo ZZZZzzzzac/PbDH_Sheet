@@ -38,6 +38,57 @@ describe("validateSystemPackage", () => {
     }
   });
 
+  it("accepts a linear Character Creation Guide with no, module, and page targets", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      characterCreationGuide: {
+        步骤: [
+          { ID: "intro", 标题: "开始", 说明: "先认识角色卡。" },
+          { ID: "name", 标题: "姓名", 说明: "填写姓名。", 目标: { 类型: "module", 模块ID: "character-name" } },
+          { ID: "page", 标题: "角色页", 说明: "这是角色页。", 目标: { 类型: "page", 页面ID: "main" } },
+        ],
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.package.characterCreationGuide?.步骤).toHaveLength(3);
+    }
+  });
+
+  it("reports invalid Guide structure as an error", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      characterCreationGuide: { 步骤: [] },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: "INVALID_CHARACTER_CREATION_GUIDE", level: "error" })]),
+    );
+  });
+
+  it("reports duplicate Guide Step IDs and missing targets", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      characterCreationGuide: {
+        步骤: [
+          { ID: "same", 标题: "一", 说明: "一", 目标: { 类型: "module", 模块ID: "missing-module" } },
+          { ID: "same", 标题: "二", 说明: "二", 目标: { 类型: "page", 页面ID: "missing-page" } },
+        ],
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "DUPLICATE_GUIDE_STEP_ID", level: "error" }),
+        expect.objectContaining({ code: "MISSING_GUIDE_TARGET_MODULE", level: "error" }),
+        expect.objectContaining({ code: "MISSING_GUIDE_TARGET_PAGE", level: "error" }),
+      ]),
+    );
+  });
+
   it("accepts the phase 5 simple Sheet Module set", () => {
     const result = validateSystemPackage(moduleDemoSystemPackage);
 

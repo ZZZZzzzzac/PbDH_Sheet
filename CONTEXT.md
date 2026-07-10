@@ -29,7 +29,7 @@ A feedback surface that lets an Author inspect the Sheet Tool while developing a
 _Avoid_: Visual editor
 
 **Character Creation Guide**:
-An Author-defined step-by-step flow that helps a Player create a character by reading guide text, visiting target Sheet Modules, selecting Resource Library entries, using Cards, and running checks.
+An Author-defined linear spotlight tour that explains character creation by dimming the Sheet Tool and highlighting the page or Sheet Module relevant to each step.
 _Avoid_: Hard-coded tutorial, arbitrary UI script
 
 **Questionnaire Character Creation**:
@@ -37,7 +37,7 @@ A future Player-facing character creation aid that asks preference or psychometr
 _Avoid_: Character Creation Guide, personality test as rules authority, automatic build generator
 
 **Guide Step**:
-One declared step inside a Character Creation Guide, with Author-written instructions and optional references to pages, Sheet Modules, Resource Libraries, Cards, completion conditions, and allowed framework actions.
+One item in the ordered linear sequence of a Character Creation Guide, containing an Author-written plain-text title and instructions plus at most one stable page or Sheet Module target to highlight.
 _Avoid_: Custom imperative code
 
 **AI-Readable Documentation**:
@@ -150,13 +150,21 @@ _Avoid_: Script plugin
 - The first-version runtime uses one **Current System Package** at a time.
 - A **Player** may have multiple local **Character Saves** for the **Current System Package**.
 - An **Author Preview** helps an **Author** validate a **System Package** by looking at the resulting **Sheet Tool**.
-- A **System Package** may include a **Character Creation Guide** so a **Player** can create a character through Author-defined steps.
-- A **Character Creation Guide** is runtime guidance over existing **Sheet Modules**, **Resource Libraries**, **Cards**, **Dependency Logic**, and **Validation Checks**; it is not a separate rules engine.
+- A **System Package** may include at most one **Character Creation Guide** so a **Player** can follow its Author-defined linear explanation without choosing among multiple guides.
+- A **Character Creation Guide** is a presentation layer over the existing Sheet Tool; it explains and highlights but does not operate **Sheet Modules**, emit selection events, invoke **Dependency Logic**, manipulate **Cards**, or run **Validation Checks**.
+- A first-version **Character Creation Guide** is a linear ordered sequence without branching, loops, or Author-defined step jumps.
+- A **Guide Step** explains the next creation task and identifies what to highlight; all editing, resource selection, filtering, text filling, and Card interaction remain ordinary Player behavior outside the guide.
+- A Player advances, returns, exits, or finishes a **Character Creation Guide** manually; the guide does not read **Character Data**, infer completion, or automatically advance.
+- The Sheet Module highlighted by a **Guide Step** remains interactive, but the guide neither observes the interaction result nor advances in response to it.
+- A **Guide Step** targets one **Sheet Module**, one page, or no target; arbitrary selectors, multiple simultaneous targets, and controls inside framework dialogs are not guide targets.
+- A Player starts the optional **Character Creation Guide** explicitly from the Sheet Tool toolbar menu; guide position is transient, is never persisted, and every new run starts at the first step.
+- A visible **Guide Step** target is scrolled into view; an existing but currently hidden target stays hidden, and the guide falls back to instructions plus a target-unavailable notice without changing derived visibility.
+- While a **Guide Step** is active, only its visible target, the guide controls, and any framework dialog opened from that target remain interactive; dimmed content is inert, and the Player may exit with Escape.
+- Finishing a **Character Creation Guide** only closes the tour; it does not mean the character is complete or valid and does not trigger saving, validation, export, or printing.
 - **Questionnaire Character Creation** is distinct from a **Character Creation Guide**: it discovers Player preferences and recommends resources or paths, while a Character Creation Guide walks a Player through known creation tasks.
-- **Questionnaire Character Creation** should not write Character Data directly. If it later offers apply actions, those actions must reuse framework-approved Sheet Module, Dependency Engine, Card Engine, or Guide Runner actions.
+- **Questionnaire Character Creation** should not write Character Data directly. If it later offers apply actions, those actions must reuse framework-approved Sheet Module, Dependency Engine, or Card Engine actions; the Character Creation Guide remains presentation-only.
 - **Questionnaire Character Creation** is a future plan, not part of the first-version requirement.
-- A **Guide Step** may request framework actions such as navigating to a page, highlighting a Sheet Module, opening a Resource Library choice, adding a Card, or running a Validation Check.
-- A **Guide Step** may write Character Data only through framework-defined actions already allowed for the target Sheet Module, Card Engine, or Dependency Logic.
+- A **Guide Step** depends only on stable target IDs and framework-owned highlighting behavior; it never writes **Character Data** or requests behavior from the highlighted target.
 - **AI-Readable Documentation** is a first-version requirement because non-programmer Authors may rely on AI to create System Packages.
 - A **System Package Validator** should be strict about IDs, references, required structural fields, and broken links, but permissive about ordinary **Sheet Values**.
 - **Resource Values** are displayed as provided; the Base Framework does not interpret their game meaning.
@@ -224,7 +232,7 @@ _Avoid_: Script plugin
 > **Domain Expert:** "No. The Author declares guide steps. The Base Framework runs those steps and only uses existing framework actions."
 
 > **Dev:** "Can a guide step decide whether a character build is legal?"
-> **Domain Expert:** "Only simple completion conditions belong in the guide. Rule legality still belongs in Validation Checks."
+> **Domain Expert:** "No. The guide only explains and highlights; all rule legality belongs in Validation Checks."
 
 > **Dev:** "Does a Character Save include image files?"
 > **Domain Expert:** "Usually no for System Package images, but yes for Player-provided portraits or character art."

@@ -31,7 +31,7 @@
 .resource-dialog-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 20;
+  z-index: 80;
   display: grid;
   place-items: center;
   padding: clamp(12px, 4vw, 32px);

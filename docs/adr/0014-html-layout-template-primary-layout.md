@@ -17,7 +17,7 @@
 - 模板通过 `<pb-module id="..."></pb-module>` 占位符挂载 Base Framework 提供的 Sheet Module。
 - 模板允许 Static Layout Content，例如标题、说明文字、分隔线、装饰图片和无状态容器。
 - 模板禁止 Author 自定义交互控件和行为，包括 `input`、`button`、`select`、`textarea`、`form`、`script`、事件属性和外部脚本。
-- 所有读取或写入 Character Data 的 Player 交互必须来自 Base Framework Sheet Modules、Card Engine、Guide Runner 或其他框架提供的交互面。
+- 所有读取或写入 Character Data 的 Player 交互必须来自 Base Framework Sheet Modules、Card Engine 或其他明确允许写入的框架交互面；Guide 只负责展示和高亮。
 - CSS 只允许作用于当前模板作用域和框架公开的 module parts；不得影响 app shell、导入导出按钮、存档 UI、其他 System Package 或全局 `html/body`。
 - Flow Layout 不再作为 Author-facing 主接口，也不保留兼容要求；现有 rich Flow Layout 实现应被替换，而不是继续扩展。
 

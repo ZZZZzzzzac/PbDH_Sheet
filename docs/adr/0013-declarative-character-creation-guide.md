@@ -1,6 +1,6 @@
 # ADR-0013: Declarative Character Creation Guide
 
-状态：Accepted
+状态：Superseded by [ADR-0015](0015-character-creation-guide-as-spotlight-tour.md)
 日期：2026-07-07
 
 ## 背景

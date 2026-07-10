@@ -4,7 +4,7 @@
 
 - 目录包命名使用 `kebab-case/`。
 - 目录包根目录必须包含 `manifest.json`。
-- `manifest.json` 声明 `pages`、`modules`、`dependencies`、`resourceLibraries` 和 `assets` 路径。
+- `manifest.json` 声明 `pages`、`modules`，并可声明 `dependencies`、`resourceLibraries`、`characterCreationGuide` 和 `assets` 路径。
 - zip 包是目录包内容的压缩结果，zip 根目录应直接包含 `manifest.json`。
 - 文件内容保持 Author 可读格式，优先使用中文键名。
 - 示例包必须通过 `src/domain/systemPackage.ts` 的结构校验。
@@ -13,3 +13,4 @@
 
 HTML Layout Template 写法见 [System Package HTML Layout Template 接口](../../docs/system-package-html-layout-template.md)。
 Resource Picker 与 Dependency Logic v1 写法见 [System Package Resource Picker 与 Dependency Logic v1 接口](../../docs/system-package-resource-picker.md)。
+Character Creation Guide 写法见 [System Package Character Creation Guide 接口](../../docs/system-package-character-creation-guide.md)。

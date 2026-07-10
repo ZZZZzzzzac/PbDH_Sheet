@@ -84,8 +84,8 @@ PbDH Sheet Framework
   +-- card-engine
   |     Card Definition + Card Instance 操作
   |
-  +-- guide-runner
-  |     车卡指引步骤、导航/高亮效果、资源选择请求
+  +-- guide-session + spotlight
+  |     临时线性步骤、目标滚动/高亮、纯文本说明
   |
   +-- validation-runner
   |     在 Web Worker 中执行 JS 检查
@@ -139,13 +139,12 @@ Sheet Module 事件
 
 ```text
 Player 启动车卡指引
-  -> guide-runner 读取 guide definitions、Character Data、Resource Libraries、Card State
-  -> 计算当前 Guide Step 的说明、目标和完成状态
-  -> state-store 提交导航/高亮/打开资源选择等 view effects
-  -> Player 通过 Sheet Module、Resource Library 或 Card UI 执行动作
-  -> 既有 store actions / dependency-engine / card-engine 更新 Character Data 或 Card State
-  -> guide-runner 重新评估步骤完成状态
-  -> 最终步骤触发 validation-runner
+  -> guide-session 从第一个 Guide Step 建立临时线性位置
+  -> spotlight surface 解析 page / Sheet Module 稳定目标
+  -> 可见目标滚入视口并高亮；隐藏目标降级为提示
+  -> Player 可直接操作高亮模块，模块仍走既有 store actions / engines
+  -> Player 手动上一步、下一步、完成或退出
+  -> 完成/退出只清除临时 Guide Session
 ```
 
 ### 导出和打印
@@ -263,33 +262,25 @@ evaluateDependencies({
 - 所有跨模块变化必须通过 Dependency Engine。
 - MVP 单轮计算，不做链式触发。
 
-### Guide Runner 边界
+### Guide Session 与 Spotlight 边界
 
-Guide Runner 运行 Author 声明的 Character Creation Guide，但不实现游戏规则合法性。
+Guide Session 与 Spotlight Surface 运行 Author 声明的 Character Creation Guide，但不实现或请求任何游戏规则行为。
 
 ```text
-evaluateGuideStep({
-  guideDefinitions,
-  guideProgress,
-  characterData,
-  resourceLibraries,
-  cardState,
-  validationSummary
-})
-  -> guideViewEffects
-  -> guideActionRequests
-  -> completionState
+startGuideSession()
+  -> { stepIndex: 0 }
+
+resolveGuideTarget(currentStep)
+  -> visible page/module target | unavailable | no target
 ```
 
 约束：
 
-- Guide Runner 读取 Character Data、Resource Libraries、Card Instance State、Validation Summary 和 guide definitions。
-- Guide Runner 不读取 DOM，不执行 Author 脚本，不直接写 IndexedDB。
-- Guide Runner 输出导航、聚焦、高亮、打开资源库选择、打开卡牌区域、运行检查等请求。
-- Guide Runner 不绕过 Sheet Module、Dependency Engine 或 Card Engine 写 Character Data。
-- 指引里的自动填充必须复用 Dependency Engine 的 data patch 契约和冲突处理。
-- 简单完成条件可由 Guide Runner 判断；复杂规则合法性仍由 Validation Runner 报告。
-- Guide progress 是绑定当前 Character Save 的运行时状态，不是 Sheet Value，也不参与规则检查。
+- Guide Session 只读取 Guide definition 并维护当前打开会话中的 step index；不读取 Character Data，也不持久化。
+- Spotlight Surface 只通过 Renderer 暴露的稳定 page/module 标识读取目标几何与可见性。
+- Guide 不发出 resourceSelected、不执行 fillText、不操作 Cards、不运行 Validation Checks。
+- 高亮目标继续通过自身 Sheet Module action 与既有 engines 工作；Guide 不观察操作结果，也不自动推进。
+- 隐藏目标保持隐藏；Guide 显示不可见提示，不覆盖 Dependency Logic 的派生状态。
 
 ### Validation Runner 边界
 
@@ -371,7 +362,7 @@ System Package 不能：
 - 注入车卡指引脚本或自定义 guide UI。
 - 调用外部服务。
 - 绕过框架定义的依赖动作修改 Character Data。
-- 绕过 Validator、Storage Service、Dependency Engine、Guide Runner 或 Validation Runner。
+- 绕过 Validator、Storage Service、Dependency Engine、Guide Session/Spotlight 或 Validation Runner。
 
 ## Sheet Module 边界
 
@@ -398,18 +389,17 @@ Sheet Modules 是框架提供的组件。单个模块：
 
 每条规则应声明 sources 和 targets，用于校验、冲突检测和未来索引优化。
 
-## Guide Runner 边界
+## Guide Session 与 Spotlight 边界
 
-车卡指引是集中声明的 System Package 内容。Guide Runner：
+车卡指引是集中声明的 System Package 内容。Guide Session 与 Spotlight Surface：
 
-- 读取 guide definitions、Guide progress、Character Data、Resource Libraries、Card Instance State 和 Validation Summary。
-- 不读取 DOM，不执行 Author 脚本，不解释完整游戏规则。
-- 输出 guide view effects 和 guide action requests。
-- 不直接执行跨模块 Character Data patch。
-- 允许触发的写入必须经过 Sheet Module action、Dependency Engine 或 Card Engine。
-- 可触发 Validation Runner 生成最终检查报告。
+- 只读取 Guide definition、临时 step index 和稳定 page/module 目标的显示几何。
+- 不读取 Character Data，不执行 Author 脚本，不解释或请求游戏规则行为。
+- 只输出遮罩、滚动、高亮、说明、目标不可见提示和手动导航 UI。
+- 不发出资源选择事件，不执行跨模块 Character Data patch，不操作 Cards，不触发 Validation Runner。
+- 高亮 Sheet Module 保持普通交互，所有实际行为仍由模块及既有引擎负责。
 
-每个 Guide Step 应声明目标页面/模块/资源库/卡牌区域和 completion 条件，用于校验、预览和 AI 辅助生成。
+每个 Guide Step 声明稳定 ID、纯文本标题/说明，以及可选的单一页面或 Sheet Module 目标，用于校验、预览和 AI 辅助生成。
 
 ## Card Engine 边界
 
@@ -466,7 +456,7 @@ Validation Scripts：
 | 大资源包 | 移动端内存压力和图片解码慢 | 懒显示/懒解码、不用 base64、文字 fallback |
 | 浏览器存储清理 | package/cache 丢失 | JSON 导出备份、重新上传 package |
 | 检查脚本 bug | Worker 超时或输出格式错误 | 隔离 Worker、输出归一化、失败转 issue |
-| 车卡指引与依赖重叠 | 指引变成第二套规则引擎 | Guide Runner 只输出流程效果和动作请求，写入复用 Dependency Engine/Card Engine |
+| 车卡指引与依赖重叠 | 指引变成第二套规则引擎 | Guide 只展示、滚动和高亮，不读取角色数据或请求任何规则动作 |
 | CSS 覆盖滥用 | 单个模块布局损坏 | 模块级 CSS 作用域、稳定 parts、Author Preview |
 | Package schema 漂移 | 旧包行为异常 | schema version warning、未来迁移 |
 
@@ -480,7 +470,7 @@ Validation Scripts：
 - HTML Layout Template + scoped CSS。
 - 核心 Sheet Modules。
 - 不支持链式触发的集中式 Dependency Engine。
-- 声明式 Guide Runner。
+- 声明式线性 Guide Session 与 Spotlight Surface。
 - 在 Web Worker 中运行 JS Validation Scripts。
 - 支持翻面、旋转和数字指示物的 Card Instance 模型。
 - IndexedDB 持久化。
@@ -515,5 +505,6 @@ Validation Scripts：
 - [ADR-0010：模块实例级样式覆盖](adr/0010-module-scoped-style-overrides.md)
 - [ADR-0011：Character Data 值类型分层](adr/0011-character-data-value-types.md)
 - [ADR-0012：Sheet Renderer 负责 Flow Layout（已被 ADR-0014 取代）](adr/0012-sheet-renderer-owns-flow-layout.md)
-- [ADR-0013：声明式车卡指引](adr/0013-declarative-character-creation-guide.md)
+- [ADR-0013：声明式车卡指引（已被 ADR-0015 取代）](adr/0013-declarative-character-creation-guide.md)
 - [ADR-0014：HTML Layout Template 是主要作者布局模型](adr/0014-html-layout-template-primary-layout.md)
+- [ADR-0015：车卡指引作为线性聚光灯导览](adr/0015-character-creation-guide-as-spotlight-tour.md)

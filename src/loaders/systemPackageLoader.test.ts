@@ -95,6 +95,49 @@ describe("loadSystemPackageFromZipFile", () => {
     }
   });
 
+  it("loads a Character Creation Guide from the manifest reference", async () => {
+    const manifest = { ...createManifest(), characterCreationGuide: "guides/character-creation.json" };
+    const guide = { 步骤: [{ ID: "intro", 标题: "开始", 说明: "第一行\n第二行" }] };
+    const result = await loadSystemPackageFromZipFile(createPackageZip({ manifest, guide }));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.package.characterCreationGuide).toEqual(guide);
+    }
+  });
+
+  it("returns a fatal issue for a missing referenced Guide file", async () => {
+    const manifest = { ...createManifest(), characterCreationGuide: "guides/missing.json" };
+    const result = await loadSystemPackageFromZipFile(createPackageZip({ manifest }));
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "PACKAGE_FILE_MISSING", level: "fatal", path: "guides/missing.json" }),
+      ]),
+    );
+  });
+
+  it("returns a fatal issue for invalid Guide JSON", async () => {
+    const result = await loadSystemPackageFromZipFile(
+      zipBlob({
+        "manifest.json": JSON.stringify({ ...createManifest(), characterCreationGuide: "guides/character-creation.json" }),
+        "pages.json": packagePagesJson(minimalSystemPackage.pages),
+        "modules.json": JSON.stringify(minimalSystemPackage.modules),
+        "layouts/main.html": minimalSystemPackage.pages[0].layout.htmlContent,
+        "layouts/main.css": minimalSystemPackage.pages[0].layout.cssContent ?? "",
+        "guides/character-creation.json": "{",
+      }),
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "PACKAGE_JSON_INVALID", level: "fatal", path: "guides/character-creation.json" }),
+      ]),
+    );
+  });
+
   it("loads the phase 5 module demo zip and keeps asset bytes outside System Package", async () => {
     const result = await loadSystemPackageFromZipFile(createModuleDemoZip());
 
@@ -297,6 +340,7 @@ function createPackageZip(
     resources?: unknown;
     dependencies?: unknown;
     validationScripts?: Record<string, string>;
+    guide?: unknown;
   } = {},
 ) {
   return zipBlob({
@@ -309,6 +353,7 @@ function createPackageZip(
     ...(options.resources ? { "resources/domains.json": JSON.stringify(options.resources) } : {}),
     ...(options.dependencies ? { "dependencies.json": JSON.stringify(options.dependencies) } : {}),
     ...(options.validationScripts ?? {}),
+    ...(options.guide ? { "guides/character-creation.json": JSON.stringify(options.guide) } : {}),
   });
 }
 

@@ -7,6 +7,10 @@ import {
   type ResourceLibrary,
 } from "./resourceLibrary";
 import { isPlainObject } from "../utils";
+import {
+  characterCreationGuideSchema,
+  type CharacterCreationGuide,
+} from "./characterCreationGuide";
 
 export const frameworkSchemaVersion = "0.1.0";
 
@@ -259,6 +263,7 @@ const systemPackageEnvelopeSchema = z.object({
   resourceLibraries: z.array(resourceLibraryPackageInputSchema).optional(),
   dependencies: z.array(z.unknown()).optional(),
   validationChecks: z.array(validationCheckSchema).optional(),
+  characterCreationGuide: z.unknown().optional(),
 });
 
 export interface SystemPackage {
@@ -269,6 +274,7 @@ export interface SystemPackage {
   resourceLibraries?: ResourceLibrary[];
   dependencies?: DependencyRule[];
   validationChecks?: ValidationCheck[];
+  characterCreationGuide?: CharacterCreationGuide;
 }
 export type FreeTextModule = z.infer<typeof freeTextModuleSchema>;
 export type LongTextModule = z.infer<typeof longTextModuleSchema>;
@@ -311,6 +317,31 @@ export type CachedPackageValidationResult =
 type DependencyParseResult =
   | { ok: true; dependencies: DependencyRule[] }
   | { ok: false; issues: PackageIssue[] };
+
+type GuideParseResult =
+  | { ok: true; guide?: CharacterCreationGuide }
+  | { ok: false; issues: PackageIssue[] };
+
+function parseCharacterCreationGuide(input: unknown): GuideParseResult {
+  if (input === undefined) {
+    return { ok: true };
+  }
+
+  const parsed = characterCreationGuideSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      issues: parsed.error.issues.map((issue) => ({
+        level: "error",
+        code: "INVALID_CHARACTER_CREATION_GUIDE",
+        text: issue.message,
+        path: ["characterCreationGuide", ...issue.path].join("."),
+      })),
+    };
+  }
+
+  return { ok: true, guide: parsed.data };
+}
 
 function parseDependencyRules(inputs: unknown[]): DependencyParseResult {
   const dependencies: DependencyRule[] = [];
@@ -436,17 +467,28 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
     return { ok: false, issues: parsedDependencies.issues };
   }
 
+  const parsedGuide = parseCharacterCreationGuide(parsed.data.characterCreationGuide);
+  if (!parsedGuide.ok) {
+    return { ok: false, issues: parsedGuide.issues };
+  }
+
   const normalizedResourceLibraries = normalizeResourceLibraries(parsed.data.resourceLibraries ?? []);
   if (!normalizedResourceLibraries.ok) {
     return { ok: false, issues: normalizedResourceLibraries.issues };
   }
 
-  const { resourceLibraries: _rawResourceLibraries, dependencies: _rawDependencies, ...packageData } = parsed.data;
+  const {
+    resourceLibraries: _rawResourceLibraries,
+    dependencies: _rawDependencies,
+    characterCreationGuide: _rawGuide,
+    ...packageData
+  } = parsed.data;
   const systemPackage: SystemPackage = {
     ...packageData,
     modules,
     ...(parsedDependencies.dependencies.length > 0 ? { dependencies: parsedDependencies.dependencies } : {}),
     ...(normalizedResourceLibraries.resourceLibraries.length > 0 ? { resourceLibraries: normalizedResourceLibraries.resourceLibraries } : {}),
+    ...(parsedGuide.guide ? { characterCreationGuide: parsedGuide.guide } : {}),
   };
   const issues: PackageIssue[] = [];
 
@@ -514,6 +556,37 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
 
   const moduleById = new Map(systemPackage.modules.map((module) => [module.ID, module]));
   const pageById = new Map(systemPackage.pages.map((page) => [page.ID, page]));
+
+  const guideStepIds = new Set<string>();
+  for (const [stepIndex, step] of (systemPackage.characterCreationGuide?.步骤 ?? []).entries()) {
+    if (guideStepIds.has(step.ID)) {
+      issues.push({
+        level: "error",
+        code: "DUPLICATE_GUIDE_STEP_ID",
+        text: `Guide Step ID 重复：${step.ID}`,
+        path: `characterCreationGuide.步骤.${stepIndex}.ID`,
+      });
+    }
+    guideStepIds.add(step.ID);
+
+    if (step.目标?.类型 === "module" && !moduleById.has(step.目标.模块ID)) {
+      issues.push({
+        level: "error",
+        code: "MISSING_GUIDE_TARGET_MODULE",
+        text: `Guide Step 引用了不存在的 Sheet Module：${step.目标.模块ID}`,
+        path: `characterCreationGuide.步骤.${stepIndex}.目标.模块ID`,
+      });
+    }
+
+    if (step.目标?.类型 === "page" && !pageById.has(step.目标.页面ID)) {
+      issues.push({
+        level: "error",
+        code: "MISSING_GUIDE_TARGET_PAGE",
+        text: `Guide Step 引用了不存在的页面：${step.目标.页面ID}`,
+        path: `characterCreationGuide.步骤.${stepIndex}.目标.页面ID`,
+      });
+    }
+  }
   const dependencyIds = new Set<string>();
 
   for (const dependency of systemPackage.dependencies ?? []) {

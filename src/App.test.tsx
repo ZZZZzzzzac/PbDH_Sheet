@@ -315,6 +315,154 @@ describe("App Validation Checks", () => {
   });
 });
 
+describe("App Character Creation Guide", () => {
+  beforeEach(() => {
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: createGuidePackage(), issues: [] }),
+      storage: createEmptyStorage(),
+    });
+    useRuntimeStore.setState({
+      currentPackage: null,
+      packageAssetUrls: {},
+      characterData: null,
+      characterSaves: [],
+      activeCharacterSaveId: null,
+      packageIssues: [],
+      derivedReadOnlyDisplayContent: {},
+      moduleVisibility: {},
+      pageVisibility: {},
+      resourcePickerDefaultQueries: {},
+      cardTableCardWidths: {},
+      validationIssues: [],
+      validationStatus: "idle",
+      bootStatus: "idle",
+      storageStatus: "idle",
+      importError: null,
+      importNotice: null,
+    });
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      value: vi.fn(),
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    resetRuntimeDependencies();
+    vi.restoreAllMocks();
+  });
+
+  it("shows a conditional toolbar entry and runs a stateless linear Guide", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+
+    const startButton = screen.getByRole("button", { name: "启动车卡指引" });
+    await user.click(startButton);
+    let guide = await screen.findByRole("dialog", { name: "车卡指引" });
+    expect(guide).toHaveTextContent("开始建卡");
+    expect(guide).toHaveTextContent("第一行 第二行");
+    expect(guide).toHaveTextContent("1 / 2");
+    expect(screen.getByRole("button", { name: "上一步" })).toBeDisabled();
+
+    await user.click(screen.getByRole("button", { name: "下一步" }));
+    guide = screen.getByRole("dialog", { name: "车卡指引" });
+    expect(guide).toHaveTextContent("填写姓名");
+    expect(guide).toHaveTextContent("2 / 2");
+
+    await user.click(screen.getByRole("button", { name: "上一步" }));
+    expect(screen.getByRole("dialog", { name: "车卡指引" })).toHaveTextContent("1 / 2");
+    await user.click(screen.getByRole("button", { name: "下一步" }));
+    await user.click(screen.getByRole("button", { name: "完成车卡指引" }));
+    expect(screen.queryByRole("dialog", { name: "车卡指引" })).not.toBeInTheDocument();
+
+    await user.click(startButton);
+    expect(await screen.findByRole("dialog", { name: "车卡指引" })).toHaveTextContent("1 / 2");
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "车卡指引" })).not.toBeInTheDocument();
+    await waitFor(() => expect(startButton).toHaveFocus());
+  });
+
+  it("does not show the Guide entry when the System Package has no Guide", async () => {
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
+      storage: createEmptyStorage(),
+    });
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+
+    expect(screen.queryByRole("button", { name: "启动车卡指引" })).not.toBeInTheDocument();
+  });
+
+  it("keeps a highlighted Sheet Module interactive while making dimmed content inert", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      if (this.dataset.moduleSlotId === "character-name") {
+        return { x: 80, y: 120, top: 120, left: 80, right: 380, bottom: 220, width: 300, height: 100, toJSON() {} } as DOMRect;
+      }
+      return { x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, toJSON() {} } as DOMRect;
+    });
+    const targetPackage = createGuidePackage([
+      { ID: "name", 标题: "填写姓名", 说明: "输入角色姓名。", 目标: { 类型: "module" as const, 模块ID: "character-name" } },
+    ]);
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: targetPackage, issues: [] }),
+      storage: createEmptyStorage(),
+    });
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+    await user.click(screen.getByRole("button", { name: "启动车卡指引" }));
+
+    const nameInput = screen.getByLabelText("姓名");
+    await user.type(nameInput, "阿青");
+    expect(nameInput).toHaveValue("阿青");
+    expect(document.querySelector(".top-bar")).toHaveProperty("inert", true);
+    expect(document.querySelector('[data-module-slot-id="character-name"]')).not.toHaveProperty("inert", true);
+    expect(document.querySelector(".guide-target-ring")).toBeInTheDocument();
+  });
+
+  it("falls back to a target-unavailable notice without revealing a hidden target", async () => {
+    const hiddenPackage = createGuidePackage([
+      { ID: "hidden", 标题: "隐藏字段", 说明: "先完成前置步骤。", 目标: { 类型: "module" as const, 模块ID: "character-name" } },
+    ]);
+    hiddenPackage.modules = hiddenPackage.modules.map((module) => ({ ...module, 默认隐藏: true }));
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: hiddenPackage, issues: [] }),
+      storage: createEmptyStorage(),
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+    await user.click(screen.getByRole("button", { name: "启动车卡指引" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("当前目标不可见");
+    expect(screen.queryByLabelText("姓名")).not.toBeInTheDocument();
+  });
+});
+
+function createGuidePackage(
+  steps: NonNullable<SystemPackage["characterCreationGuide"]>["步骤"] = [
+    { ID: "intro", 标题: "开始建卡", 说明: "第一行\n第二行" },
+    { ID: "name", 标题: "填写姓名", 说明: "输入角色姓名。" },
+  ],
+): SystemPackage {
+  return {
+    ...minimalSystemPackage,
+    characterCreationGuide: { 步骤: steps },
+  };
+}
+
 function createCardTablePackage(): SystemPackage {
   return {
     ...minimalSystemPackage,

@@ -1,11 +1,18 @@
-import { Archive, Copy, Download, FileText, Plus, Printer, ShieldCheck, Trash2, Type, Upload } from "lucide-react";
+import { Archive, Copy, Download, FileText, Map, Plus, Printer, ShieldCheck, Trash2, Type, Upload } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { exportCharacterData } from "./domain/characterData";
 import { createCardTableLayout } from "./domain/cardEngine";
+import {
+  nextGuideStep,
+  previousGuideStep,
+  startGuideSession,
+  type GuideSession,
+} from "./domain/characterCreationGuide";
 import type { PackageIssue } from "./domain/systemPackage";
 import type { ValidationIssue } from "./domain/validationRunner";
 import { buildReadonlyHtmlSnapshot, waitForVisibleImages } from "./export/output";
 import { SheetRenderer } from "./rendering/SheetRenderer";
+import { GuideSpotlight } from "./rendering/GuideSpotlight";
 import { useRuntimeStore } from "./store/runtimeStore";
 
 type OutputKind = "json" | "html" | "print";
@@ -104,9 +111,11 @@ function ValidationIssueDialog({
 export default function App() {
   const characterFileInputRef = useRef<HTMLInputElement>(null);
   const packageFileInputRef = useRef<HTMLInputElement>(null);
+  const guideButtonRef = useRef<HTMLButtonElement>(null);
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
   const [pendingOutput, setPendingOutput] = useState<OutputKind | null>(null);
   const [printMode, setPrintMode] = useState(false);
+  const [guideSession, setGuideSession] = useState<GuideSession | null>(null);
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
   const characterData = useRuntimeStore((state) => state.characterData);
   const characterSaves = useRuntimeStore((state) => state.characterSaves);
@@ -133,6 +142,10 @@ export default function App() {
   useEffect(() => {
     void initialize();
   }, [initialize]);
+
+  useEffect(() => {
+    setGuideSession(null);
+  }, [currentPackage?.manifest.ID, currentPackage?.manifest.版本]);
 
   useEffect(() => {
     if (!printMode) {
@@ -264,6 +277,11 @@ export default function App() {
     event.target.value = "";
   };
 
+  const closeGuide = () => {
+    setGuideSession(null);
+    window.requestAnimationFrame(() => guideButtonRef.current?.focus());
+  };
+
   const hasBlockingPackageIssues = packageIssues.some((issue) => issue.level === "fatal" || issue.level === "error");
   const activeCharacterSaveName = characterSaves.find((save) => save.id === activeCharacterSaveId)?.name ?? "无角色存档";
   const systemPackageLabel = currentPackage ? `${currentPackage.manifest.名称} · v${currentPackage.manifest.版本}` : bootStatus === "loading" ? "系统包加载中" : "未加载系统包";
@@ -306,6 +324,18 @@ export default function App() {
                 <ShieldCheck aria-hidden="true" size={16} />
                 <span>{validationStatus === "running" ? "检查中" : "检查"}</span>
               </button>
+              {currentPackage?.characterCreationGuide ? (
+                <button
+                  ref={guideButtonRef}
+                  className="menu-item"
+                  type="button"
+                  onClick={() => setGuideSession(startGuideSession())}
+                  aria-label="启动车卡指引"
+                >
+                  <Map aria-hidden="true" size={16} />
+                  <span>车卡指引</span>
+                </button>
+              ) : null}
             </div>
           </div>
 
@@ -458,6 +488,20 @@ export default function App() {
         }
       />
       {currentPackage ? <SheetRenderer systemPackage={currentPackage} /> : null}
+      {currentPackage?.characterCreationGuide && guideSession ? (
+        <GuideSpotlight
+          guide={currentPackage.characterCreationGuide}
+          session={guideSession}
+          onPrevious={() => setGuideSession((current) => (current ? previousGuideStep(current) : current))}
+          onNext={() =>
+            setGuideSession((current) =>
+              current ? nextGuideStep(current, currentPackage.characterCreationGuide?.步骤.length ?? 0) : current,
+            )
+          }
+          onFinish={closeGuide}
+          onExit={closeGuide}
+        />
+      ) : null}
     </div>
   );
 }

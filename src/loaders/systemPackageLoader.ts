@@ -18,6 +18,7 @@ const packageManifestSchema = z.object({
   pages: z.string().min(1),
   modules: z.string().min(1),
   dependencies: z.string().min(1).optional(),
+  characterCreationGuide: z.string().min(1).optional(),
   assets: z
     .array(
       z.object({
@@ -120,6 +121,13 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
     return { ok: false, issues: [dependenciesJson.issue] };
   }
 
+  const guideJson = manifest.data.characterCreationGuide
+    ? readPackageJsonFile(vfs, manifest.data.characterCreationGuide)
+    : undefined;
+  if (guideJson && !guideJson.ok) {
+    return { ok: false, issues: [guideJson.issue] };
+  }
+
   const resourceLibraries = loadResourceLibraryFilesFromVfs(vfs, manifest.data.resourceLibraries ?? []);
   if (!resourceLibraries.ok) {
     return { ok: false, issues: [resourceLibraries.issue] };
@@ -137,6 +145,7 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
     resourceLibraries.value,
     dependenciesJson?.value,
     validationChecks.value,
+    guideJson?.value,
   );
   if (!normalized.ok) {
     return normalized;
@@ -155,6 +164,7 @@ function normalizeManifestPackage(
   resourceLibraries: Array<ResourceLibraryReference & { entries: unknown }> = [],
   dependencies?: unknown,
   validationChecks?: Array<{ ID: string; 脚本: string; scriptContent: string }>,
+  characterCreationGuide?: unknown,
 ): PackageValidationResult {
   return validateSystemPackage({
     manifest: {
@@ -169,6 +179,7 @@ function normalizeManifestPackage(
     resourceLibraries,
     dependencies,
     validationChecks,
+    characterCreationGuide,
   });
 }
 

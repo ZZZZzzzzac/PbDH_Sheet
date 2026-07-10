@@ -10,6 +10,7 @@ import "./styles/image-field.css";
 import "./styles/card-table.css";
 import "./styles/resource-browser.css";
 import "./styles/validation.css";
+import "./styles/guide.css";
 import "./styles/print.css";
 
 createRoot(document.getElementById("root")!).render(
