@@ -14,13 +14,19 @@ test("minimal loop edits, autosaves, exports and imports Character JSON", async 
   await nameInput.fill("阿青");
   await expect(page.getByText("已保存")).toBeVisible();
 
+  const htmlDownload = await downloadHtmlSnapshot(page);
+  const htmlExportPath = path.join(testInfo.outputDir, "character.html");
+  await htmlDownload.saveAs(htmlExportPath);
+  const htmlExport = await readFile(htmlExportPath, "utf8");
+  expect(htmlExport).toContain('class="sheet-tool"');
+  expect(htmlExport).toContain('value="阿青"');
+  expect(htmlExport).toContain("break-inside: avoid");
+
   await page.reload();
   await expect(page.getByText("demo-minimal")).toBeVisible();
   await expect(page.getByLabel("姓名")).toHaveValue("阿青");
 
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出 Character JSON" }).click();
-  const download = await downloadPromise;
+  const download = await downloadCharacterJson(page);
   const exportPath = path.join(testInfo.outputDir, "character.json");
   await download.saveAs(exportPath);
 
@@ -33,7 +39,7 @@ test("minimal loop edits, autosaves, exports and imports Character JSON", async 
   await fileChooser.setFiles(exportPath);
 
   await expect(page.getByLabel("姓名")).toHaveValue("阿青");
-  await expect(page.getByText("Character Data 已导入。")).toBeVisible();
+  await expect(page.getByText("Character Data 已导入为 Character Save。")).toBeVisible();
 });
 
 test("malformed import shows an error and keeps current Character Data", async ({ page }, testInfo) => {
@@ -63,9 +69,7 @@ test("uploads a minimal System Package zip and keeps the Character JSON loop", a
   await page.getByLabel("姓名").fill("Zip阿青");
   await expect(page.getByText("已保存")).toBeVisible();
 
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出 Character JSON" }).click();
-  const download = await downloadPromise;
+  const download = await downloadCharacterJson(page);
   const exportPath = path.join(testInfo.outputDir, "zip-character.json");
   await download.saveAs(exportPath);
 
@@ -119,9 +123,7 @@ test("uploads the phase 5 module demo package and persists simple module state",
   await expect(page.getByLabel("受伤")).toBeChecked();
   await expect(page.getByRole("textbox", { name: "气力", exact: true })).toHaveValue("5");
 
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出 Character JSON" }).click();
-  const download = await downloadPromise;
+  const download = await downloadCharacterJson(page);
   const exportPath = path.join(testInfo.outputDir, "module-character.json");
   await download.saveAs(exportPath);
 
@@ -227,9 +229,7 @@ test("uploads Resource Picker demo and restores filled text through export/impor
   await expect(page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true })).toHaveValue("卷土重来");
   await expect(page.locator('[data-template-page-id="druid-shape-page"]')).toHaveCount(0);
 
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "导出 Character JSON" }).click();
-  const download = await downloadPromise;
+  const download = await downloadCharacterJson(page);
   const exportPath = path.join(testInfo.outputDir, "selection-character.json");
   await download.saveAs(exportPath);
 
@@ -344,6 +344,30 @@ async function uploadPackage(page: Page, packagePath: string) {
   await page.getByRole("button", { name: "导入 System Package zip" }).click();
   const packageChooser = await packageChooserPromise;
   await packageChooser.setFiles(packagePath);
+}
+
+async function downloadCharacterJson(page: Page) {
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "导出 Character JSON" }).click();
+  const continueButton = page.getByRole("button", { name: "继续输出" });
+  try {
+    await continueButton.click({ timeout: 500 });
+  } catch {
+    // No advisory validation report appeared; output can continue directly.
+  }
+  return downloadPromise;
+}
+
+async function downloadHtmlSnapshot(page: Page) {
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "导出 HTML snapshot" }).click();
+  const continueButton = page.getByRole("button", { name: "继续输出" });
+  try {
+    await continueButton.click({ timeout: 500 });
+  } catch {
+    // No advisory validation report appeared; output can continue directly.
+  }
+  return downloadPromise;
 }
 
 async function tableColumnWidths(container: Locator) {

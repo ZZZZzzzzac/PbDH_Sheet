@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import {
   bringCardInstanceToFront as bringCardInstanceToFrontDomain,
+  type CardTableLayout,
+  clampCardWidth,
   createCardInstance,
   deleteCardInstance as deleteCardInstanceDomain,
   tidyCardTable as tidyCardTableDomain,
@@ -10,7 +12,6 @@ import {
 import {
   type CheckboxState,
   createEmptyCharacterData,
-  parseCharacterDataJson,
   updateCharacterValue,
   updatePlayerImage,
   type CharacterData,
@@ -21,25 +22,32 @@ import { applyDependencyResultToCharacterData, evaluateDependencies, type Depend
 import type { ResourceLibraryEntry, ResourceLibraryQuery } from "../domain/resourceLibrary";
 import { validateCachedSystemPackage, type PackageIssue, type SystemPackage } from "../domain/systemPackage";
 import { runValidationChecks as runValidationChecksDomain, type ValidationIssue } from "../domain/validationRunner";
+import { parseCharacterDataText } from "../export/output";
 import { createRuntimeAssetResolver, type RuntimeAssetResolver, type RuntimePackageAsset } from "../loaders/assetResolver";
 import { loadSystemPackageFromZipFile, type PackageLoadResult } from "../loaders/systemPackageLoader";
-import { storageService, type StorageService } from "../storage/storageService";
+import { storageService, type CharacterSaveSummary, type StorageService } from "../storage/storageService";
 
 export const autosaveDelayMs = 250;
 
 type BootStatus = "idle" | "loading" | "ready" | "error";
 type StorageStatus = "idle" | "saving" | "saved" | "error";
 type ValidationStatus = "idle" | "running" | "complete";
+export type PreOutputValidationResult =
+  | { shouldPrompt: false; issues: ValidationIssue[] }
+  | { shouldPrompt: true; issues: ValidationIssue[] };
 
 interface RuntimeState {
   currentPackage: SystemPackage | null;
   packageAssetUrls: Record<string, string>;
   packageIssues: PackageIssue[];
   characterData: CharacterData | null;
+  characterSaves: CharacterSaveSummary[];
+  activeCharacterSaveId: string | null;
   derivedReadOnlyDisplayContent: Record<string, string>;
   moduleVisibility: Record<string, boolean>;
   pageVisibility: Record<string, boolean>;
   resourcePickerDefaultQueries: Record<string, ResourceLibraryQuery>;
+  cardTableCardWidths: Record<string, number>;
   validationIssues: ValidationIssue[];
   validationStatus: ValidationStatus;
   bootStatus: BootStatus;
@@ -48,15 +56,22 @@ interface RuntimeState {
   importNotice: string | null;
   initialize: () => Promise<void>;
   uploadSystemPackageFromFile: (file: Blob) => Promise<void>;
+  createCharacterSave: (name?: string) => Promise<void>;
+  switchCharacterSave: (saveId: string) => Promise<void>;
+  renameCharacterSave: (saveId: string, name: string) => Promise<void>;
+  duplicateCharacterSave: (saveId: string, name?: string) => Promise<void>;
+  deleteCharacterSave: (saveId: string) => Promise<void>;
   updateModuleValue: (moduleId: string, value: SheetValue) => void;
   commitResourceSelection: (moduleId: string, libraryId: string, entries: ResourceLibraryEntry[]) => void;
   commitCheckboxChange: (moduleId: string, optionId: string, checked: boolean, checkboxState: CheckboxState) => void;
   updateCardInstancePosition: (instanceId: string, xPct: number, yPct: number) => void;
   bringCardInstanceToFront: (instanceId: string) => void;
   updateCardInstanceState: (instanceId: string, cardState: string) => void;
-  tidyCardTable: (tableModuleId: string) => void;
+  tidyCardTable: (tableModuleId: string, layout?: CardTableLayout) => void;
+  setCardTableCardWidth: (tableModuleId: string, widthPx: number) => void;
   deleteCardInstance: (instanceId: string) => void;
   runValidationChecks: () => Promise<void>;
+  runPreOutputValidation: () => Promise<PreOutputValidationResult>;
   uploadPlayerImage: (moduleId: string, file: File) => Promise<void>;
   importCharacterDataFromText: (text: string) => Promise<void>;
   clearImportMessage: () => void;
@@ -91,15 +106,18 @@ async function loadPackageIntoState(
   activePackageAssetResolver = createRuntimeAssetResolver(assets);
 
   try {
-    const saved = await runtimeDependencies.storage.loadCurrentCharacterData(systemPackage.manifest.ID);
+    const loaded = await loadActiveCharacterForPackage(systemPackage);
     set({
       currentPackage: systemPackage,
       packageAssetUrls: activePackageAssetResolver.urls,
-      characterData: ensureCardState(saved) ?? createEmptyCharacterData(systemPackage),
+      characterData: ensureCardState(loaded.characterData),
+      characterSaves: loaded.characterSaves,
+      activeCharacterSaveId: loaded.activeCharacterSaveId,
       derivedReadOnlyDisplayContent: {},
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      cardTableCardWidths: {},
       validationIssues: [],
       validationStatus: "idle",
       packageIssues: issues,
@@ -111,10 +129,13 @@ async function loadPackageIntoState(
       currentPackage: systemPackage,
       packageAssetUrls: activePackageAssetResolver.urls,
       characterData: createEmptyCharacterData(systemPackage),
+      characterSaves: [],
+      activeCharacterSaveId: null,
       derivedReadOnlyDisplayContent: {},
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      cardTableCardWidths: {},
       validationIssues: [],
       validationStatus: "idle",
       packageIssues: issues,
@@ -139,10 +160,13 @@ async function clearCachedPackageAndResetState(set: (partial: Partial<RuntimeSta
     currentPackage: null,
     packageAssetUrls: {},
     characterData: null,
+    characterSaves: [],
+    activeCharacterSaveId: null,
     derivedReadOnlyDisplayContent: {},
     moduleVisibility: {},
     pageVisibility: {},
     resourcePickerDefaultQueries: {},
+    cardTableCardWidths: {},
     validationIssues: [],
     validationStatus: "idle",
     packageIssues: [],
@@ -183,10 +207,13 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   packageAssetUrls: {},
   packageIssues: [],
   characterData: null,
+  characterSaves: [],
+  activeCharacterSaveId: null,
   derivedReadOnlyDisplayContent: {},
   moduleVisibility: {},
   pageVisibility: {},
   resourcePickerDefaultQueries: {},
+  cardTableCardWidths: {},
   validationIssues: [],
   validationStatus: "idle",
   bootStatus: "idle",
@@ -206,10 +233,13 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
           currentPackage: null,
           packageAssetUrls: {},
           characterData: null,
+          characterSaves: [],
+          activeCharacterSaveId: null,
           derivedReadOnlyDisplayContent: {},
           moduleVisibility: {},
           pageVisibility: {},
           resourcePickerDefaultQueries: {},
+          cardTableCardWidths: {},
           validationIssues: [],
           validationStatus: "idle",
           packageIssues: [],
@@ -251,6 +281,141 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     }
 
     await loadPackageIntoState(validation.package, validation.issues, set, packageCacheStatus, validation.packageAssets ?? []);
+  },
+
+  async createCharacterSave(name = "未命名角色") {
+    const currentPackage = get().currentPackage;
+    if (!currentPackage) {
+      return;
+    }
+
+    const characterData = createEmptyCharacterData(currentPackage);
+    await runtimeDependencies.storage.saveCharacterSave({
+      id: characterData.character.id,
+      packageId: characterData.systemPackage.id,
+      name,
+      updatedAt: characterData.updatedAt,
+      data: characterData,
+    });
+    await runtimeDependencies.storage.setActiveCharacterSaveId(characterData.systemPackage.id, characterData.character.id);
+    set({
+      characterData,
+      characterSaves: await runtimeDependencies.storage.listCharacterSaves(characterData.systemPackage.id),
+      activeCharacterSaveId: characterData.character.id,
+      importError: null,
+      importNotice: null,
+      validationIssues: [],
+      validationStatus: "idle",
+    });
+  },
+
+  async switchCharacterSave(saveId) {
+    const currentPackage = get().currentPackage;
+    if (!currentPackage) {
+      return;
+    }
+
+    const characterData = await runtimeDependencies.storage.loadCharacterSave(currentPackage.manifest.ID, saveId);
+    if (!characterData) {
+      set({ storageStatus: "error" });
+      return;
+    }
+
+    await runtimeDependencies.storage.setActiveCharacterSaveId(currentPackage.manifest.ID, saveId);
+    set({
+      characterData: ensureCardState(characterData),
+      activeCharacterSaveId: saveId,
+      derivedReadOnlyDisplayContent: {},
+      moduleVisibility: {},
+      pageVisibility: {},
+      resourcePickerDefaultQueries: {},
+      cardTableCardWidths: {},
+      validationIssues: [],
+      validationStatus: "idle",
+      importError: null,
+      importNotice: null,
+      storageStatus: "idle",
+    });
+  },
+
+  async renameCharacterSave(saveId, name) {
+    const currentPackage = get().currentPackage;
+    if (!currentPackage || !name.trim()) {
+      return;
+    }
+
+    await runtimeDependencies.storage.renameCharacterSave(currentPackage.manifest.ID, saveId, name.trim());
+    set({
+      characterSaves: await runtimeDependencies.storage.listCharacterSaves(currentPackage.manifest.ID),
+      importError: null,
+      importNotice: null,
+    });
+  },
+
+  async duplicateCharacterSave(saveId, name) {
+    const currentPackage = get().currentPackage;
+    const source = currentPackage ? await runtimeDependencies.storage.loadCharacterSave(currentPackage.manifest.ID, saveId) : null;
+    if (!currentPackage || !source) {
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const duplicateId = createDuplicateCharacterId();
+    const sourceSummary = get().characterSaves.find((save) => save.id === saveId);
+    const data: CharacterData = {
+      ...source,
+      character: {
+        ...source.character,
+        id: duplicateId,
+      },
+      updatedAt: now,
+    };
+
+    await runtimeDependencies.storage.saveCharacterSave({
+      id: duplicateId,
+      packageId: currentPackage.manifest.ID,
+      name: name?.trim() || `${sourceSummary?.name ?? "未命名角色"} 副本`,
+      updatedAt: now,
+      data,
+    });
+    await runtimeDependencies.storage.setActiveCharacterSaveId(currentPackage.manifest.ID, duplicateId);
+    set({
+      characterData: data,
+      activeCharacterSaveId: duplicateId,
+      characterSaves: await runtimeDependencies.storage.listCharacterSaves(currentPackage.manifest.ID),
+      validationIssues: [],
+      validationStatus: "idle",
+      importError: null,
+      importNotice: null,
+    });
+  },
+
+  async deleteCharacterSave(saveId) {
+    const currentPackage = get().currentPackage;
+    if (!currentPackage) {
+      return;
+    }
+
+    await runtimeDependencies.storage.deleteCharacterSave(currentPackage.manifest.ID, saveId);
+    const remaining = await runtimeDependencies.storage.listCharacterSaves(currentPackage.manifest.ID);
+    const nextSave = remaining[0];
+
+    if (!nextSave) {
+      await get().createCharacterSave();
+      return;
+    }
+
+    const nextData = await runtimeDependencies.storage.loadCharacterSave(currentPackage.manifest.ID, nextSave.id);
+    await runtimeDependencies.storage.setActiveCharacterSaveId(currentPackage.manifest.ID, nextSave.id);
+    set({
+      characterData: ensureCardState(nextData),
+      characterSaves: remaining,
+      activeCharacterSaveId: nextSave.id,
+      validationIssues: [],
+      validationStatus: "idle",
+      importError: null,
+      importNotice: null,
+    });
   },
 
   updateModuleValue(moduleId, value) {
@@ -387,13 +552,13 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     );
   },
 
-  tidyCardTable(tableModuleId) {
+  tidyCardTable(tableModuleId, layout) {
     if (!get().characterData) {
       return;
     }
 
     set((state) => ({
-      characterData: state.characterData ? tidyCardTableDomain(state.characterData, tableModuleId) : null,
+      characterData: state.characterData ? tidyCardTableDomain(state.characterData, tableModuleId, layout) : null,
       importError: null,
       importNotice: null,
     }));
@@ -402,6 +567,15 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       () => get().characterData,
       (status) => set({ storageStatus: status }),
     );
+  },
+
+  setCardTableCardWidth(tableModuleId, widthPx) {
+    set((state) => ({
+      cardTableCardWidths: {
+        ...state.cardTableCardWidths,
+        [tableModuleId]: clampCardWidth(widthPx),
+      },
+    }));
   },
 
   deleteCardInstance(instanceId) {
@@ -446,6 +620,34 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       checks,
     });
     set({ validationIssues, validationStatus: "complete" });
+  },
+
+  async runPreOutputValidation() {
+    const currentPackage = get().currentPackage;
+    const characterData = get().characterData;
+    if (!currentPackage || !characterData) {
+      set({ validationIssues: [], validationStatus: "complete" });
+      return { shouldPrompt: false, issues: [] };
+    }
+
+    const checks = currentPackage.validationChecks ?? [];
+    if (checks.length === 0) {
+      set({ validationIssues: [], validationStatus: "complete" });
+      return { shouldPrompt: false, issues: [] };
+    }
+
+    set({ validationStatus: "running" });
+    const validationIssues = await runtimeDependencies.runValidationChecks({
+      characterData,
+      resourceLibraries: currentPackage.resourceLibraries ?? [],
+      packageMetadata: {
+        id: currentPackage.manifest.ID,
+        version: currentPackage.manifest.版本,
+      },
+      checks,
+    });
+    set({ validationIssues, validationStatus: "complete" });
+    return { shouldPrompt: validationIssues.length > 0, issues: validationIssues };
   },
 
   async uploadPlayerImage(moduleId, file) {
@@ -498,7 +700,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       return;
     }
 
-    const result = parseCharacterDataJson(text, currentPackage);
+    const result = parseCharacterDataText(text, currentPackage);
 
     if (!result.ok) {
       set({
@@ -510,17 +712,31 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
 
     set({
       characterData: ensureCardState(result.data),
+      activeCharacterSaveId: result.data.character.id,
       derivedReadOnlyDisplayContent: {},
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      cardTableCardWidths: {},
       validationIssues: [],
       validationStatus: "idle",
       importError: null,
-      importNotice: "Character Data 已导入。",
+      importNotice: "Character Data 已导入为 Character Save。",
     });
 
     await saveImportedPlayerImages(result.data.playerImages);
+    await runtimeDependencies.storage.saveCharacterSave({
+      id: result.data.character.id,
+      packageId: result.data.systemPackage.id,
+      name: importedSaveName(result.data),
+      updatedAt: result.data.updatedAt,
+      data: ensureCardState(result.data) ?? result.data,
+    });
+    await runtimeDependencies.storage.setActiveCharacterSaveId(result.data.systemPackage.id, result.data.character.id);
+    set({
+      characterSaves: await runtimeDependencies.storage.listCharacterSaves(result.data.systemPackage.id),
+      activeCharacterSaveId: result.data.character.id,
+    });
 
     scheduleAutosave(
       () => get().characterData,
@@ -597,6 +813,61 @@ function ensureCardState(data: CharacterData | null): CharacterData | null {
     ...data,
     cards: data.cards ?? { instances: [] },
   };
+}
+
+async function loadActiveCharacterForPackage(systemPackage: SystemPackage): Promise<{
+  characterData: CharacterData;
+  characterSaves: CharacterSaveSummary[];
+  activeCharacterSaveId: string;
+}> {
+  const packageId = systemPackage.manifest.ID;
+  let characterSaves = await runtimeDependencies.storage.listCharacterSaves(packageId);
+  let activeCharacterSaveId = await runtimeDependencies.storage.loadActiveCharacterSaveId(packageId);
+
+  if (!activeCharacterSaveId || !characterSaves.some((save) => save.id === activeCharacterSaveId)) {
+    activeCharacterSaveId = characterSaves[0]?.id ?? null;
+  }
+
+  if (activeCharacterSaveId) {
+    const saved = ensureCardState(await runtimeDependencies.storage.loadCharacterSave(packageId, activeCharacterSaveId));
+    if (saved) {
+      await runtimeDependencies.storage.setActiveCharacterSaveId(packageId, activeCharacterSaveId);
+      return {
+        characterData: saved,
+        characterSaves,
+        activeCharacterSaveId,
+      };
+    }
+  }
+
+  const characterData = createEmptyCharacterData(systemPackage);
+  await runtimeDependencies.storage.saveCharacterSave({
+    id: characterData.character.id,
+    packageId,
+    name: "未命名角色",
+    updatedAt: characterData.updatedAt,
+    data: characterData,
+  });
+  await runtimeDependencies.storage.setActiveCharacterSaveId(packageId, characterData.character.id);
+  characterSaves = await runtimeDependencies.storage.listCharacterSaves(packageId);
+  return {
+    characterData,
+    characterSaves,
+    activeCharacterSaveId: characterData.character.id,
+  };
+}
+
+function createDuplicateCharacterId(): string {
+  const random = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  return `character-${random}`;
+}
+
+function importedSaveName(data: CharacterData): string {
+  const nameValue = data.character.values["character-name"];
+  if (typeof nameValue === "string" && nameValue.trim()) {
+    return nameValue.trim();
+  }
+  return "导入角色";
 }
 
 function createCardInstancesFromSelection(

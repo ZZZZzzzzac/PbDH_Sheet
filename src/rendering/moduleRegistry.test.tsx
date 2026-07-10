@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createCardInstance } from "../domain/cardEngine";
 import { createEmptyCharacterData } from "../domain/characterData";
 import type { SystemPackage } from "../domain/systemPackage";
 import { moduleDemoSystemPackage } from "../test/fixtures";
@@ -16,6 +17,7 @@ function renderModuleDemo(systemPackage: SystemPackage = moduleDemoSystemPackage
     moduleVisibility: {},
     pageVisibility: {},
     resourcePickerDefaultQueries: {},
+    cardTableCardWidths: {},
     bootStatus: "ready",
     storageStatus: "idle",
     importError: null,
@@ -36,6 +38,7 @@ describe("Module Registry rendering", () => {
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      cardTableCardWidths: {},
       bootStatus: "idle",
       storageStatus: "idle",
       importError: null,
@@ -187,6 +190,78 @@ describe("Module Registry rendering", () => {
     fireEvent.click(screen.getByLabelText("利刃"));
     expect(screen.getByLabelText("选择 幽影")).toBeVisible();
   });
+
+  it("renders text cards with recall in the tag row above the description", () => {
+    const systemPackage = createCardTablePackage();
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "card-instance-1",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: "domain-card:recall-test",
+    });
+    useRuntimeStore.setState({
+      currentPackage: systemPackage,
+      packageAssetUrls: {},
+      characterData,
+      packageIssues: [],
+      derivedReadOnlyDisplayContent: {},
+      moduleVisibility: {},
+      pageVisibility: {},
+      resourcePickerDefaultQueries: {},
+      cardTableCardWidths: {},
+      bootStatus: "ready",
+      storageStatus: "idle",
+      importError: null,
+      importNotice: null,
+    });
+
+    const result = render(<SheetRenderer systemPackage={systemPackage} />);
+    const card = screen.getByRole("article", { name: "回想测试" });
+    const tagRow = card.querySelector(".play-card-tags");
+
+    expect(tagRow).not.toBeNull();
+    expect(tagRow).toHaveTextContent("贤者");
+    expect(tagRow).toHaveTextContent("1级");
+    expect(tagRow).toHaveTextContent("回想 1");
+    expect(card.querySelector(".play-card-recall")).toBeNull();
+    expect(result.container.querySelector(".play-card-description")).toHaveTextContent("描述应该独立显示。");
+  });
+
+  it("lets the player resize Card Table cards from the table toolbar", () => {
+    const systemPackage = createCardTablePackage();
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "card-instance-1",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: "domain-card:recall-test",
+    });
+    useRuntimeStore.setState({
+      currentPackage: systemPackage,
+      packageAssetUrls: {},
+      characterData,
+      packageIssues: [],
+      derivedReadOnlyDisplayContent: {},
+      moduleVisibility: {},
+      pageVisibility: {},
+      resourcePickerDefaultQueries: {},
+      cardTableCardWidths: {},
+      bootStatus: "ready",
+      storageStatus: "idle",
+      importError: null,
+      importNotice: null,
+    });
+
+    const result = render(<SheetRenderer systemPackage={systemPackage} />);
+    const sizeSlider = screen.getByLabelText("领域卡牌桌面卡牌大小");
+
+    expect(sizeSlider).toHaveValue("250");
+    expect(result.container.querySelector(".card-table-surface")).toHaveStyle({ "--play-card-width": "250px" });
+
+    fireEvent.change(sizeSlider, { target: { value: "300" } });
+
+    expect(useRuntimeStore.getState().cardTableCardWidths["domain-card-table"]).toBe(300);
+    expect(result.container.querySelector(".card-table-surface")).toHaveStyle({ "--play-card-width": "300px" });
+  });
 });
 
 function createResourcePickerPackage(options: { multiSelect?: boolean; defaultFilters?: Record<string, string[]> } = {}): SystemPackage {
@@ -311,6 +386,59 @@ function createResourcePickerPackage(options: { multiSelect?: boolean; defaultFi
           类型: "htmlTemplate",
           html: "layouts/domain.html",
           htmlContent: '<main><pb-module id="domain-page-note"></pb-module></main>',
+        },
+      },
+    ],
+  };
+}
+
+function createCardTablePackage(): SystemPackage {
+  return {
+    ...moduleDemoSystemPackage,
+    resourceLibraries: [
+      {
+        ID: "domain-cards",
+        名称: "领域卡",
+        路径: "resources/domain-cards.json",
+        fields: [
+          { key: "ID", label: "ID", visible: true, filterable: true, sortable: true },
+          { key: "名称", label: "名称", visible: true, filterable: true, sortable: true },
+          { key: "领域", label: "领域", visible: true, filterable: true, sortable: true },
+          { key: "等级", label: "等级", visible: true, filterable: true, sortable: true },
+          { key: "回想", label: "回想", visible: true, filterable: true, sortable: true },
+          { key: "描述", label: "描述", visible: true, filterable: false, sortable: false },
+        ],
+        entries: [
+          {
+            ID: "domain-card:recall-test",
+            fields: {
+              ID: "domain-card:recall-test",
+              名称: "回想测试",
+              领域: "贤者",
+              等级: "1",
+              回想: "1",
+              描述: "描述应该独立显示。",
+            },
+          },
+        ],
+      },
+    ],
+    modules: [
+      {
+        ID: "domain-card-table",
+        类型: "cardTable",
+        标签: "领域卡牌桌面",
+        资源库ID: "domain-cards",
+      },
+    ],
+    pages: [
+      {
+        ID: "main",
+        名称: "Main",
+        layout: {
+          类型: "htmlTemplate",
+          html: "layouts/main.html",
+          htmlContent: '<main><pb-module id="domain-card-table"></pb-module></main>',
         },
       },
     ],

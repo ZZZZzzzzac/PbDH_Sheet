@@ -8,6 +8,8 @@ function createMemoryStorage(cachedPackage: unknown = null): StorageService & {
   getCachedPackage: () => unknown;
 } {
   let savedData: Awaited<ReturnType<StorageService["loadCurrentCharacterData"]>> = null;
+  const characterSaves = new Map<string, { id: string; packageId: string; name: string; updatedAt: string; data: NonNullable<typeof savedData> }>();
+  const activeSaveIds = new Map<string, string>();
   let savedPackage = cachedPackage;
   let savedPackageAssets: Awaited<ReturnType<StorageService["loadCurrentPackageAssets"]>> = [];
   const playerImages = new Map<string, Awaited<ReturnType<StorageService["loadPlayerImageBlob"]>>>();
@@ -32,13 +34,51 @@ function createMemoryStorage(cachedPackage: unknown = null): StorageService & {
       return packageIdFromCache === packageId ? savedPackageAssets : [];
     },
     async loadCurrentCharacterData(packageId) {
-      if (savedData?.systemPackage.id !== packageId) {
-        return null;
-      }
-      return savedData;
+      const activeId = activeSaveIds.get(packageId);
+      return (activeId ? characterSaves.get(activeId)?.data : savedData?.systemPackage.id === packageId ? savedData : null) ?? null;
     },
     async saveCurrentCharacterData(data) {
       savedData = data;
+      const activeId = activeSaveIds.get(data.systemPackage.id) ?? data.character.id;
+      characterSaves.set(activeId, {
+        id: activeId,
+        packageId: data.systemPackage.id,
+        name: "未命名角色",
+        updatedAt: data.updatedAt,
+        data: { ...data, character: { ...data.character, id: activeId } },
+      });
+      activeSaveIds.set(data.systemPackage.id, activeId);
+    },
+    async listCharacterSaves(packageId) {
+      return [...characterSaves.values()]
+        .filter((save) => save.packageId === packageId)
+        .map(({ data: _data, ...summary }) => summary);
+    },
+    async loadCharacterSave(packageId, saveId) {
+      const save = characterSaves.get(saveId);
+      return save?.packageId === packageId ? save.data : null;
+    },
+    async saveCharacterSave(record) {
+      characterSaves.set(record.id, record);
+      savedData = record.data;
+    },
+    async renameCharacterSave(packageId, saveId, name) {
+      const save = characterSaves.get(saveId);
+      if (save?.packageId === packageId) {
+        characterSaves.set(saveId, { ...save, name });
+      }
+    },
+    async deleteCharacterSave(packageId, saveId) {
+      const save = characterSaves.get(saveId);
+      if (save?.packageId === packageId) {
+        characterSaves.delete(saveId);
+      }
+    },
+    async loadActiveCharacterSaveId(packageId) {
+      return activeSaveIds.get(packageId) ?? null;
+    },
+    async setActiveCharacterSaveId(packageId, saveId) {
+      activeSaveIds.set(packageId, saveId);
     },
     async savePlayerImageBlob(image) {
       playerImages.set(image.id, image);
@@ -70,6 +110,7 @@ describe("runtime store", () => {
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      cardTableCardWidths: {},
       validationIssues: [],
       validationStatus: "idle",
       bootStatus: "idle",
@@ -117,6 +158,51 @@ describe("runtime store", () => {
     expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("阿青");
   });
 
+  it("manages package-scoped Character Saves", async () => {
+    renderHook(() => useRuntimeStore());
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+
+    const firstSaveId = useRuntimeStore.getState().activeCharacterSaveId;
+    expect(firstSaveId).toBeTruthy();
+    expect(useRuntimeStore.getState().characterSaves).toHaveLength(1);
+
+    act(() => {
+      useRuntimeStore.getState().updateModuleValue("character-name", "阿青");
+    });
+    await waitFor(() => expect(useRuntimeStore.getState().storageStatus).toBe("saved"));
+
+    await act(async () => {
+      await useRuntimeStore.getState().createCharacterSave("第二角色");
+    });
+
+    const secondSaveId = useRuntimeStore.getState().activeCharacterSaveId;
+    expect(secondSaveId).not.toBe(firstSaveId);
+    expect(useRuntimeStore.getState().characterSaves.map((save) => save.name)).toContain("第二角色");
+    expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("");
+
+    await act(async () => {
+      await useRuntimeStore.getState().switchCharacterSave(firstSaveId!);
+    });
+
+    expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("阿青");
+
+    await act(async () => {
+      await useRuntimeStore.getState().renameCharacterSave(firstSaveId!, "阿青本人");
+      await useRuntimeStore.getState().duplicateCharacterSave(firstSaveId!, "阿青副本");
+    });
+
+    expect(useRuntimeStore.getState().characterSaves.map((save) => save.name)).toEqual(expect.arrayContaining(["阿青本人", "阿青副本"]));
+
+    await act(async () => {
+      await useRuntimeStore.getState().deleteCharacterSave(useRuntimeStore.getState().activeCharacterSaveId!);
+    });
+
+    expect(useRuntimeStore.getState().characterSaves.map((save) => save.name)).not.toContain("阿青副本");
+  });
+
   it("loads an uploaded System Package without exposing zip details to runtime state", async () => {
     await act(async () => {
       await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
@@ -141,6 +227,7 @@ describe("runtime store", () => {
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      cardTableCardWidths: {},
       validationIssues: [],
       validationStatus: "idle",
       bootStatus: "idle",
@@ -178,6 +265,7 @@ describe("runtime store", () => {
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
+      cardTableCardWidths: {},
       validationIssues: [],
       validationStatus: "idle",
       bootStatus: "idle",
@@ -243,6 +331,45 @@ describe("runtime store", () => {
 
     expect(useRuntimeStore.getState().validationStatus).toBe("complete");
     expect(useRuntimeStore.getState().validationIssues).toEqual([]);
+  });
+
+  it("uses one pre-output Validation Check flow and prompts only when issues exist", async () => {
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({
+        ok: true,
+        package: {
+          ...minimalSystemPackage,
+          validationChecks: [{ ID: "output-check", 脚本: "checks/output.js", scriptContent: "module.exports = () => [];" }],
+        },
+        issues: [],
+      }),
+      storage: memoryStorage,
+      runValidationChecks: async () => [
+        {
+          level: "error",
+          text: "输出前检查",
+          code: "OUTPUT_CHECK",
+          source: "output-check",
+        },
+      ],
+    });
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+      const result = await useRuntimeStore.getState().runPreOutputValidation();
+      expect(result.shouldPrompt).toBe(true);
+      expect(result.issues).toEqual([expect.objectContaining({ code: "OUTPUT_CHECK" })]);
+    });
+
+    configureRuntimeDependencies({
+      storage: memoryStorage,
+      runValidationChecks: async () => [],
+    });
+
+    await act(async () => {
+      const result = await useRuntimeStore.getState().runPreOutputValidation();
+      expect(result.shouldPrompt).toBe(false);
+    });
   });
 
   it("creates a Card Instance when a Resource Picker has a card creation target", async () => {
