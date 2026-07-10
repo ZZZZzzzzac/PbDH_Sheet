@@ -2,9 +2,9 @@ import { z } from "zod";
 import { resourceLibraryReferenceSchema, type ResourceLibraryReference } from "../domain/resourceLibrary";
 import { validateSystemPackage, type PackageValidationResult } from "../domain/systemPackage";
 import type { RuntimePackageAsset } from "./assetResolver";
-import { createVirtualFileSystemFromZipFile, normalizePackagePath, type PackageVirtualFileSystem } from "./packageVfs";
+import { createVirtualFileSystemFromZipFile, type PackageVirtualFileSystem } from "./packageVfs";
+import { inferMimeType } from "../utils";
 
-export const demoSystemPackageUrl = "/system-packages/demo-minimal";
 export const packageManifestPath = "manifest.json";
 export type LoadedPackageAsset = RuntimePackageAsset;
 
@@ -52,76 +52,6 @@ const pageLayoutReferenceSchema = z.array(
     })
     .passthrough(),
 );
-
-export async function loadSystemPackageFromUrl(
-  baseUrl: string = demoSystemPackageUrl,
-  fetchImpl: typeof fetch = fetch,
-): Promise<PackageLoadResult> {
-  const manifest = await fetchPackageJson(`${baseUrl.replace(/\/$/, "")}/${packageManifestPath}`, packageManifestPath, fetchImpl);
-  if (!manifest.ok) {
-    if (manifest.issue.code === "PACKAGE_FETCH_FAILED") {
-      return {
-        ok: false,
-        issues: [
-          {
-            level: "fatal",
-            code: "MANIFEST_MISSING",
-            text: "System Package 缺少 manifest.json。",
-            path: packageManifestPath,
-          },
-        ],
-      };
-    }
-    return { ok: false, issues: [manifest.issue] };
-  }
-
-  const parsedManifest = packageManifestSchema.safeParse(manifest.value);
-  if (!parsedManifest.success) {
-    return {
-      ok: false,
-      issues: parsedManifest.error.issues.map((issue) => ({
-        level: "fatal",
-        code: "MANIFEST_SHAPE_INVALID",
-        text: issue.message,
-        path: [packageManifestPath, ...issue.path].join("."),
-      })),
-    };
-  }
-
-  const pages = await fetchPackageReferenceJson(baseUrl, parsedManifest.data.pages, fetchImpl);
-  if (!pages.ok) {
-    return { ok: false, issues: [pages.issue] };
-  }
-
-  const pagesWithLayouts = await loadPageLayoutFilesFromUrl(baseUrl, pages.value, fetchImpl);
-  if (!pagesWithLayouts.ok) {
-    return { ok: false, issues: [pagesWithLayouts.issue] };
-  }
-
-  const modules = await fetchPackageReferenceJson(baseUrl, parsedManifest.data.modules, fetchImpl);
-  if (!modules.ok) {
-    return { ok: false, issues: [modules.issue] };
-  }
-
-  const dependencies = parsedManifest.data.dependencies
-    ? await fetchPackageReferenceJson(baseUrl, parsedManifest.data.dependencies, fetchImpl)
-    : undefined;
-  if (dependencies && !dependencies.ok) {
-    return { ok: false, issues: [dependencies.issue] };
-  }
-
-  const resourceLibraries = await loadResourceLibraryFilesFromUrl(baseUrl, parsedManifest.data.resourceLibraries ?? [], fetchImpl);
-  if (!resourceLibraries.ok) {
-    return { ok: false, issues: [resourceLibraries.issue] };
-  }
-
-  const validationChecks = await loadValidationScriptFilesFromUrl(baseUrl, parsedManifest.data.validationChecks ?? [], fetchImpl);
-  if (!validationChecks.ok) {
-    return { ok: false, issues: [validationChecks.issue] };
-  }
-
-  return normalizeManifestPackage(parsedManifest.data, pagesWithLayouts.value, modules.value, resourceLibraries.value, dependencies?.value, validationChecks.value);
-}
 
 export async function loadSystemPackageFromZipFile(file: Blob): Promise<PackageLoadResult> {
   const vfsResult = await createVirtualFileSystemFromZipFile(file);
@@ -267,100 +197,6 @@ function parsePackageJson(text: string, path: string, code: string) {
   }
 }
 
-async function fetchPackageReferenceJson(baseUrl: string, packagePath: string, fetchImpl: typeof fetch) {
-  const normalized = normalizePackagePath(packagePath);
-  if (!normalized.ok) {
-    return { ok: false as const, issue: normalized.issue };
-  }
-
-  return fetchPackageJson(`${baseUrl.replace(/\/$/, "")}/${normalized.path}`, normalized.path, fetchImpl);
-}
-
-async function fetchPackageReferenceText(baseUrl: string, packagePath: string, fetchImpl: typeof fetch) {
-  const normalized = normalizePackagePath(packagePath);
-  if (!normalized.ok) {
-    return { ok: false as const, issue: normalized.issue };
-  }
-
-  return fetchPackageText(`${baseUrl.replace(/\/$/, "")}/${normalized.path}`, normalized.path, fetchImpl);
-}
-
-async function fetchPackageJson(url: string, path: string, fetchImpl: typeof fetch) {
-  const text = await fetchPackageText(url, path, fetchImpl);
-  if (!text.ok) {
-    return text;
-  }
-
-  return parsePackageJson(text.value, path, path === packageManifestPath ? "MANIFEST_JSON_INVALID" : "PACKAGE_JSON_INVALID");
-}
-
-async function fetchPackageText(url: string, path: string, fetchImpl: typeof fetch) {
-  try {
-    const response = await fetchImpl(url);
-
-    if (!response.ok) {
-      return {
-        ok: false as const,
-        issue: {
-          level: "fatal" as const,
-          code: "PACKAGE_FETCH_FAILED",
-          text: `无法加载 System Package 文件：${response.status} ${response.statusText}`,
-          path,
-        },
-      };
-    }
-
-    const text = await response.text();
-    return { ok: true as const, path, value: text };
-  } catch {
-    return {
-      ok: false as const,
-      issue: {
-        level: "fatal" as const,
-        code: "PACKAGE_FETCH_FAILED",
-        text: "无法加载 System Package 文件。",
-        path,
-      },
-    };
-  }
-}
-
-async function loadPageLayoutFilesFromUrl(baseUrl: string, pages: unknown, fetchImpl: typeof fetch) {
-  const parsed = pageLayoutReferenceSchema.safeParse(pages);
-  if (!parsed.success) {
-    return { ok: true as const, value: pages };
-  }
-
-  const normalizedPages = [];
-  for (const page of parsed.data) {
-    if (!page.layout) {
-      normalizedPages.push(page);
-      continue;
-    }
-
-    const html = await fetchPackageReferenceText(baseUrl, page.layout.html, fetchImpl);
-    if (!html.ok) {
-      return { ok: false as const, issue: html.issue };
-    }
-
-    const css = page.layout.css ? await fetchPackageReferenceText(baseUrl, page.layout.css, fetchImpl) : undefined;
-    if (css && !css.ok) {
-      return { ok: false as const, issue: css.issue };
-    }
-
-    normalizedPages.push({
-      ...page,
-      layout: {
-        ...page.layout,
-        htmlContent: html.value,
-        cssContent: css?.value,
-      },
-    });
-  }
-
-  return { ok: true as const, value: normalizedPages };
-}
-
 function loadPageLayoutFilesFromVfs(vfs: PackageVirtualFileSystem, pages: unknown) {
   const parsed = pageLayoutReferenceSchema.safeParse(pages);
   if (!parsed.success) {
@@ -387,33 +223,14 @@ function loadPageLayoutFilesFromVfs(vfs: PackageVirtualFileSystem, pages: unknow
     normalizedPages.push({
       ...page,
       layout: {
-        ...page.layout,
+        类型: page.layout.类型,
         htmlContent: html.value,
-        cssContent: css?.value,
+        ...(css?.ok ? { cssContent: css.value } : {}),
       },
     });
   }
 
   return { ok: true as const, value: normalizedPages };
-}
-
-async function loadResourceLibraryFilesFromUrl(
-  baseUrl: string,
-  libraries: ResourceLibraryReference[],
-  fetchImpl: typeof fetch,
-) {
-  const normalizedLibraries = [];
-
-  for (const library of libraries) {
-    const entries = await fetchPackageReferenceJson(baseUrl, library.路径, fetchImpl);
-    if (!entries.ok) {
-      return { ok: false as const, issue: entries.issue };
-    }
-
-    normalizedLibraries.push({ ...library, entries: entries.value });
-  }
-
-  return { ok: true as const, value: normalizedLibraries };
 }
 
 function loadResourceLibraryFilesFromVfs(vfs: PackageVirtualFileSystem, libraries: ResourceLibraryReference[]) {
@@ -429,25 +246,6 @@ function loadResourceLibraryFilesFromVfs(vfs: PackageVirtualFileSystem, librarie
   }
 
   return { ok: true as const, value: normalizedLibraries };
-}
-
-async function loadValidationScriptFilesFromUrl(
-  baseUrl: string,
-  checks: NonNullable<z.infer<typeof packageManifestSchema>["validationChecks"]>,
-  fetchImpl: typeof fetch,
-) {
-  const normalizedChecks = [];
-
-  for (const check of checks) {
-    const script = await fetchPackageReferenceText(baseUrl, check.脚本, fetchImpl);
-    if (!script.ok) {
-      return { ok: false as const, issue: script.issue };
-    }
-
-    normalizedChecks.push({ ...check, 脚本: script.path, scriptContent: script.value });
-  }
-
-  return { ok: true as const, value: normalizedChecks };
 }
 
 function loadValidationScriptFilesFromVfs(
@@ -486,24 +284,4 @@ function resolvePackageAssets(assets: NonNullable<z.infer<typeof packageManifest
   }
 
   return resolvedAssets;
-}
-
-function inferMimeType(path: string): string {
-  const lowerPath = path.toLowerCase();
-  if (lowerPath.endsWith(".png")) {
-    return "image/png";
-  }
-  if (lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg")) {
-    return "image/jpeg";
-  }
-  if (lowerPath.endsWith(".webp")) {
-    return "image/webp";
-  }
-  if (lowerPath.endsWith(".svg")) {
-    return "image/svg+xml";
-  }
-  if (lowerPath.endsWith(".txt")) {
-    return "text/plain";
-  }
-  return "application/octet-stream";
 }

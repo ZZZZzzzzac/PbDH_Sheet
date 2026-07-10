@@ -14,13 +14,5 @@ export function readModuleState<T>(rawValue: SheetValue | undefined, fallback: T
     return { ...fallback, ...(rawValue as Partial<T>) };
   }
 
-  if (typeof rawValue === "string") {
-    try {
-      return { ...fallback, ...(JSON.parse(rawValue) as Partial<T>) };
-    } catch {
-      return fallback;
-    }
-  }
-
   return fallback;
 }

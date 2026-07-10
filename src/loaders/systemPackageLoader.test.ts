@@ -1,42 +1,25 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { strToU8, zipSync } from "fflate";
 import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures";
-import { loadSystemPackageFromUrl, loadSystemPackageFromZipFile } from "./systemPackageLoader";
+import { loadSystemPackageFromZipFile } from "./systemPackageLoader";
 
-describe("loadSystemPackageFromUrl", () => {
-  it("loads and validates a static System Package directory", async () => {
-    const fetchImpl = createPackageFetch();
-
-    const result = await loadSystemPackageFromUrl("/system-packages/demo-minimal", fetchImpl);
+describe("loadSystemPackageFromZipFile", () => {
+  it("loads a minimal System Package zip through its manifest", async () => {
+    const result = await loadSystemPackageFromZipFile(createPackageZip());
 
     expect(result.ok).toBe(true);
-    expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/manifest.json");
-    expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/pages.json");
-    expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/layouts/main.html");
-    expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/layouts/main.css");
-    expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/modules.json");
-    expect(fetchImpl).not.toHaveBeenCalledWith("/system-packages/demo-minimal/assets/readme.txt");
     if (result.ok) {
       expect(result.package.manifest).toEqual(minimalSystemPackage.manifest);
       expect(result.package.pages).toEqual(minimalSystemPackage.pages);
       expect(result.package.modules).toEqual(minimalSystemPackage.modules);
       expect(result.package.assets?.[0]).toEqual({ ID: "readme", 路径: "assets/readme.txt", 类型: "text/plain" });
-      expect(result.packageAssets).toBeUndefined();
+      expect(result.packageAssets?.[0]).toEqual(
+        expect.objectContaining({ ID: "readme", 路径: "assets/readme.txt", 类型: "text/plain" }),
+      );
     }
   });
 
-  it("normalizes static directory and zip packages to the same System Package", async () => {
-    const directoryResult = await loadSystemPackageFromUrl("/system-packages/demo-minimal", createPackageFetch());
-    const zipResult = await loadSystemPackageFromZipFile(createPackageZip());
-
-    expect(directoryResult.ok).toBe(true);
-    expect(zipResult.ok).toBe(true);
-    if (directoryResult.ok && zipResult.ok) {
-      expect(zipResult.package).toEqual(directoryResult.package);
-    }
-  });
-
-  it("loads Resource Library and Dependency JSON files from static directory and zip packages", async () => {
+  it("loads Resource Library and Dependency JSON files from zip", async () => {
     const manifest = {
       ...createManifest(),
       dependencies: "dependencies.json",
@@ -83,170 +66,32 @@ describe("loadSystemPackageFromUrl", () => {
       },
     ];
     const resources = [{ ID: "blade-1", 名称: "利刃一", 领域: "利刃" }];
-    const fetchImpl = createPackageFetch({ manifest, modules, pages, resources, dependencies });
-    const directoryResult = await loadSystemPackageFromUrl("/system-packages/demo-minimal", fetchImpl);
-    const zipResult = await loadSystemPackageFromZipFile(
-      createPackageZip({
-        manifest,
-        modules,
-        pages,
-        resources,
-        dependencies,
-      }),
+    const result = await loadSystemPackageFromZipFile(
+      createPackageZip({ manifest, modules, pages, resources, dependencies }),
     );
 
-    expect(directoryResult.ok).toBe(true);
-    expect(zipResult.ok).toBe(true);
-    expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/resources/domains.json");
-    expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/dependencies.json");
-    if (directoryResult.ok && zipResult.ok) {
-      expect(directoryResult.package.resourceLibraries?.[0].entries[0].fields.名称).toBe("利刃一");
-      expect(directoryResult.package.dependencies?.[0].动作[0].目标模块ID).toBe("domain-name");
-      expect(zipResult.package).toEqual(directoryResult.package);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.package.resourceLibraries?.[0].entries[0].fields.名称).toBe("利刃一");
+      expect(result.package.dependencies?.[0].动作[0].目标模块ID).toBe("domain-name");
     }
   });
 
-  it("loads Validation Script files from static directory and zip packages", async () => {
+  it("loads Validation Script files from zip", async () => {
     const manifest = {
       ...createManifest(),
       validationChecks: [{ ID: "demo-check", 脚本: "checks/demo.js" }],
     };
     const validationScripts = { "checks/demo.js": "module.exports = () => [];" };
-    const fetchImpl = createPackageFetch({ manifest, validationScripts });
-    const directoryResult = await loadSystemPackageFromUrl("/system-packages/demo-minimal", fetchImpl);
-    const zipResult = await loadSystemPackageFromZipFile(createPackageZip({ manifest, validationScripts }));
+    const result = await loadSystemPackageFromZipFile(createPackageZip({ manifest, validationScripts }));
 
-    expect(directoryResult.ok).toBe(true);
-    expect(zipResult.ok).toBe(true);
-    expect(fetchImpl).toHaveBeenCalledWith("/system-packages/demo-minimal/checks/demo.js");
-    if (directoryResult.ok && zipResult.ok) {
-      expect(directoryResult.package.validationChecks?.[0]).toEqual({
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.package.validationChecks?.[0]).toEqual({
         ID: "demo-check",
         脚本: "checks/demo.js",
         scriptContent: "module.exports = () => [];",
       });
-      expect(zipResult.package).toEqual(directoryResult.package);
-    }
-  });
-
-  it("returns a fatal issue when the static manifest cannot be loaded", async () => {
-    const fetchImpl = vi.fn(async () => new Response("", { status: 404, statusText: "Not Found" }));
-
-    const result = await loadSystemPackageFromUrl("/missing", fetchImpl);
-
-    expect(result.ok).toBe(false);
-    expect(result.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: "MANIFEST_MISSING",
-          level: "fatal",
-        }),
-      ]),
-    );
-  });
-
-  it("returns a fatal issue when a static package reference cannot be loaded", async () => {
-    const fetchImpl = createPackageFetch({
-      manifest: {
-        ...createManifest(),
-        modules: "missing-modules.json",
-      },
-    });
-
-    const result = await loadSystemPackageFromUrl("/system-packages/demo-minimal", fetchImpl);
-
-    expect(result.ok).toBe(false);
-    expect(result.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: "PACKAGE_FETCH_FAILED",
-          level: "fatal",
-          path: "missing-modules.json",
-        }),
-      ]),
-    );
-  });
-
-  it("returns a fatal issue when a static HTML layout file cannot be loaded", async () => {
-    const fetchImpl = createPackageFetch({
-      pages: [
-        {
-          ID: "main",
-          名称: "角色卡",
-          layout: {
-            类型: "htmlTemplate",
-            html: "layouts/missing.html",
-          },
-        },
-      ],
-    });
-
-    const result = await loadSystemPackageFromUrl("/system-packages/demo-minimal", fetchImpl);
-
-    expect(result.ok).toBe(false);
-    expect(result.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: "PACKAGE_FETCH_FAILED",
-          level: "fatal",
-          path: "layouts/missing.html",
-        }),
-      ]),
-    );
-  });
-
-  it("loads a static HTML layout without optional CSS", async () => {
-    const fetchImpl = createPackageFetch({
-      pages: [
-        {
-          ID: "main",
-          名称: "角色卡",
-          layout: {
-            类型: "htmlTemplate",
-            html: "layouts/main.html",
-          },
-        },
-      ],
-    });
-
-    const result = await loadSystemPackageFromUrl("/system-packages/demo-minimal", fetchImpl);
-
-    expect(result.ok).toBe(true);
-    expect(fetchImpl).not.toHaveBeenCalledWith("/system-packages/demo-minimal/layouts/main.css");
-    if (result.ok) {
-      expect(result.package.pages[0].layout.cssContent).toBeUndefined();
-    }
-  });
-
-  it("rejects unsafe static package references", async () => {
-    const fetchImpl = createPackageFetch({
-      manifest: {
-        ...createManifest(),
-        modules: "../modules.json",
-      },
-    });
-
-    const result = await loadSystemPackageFromUrl("/system-packages/demo-minimal", fetchImpl);
-
-    expect(result.ok).toBe(false);
-    expect(result.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: "PACKAGE_PATH_UNSAFE",
-          level: "fatal",
-        }),
-      ]),
-    );
-  });
-
-  it("loads a minimal System Package zip through its manifest", async () => {
-    const result = await loadSystemPackageFromZipFile(createPackageZip());
-
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.package.manifest.ID).toBe("demo-minimal");
-      expect(result.package.pages[0].layout.类型).toBe("htmlTemplate");
-      expect(result.package.pages[0].layout.htmlContent).toContain("<pb-module id=\"character-name\"");
     }
   });
 
@@ -274,6 +119,30 @@ describe("loadSystemPackageFromUrl", () => {
         }),
       );
       expect(result.packageAssets?.[0].bytes.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("loads a zip whose manifest is nested one directory deep", async () => {
+    const nestedZip = new Blob(
+      [
+        zipSync({
+          "my-package/manifest.json": strToU8(JSON.stringify(createManifest())),
+          "my-package/pages.json": strToU8(packagePagesJson(minimalSystemPackage.pages)),
+          "my-package/modules.json": strToU8(JSON.stringify(minimalSystemPackage.modules)),
+          "my-package/layouts/main.html": strToU8(minimalSystemPackage.pages[0].layout.htmlContent),
+          "my-package/layouts/main.css": strToU8(minimalSystemPackage.pages[0].layout.cssContent ?? ""),
+          "my-package/assets/readme.txt": strToU8("hello"),
+        }),
+      ],
+      { type: "application/zip" },
+    );
+
+    const result = await loadSystemPackageFromZipFile(nestedZip);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.package.manifest.ID).toBe("demo-minimal");
+      expect(result.package.pages[0].layout.htmlContent).toContain("<pb-module id=\"character-name\"");
     }
   });
 
@@ -464,53 +333,14 @@ function zipBlob(files: Record<string, string>) {
   return new Blob([zipSync(entries)], { type: "application/zip" });
 }
 
-function createPackageFetch(
-  options: {
-    manifest?: unknown;
-    modules?: unknown;
-    pages?: unknown[];
-    resources?: unknown;
-    dependencies?: unknown;
-    validationScripts?: Record<string, string>;
-  } = {},
-) {
-  const pageLayout = (options.pages?.[0] as { layout?: { htmlContent?: string; cssContent?: string } } | undefined)?.layout;
-  const files: Record<string, string> = {
-    "/system-packages/demo-minimal/manifest.json": JSON.stringify(options.manifest ?? createManifest()),
-    "/system-packages/demo-minimal/pages.json": options.pages ? JSON.stringify(options.pages) : packagePagesJson(minimalSystemPackage.pages),
-    "/system-packages/demo-minimal/modules.json": JSON.stringify(options.modules ?? minimalSystemPackage.modules),
-    "/system-packages/demo-minimal/layouts/main.html": pageLayout?.htmlContent ?? minimalSystemPackage.pages[0].layout.htmlContent,
-    "/system-packages/demo-minimal/layouts/main.css": pageLayout?.cssContent ?? minimalSystemPackage.pages[0].layout.cssContent ?? "",
-    "/system-packages/demo-minimal/assets/readme.txt": "hello",
-  };
-
-  if (options.resources) {
-    files["/system-packages/demo-minimal/resources/domains.json"] = JSON.stringify(options.resources);
-  }
-  if (options.dependencies) {
-    files["/system-packages/demo-minimal/dependencies.json"] = JSON.stringify(options.dependencies);
-  }
-  for (const [path, text] of Object.entries(options.validationScripts ?? {})) {
-    files[`/system-packages/demo-minimal/${path}`] = text;
-  }
-
-  return vi.fn(async (url: string | URL | Request) => {
-    const key = String(url);
-    const body = files[key];
-    return body === undefined
-      ? new Response("", { status: 404, statusText: "Not Found" })
-      : new Response(body, { status: 200, headers: { "content-type": key.endsWith(".txt") ? "text/plain" : "application/json" } });
-  });
-}
-
-function packagePagesJson(pages: Array<{ layout: { 类型: "htmlTemplate"; html: string; css?: string } } & Record<string, unknown>>) {
+function packagePagesJson(pages: Array<{ layout: { 类型: string; htmlContent: string; cssContent?: string } } & Record<string, unknown>>) {
   return JSON.stringify(
     pages.map((page) => ({
       ...page,
       layout: {
         类型: page.layout.类型,
-        html: page.layout.html,
-        css: page.layout.css,
+        html: "layouts/main.html",
+        ...(page.layout.cssContent ? { css: "layouts/main.css" } : {}),
       },
     })),
   );

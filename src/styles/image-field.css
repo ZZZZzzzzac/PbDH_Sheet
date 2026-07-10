@@ -1,0 +1,37 @@
+.image {
+  overflow: hidden;
+}
+
+.image-preview {
+  display: block;
+  width: 100%;
+  min-height: 180px;
+  max-height: 280px;
+  object-fit: cover;
+  background: #e2e8e9;
+}
+
+.image-fallback {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  padding: 16px;
+  background: #e2e8e9;
+  color: #607075;
+}
+
+.image-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 14px;
+  border-top: 1px solid #d8dfe1;
+}
+
+.image-upload-button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #243438;
+  background: #ffffff;
+  color: #243438;
+  cursor: pointer;
+}

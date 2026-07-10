@@ -6,6 +6,7 @@ import {
   resourceLibrarySchema,
   type ResourceLibrary,
 } from "./resourceLibrary";
+import { isPlainObject } from "../utils";
 
 export const frameworkSchemaVersion = "0.1.0";
 
@@ -77,6 +78,9 @@ const cardTableModuleSchema = sheetModuleBaseSchema.extend({
   标签: z.string().min(1),
   资源库ID: z.string().min(1),
   状态选项: z.array(z.string().min(1)).optional(),
+  显示方式: z.enum(["image", "text"]).optional(),
+  卡名字段: z.string().min(1).optional(),
+  描述字段: z.string().min(1).optional(),
 });
 
 const resourcePickerQuerySchema = z.object({
@@ -216,21 +220,12 @@ const sheetModuleSchema = z.discriminatedUnion("类型", [
   resourcePickerModuleSchema,
 ]);
 
-const supportedModuleTypes = new Set([
-  "freeText",
-  "longText",
-  "checkboxResource",
-  "countableResource",
-  "readOnlyDisplay",
-  "imageField",
-  "cardTable",
-  "resourcePicker",
-]);
+const supportedModuleTypes: Set<string> = new Set(
+  sheetModuleSchema.options.map((option) => option.shape["类型"].value),
+);
 
 const htmlTemplateLayoutSchema = z.object({
   类型: z.literal("htmlTemplate"),
-  html: z.string().min(1),
-  css: z.string().min(1).optional(),
   htmlContent: z.string().min(1),
   cssContent: z.string().optional(),
 });
@@ -352,11 +347,11 @@ function parseDependencyRules(inputs: unknown[]): DependencyParseResult {
 }
 
 function detectUnsupportedDependencySource(input: unknown, index: number): PackageIssue | undefined {
-  if (!isRecord(input)) {
+  if (!isPlainObject(input)) {
     return undefined;
   }
 
-  const trigger = isRecord(input.触发) ? input.触发 : undefined;
+  const trigger = isPlainObject(input.触发) ? input.触发 : undefined;
   if (isUnsupportedCounterType(trigger?.类型)) {
     return {
       level: "error",
@@ -367,7 +362,7 @@ function detectUnsupportedDependencySource(input: unknown, index: number): Packa
   }
 
   if (Array.isArray(input.sources)) {
-    const sourceIndex = input.sources.findIndex((source) => isRecord(source) && isUnsupportedCounterType(source.类型));
+    const sourceIndex = input.sources.findIndex((source) => isPlainObject(source) && isUnsupportedCounterType(source.类型));
     if (sourceIndex !== -1) {
       return {
         level: "error",
@@ -383,10 +378,6 @@ function detectUnsupportedDependencySource(input: unknown, index: number): Packa
 
 function isUnsupportedCounterType(value: unknown): boolean {
   return value === "countableResource" || value === "countableChanged" || value === "counter" || value === "counterChanged";
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function validateSystemPackage(input: unknown): PackageValidationResult {
@@ -837,7 +828,7 @@ const allowedHtmlAttributesByTag = new Map([
   ["td", new Set(["colspan", "rowspan"])],
   ["th", new Set(["colspan", "rowspan"])],
 ]);
-const allowedHtmlTags = new Set([
+export const allowedHtmlTags = new Set([
   "article",
   "div",
   "em",

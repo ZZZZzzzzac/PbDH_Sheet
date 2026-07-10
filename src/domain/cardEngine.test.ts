@@ -74,9 +74,10 @@ describe("cardEngine", () => {
     });
     const withMoved = updateCardInstancePosition(withFirst, "instance-1", 88, 77);
 
-    const tidied = tidyCardTable(withMoved, "domain-card-table");
+    const layout = createCardTableLayout({ surfaceWidthPx: 800, cardCount: 1 });
+    const tidied = tidyCardTable(withMoved, "domain-card-table", layout);
 
-    expect(tidied.cards.instances[0]).toEqual(expect.objectContaining({ xPct: 4, yPct: 6, rotation: 0 }));
+    expect(tidied.cards.instances[0]).toEqual(expect.objectContaining({ xPct: layout.insetXPct, yPct: layout.insetYPct, rotation: 0 }));
   });
 
   it("tidies cards using measured card width and surface size so cards do not overlap", () => {

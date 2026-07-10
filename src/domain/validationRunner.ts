@@ -31,7 +31,7 @@ interface ScriptInput {
 type ScriptIssueInput = Partial<Omit<ValidationIssue, "source">>;
 
 const validIssueLevels = new Set<ValidationIssueLevel>(["error", "warning", "info"]);
-const validationWorkerTimeoutMs = 1000;
+const validationWorkerTimeoutMs = 3000;
 
 export async function runValidationChecks(input: ValidationInput): Promise<ValidationIssue[]> {
   const issues: ValidationIssue[] = [];
@@ -68,51 +68,42 @@ async function executeValidationScript(scriptContent: string, input: ScriptInput
 }
 
 function canUseValidationWorker() {
-  return typeof Worker !== "undefined" && typeof Blob !== "undefined" && typeof URL !== "undefined" && typeof URL.createObjectURL === "function";
+  return typeof Worker !== "undefined";
+}
+
+function buildScriptBody(scriptContent: string): string {
+  return [
+    '"use strict";',
+    "const document = undefined;",
+    "const window = undefined;",
+    "const self = undefined;",
+    "const globalThis = undefined;",
+    "const fetch = undefined;",
+    "const XMLHttpRequest = undefined;",
+    "const importScripts = undefined;",
+    "const Worker = undefined;",
+    scriptContent,
+    "const validationCheck = module.exports && (module.exports.default || module.exports.run || module.exports);",
+    'if (typeof validationCheck !== "function") {',
+    '  throw new Error("Validation Script must assign a function to module.exports.");',
+    "}",
+    "return validationCheck(input);",
+  ].join("\n");
+}
+
+async function executeValidationScriptDirect(scriptContent: string, input: ScriptInput): Promise<unknown> {
+  const module = { exports: {} as unknown };
+  const exports = module.exports;
+  const runner = new Function("module", "exports", "input", buildScriptBody(scriptContent));
+  return await runner(module, exports, input);
 }
 
 function executeValidationScriptInWorker(scriptContent: string, input: ScriptInput): Promise<unknown> {
   const workerSource = `
-function isRecord(value) {
-  return typeof value === "object" && value !== null;
-}
-function deepFreeze(value) {
-  if (!isRecord(value) && !Array.isArray(value)) {
-    return value;
-  }
-  Object.freeze(value);
-  for (const child of Object.values(value)) {
-    if ((isRecord(child) || Array.isArray(child)) && !Object.isFrozen(child)) {
-      deepFreeze(child);
-    }
-  }
-  return value;
-}
-async function executeValidationScriptDirect(scriptContent, input) {
-  const module = { exports: {} };
-  const exports = module.exports;
-  const runner = new Function(
-    "module",
-    "exports",
-    "input",
-    '"use strict";\\n' +
-      'const document = undefined;\\n' +
-      'const window = undefined;\\n' +
-      'const self = undefined;\\n' +
-      'const globalThis = undefined;\\n' +
-      'const fetch = undefined;\\n' +
-      'const XMLHttpRequest = undefined;\\n' +
-      'const importScripts = undefined;\\n' +
-      'const Worker = undefined;\\n' +
-      scriptContent +
-      '\\nconst validationCheck = module.exports && (module.exports.default || module.exports.run || module.exports);\\n' +
-      'if (typeof validationCheck !== "function") {\\n' +
-      '  throw new Error("Validation Script must assign a function to module.exports.");\\n' +
-      '}\\n' +
-      'return validationCheck(input);',
-  );
-  return await runner(module, exports, input);
-}
+${isRecord.toString()}
+${deepFreeze.toString()}
+${buildScriptBody.toString()}
+${executeValidationScriptDirect.toString()}
 self.onmessage = async (event) => {
   try {
     const input = deepFreeze(event.data.input);
@@ -154,33 +145,6 @@ self.onmessage = async (event) => {
 
     worker.postMessage({ scriptContent, input });
   });
-}
-
-async function executeValidationScriptDirect(scriptContent: string, input: ScriptInput): Promise<unknown> {
-  const module = { exports: {} as unknown };
-  const exports = module.exports;
-  const runner = new Function(
-    "module",
-    "exports",
-    "input",
-    `"use strict";
-const document = undefined;
-const window = undefined;
-const self = undefined;
-const globalThis = undefined;
-const fetch = undefined;
-const XMLHttpRequest = undefined;
-const importScripts = undefined;
-const Worker = undefined;
-${scriptContent}
-const validationCheck = module.exports && (module.exports.default || module.exports.run || module.exports);
-if (typeof validationCheck !== "function") {
-  throw new Error("Validation Script must assign a function to module.exports.");
-}
-return validationCheck(input);`,
-  );
-
-  return await runner(module, exports, input);
 }
 
 function normalizeScriptIssues(source: string, rawIssues: unknown): ValidationIssue[] {

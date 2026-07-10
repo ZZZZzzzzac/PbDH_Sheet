@@ -1,5 +1,6 @@
 import type { PackageIssue } from "../domain/systemPackage";
 import type { PackageVirtualFileSystem } from "./packageVfs";
+import { inferMimeType } from "../utils";
 
 export interface RuntimePackageAsset {
   ID: string;
@@ -48,11 +49,6 @@ export function createAssetResolver(vfs: PackageVirtualFileSystem): AssetResolve
     },
 
     revokeAll() {
-      if (typeof URL === "undefined" || typeof URL.revokeObjectURL !== "function") {
-        objectUrls.clear();
-        return;
-      }
-
       for (const objectUrl of objectUrls) {
         URL.revokeObjectURL(objectUrl);
       }
@@ -84,11 +80,6 @@ export function createRuntimeAssetResolver(assets: RuntimePackageAsset[]): Runti
   return {
     urls,
     revokeAll() {
-      if (typeof URL === "undefined" || typeof URL.revokeObjectURL !== "function") {
-        objectUrls.clear();
-        return;
-      }
-
       for (const objectUrl of objectUrls) {
         URL.revokeObjectURL(objectUrl);
       }
@@ -98,36 +89,11 @@ export function createRuntimeAssetResolver(assets: RuntimePackageAsset[]): Runti
 }
 
 function createObjectUrl(bytes: Uint8Array, mimeType: string): string | null {
-  if (typeof Blob === "undefined" || typeof URL === "undefined" || typeof URL.createObjectURL !== "function") {
+  try {
+    const buffer = new ArrayBuffer(bytes.byteLength);
+    new Uint8Array(buffer).set(bytes);
+    return URL.createObjectURL(new Blob([buffer], { type: mimeType }));
+  } catch {
     return null;
   }
-
-  const buffer = new ArrayBuffer(bytes.byteLength);
-  new Uint8Array(buffer).set(bytes);
-  return URL.createObjectURL(new Blob([buffer], { type: mimeType }));
-}
-
-function inferMimeType(path: string): string {
-  const lowerPath = path.toLowerCase();
-
-  if (lowerPath.endsWith(".png")) {
-    return "image/png";
-  }
-  if (lowerPath.endsWith(".jpg") || lowerPath.endsWith(".jpeg")) {
-    return "image/jpeg";
-  }
-  if (lowerPath.endsWith(".webp")) {
-    return "image/webp";
-  }
-  if (lowerPath.endsWith(".svg")) {
-    return "image/svg+xml";
-  }
-  if (lowerPath.endsWith(".json")) {
-    return "application/json";
-  }
-  if (lowerPath.endsWith(".txt")) {
-    return "text/plain";
-  }
-
-  return "application/octet-stream";
 }

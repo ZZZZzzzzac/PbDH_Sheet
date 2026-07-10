@@ -53,6 +53,19 @@ const defaultCardGapPx = 16;
 const defaultCardInsetPx = 16;
 const defaultCardSurfaceHeightPx = 520;
 
+const defaultCardGridColumns = 5;
+const defaultCardInsetXPct = 4;
+const defaultCardInsetYPct = 6;
+const defaultCardStepXPct = 18;
+const defaultCardStepYPct = 24;
+
+export function defaultCardPosition(index: number): { xPct: number; yPct: number } {
+  return {
+    xPct: defaultCardInsetXPct + (index % defaultCardGridColumns) * defaultCardStepXPct,
+    yPct: defaultCardInsetYPct + Math.floor(index / defaultCardGridColumns) * defaultCardStepYPct,
+  };
+}
+
 export function createCardInstance(data: CharacterData, input: CreateCardInstanceInput): CharacterData {
   const siblingCount = data.cards.instances.filter((instance) => instance.tableModuleId === input.tableModuleId).length;
   const instance: CardInstance = {
@@ -61,8 +74,7 @@ export function createCardInstance(data: CharacterData, input: CreateCardInstanc
     libraryId: input.libraryId,
     definitionId: input.definitionId,
     state: input.state ?? "configured",
-    xPct: 4 + (siblingCount % 5) * 18,
-    yPct: 6 + Math.floor(siblingCount / 5) * 24,
+    ...defaultCardPosition(siblingCount),
     zIndex: nextZIndex(data.cards.instances),
     face: "front",
     rotation: 0,
@@ -143,9 +155,8 @@ export function clampCardWidth(value: number): number {
   return Math.min(maxCardWidthPx, Math.max(minCardWidthPx, Math.round(value)));
 }
 
-export function tidyCardTable(data: CharacterData, tableModuleId: string, layout?: CardTableLayout): CharacterData {
+export function tidyCardTable(data: CharacterData, tableModuleId: string, layout: CardTableLayout): CharacterData {
   let tableIndex = 0;
-  const tableLayout = layout ?? legacyCardTableLayout;
 
   return updateCardInstances(
     data,
@@ -156,8 +167,8 @@ export function tidyCardTable(data: CharacterData, tableModuleId: string, layout
 
       const next = {
         ...instance,
-        xPct: tableLayout.insetXPct + (tableIndex % tableLayout.columns) * tableLayout.stepXPct,
-        yPct: tableLayout.insetYPct + Math.floor(tableIndex / tableLayout.columns) * tableLayout.stepYPct,
+        xPct: layout.insetXPct + (tableIndex % layout.columns) * layout.stepXPct,
+        yPct: layout.insetYPct + Math.floor(tableIndex / layout.columns) * layout.stepYPct,
         zIndex: tableIndex + 1,
         rotation: 0,
       };
@@ -166,18 +177,6 @@ export function tidyCardTable(data: CharacterData, tableModuleId: string, layout
     }),
   );
 }
-
-const legacyCardTableLayout: CardTableLayout = {
-  surfaceWidthPx: 800,
-  cardWidthPx: defaultCardWidthPx,
-  cardHeightPx: defaultCardWidthPx * cardAspectHeightPerWidth,
-  surfaceHeightPx: defaultCardSurfaceHeightPx,
-  columns: 5,
-  insetXPct: 4,
-  insetYPct: 6,
-  stepXPct: 18,
-  stepYPct: 26,
-};
 
 export function deleteCardInstance(data: CharacterData, instanceId: string): CharacterData {
   return updateCardInstances(

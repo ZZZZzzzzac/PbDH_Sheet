@@ -1,0 +1,110 @@
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.print-mode .top-bar,
+.print-mode .top-menu-bar,
+.print-mode .resource-picker-module,
+.print-mode .image-actions,
+.print-mode .card-table-actions,
+.print-mode .play-card-delete {
+  display: none;
+}
+
+.print-mode .sheet-tool {
+  padding: 0;
+}
+
+.print-mode .sheet-page {
+  border: 0;
+  background: #ffffff;
+}
+
+.print-mode .card-table-surface {
+  overflow: visible;
+  background: #ffffff;
+}
+
+.print-mode .sheet-page,
+.print-mode .module-slot,
+.print-mode .container,
+.print-mode .image,
+.print-mode .card-table-module,
+.print-mode .play-card {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+@media print {
+  @page {
+    margin: 8mm 4mm 10mm;
+  }
+
+  body {
+    background: #ffffff;
+  }
+
+  .top-bar,
+  .top-menu-bar,
+  .print-preview-bar,
+  .message,
+  .validation-dialog-backdrop,
+  .resource-dialog-backdrop,
+  .resource-picker-module,
+  .image-actions,
+  .card-table-actions,
+  .play-card-delete {
+    display: none !important;
+  }
+
+  .sheet-tool {
+    padding: 0;
+  }
+
+  .sheet-page {
+    break-after: page;
+    break-inside: avoid;
+    page-break-after: always;
+    page-break-inside: avoid;
+    border: 0;
+    background: #ffffff;
+  }
+
+  .module-slot,
+  .container,
+  .image,
+  .card-table-module,
+  .play-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .card-table-surface {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(0, var(--play-card-width)));
+    align-items: start;
+    align-content: start;
+    gap: 4px;
+    padding: 0;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible;
+    background: #ffffff;
+  }
+
+  .play-card {
+    position: relative;
+    left: auto !important;
+    top: auto !important;
+    z-index: auto !important;
+    transform: none !important;
+  }
+}

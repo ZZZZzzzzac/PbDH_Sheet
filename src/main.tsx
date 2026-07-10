@@ -1,7 +1,16 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
-import "./styles.css";
+import "./styles/variables.css";
+import "./styles/app-shell.css";
+import "./styles/modules.css";
+import "./styles/countable-resource.css";
+import "./styles/checkbox-resource.css";
+import "./styles/image-field.css";
+import "./styles/card-table.css";
+import "./styles/resource-browser.css";
+import "./styles/validation.css";
+import "./styles/print.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

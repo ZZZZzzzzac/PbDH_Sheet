@@ -113,8 +113,7 @@ function looksLikeHtml(text: string): boolean {
 }
 
 function readCharacterName(data: CharacterData): string {
-  const value = data.character.values["character-name"];
-  return typeof value === "string" && value.trim() ? value.trim() : data.character.id;
+  return data.character.id;
 }
 
 function formatSnapshotValue(value: unknown): string {

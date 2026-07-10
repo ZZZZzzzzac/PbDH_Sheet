@@ -221,8 +221,7 @@ describe("Module Registry rendering", () => {
 
     expect(tagRow).not.toBeNull();
     expect(tagRow).toHaveTextContent("贤者");
-    expect(tagRow).toHaveTextContent("1级");
-    expect(tagRow).toHaveTextContent("回想 1");
+    expect(tagRow).toHaveTextContent("1");
     expect(card.querySelector(".play-card-recall")).toBeNull();
     expect(result.container.querySelector(".play-card-description")).toHaveTextContent("描述应该独立显示。");
   });

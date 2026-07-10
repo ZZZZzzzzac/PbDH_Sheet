@@ -121,7 +121,7 @@ export const storageService: StorageService = {
     await this.saveCharacterSave({
       id: activeId,
       packageId: data.systemPackage.id,
-      name: existing?.name ?? defaultSaveName(data),
+      name: existing?.name ?? defaultSaveName(),
       updatedAt: data.updatedAt,
       data: { ...data, character: { ...data.character, id: activeId } },
     });
@@ -134,7 +134,7 @@ export const storageService: StorageService = {
       .map((record) => ({
         id: record.id,
         packageId: record.packageId,
-        name: record.name ?? defaultSaveName(record.data),
+        name: record.name ?? defaultSaveName(),
         updatedAt: record.updatedAt ?? record.data.updatedAt,
       }))
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
@@ -185,16 +185,10 @@ export const storageService: StorageService = {
   },
 
   async loadActiveCharacterSaveId(packageId: string): Promise<string | null> {
-    if (typeof localStorage === "undefined") {
-      return null;
-    }
     return localStorage.getItem(`${currentCharacterPointerPrefix}${packageId}`);
   },
 
   async setActiveCharacterSaveId(packageId: string, saveId: string): Promise<void> {
-    if (typeof localStorage === "undefined") {
-      return;
-    }
     localStorage.setItem(`${currentCharacterPointerPrefix}${packageId}`, saveId);
   },
 
@@ -212,10 +206,6 @@ export const storageService: StorageService = {
   },
 };
 
-function defaultSaveName(data: CharacterData): string {
-  const nameValue = data.character.values["character-name"];
-  if (typeof nameValue === "string" && nameValue.trim()) {
-    return nameValue.trim();
-  }
+function defaultSaveName(): string {
   return "未命名角色";
 }

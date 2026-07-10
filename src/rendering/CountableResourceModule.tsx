@@ -1,6 +1,7 @@
 import type { CountableResourceModule as CountableResourceModuleConfig } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
 import { readModuleState } from "./moduleState";
+import { clampInt } from "../utils";
 
 interface CountableResourceModuleProps {
   module: CountableResourceModuleConfig;
@@ -81,14 +82,4 @@ function parseInteger(value: string, fallback: number) {
 function parseIntegerNullable(value: string) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-function clampInt(value: number, min: number, max: number | null) {
-  if (value < min) {
-    return min;
-  }
-  if (max !== null && value > max) {
-    return max;
-  }
-  return value;
 }

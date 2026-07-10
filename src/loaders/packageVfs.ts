@@ -89,7 +89,27 @@ export function createVirtualFileSystemFromZipBytes(bytes: Uint8Array): PackageV
     files.set(normalized.path, data);
   }
 
+  resolveZipRootPrefix(files);
+
   return { ok: true, vfs: createVirtualFileSystem(files) };
+}
+
+function resolveZipRootPrefix(files: Map<string, Uint8Array>): void {
+  if (files.has("manifest.json")) {
+    return;
+  }
+
+  const manifestPath = [...files.keys()].find((path) => path.endsWith("/manifest.json"));
+  if (!manifestPath) {
+    return;
+  }
+
+  const prefix = manifestPath.slice(0, -"manifest.json".length);
+  const entries = [...files.entries()];
+  files.clear();
+  for (const [path, data] of entries) {
+    files.set(path.startsWith(prefix) ? path.slice(prefix.length) : path, data);
+  }
 }
 
 export async function createVirtualFileSystemFromZipFile(file: Blob): Promise<PackageVirtualFileSystemResult> {

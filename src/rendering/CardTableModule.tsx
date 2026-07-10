@@ -9,7 +9,7 @@ import {
   type CardInstance,
   type CardTableLayout,
 } from "../domain/cardEngine";
-import { type ResourceLibraryEntry, summarizeResourceEntry } from "../domain/resourceLibrary";
+import { type ResourceLibraryEntry } from "../domain/resourceLibrary";
 import { findResourceLibrary, type CardTableModule as CardTableModuleConfig, type SystemPackage } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
 
@@ -192,6 +192,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
           <CardView
             instance={instance}
             definition={library?.entries.find((entry) => entry.ID === instance.definitionId)}
+            module={module}
             onPointerDown={beginDrag}
             onPointerMove={continueDrag}
             onPointerUp={endDrag}
@@ -216,6 +217,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
 function CardView({
   instance,
   definition,
+  module: moduleConfig,
   onPointerDown,
   onPointerMove,
   onPointerUp,
@@ -223,6 +225,7 @@ function CardView({
 }: {
   instance: CardInstance;
   definition?: ResourceLibraryEntry;
+  module: CardTableModuleConfig;
   onPointerDown: (event: PointerEvent<HTMLElement>, instance: CardInstance) => void;
   onPointerMove: (event: PointerEvent<HTMLElement>) => void;
   onPointerUp: (event: PointerEvent<HTMLElement>) => void;
@@ -233,8 +236,10 @@ function CardView({
   const deleteCardInstance = useRuntimeStore((state) => state.deleteCardInstance);
   const cardArtRef = definition?.fields.卡图 ?? "";
   const cardArtUrl = cardArtRef ? assetUrls[cardArtRef] : undefined;
-  const shouldShowImage = definition?.fields.等级 === "1" && cardArtUrl && !imageFailed;
-  const name = definition ? summarizeResourceEntry(definition) : instance.definitionId;
+  const displayMode = resolveCardDisplayMode(definition, moduleConfig);
+  const showImage = displayMode === "image" && cardArtUrl && !imageFailed;
+  const nameField = moduleConfig.卡名字段 ?? "名称";
+  const name = definition?.fields[nameField] || instance.definitionId;
 
   return (
     <article
@@ -265,10 +270,10 @@ function CardView({
       >
         <X aria-hidden="true" size={14} />
       </button>
-      {shouldShowImage ? (
+      {showImage ? (
         <img className="play-card-image" src={cardArtUrl} alt={name} draggable={false} onError={() => setImageFailed(true)} />
       ) : (
-        <TextCard definition={definition} fallbackName={name} />
+        <TextCard definition={definition} module={moduleConfig} fallbackName={name} />
       )}
     </article>
   );
@@ -323,18 +328,15 @@ function CardContextMenu({
   );
 }
 
-function TextCard({ definition, fallbackName }: { definition?: ResourceLibraryEntry; fallbackName: string }) {
-  const tags = [
-    definition?.fields.领域,
-    definition?.fields.等级 ? `${definition.fields.等级}级` : "",
-    definition?.fields.属性,
-    definition?.fields.回想 ? `回想 ${definition.fields.回想}` : "",
-  ].filter(Boolean);
+function TextCard({ definition, module: moduleConfig, fallbackName }: { definition?: ResourceLibraryEntry; module: CardTableModuleConfig; fallbackName: string }) {
+  const nameField = moduleConfig.卡名字段 ?? "名称";
+  const descField = moduleConfig.描述字段 ?? "描述";
+  const tags = inferCardTags(definition, nameField, descField);
 
   return (
     <div className="play-card-text">
       <header>
-        <h4>{definition?.fields.名称 ?? fallbackName}</h4>
+        <h4>{definition?.fields[nameField] ?? fallbackName}</h4>
         {tags.length > 0 ? (
           <div className="play-card-tags" aria-label="卡牌标签">
             {tags.map((tag) => (
@@ -345,9 +347,27 @@ function TextCard({ definition, fallbackName }: { definition?: ResourceLibraryEn
           </div>
         ) : null}
       </header>
-      <p className="play-card-description">{definition?.fields.描述 ?? "Card Definition 不存在。"}</p>
+      <p className="play-card-description">{definition?.fields[descField] ?? "Card Definition 不存在。"}</p>
     </div>
   );
+}
+
+function resolveCardDisplayMode(definition: ResourceLibraryEntry | undefined, moduleConfig: CardTableModuleConfig): "image" | "text" {
+  const entryMode = definition?.fields.卡牌显示方式;
+  if (entryMode === "image" || entryMode === "text") {
+    return entryMode;
+  }
+  return moduleConfig.显示方式 ?? "image";
+}
+
+function inferCardTags(definition: ResourceLibraryEntry | undefined, nameField: string, descField: string): string[] {
+  if (!definition) {
+    return [];
+  }
+  const excludeFields = new Set(["ID", nameField, descField, "卡图", "卡牌显示方式"]);
+  return Object.entries(definition.fields)
+    .filter(([key, value]) => !excludeFields.has(key) && value)
+    .map(([, value]) => value);
 }
 
 function cardTableSurfaceStyle(layout: CardTableLayout): CSSProperties {

@@ -1,0 +1,300 @@
+.card-table-module {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 100%;
+  height: 100%;
+}
+
+.card-table-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.card-table-side-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 6;
+  flex-direction: column;
+  justify-content: flex-start;
+  width: 64px;
+  padding: 8px;
+  border: 1px solid rgba(36, 52, 56, 0.48);
+  background: rgba(248, 250, 249, 0.68);
+  box-shadow: 0 10px 28px rgba(32, 36, 38, 0.18);
+  opacity: 0.7;
+  backdrop-filter: blur(6px);
+  transition:
+    opacity 120ms ease,
+    background 120ms ease;
+}
+
+.card-table-side-actions:hover,
+.card-table-side-actions:focus-within {
+  background: rgba(248, 250, 249, 0.94);
+  opacity: 1;
+}
+
+.card-size-control {
+  display: inline-grid;
+  grid-template-columns: auto minmax(96px, 132px) 48px;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid #c4ccce;
+  background: #ffffff;
+  color: #425056;
+  font-size: 0.9rem;
+}
+
+.card-table-side-actions .card-size-control {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(116px, 1fr) auto;
+  justify-items: center;
+  width: 100%;
+  min-height: 174px;
+  padding: 8px 0;
+  border-color: rgba(196, 204, 206, 0.85);
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 0.82rem;
+}
+
+.card-size-control input {
+  width: 100%;
+  accent-color: #31565e;
+}
+
+.card-table-side-actions .card-size-control input {
+  width: 30px;
+  height: 118px;
+  writing-mode: vertical-lr;
+  direction: rtl;
+}
+
+.card-size-control output {
+  color: #607075;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.card-table-side-actions .card-size-control output {
+  font-size: 0.76rem;
+  text-align: center;
+}
+
+.card-count {
+  padding: 4px 8px;
+  border: 1px solid #c4ccce;
+  background: #f8faf9;
+  color: #425056;
+  font-size: 0.9rem;
+}
+
+.card-table-side-actions .card-count {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 38px;
+  padding: 4px;
+  text-align: center;
+}
+
+.card-table-surface {
+  position: relative;
+  isolation: isolate;
+  --play-card-width: 250px;
+  min-width: 0;
+  min-height: 520px;
+  overflow: hidden;
+  border: 1px solid #cfd7d9;
+  background:
+    linear-gradient(90deg, rgba(49, 86, 94, 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(49, 86, 94, 0.08) 1px, transparent 1px),
+    #eef4f1;
+  background-size: 32px 32px;
+  touch-action: none;
+}
+
+.card-table-empty {
+  position: absolute;
+  inset: 16px;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  border: 1px dashed #aebabc;
+  color: #607075;
+  background: rgba(255, 255, 255, 0.64);
+}
+
+.play-card {
+  position: absolute;
+  width: min(var(--play-card-width), calc(100% - 32px));
+  min-width: 0;
+  border: 1px solid #243438;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(32, 36, 38, 0.24);
+  cursor: grab;
+  transform-origin: center center;
+  user-select: none;
+}
+
+.play-card:active {
+  cursor: grabbing;
+}
+
+.play-card-delete {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #c9302c;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(32, 36, 38, 0.28);
+}
+
+.play-card-delete:hover {
+  background: #9f231f;
+}
+
+.play-card-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  background: #e2e8e9;
+}
+
+.play-card-text {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  aspect-ratio: 63 / 88;
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px;
+  background: #fffdf7;
+}
+
+.play-card-text h4 {
+  margin: 0 0 8px;
+  color: #202426;
+  font-size: 1.05rem;
+}
+
+.play-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.play-card-tag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 20px;
+  padding: 1px 6px;
+  border: 1px solid #d8d0b8;
+  background: #f8f0d9;
+  color: #607075;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.play-card-description {
+  margin: 0;
+  color: #202426;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  border: 0;
+  border-right: 1px solid #d8dfe1;
+  background: #ffffff;
+  color: #243438;
+  cursor: pointer;
+}
+
+.card-table-side-actions .card-action-button {
+  flex-direction: column;
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(216, 223, 225, 0.92);
+  background: rgba(255, 255, 255, 0.78);
+  font-size: 0.82rem;
+}
+
+.card-action-button:last-child {
+  border-right: 0;
+}
+
+.card-action-button:hover {
+  background: #edf6f1;
+}
+
+.card-action-button.danger {
+  color: #8c2822;
+}
+
+.card-context-menu {
+  position: fixed;
+  z-index: 100;
+  display: grid;
+  min-width: 148px;
+  padding: 6px;
+  border: 1px solid #243438;
+  background: #ffffff;
+  box-shadow: 0 14px 32px rgba(32, 36, 38, 0.28);
+}
+
+.card-context-menu button {
+  min-height: 34px;
+  border: 0;
+  padding: 0 10px;
+  background: transparent;
+  color: #243438;
+  text-align: left;
+  cursor: pointer;
+}
+
+.card-context-menu button:hover {
+  background: #edf6f1;
+}
+
+.card-context-menu button.danger {
+  color: #8c2822;
+}
+
+@media (max-width: 640px) {
+  .card-table-surface {
+    min-height: 420px;
+  }
+
+  .card-size-control {
+    grid-template-columns: auto minmax(72px, 1fr) 44px;
+    flex: 1 1 220px;
+  }
+}

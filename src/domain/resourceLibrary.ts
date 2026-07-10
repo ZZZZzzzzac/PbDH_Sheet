@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isPlainObject } from "../utils";
 
 export const resourceLibraryFieldWidthSchema = z.enum(["compact", "normal", "wide", "fill"]);
 
@@ -295,10 +296,6 @@ function resourceValueToString(value: unknown): string {
     return String(value);
   }
   return JSON.stringify(value);
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isComplexResourceValue(value: unknown): boolean {

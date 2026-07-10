@@ -1,6 +1,7 @@
 import { z } from "zod";
-import type { CardInstance } from "./cardEngine";
+import { defaultCardPosition, type CardInstance } from "./cardEngine";
 import type { SystemPackage } from "./systemPackage";
+import { clampInt, generateId, isPlainObject } from "../utils";
 
 export const characterDataSchemaVersion = "0.1.0";
 
@@ -111,8 +112,7 @@ export function createEmptyCharacterData(systemPackage: SystemPackage, character
 }
 
 export function createCharacterId(): string {
-  const random = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-  return `character-${random}`;
+  return generateId("character-");
 }
 
 function seedDefaultModuleValues(systemPackage: SystemPackage): Record<string, SheetValue> {
@@ -145,16 +145,6 @@ function seedDefaultModuleValues(systemPackage: SystemPackage): Record<string, S
   }
 
   return values;
-}
-
-function clampInt(value: number, min: number, max: number | null) {
-  if (value < min) {
-    return min;
-  }
-  if (max !== null && value > max) {
-    return max;
-  }
-  return value;
 }
 
 export function updateCharacterValue(data: CharacterData, moduleId: string, value: SheetValue): CharacterData {
@@ -244,18 +234,16 @@ function normalizeCardInstanceJson(input: unknown, index: number): unknown {
     return input;
   }
 
+  const position = defaultCardPosition(index);
+
   return {
     ...input,
     tableModuleId: typeof input.deckModuleId === "string" ? input.deckModuleId : "",
     state: typeof input.containerId === "string" ? input.containerId : "configured",
-    xPct: typeof input.xPct === "number" ? input.xPct : 4 + (index % 5) * 18,
-    yPct: typeof input.yPct === "number" ? input.yPct : 6 + Math.floor(index / 5) * 24,
+    xPct: typeof input.xPct === "number" ? input.xPct : position.xPct,
+    yPct: typeof input.yPct === "number" ? input.yPct : position.yPct,
     zIndex: typeof input.zIndex === "number" ? input.zIndex : index + 1,
     rotation: typeof input.rotation === "number" ? input.rotation : input.orientation === "sideways" ? 90 : 0,
     scale: typeof input.scale === "number" ? input.scale : 1,
   };
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

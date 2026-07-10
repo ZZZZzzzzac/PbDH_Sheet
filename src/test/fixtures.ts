@@ -10,7 +10,7 @@ import moduleDemoModules from "../../public/system-packages/demo-modules/modules
 import moduleDemoLayoutCss from "../../public/system-packages/demo-modules/layouts/main.css?raw";
 import moduleDemoLayoutHtml from "../../public/system-packages/demo-modules/layouts/main.html?raw";
 
-function withHtmlTemplateContent<TPage extends { layout: { html: string; css?: string } }>(
+function withHtmlTemplateContent<TPage extends { layout: { 类型: string; html: string; css?: string } }>(
   pagesInput: TPage[],
   htmlContent: string,
   cssContent?: string,
@@ -18,9 +18,9 @@ function withHtmlTemplateContent<TPage extends { layout: { html: string; css?: s
   return pagesInput.map((page) => ({
     ...page,
     layout: {
-      ...page.layout,
+      类型: "htmlTemplate" as const,
       htmlContent,
-      cssContent,
+      ...(cssContent ? { cssContent } : {}),
     },
   }));
 }

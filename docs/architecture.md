@@ -415,23 +415,16 @@ Sheet Modules 是框架提供的组件。单个模块：
 
 Card Definition 是不可变资源数据。Card Instance 是 Player 拥有的运行时状态。
 
-MVP Card Instance 状态包含：
+卡牌以自由桌面模型展示：玩家在一个卡牌桌面区域内自由摆放卡牌，通过坐标和层级确定位置，不强制离散容器区域。卡牌实例的具体字段是实现细节，不在此固定。
 
-- instance ID。
-- definition ID。
-- container ID。
-- order。
-- face。
-- orientation。
-- token count。
-
-Card Engine 支持展示、创建、删除、移动、排序、详情查看、翻面、旋转和数字指示物变化。它不实现抽牌、弃牌、洗牌、支付、数量上限、合法性检查或效果结算。合法性问题由 Validation Scripts 报告。
+Card Engine 支持 MVP 范围内的展示、创建、删除、拖拽移动、排序和状态切换。翻面、横置/竖置、指示物数字等操作列入后续信号。它不实现抽牌、弃牌、洗牌、支付、数量上限、合法性检查或效果结算。合法性问题由 Validation Scripts 报告。
 
 ## Storage 边界
 
 - `localStorage` 只保存小指针和 UI 偏好。
-- IndexedDB 保存 System Package cache、Character Saves、玩家上传图片和资源索引。
-- 图片按 Blob/resource 引用保存，不以 base64 写入 Character Data。
+- IndexedDB 保存 System Package cache、Character Saves、玩家上传图片 Blob 和资源索引。
+- System Package 图片按 Blob 引用保存，不写入 Character Data；Player 导入 Character Data 后通过资源引用和重新加载 System Package 恢复系统图片。
+- 玩家上传的头像/立绘属于玩家数据，必须随 Character Data 一起可恢复；Character Data 中以 dataUrl/base64 保存这些图片，确保导出导入跨设备可用。
 - System Package cache 可能丢失；Player 可以重新上传 zip。
 - Character Data JSON 导出是恢复机制。
 

@@ -1,0 +1,84 @@
+.module-slot {
+  min-width: 0;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: minmax(68px, 0.28fr) minmax(0, 1fr);
+  align-items: center;
+  min-width: 0;
+  min-height: 64px;
+  border: 1px solid #cfd7d9;
+  background: #ffffff;
+}
+
+.container-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+fieldset.container {
+  margin: 0;
+  padding: 0;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  min-height: 62px;
+  padding: 0 14px;
+  border-right: 1px solid #d8dfe1;
+  color: #425056;
+  font-weight: 700;
+}
+
+.input {
+  width: 100%;
+  min-height: 62px;
+  border: 0;
+  padding: 0 14px;
+  background: #ffffff;
+  color: #202426;
+  font-size: 1.05rem;
+}
+
+.container-stack .label {
+  min-height: 44px;
+  border-right: 0;
+  border-bottom: 1px solid #d8dfe1;
+}
+
+.textarea {
+  min-height: 128px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.display-text {
+  margin: 0;
+  padding: 12px 14px 14px;
+  color: #202426;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.input:focus-visible {
+  outline: 3px solid #e0b441;
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+
+  .label {
+    min-height: 42px;
+    border-right: 0;
+    border-bottom: 1px solid #d8dfe1;
+  }
+}
