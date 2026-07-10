@@ -54,13 +54,13 @@ export interface StorageService {
   loadPlayerImageBlob(imageId: string): Promise<StoredPlayerImageBlob | null>;
 }
 
-class PbDHDatabase extends Dexie {
+export class PbDHDatabase extends Dexie {
   characterSaves!: Table<CharacterDataRecord, string>;
   systemPackages!: Table<SystemPackageRecord, string>;
   playerImages!: Table<StoredPlayerImageBlob, string>;
 
-  constructor() {
-    super("pbdh-sheet");
+  constructor(name = "pbdh-sheet") {
+    super(name);
     this.version(1).stores({
       characterSaves: "id, packageId",
     });
