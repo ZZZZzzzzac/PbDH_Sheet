@@ -357,8 +357,7 @@ describe("runtime store", () => {
     await act(async () => {
       await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
       const result = await useRuntimeStore.getState().runPreOutputValidation();
-      expect(result.shouldPrompt).toBe(true);
-      expect(result.issues).toEqual([expect.objectContaining({ code: "OUTPUT_CHECK" })]);
+      expect(result).toEqual([expect.objectContaining({ code: "OUTPUT_CHECK" })]);
     });
 
     configureRuntimeDependencies({
@@ -368,7 +367,7 @@ describe("runtime store", () => {
 
     await act(async () => {
       const result = await useRuntimeStore.getState().runPreOutputValidation();
-      expect(result.shouldPrompt).toBe(false);
+      expect(result).toEqual([]);
     });
   });
 

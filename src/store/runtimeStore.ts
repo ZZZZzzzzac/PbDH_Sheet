@@ -42,9 +42,6 @@ export const autosaveDelayMs = 250;
 type BootStatus = "idle" | "loading" | "ready" | "error";
 type StorageStatus = "idle" | "saving" | "saved" | "error";
 type ValidationStatus = "idle" | "running" | "complete";
-export type PreOutputValidationResult =
-  | { shouldPrompt: false; issues: ValidationIssue[] }
-  | { shouldPrompt: true; issues: ValidationIssue[] };
 
 interface RuntimeState {
   currentPackage: SystemPackage | null;
@@ -81,7 +78,7 @@ interface RuntimeState {
   setCardTableCardWidth: (tableModuleId: string, widthPx: number) => void;
   deleteCardInstance: (instanceId: string) => void;
   runValidationChecks: () => Promise<void>;
-  runPreOutputValidation: () => Promise<PreOutputValidationResult>;
+  runPreOutputValidation: () => Promise<ValidationIssue[]>;
   uploadPlayerImage: (moduleId: string, file: File) => Promise<void>;
   importCharacterDataFromText: (text: string) => Promise<void>;
   clearImportMessage: () => void;
@@ -132,7 +129,7 @@ async function loadPackageIntoState(
     set({
       currentPackage: systemPackage,
       packageAssetUrls: activePackageAssetResolver.urls,
-      characterData: ensureCardState(loaded.characterData),
+      characterData: loaded.characterData,
       characterSaves: loaded.characterSaves,
       activeCharacterSaveId: loaded.activeCharacterSaveId,
       ...emptyDerivedState(),
@@ -613,13 +610,13 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     const characterData = get().characterData;
     if (!currentPackage || !characterData) {
       set({ validationIssues: [], validationStatus: "complete" });
-      return { shouldPrompt: false, issues: [] };
+      return [];
     }
 
     const checks = currentPackage.validationChecks ?? [];
     if (checks.length === 0) {
       set({ validationIssues: [], validationStatus: "complete" });
-      return { shouldPrompt: false, issues: [] };
+      return [];
     }
 
     set({ validationStatus: "running" });
@@ -633,7 +630,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       checks,
     });
     set({ validationIssues, validationStatus: "complete" });
-    return { shouldPrompt: validationIssues.length > 0, issues: validationIssues };
+    return validationIssues;
   },
 
   async uploadPlayerImage(moduleId, file) {
@@ -697,7 +694,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     }
 
     set({
-      characterData: ensureCardState(result.data),
+      characterData: result.data,
       activeCharacterSaveId: result.data.character.id,
       ...emptyDerivedState(),
       importError: null,
@@ -710,7 +707,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       packageId: result.data.systemPackage.id,
       name: "导入角色",
       updatedAt: result.data.updatedAt,
-      data: ensureCardState(result.data)!,
+      data: result.data,
     });
     await runtimeDependencies.storage.setActiveCharacterSaveId(result.data.systemPackage.id, result.data.character.id);
     set({

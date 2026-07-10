@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { createEmptyCharacterData, updateCharacterValue } from "./characterData";
-import { runValidationChecks } from "./validationRunner";
+import { runValidationChecksInProcess } from "./validationScript";
 import { minimalSystemPackage } from "../test/fixtures";
 
 describe("Validation Runner", () => {
   it("runs multiple checks and normalizes issues with source IDs", async () => {
     const characterData = updateCharacterValue(createEmptyCharacterData(minimalSystemPackage), "character-name", "阿青");
 
-    const issues = await runValidationChecks({
+    const issues = await runValidationChecksInProcess({
       characterData,
       resourceLibraries: [],
       packageMetadata: { id: "demo", version: "0.1.0" },
@@ -39,7 +39,7 @@ describe("Validation Runner", () => {
   });
 
   it("turns script exceptions into error issues", async () => {
-    const issues = await runValidationChecks({
+    const issues = await runValidationChecksInProcess({
       characterData: createEmptyCharacterData(minimalSystemPackage),
       resourceLibraries: [],
       packageMetadata: { id: "demo", version: "0.1.0" },
@@ -63,7 +63,7 @@ describe("Validation Runner", () => {
   });
 
   it("reports invalid script output as an error issue", async () => {
-    const issues = await runValidationChecks({
+    const issues = await runValidationChecksInProcess({
       characterData: createEmptyCharacterData(minimalSystemPackage),
       resourceLibraries: [],
       packageMetadata: { id: "demo", version: "0.1.0" },
@@ -88,7 +88,7 @@ describe("Validation Runner", () => {
   it("does not let scripts mutate original Character Data", async () => {
     const characterData = updateCharacterValue(createEmptyCharacterData(minimalSystemPackage), "character-name", "阿青");
 
-    const issues = await runValidationChecks({
+    const issues = await runValidationChecksInProcess({
       characterData,
       resourceLibraries: [],
       packageMetadata: { id: "demo", version: "0.1.0" },

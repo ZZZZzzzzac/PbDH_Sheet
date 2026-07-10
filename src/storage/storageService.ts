@@ -16,7 +16,6 @@ interface SystemPackageRecord {
   packageId: string;
   data?: SystemPackage;
   packageAssets?: RuntimePackageAsset[];
-  playerImage?: StoredPlayerImageBlob;
 }
 
 export interface StoredPlayerImageBlob {
@@ -58,6 +57,7 @@ export interface StorageService {
 class PbDHDatabase extends Dexie {
   characterSaves!: Table<CharacterDataRecord, string>;
   systemPackages!: Table<SystemPackageRecord, string>;
+  playerImages!: Table<StoredPlayerImageBlob, string>;
 
   constructor() {
     super("pbdh-sheet");
@@ -68,13 +68,26 @@ class PbDHDatabase extends Dexie {
       characterSaves: "id, packageId",
       systemPackages: "id, packageId",
     });
+    this.version(3).stores({
+      characterSaves: "id, packageId",
+      systemPackages: "id, packageId",
+      playerImages: "id",
+    }).upgrade(async (tx) => {
+      const legacy = await tx.table("systemPackages").where("id").startsWith("player-image:").toArray();
+      for (const record of legacy) {
+        const image = record.playerImage;
+        if (image) {
+          await tx.table("playerImages").put({ id: image.id, name: image.name, mimeType: image.mimeType, blob: image.blob });
+        }
+        await tx.table("systemPackages").delete(record.id);
+      }
+    });
   }
 }
 
 const db = new PbDHDatabase();
 const currentCharacterRecordId = "current-character";
 const currentSystemPackageRecordId = "current-system-package";
-const playerImageRecordPrefix = "player-image:";
 const currentCharacterPointerPrefix = "pbdh-current-character:";
 
 export const storageService: StorageService = {
@@ -193,16 +206,16 @@ export const storageService: StorageService = {
   },
 
   async savePlayerImageBlob(image: StoredPlayerImageBlob): Promise<void> {
-    await db.systemPackages.put({
-      id: `${playerImageRecordPrefix}${image.id}`,
-      packageId: playerImageRecordPrefix,
-      playerImage: image,
+    await db.playerImages.put({
+      id: image.id,
+      name: image.name,
+      mimeType: image.mimeType,
+      blob: image.blob,
     });
   },
 
   async loadPlayerImageBlob(imageId: string): Promise<StoredPlayerImageBlob | null> {
-    const record = await db.systemPackages.get(`${playerImageRecordPrefix}${imageId}`);
-    return record?.playerImage ?? null;
+    return (await db.playerImages.get(imageId)) ?? null;
   },
 };
 

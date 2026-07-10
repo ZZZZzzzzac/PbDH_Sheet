@@ -22,6 +22,12 @@ function downloadText(text: string, fileName: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
+function sanitizeFileName(name: string): string {
+  const trimmed = name.trim();
+  const safe = trimmed.replace(/[<>:"/\\|?*]/g, "_");
+  return safe || "character";
+}
+
 function nextFrame() {
   return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 }
@@ -147,8 +153,10 @@ export default function App() {
       return;
     }
 
+    const baseName = sanitizeFileName(activeCharacterSaveName);
+
     if (kind === "json") {
-      downloadText(exportCharacterData(characterData), `${characterData.character.id}.json`, "application/json");
+      downloadText(exportCharacterData(characterData), `${baseName}.json`, "application/json");
       return;
     }
 
@@ -156,7 +164,7 @@ export default function App() {
       await preparePrintableContent();
       const printableRoot = document.querySelector(".sheet-tool");
       await waitForVisibleImages(printableRoot ?? document);
-      downloadText(buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined), `${characterData.character.id}.html`, "text/html");
+      downloadText(buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined, activeCharacterSaveName), `${baseName}.html`, "text/html");
       return;
     }
 
@@ -166,8 +174,8 @@ export default function App() {
   };
 
   const beginOutput = async (kind: OutputKind) => {
-    const result = await runPreOutputValidation();
-    if (result.shouldPrompt) {
+    const issues = await runPreOutputValidation();
+    if (issues.length > 0) {
       setPendingOutput(kind);
       setValidationDialogOpen(true);
       return;

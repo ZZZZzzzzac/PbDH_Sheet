@@ -81,6 +81,8 @@ const cardTableModuleSchema = sheetModuleBaseSchema.extend({
   显示方式: z.enum(["image", "text"]).optional(),
   卡名字段: z.string().min(1).optional(),
   描述字段: z.string().min(1).optional(),
+  卡图字段: z.string().min(1).optional(),
+  显示方式字段: z.string().min(1).optional(),
 });
 
 const resourcePickerQuerySchema = z.object({
@@ -249,16 +251,6 @@ const validationCheckSchema = z.object({
   scriptContent: z.string().min(1),
 });
 
-const systemPackageSchema = z.object({
-  manifest: manifestSchema,
-  pages: z.array(pageSchema).min(1),
-  modules: z.array(sheetModuleSchema).min(1),
-  assets: z.array(assetSchema).optional(),
-  resourceLibraries: z.array(resourceLibrarySchema).optional(),
-  dependencies: z.array(dependencyRuleSchema).optional(),
-  validationChecks: z.array(validationCheckSchema).optional(),
-});
-
 const systemPackageEnvelopeSchema = z.object({
   manifest: manifestSchema,
   pages: z.array(pageSchema).min(1),
@@ -269,7 +261,15 @@ const systemPackageEnvelopeSchema = z.object({
   validationChecks: z.array(validationCheckSchema).optional(),
 });
 
-export type SystemPackage = z.infer<typeof systemPackageSchema>;
+export interface SystemPackage {
+  manifest: z.infer<typeof manifestSchema>;
+  pages: PackagePage[];
+  modules: SheetModule[];
+  assets?: PackageAsset[];
+  resourceLibraries?: ResourceLibrary[];
+  dependencies?: DependencyRule[];
+  validationChecks?: ValidationCheck[];
+}
 export type FreeTextModule = z.infer<typeof freeTextModuleSchema>;
 export type LongTextModule = z.infer<typeof longTextModuleSchema>;
 export type CheckboxResourceModule = z.infer<typeof checkboxResourceModuleSchema>;
@@ -733,19 +733,37 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
     }
   }
 
-  for (const library of systemPackage.resourceLibraries ?? []) {
-    library.entries.forEach((entry, entryIndex) => {
-      const cardArtRef = entry.fields.卡图;
-      if (!cardArtRef || assetRefs.has(cardArtRef)) {
-        return;
-      }
+  const cardArtFieldsByLibrary = new Map<string, Set<string>>();
+  for (const module of systemPackage.modules) {
+    if (module.类型 !== "cardTable") {
+      continue;
+    }
+    const artField = module.卡图字段 ?? "卡图";
+    const artFields = cardArtFieldsByLibrary.get(module.资源库ID) ?? new Set<string>();
+    artFields.add(artField);
+    cardArtFieldsByLibrary.set(module.资源库ID, artFields);
+  }
 
-      issues.push({
-        level: "error",
-        code: "MISSING_CARD_ART_ASSET_REFERENCE",
-        text: `Card Definition 引用了不存在的卡图 Asset：${cardArtRef}`,
-        path: `resourceLibraries.${library.ID}.entries.${entryIndex}.卡图`,
-      });
+  for (const library of systemPackage.resourceLibraries ?? []) {
+    const artFields = cardArtFieldsByLibrary.get(library.ID);
+    if (!artFields || artFields.size === 0) {
+      continue;
+    }
+
+    library.entries.forEach((entry, entryIndex) => {
+      for (const artField of artFields) {
+        const cardArtRef = entry.fields[artField];
+        if (!cardArtRef || assetRefs.has(cardArtRef)) {
+          continue;
+        }
+
+        issues.push({
+          level: "error",
+          code: "MISSING_CARD_ART_ASSET_REFERENCE",
+          text: `Card Definition 引用了不存在的卡图 Asset：${cardArtRef}`,
+          path: `resourceLibraries.${library.ID}.entries.${entryIndex}.${artField}`,
+        });
+      }
     });
   }
 
@@ -774,21 +792,12 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
 }
 
 export function validateCachedSystemPackage(input: unknown): CachedPackageValidationResult {
-  const parsed = systemPackageSchema.safeParse(input);
-
-  if (!parsed.success) {
-    return {
-      ok: false,
-      issues: parsed.error.issues.map((issue) => ({
-        level: "fatal",
-        code: "CACHED_PACKAGE_INVALID",
-        text: issue.message,
-        path: issue.path.join("."),
-      })),
-    };
+  const result = validateSystemPackage(input);
+  if (result.ok) {
+    return { ok: true, package: result.package };
   }
 
-  return { ok: true, package: parsed.data };
+  return { ok: false, issues: result.issues.map((issue) => ({ ...issue, code: issue.code === "PACKAGE_SHAPE_INVALID" ? "CACHED_PACKAGE_INVALID" : issue.code })) };
 }
 
 export function findModule(systemPackage: SystemPackage, moduleId: string): SheetModule | undefined {

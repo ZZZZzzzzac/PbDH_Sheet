@@ -1,5 +1,5 @@
-import type { SheetValue } from "../domain/characterData";
 import { useRuntimeStore } from "../store/runtimeStore";
+import type { CheckboxState, CountableState, SheetValue } from "../domain/characterData";
 
 export function useTextModuleState(moduleId: string, defaultValue = "") {
   const rawValue = useRuntimeStore((state) => state.characterData?.character.values[moduleId]);
@@ -9,9 +9,17 @@ export function useTextModuleState(moduleId: string, defaultValue = "") {
   return [value, (nextValue: string) => updateModuleValue(moduleId, nextValue)] as const;
 }
 
-export function readModuleState<T>(rawValue: SheetValue | undefined, fallback: T): T {
-  if (rawValue && typeof rawValue === "object") {
-    return { ...fallback, ...(rawValue as Partial<T>) };
+export function readCheckboxState(rawValue: SheetValue | undefined, fallback: CheckboxState): CheckboxState {
+  if (rawValue && typeof rawValue === "object" && !Array.isArray(rawValue) && !("kind" in rawValue)) {
+    return { ...fallback, ...(rawValue as Record<string, boolean>) };
+  }
+
+  return fallback;
+}
+
+export function readCountableState(rawValue: SheetValue | undefined, fallback: CountableState): CountableState {
+  if (rawValue && typeof rawValue === "object" && "current" in rawValue) {
+    return { ...fallback, ...(rawValue as Partial<CountableState>) };
   }
 
   return fallback;

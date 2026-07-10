@@ -1,6 +1,6 @@
 import type { CountableResourceModule as CountableResourceModuleConfig } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
-import { readModuleState } from "./moduleState";
+import { readCountableState } from "./moduleState";
 import { clampInt } from "../utils";
 
 interface CountableResourceModuleProps {
@@ -20,7 +20,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
 
   const rawValue = useRuntimeStore((state) => state.characterData?.character.values[module.ID]);
   const updateModuleValue = useRuntimeStore((state) => state.updateModuleValue);
-  const state = readModuleState<CountableState>(rawValue, fallback);
+  const state = readCountableState(rawValue, fallback);
   const max = state.max;
   const current = clampInt(state.current, min, max);
 

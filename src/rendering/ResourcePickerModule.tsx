@@ -26,14 +26,7 @@ export function ResourcePickerModule({ module, systemPackage }: ResourcePickerMo
       return;
     }
 
-    const selectedEntries = module.多选 ? entries : entries.slice(0, 1);
-    console.log("resourceSelected", {
-      moduleId: module.ID,
-      libraryId: library.ID,
-      selectedItemIds: selectedEntries.map((entry) => entry.ID),
-      selectedItemSnapshots: selectedEntries.map((entry) => ({ ...entry.fields })),
-    });
-    commitResourceSelection(module.ID, library.ID, selectedEntries);
+    commitResourceSelection(module.ID, library.ID, entries);
     setOpen(false);
   };
 

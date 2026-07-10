@@ -236,9 +236,13 @@ describe("validateSystemPackage", () => {
     }
   });
 
-  it("reports missing Card artwork asset references", () => {
+it("reports missing Card artwork asset references", () => {
     const invalidPackage = {
       ...minimalSystemPackage,
+      modules: [
+        ...minimalSystemPackage.modules,
+        { ID: "domain-card-table", 类型: "cardTable", 标签: "领域卡牌桌面", 资源库ID: "domain-cards" },
+      ],
       resourceLibraries: [
         {
           ID: "domain-cards",
@@ -257,6 +261,7 @@ describe("validateSystemPackage", () => {
         expect.objectContaining({
           code: "MISSING_CARD_ART_ASSET_REFERENCE",
           level: "error",
+          path: "resourceLibraries.domain-cards.entries.0.卡图",
         }),
       ]),
     );

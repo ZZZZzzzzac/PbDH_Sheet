@@ -3,11 +3,11 @@ import type { SystemPackage } from "../domain/systemPackage";
 
 const embeddedCharacterDataId = "pbdh-character-data";
 
-export function buildReadonlyHtmlSnapshot(data: CharacterData, printableRoot?: Element): string {
+export function buildReadonlyHtmlSnapshot(data: CharacterData, printableRoot?: Element, title?: string): string {
   const jsonText = exportCharacterData(data);
   const inertJson = jsonText.replace(/</g, "\\u003c");
-  const title = htmlEscape(readCharacterName(data));
-  const printableHtml = printableRoot ? serializePrintableRoot(printableRoot) : buildFallbackSnapshotBody(data);
+  const snapshotTitle = htmlEscape(title || readCharacterName(data));
+  const printableHtml = printableRoot ? serializePrintableRoot(printableRoot) : buildFallbackSnapshotBody(data, title);
   const documentStyles = printableRoot ? collectDocumentStyles(printableRoot.ownerDocument) : "";
   const snapshotStyles = buildSnapshotStyles();
 
@@ -15,7 +15,7 @@ export function buildReadonlyHtmlSnapshot(data: CharacterData, printableRoot?: E
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <title>${title}</title>
+  <title>${snapshotTitle}</title>
   <style>${documentStyles}
 ${snapshotStyles}</style>
 </head>
@@ -28,8 +28,8 @@ ${snapshotStyles}</style>
 </html>`;
 }
 
-function buildFallbackSnapshotBody(data: CharacterData): string {
-  const title = htmlEscape(readCharacterName(data));
+function buildFallbackSnapshotBody(data: CharacterData, title?: string): string {
+  const snapshotTitle = htmlEscape(title || readCharacterName(data));
   const values = Object.entries(data.character.values)
     .map(([key, value]) => `<tr><th>${htmlEscape(key)}</th><td>${htmlEscape(formatSnapshotValue(value))}</td></tr>`)
     .join("");
@@ -38,7 +38,7 @@ function buildFallbackSnapshotBody(data: CharacterData): string {
     .join("");
 
   return `
-    <h1>${title}</h1>
+    <h1>${snapshotTitle}</h1>
     <p>${htmlEscape(data.systemPackage.id)} v${htmlEscape(data.systemPackage.version)}</p>
     <table><tbody>${values}</tbody></table>
     <h2>Cards</h2>

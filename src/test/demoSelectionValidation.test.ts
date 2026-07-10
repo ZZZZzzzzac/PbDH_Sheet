@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { characterDataSchemaVersion, type CharacterData } from "../domain/characterData";
 import { normalizeResourceLibraries } from "../domain/resourceLibrary";
-import { runValidationChecks } from "../domain/validationRunner";
+import { runValidationChecksInProcess } from "../domain/validationScript";
 import classes from "../../public/system-packages/demo-selection/resources/classes.json";
 import subclasses from "../../public/system-packages/demo-selection/resources/subclasses.json";
 import domainCards from "../../public/system-packages/demo-selection/resources/domain_cards.json";
@@ -75,7 +75,7 @@ async function runDemoSelectionCheck(values: Record<string, string>) {
     throw new Error("demo-selection resource libraries should normalize");
   }
 
-  return runValidationChecks({
+  return runValidationChecksInProcess({
     characterData: createCharacterData(values),
     resourceLibraries: resourceLibraries.resourceLibraries,
     packageMetadata: { id: "demo-selection", version: "0.1.0" },

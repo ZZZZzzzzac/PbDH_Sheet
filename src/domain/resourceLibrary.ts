@@ -282,7 +282,7 @@ export function uniqueResourceFieldValues(library: ResourceLibrary, fieldKey: st
 }
 
 export function summarizeResourceEntry(entry: ResourceLibraryEntry): string {
-  return entry.fields.名称 || entry.fields.Name || entry.fields.name || entry.ID;
+  return entry.fields.名称 || entry.ID;
 }
 
 function resourceValueToString(value: unknown): string {

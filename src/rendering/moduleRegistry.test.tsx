@@ -122,7 +122,6 @@ describe("Module Registry rendering", () => {
   });
 
   it("opens Resource Picker browser and fills target text modules without storing a selection value", () => {
-    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
     renderModuleDemo(createResourcePickerPackage());
 
     fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
@@ -147,14 +146,6 @@ describe("Module Registry rendering", () => {
     expect(screen.getByText("烈焰")).toBeVisible();
     expect(screen.getByText("选择领域后显示")).toBeVisible();
     expect(screen.getByText("隐藏页面已显示")).toBeVisible();
-    expect(logSpy).toHaveBeenCalledWith(
-      "resourceSelected",
-      expect.objectContaining({
-        moduleId: "domain-picker",
-        libraryId: "domains",
-        selectedItemIds: ["flame-1"],
-      }),
-    );
   });
 
   it("supports Resource Picker multi-select and default Resource Library filters", () => {

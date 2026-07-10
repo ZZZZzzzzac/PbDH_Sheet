@@ -11,7 +11,7 @@
 
 第一版支持多个 JS Validation Scripts：
 
-- System Package 声明多个检查脚本及执行顺序。
+- System Package 声明多个检查脚本；执行顺序即 manifest 中 `validationChecks` 数组的声明顺序，无需单独的顺序字段，框架按该顺序串行运行。
 - 每个脚本在独立 Web Worker 中执行。
 - 输入包含 Character Data、Resource Libraries、System Package 标识等数据副本。
 - Worker 内对输入做只读保护，脚本修改输入不会影响主应用真实状态。

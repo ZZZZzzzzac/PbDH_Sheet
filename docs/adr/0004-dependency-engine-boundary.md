@@ -23,9 +23,10 @@ Dependency Engine 是独立核心模块：
 - 依赖条件允许读取 Resource Library 条目字段。
 - 依赖条件只读取角色卡相关数据：Character Data、Resource Libraries、Card Instance State 和 System Package metadata；不读取 DOM、UI 临时状态或 Validation Script 结果。
 - 依赖动作分为三类：
-  - `view effect`：显示/隐藏页面或模块、高亮模块、切换只读展示内容等。
+  - `view effect`：显示/隐藏页面或模块、高亮模块等影响模块可见性的效果。
   - `data patch`：自动填充字段、设置勾选值、清空字段等有限 Character Data 修改。
   - `option effect`：筛选、包含或排除资源库选项。
+- `fillText` 动作按目标模块类型分流：写入 freeText/longText 产 data patch（修改 Character Data）；写入 readOnlyDisplay 只更新内存中的派生展示内容，不写 Character Data，也不算 view effect（它不改变模块可见性），是 ReadOnlyDisplay 专属的派生展示状态更新。
 - 每条 dependency rule 应声明 `sources` 和 `targets`，用于校验、冲突检测和未来性能优化。
 - 依赖冲突是 System Package 错误，由 Validator 或运行时依赖检查报 error，Author 负责修复。
 - MVP 不支持链式触发。规则基于当前已提交 Character Data 单轮计算，产生 patch 后提交，不继续用本轮结果触发下一轮。

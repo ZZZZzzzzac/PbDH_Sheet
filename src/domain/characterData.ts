@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { defaultCardPosition, type CardInstance } from "./cardEngine";
+import { type CardInstance } from "./cardEngine";
 import type { SystemPackage } from "./systemPackage";
-import { clampInt, generateId, isPlainObject } from "../utils";
+import { clampInt, generateId } from "../utils";
 
 export const characterDataSchemaVersion = "0.1.0";
 
@@ -179,7 +179,7 @@ export function parseCharacterDataJson(text: string, currentPackage: SystemPacka
   let parsedJson: unknown;
 
   try {
-    parsedJson = normalizeCharacterDataJson(JSON.parse(text));
+    parsedJson = JSON.parse(text);
   } catch {
     return { ok: false, error: "导入失败：Character JSON 格式错误。" };
   }
@@ -204,46 +204,4 @@ export function parseCharacterDataJson(text: string, currentPackage: SystemPacka
   }
 
   return { ok: true, data: parsed.data };
-}
-
-function normalizeCharacterDataJson(input: unknown): unknown {
-  if (!isPlainObject(input)) {
-    return input;
-  }
-
-  const cards = isPlainObject(input.cards) ? input.cards : undefined;
-  if (!cards || !Array.isArray(cards.instances)) {
-    return input;
-  }
-
-  return {
-    ...input,
-    cards: {
-      ...cards,
-      instances: cards.instances.map((instance, index) => normalizeCardInstanceJson(instance, index)),
-    },
-  };
-}
-
-function normalizeCardInstanceJson(input: unknown, index: number): unknown {
-  if (!isPlainObject(input)) {
-    return input;
-  }
-
-  if (typeof input.tableModuleId === "string") {
-    return input;
-  }
-
-  const position = defaultCardPosition(index);
-
-  return {
-    ...input,
-    tableModuleId: typeof input.deckModuleId === "string" ? input.deckModuleId : "",
-    state: typeof input.containerId === "string" ? input.containerId : "configured",
-    xPct: typeof input.xPct === "number" ? input.xPct : position.xPct,
-    yPct: typeof input.yPct === "number" ? input.yPct : position.yPct,
-    zIndex: typeof input.zIndex === "number" ? input.zIndex : index + 1,
-    rotation: typeof input.rotation === "number" ? input.rotation : input.orientation === "sideways" ? 90 : 0,
-    scale: typeof input.scale === "number" ? input.scale : 1,
-  };
 }

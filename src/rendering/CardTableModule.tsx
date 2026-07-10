@@ -234,7 +234,8 @@ function CardView({
   const [imageFailed, setImageFailed] = useState(false);
   const assetUrls = useRuntimeStore((state) => state.packageAssetUrls);
   const deleteCardInstance = useRuntimeStore((state) => state.deleteCardInstance);
-  const cardArtRef = definition?.fields.卡图 ?? "";
+  const artField = moduleConfig.卡图字段 ?? "卡图";
+  const cardArtRef = definition?.fields[artField] ?? "";
   const cardArtUrl = cardArtRef ? assetUrls[cardArtRef] : undefined;
   const displayMode = resolveCardDisplayMode(definition, moduleConfig);
   const showImage = displayMode === "image" && cardArtUrl && !imageFailed;
@@ -331,7 +332,7 @@ function CardContextMenu({
 function TextCard({ definition, module: moduleConfig, fallbackName }: { definition?: ResourceLibraryEntry; module: CardTableModuleConfig; fallbackName: string }) {
   const nameField = moduleConfig.卡名字段 ?? "名称";
   const descField = moduleConfig.描述字段 ?? "描述";
-  const tags = inferCardTags(definition, nameField, descField);
+  const tags = inferCardTags(definition, moduleConfig, nameField, descField);
 
   return (
     <div className="play-card-text">
@@ -353,18 +354,28 @@ function TextCard({ definition, module: moduleConfig, fallbackName }: { definiti
 }
 
 function resolveCardDisplayMode(definition: ResourceLibraryEntry | undefined, moduleConfig: CardTableModuleConfig): "image" | "text" {
-  const entryMode = definition?.fields.卡牌显示方式;
+  const displayModeField = moduleConfig.显示方式字段 ?? "卡牌显示方式";
+  const entryMode = definition?.fields[displayModeField];
   if (entryMode === "image" || entryMode === "text") {
     return entryMode;
   }
   return moduleConfig.显示方式 ?? "image";
 }
 
-function inferCardTags(definition: ResourceLibraryEntry | undefined, nameField: string, descField: string): string[] {
+function inferCardTags(
+  definition: ResourceLibraryEntry | undefined,
+  moduleConfig: CardTableModuleConfig,
+  nameField: string,
+  descField: string,
+): string[] {
   if (!definition) {
     return [];
   }
-  const excludeFields = new Set(["ID", nameField, descField, "卡图", "卡牌显示方式"]);
+  const excludeFields = new Set<string>(["ID", nameField, descField]);
+  const artField = moduleConfig.卡图字段 ?? "卡图";
+  const displayModeField = moduleConfig.显示方式字段 ?? "卡牌显示方式";
+  excludeFields.add(artField);
+  excludeFields.add(displayModeField);
   return Object.entries(definition.fields)
     .filter(([key, value]) => !excludeFields.has(key) && value)
     .map(([, value]) => value);

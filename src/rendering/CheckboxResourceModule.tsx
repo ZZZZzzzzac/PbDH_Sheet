@@ -1,6 +1,6 @@
 import type { CheckboxResourceModule as CheckboxResourceModuleConfig } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
-import { readModuleState } from "./moduleState";
+import { readCheckboxState } from "./moduleState";
 
 interface CheckboxResourceModuleProps {
   module: CheckboxResourceModuleConfig;
@@ -12,7 +12,7 @@ export function CheckboxResourceModule({ module }: CheckboxResourceModuleProps) 
   const rawValue = useRuntimeStore((state) => state.characterData?.character.values[module.ID]);
   const commitCheckboxChange = useRuntimeStore((state) => state.commitCheckboxChange);
   const fallback = Object.fromEntries(module.选项.map((option) => [option.ID, option.默认选中 ?? false]));
-  const value = readModuleState<CheckboxState>(rawValue, fallback);
+  const value = readCheckboxState(rawValue, fallback);
   const labelId = `module-${module.ID}-label`;
 
   const setChecked = (optionId: string, checked: boolean) => {
