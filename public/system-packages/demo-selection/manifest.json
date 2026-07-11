@@ -4,6 +4,10 @@
   "版本": "0.1.0",
   "schemaVersion": "0.1.0",
   "pages": "pages.json",
+  "shell": {
+    "html": "layouts/shell.html",
+    "css": "layouts/shell.css"
+  },
   "modules": "modules.json",
   "dependencies": "dependencies.json",
   "characterCreationGuide": "guides/character-creation.json",

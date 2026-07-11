@@ -17,6 +17,7 @@ const packageManifestSchema = z.object({
   schemaVersion: z.string().min(1),
   pages: z.string().min(1),
   modules: z.string().min(1),
+  shell: z.object({ html: z.string().min(1), css: z.string().min(1).optional() }).optional(),
   dependencies: z.string().min(1).optional(),
   characterCreationGuide: z.string().min(1).optional(),
   assets: z
@@ -120,6 +121,8 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
   if (dependenciesJson && !dependenciesJson.ok) {
     return { ok: false, issues: [dependenciesJson.issue] };
   }
+  const shell = manifest.data.shell ? loadTemplateFilesFromVfs(vfs, manifest.data.shell) : undefined;
+  if (shell && !shell.ok) return { ok: false, issues: [shell.issue] };
 
   const guideJson = manifest.data.characterCreationGuide
     ? readPackageJsonFile(vfs, manifest.data.characterCreationGuide)
@@ -146,6 +149,7 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
     dependenciesJson?.value,
     validationChecks.value,
     guideJson?.value,
+    shell?.value,
   );
   if (!normalized.ok) {
     return normalized;
@@ -165,6 +169,7 @@ function normalizeManifestPackage(
   dependencies?: unknown,
   validationChecks?: Array<{ ID: string; 脚本: string; scriptContent: string }>,
   characterCreationGuide?: unknown,
+  shell?: unknown,
 ): PackageValidationResult {
   return validateSystemPackage({
     manifest: {
@@ -174,6 +179,7 @@ function normalizeManifestPackage(
       schemaVersion: manifest.schemaVersion,
     },
     pages,
+    shell,
     modules,
     assets: manifest.assets ?? [],
     resourceLibraries,
@@ -181,6 +187,14 @@ function normalizeManifestPackage(
     validationChecks,
     characterCreationGuide,
   });
+}
+
+function loadTemplateFilesFromVfs(vfs: PackageVirtualFileSystem, reference: { html: string; css?: string }) {
+  const html = vfs.readText(reference.html);
+  if (!html.ok) return html;
+  const css = reference.css ? vfs.readText(reference.css) : undefined;
+  if (css && !css.ok) return css;
+  return { ok: true as const, value: { 类型: "htmlTemplate" as const, htmlContent: html.value, ...(css?.ok ? { cssContent: css.value } : {}) } };
 }
 
 export async function loadSystemPackageFromDirectoryFiles(files: Iterable<File>): Promise<PackageLoadResult> {

@@ -1,0 +1,6 @@
+.reference-page { display: grid; gap: 18px; padding: 24px; }
+.reference-header { border-bottom: 1px solid #d8dfe1; padding-bottom: 16px; }
+.reference-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.reference-grid article { border: 1px solid #cdd5d7; padding: 16px; background: #fff; }
+.reference-grid h2 { margin-top: 0; }
+@media (max-width: 760px) { .reference-grid { grid-template-columns: 1fr; } }

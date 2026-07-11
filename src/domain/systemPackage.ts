@@ -258,6 +258,7 @@ const validationCheckSchema = z.object({
 
 const systemPackageEnvelopeSchema = z.object({
   manifest: manifestSchema,
+  shell: htmlTemplateLayoutSchema.optional(),
   pages: z.array(pageSchema).min(1),
   modules: z.array(z.unknown()).min(1),
   assets: z.array(assetSchema).optional(),
@@ -269,6 +270,7 @@ const systemPackageEnvelopeSchema = z.object({
 
 export interface SystemPackage {
   manifest: z.infer<typeof manifestSchema>;
+  shell?: HtmlTemplateLayout;
   pages: PackagePage[];
   modules: SheetModule[];
   assets?: PackageAsset[];
@@ -858,6 +860,16 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
     }
   }
 
+  if (systemPackage.shell) {
+    issues.push(...validateHtmlTemplate(systemPackage.shell.htmlContent, "shell.html"));
+    issues.push(...validateTemplateCss(systemPackage.shell.cssContent, "shell.css"));
+    for (const moduleId of getHtmlTemplateModuleReferences(systemPackage.shell.htmlContent)) {
+      if (!moduleIds.has(moduleId)) issues.push({ level: "error", code: "MISSING_MODULE_REFERENCE", text: `Sheet Shell 引用了不存在的 Sheet Module：${moduleId}`, path: "shell.html" });
+    }
+    const outletCount = (systemPackage.shell.htmlContent.match(/<pb-page-outlet\b/gi) ?? []).length;
+    if (outletCount !== 1) issues.push({ level: "error", code: "SHELL_PAGE_OUTLET_COUNT_INVALID", text: "Sheet Shell 必须且只能包含一个 pb-page-outlet。", path: "shell.html" });
+  }
+
   if (issues.some((issue) => issue.level === "error" || issue.level === "fatal")) {
     return { ok: false, issues };
   }
@@ -922,6 +934,7 @@ const allowedGlobalHtmlAttributes = new Set(["aria-label", "class", "title"]);
 const allowedHtmlAttributesByTag = new Map([
   ["img", new Set(["alt", "src"])],
   ["pb-module", new Set(["id"])],
+  ["pb-page-outlet", new Set()],
   ["td", new Set(["colspan", "rowspan"])],
   ["th", new Set(["colspan", "rowspan"])],
 ]);
@@ -944,6 +957,7 @@ export const allowedHtmlTags = new Set([
   "ol",
   "p",
   "pb-module",
+  "pb-page-outlet",
   "section",
   "small",
   "span",

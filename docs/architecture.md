@@ -211,6 +211,8 @@ exportCharacterJson(characterId)
 
 Sheet Renderer 根据 HTML Layout Template 和 Module Registry 渲染模块。模板负责页面结构、静态装饰和 CSS 布局；`<pb-module>` 占位符负责挂载框架提供的 Sheet Modules。
 
+System Package 可选声明 Sheet Shell。Shell 通过唯一 `<pb-page-outlet>` 挂载 Current Page，并可在 outlet 外放置 Persistent Modules。切页只替换 outlet 内容；输出模式在 outlet 中放入全部可打印页面，Persistent Modules 仍只渲染一次。
+
 Author-facing 接口见：[System Package HTML Layout Template 接口](system-package-html-layout-template.md)。
 
 ```text

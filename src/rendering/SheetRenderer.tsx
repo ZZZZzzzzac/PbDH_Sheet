@@ -17,7 +17,7 @@ const reactAttributeNames = new Map([
   ["rowspan", "rowSpan"],
 ]);
 
-function renderTemplateNode(systemPackage: SystemPackage, node: ChildNode, key: string, moduleVisibility: Record<string, boolean>): ReactNode {
+function renderTemplateNode(systemPackage: SystemPackage, node: ChildNode, key: string, moduleVisibility: Record<string, boolean>, pageOutlet?: ReactNode): ReactNode {
   if (node.nodeType === 3) {
     return node.textContent;
   }
@@ -32,13 +32,14 @@ function renderTemplateNode(systemPackage: SystemPackage, node: ChildNode, key: 
   if (tagName === "pb-module") {
     return renderModulePlaceholder(systemPackage, element.getAttribute("id"), key, moduleVisibility);
   }
+  if (tagName === "pb-page-outlet") return <div className="page-outlet" key={key}>{pageOutlet}</div>;
 
   if (!allowedHtmlTags.has(tagName)) {
     return null;
   }
 
   const props = templateElementProps(element);
-  const children = [...element.childNodes].map((child, index) => renderTemplateNode(systemPackage, child, `${key}-${index}`, moduleVisibility));
+  const children = [...element.childNodes].map((child, index) => renderTemplateNode(systemPackage, child, `${key}-${index}`, moduleVisibility, pageOutlet));
 
   return createTemplateElement(tagName, key, props, children);
 }
@@ -83,9 +84,9 @@ function createTemplateElement(tagName: string, key: string, props: Record<strin
   return createElement(tagName, { key, ...props }, ...children);
 }
 
-function renderHtmlTemplate(systemPackage: SystemPackage, html: string, moduleVisibility: Record<string, boolean>) {
+function renderHtmlTemplate(systemPackage: SystemPackage, html: string, moduleVisibility: Record<string, boolean>, pageOutlet?: ReactNode) {
   const document = new DOMParser().parseFromString(html, "text/html");
-  return [...document.body.childNodes].map((node, index) => renderTemplateNode(systemPackage, node, String(index), moduleVisibility));
+  return [...document.body.childNodes].map((node, index) => renderTemplateNode(systemPackage, node, String(index), moduleVisibility, pageOutlet));
 }
 
 function scopeTemplateCss(pageId: string, css?: string): string {
@@ -169,18 +170,21 @@ export function SheetRenderer({ systemPackage, outputMode = false }: SheetRender
   useEffect(() => setCurrentPageId(null), [systemPackage.manifest.ID, systemPackage.manifest.版本]);
   useEffect(() => { if (currentPageId !== resolvedCurrentPageId) setCurrentPageId(resolvedCurrentPageId); }, [currentPageId, resolvedCurrentPageId]);
 
-  return (
-    <main className="sheet-tool" aria-label="Sheet Tool">
-      {!outputMode && visiblePages.length > 1 ? <nav className="page-navigation" aria-label="页面导航">{visiblePages.map((page) => <button type="button" className={page.ID === resolvedCurrentPageId ? "active" : undefined} aria-current={page.ID === resolvedCurrentPageId ? "page" : undefined} onClick={() => setCurrentPageId(page.ID)} key={page.ID}>{page.名称}</button>)}</nav> : null}
-      {!outputMode && visiblePages.length === 0 ? <p className="empty-page-state">当前没有可见页面。</p> : null}
-      {renderedPages.map((page) =>
-        (
+  const outlet = <>
+    {!outputMode && visiblePages.length > 1 ? <nav className="page-navigation" aria-label="页面导航">{visiblePages.map((page) => <button type="button" className={page.ID === resolvedCurrentPageId ? "active" : undefined} aria-current={page.ID === resolvedCurrentPageId ? "page" : undefined} onClick={() => setCurrentPageId(page.ID)} key={page.ID}>{page.名称}</button>)}</nav> : null}
+    {!outputMode && visiblePages.length === 0 ? <p className="empty-page-state">当前没有可见页面。</p> : null}
+    {renderedPages.map((page) =>
+      (
           <article className="sheet-page" data-template-page-id={page.ID} key={page.ID}>
             <style>{scopeTemplateCss(page.ID, page.layout.cssContent)}</style>
             {renderHtmlTemplate(systemPackage, page.layout.htmlContent, moduleVisibility)}
           </article>
-        ),
-      )}
+      ),
+    )}
+  </>;
+  return (
+    <main className="sheet-tool" aria-label="Sheet Tool">
+      {systemPackage.shell ? <div className="sheet-shell" data-template-shell="true"><style>{scopeCssBlock(systemPackage.shell.cssContent ?? "", '[data-template-shell="true"]')}</style>{renderHtmlTemplate(systemPackage, systemPackage.shell.htmlContent, moduleVisibility, outlet)}</div> : outlet}
     </main>
   );
 }

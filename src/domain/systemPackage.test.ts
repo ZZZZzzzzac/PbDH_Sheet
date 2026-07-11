@@ -3,6 +3,20 @@ import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures"
 import { findAsset, findModule, findResourceLibrary, getHtmlTemplateModuleReferences, validateCachedSystemPackage, validateSystemPackage } from "./systemPackage";
 
 describe("validateSystemPackage", () => {
+  it("accepts a Sheet Shell with one Page Outlet and persistent module references", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      shell: { 类型: "htmlTemplate", htmlContent: '<main><pb-page-outlet></pb-page-outlet><pb-module id="character-name"></pb-module></main>' },
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.package.shell?.htmlContent).toContain("pb-page-outlet");
+  });
+
+  it("rejects a Sheet Shell without exactly one Page Outlet", () => {
+    const result = validateSystemPackage({ ...minimalSystemPackage, shell: { 类型: "htmlTemplate", htmlContent: "<main></main>" } });
+    expect(result.ok).toBe(false);
+    expect(result.ok ? [] : result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "SHELL_PAGE_OUTLET_COUNT_INVALID" })]));
+  });
   it("preserves normalized Resource Library fields when validating a cached package", () => {
     const imported = validateSystemPackage({
       ...minimalSystemPackage,
