@@ -54,22 +54,15 @@
 
 ### Author 文档与 AI 协作
 
-- [ ] 补齐完整 Author 文档集。
+- [x] 补齐完整 Author 文档集。
   - System Package 总体结构与 manifest 字段。
   - 每种 Sheet Module 的完整字段说明、稳定 parts/classes 和示例。
   - Card Definition/Card Table、Validation Script、Character Data、导入导出与错误码说明。
   - 最小包、完整包、反例和常见修复流程。
 
-- [ ] 提供 AI 生成 System Package 的提示词模板与协作工作流。
+- [x] 提供 AI 生成 System Package 的提示词模板与协作工作流。
   - 明确输入材料、生成顺序、Validator 反馈回路和禁止边界。
   - 示例应使用 `CONTEXT.md` 的正式术语，并链接对应 ADR 和接口文档。
-
-### 应用平台
-
-- [ ] 完成 PWA 应用壳。
-  - 当前没有 Web App Manifest、Service Worker 或安装入口。
-  - 只缓存 Base Framework 应用壳，不缓存 Player 上传的 System Package。
-  - 离线启动、版本更新和缓存失效需要浏览器端验收。
 
 ## Future Plan：不是第一版阻塞项
 
@@ -85,6 +78,14 @@
 - [ ] Overlay Layout 或其他第二种布局 adapter。
 - [ ] 云同步、账号、多人实时协作和跨系统包角色迁移。
 
+## 已确认不实施
+
+- PWA、Web App 安装入口与离线应用壳。
+  - 产品主场景是部署在服务器上供 Player 在线访问的 HTTPS 网站。
+  - 小概率离线使用不足以抵消 Service Worker 缓存、版本更新和浏览器验收成本。
+  - IndexedDB 中的 System Package cache、Character Saves 和本地文件导入继续保留；它们不依赖 PWA。
+  - 如果未来出现明确且持续的离线启动或安装需求，再重新立项评估，不作为当前路线图项目。
+
 ## 已被架构决策替代，不应作为待办
 
 - PRD 旧 User Stories 中“配置/宝库/资源库三个物理卡牌区域”已被 ADR-0007 的自由桌面模型替代。`configured`、`vault` 等是 Card Instance 状态，不是物理容器。
@@ -97,4 +98,3 @@
 1. Validator 结构覆盖与诊断契约。
 2. Author 文档和 AI 协作工作流。
 3. 目录包与快速 Author Preview。
-4. PWA 应用壳。

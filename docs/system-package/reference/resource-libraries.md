@@ -1,0 +1,27 @@
+# Resource Library interfaces
+
+manifest reference：`{ ID: string, 名称: string, 路径: path }`，三者必填。Library 文件必须是 JSON object array。
+
+Resource Entry 的 `ID` 必填、非空且在本 Library 唯一。其余键允许任意 JSON value。Normalizer 转换规则：null/undefined → `""`；string 原样；number/boolean/bigint → `String(value)`；array/object → `JSON.stringify(value)`。因此 runtime `entry.fields` 是 `Record<string,string>`。
+
+推断 Field metadata：
+
+```text
+{ key, label, visible, filterable, sortable, searchable, width? }
+```
+
+Author `字段模板`：
+
+| 字段 | 类型 | 必填 | 默认 |
+| --- | --- | --- | --- |
+| `键` | string | 是 | — |
+| `标签` | string | 否 | 推断 label 或 key |
+| `默认显示` | boolean | 否 | `true` |
+| `可筛选` | boolean | 否 | 推断；通常普通值 true |
+| `可排序` | boolean | 否 | 推断 |
+| `可搜索` | boolean | 否 | `默认显示`，再回退推断 |
+| `列宽` | enum | 否 | 根据显示长度推断 |
+
+`queryResourceLibraryEntries` 的顺序是 exact filters → keyword search → sort。Filters 对同一字段使用 allowed-values OR，不同字段 AND。Keywords 按空白拆词；每个词必须命中该 entry 至少一个 searchable field。Sort 使用 `zh-Hans` localeCompare，默认 asc。
+
+Card Table 消费的 Library 额外要求每条有非空配置后的 name/description 字段。

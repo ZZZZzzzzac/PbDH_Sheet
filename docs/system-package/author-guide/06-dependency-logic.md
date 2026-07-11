@@ -1,0 +1,24 @@
+# Dependency Logic
+
+Dependency Logic 是唯一允许跨模块联动的声明式规则。每条规则包含唯一 `ID`、`sources`、`targets`、`触发`、可选 `条件` 和非空 `动作`。
+
+```json
+[
+  {
+    "ID": "fill-class-name",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "pick-class" }],
+    "targets": [{ "类型": "module", "模块ID": "class-name" }],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-class" },
+    "条件": { "类型": "always" },
+    "动作": [{
+      "类型": "fillText",
+      "目标模块ID": "class-name",
+      "内容": { "类型": "selectedResourceField", "字段": "名称" }
+    }]
+  }
+]
+```
+
+触发只有 Resource Picker 的 `resourceSelected` 和 Checkbox Resource 的 `checkboxChanged`。条件支持 `always`、选中资源字段相等/不等/包含，以及 checkbox option 已选/未选。动作支持填充文本、设置 Page/Module 可见性，以及给 Resource Picker 设置默认精确筛选。
+
+规则单轮计算：本轮产生的填充值不会继续触发另一条规则。规则不读 DOM、Guide 或 Validation 结果，不能执行任意代码。`fillText` 写 freeText/longText 时修改 Character Data；写 readOnlyDisplay 时只改变派生展示。详细 union 见[Dependency Reference](../reference/dependency-rules.md)。
