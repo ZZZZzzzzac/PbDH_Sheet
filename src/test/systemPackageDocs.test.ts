@@ -51,4 +51,28 @@ describe("System Package documentation", () => {
     const missing = [...documented].filter((code) => !sourceText.includes(`"${code}"`)).sort();
     expect(missing).toEqual([]);
   });
+
+  it("keeps example documents self-contained instead of redirecting to demo packages", () => {
+    const examplesRoot = join(docsRoot, "examples");
+    const examples = walk(examplesRoot, ".md").map((file) => ({ file, markdown: readFileSync(file, "utf8") }));
+    const externalPackageReferences = examples.filter(({ markdown }) =>
+      /public\/system-packages|error-fixtures|demo-(?:minimal|modules|selection)/.test(markdown),
+    );
+
+    expect(externalPackageReferences.map(({ file }) => file)).toEqual([]);
+  });
+
+  it("covers current optional System Package contracts in the complete inline example", () => {
+    const complete = readFileSync(join(docsRoot, "examples", "complete-package.md"), "utf8");
+    const requiredExamples = [
+      '"shell"', '"dependencies"', '"characterCreationGuide"', '"resourceLibraries"', '"validationChecks"', '"assets"',
+      '"默认隐藏"', '"打印"', '"freeText"', '"longText"', '"checkboxResource"', '"countableResource"',
+      '"readOnlyDisplay"', '"imageField"', '"resourcePicker"', '"cardTable"', '"字段模板"', '"默认查询"',
+      '"创建卡牌"', '"fillText"', '"fillCountable"', '"setVisibility"', '"setResourceDefaultFilter"',
+      '"selectedResourceFieldEquals"', '"selectedResourceFieldNotEquals"', '"selectedResourceFieldIn"',
+      '"checkboxOptionChecked"', '"checkboxOptionUnchecked"', '<pb-page-outlet>', 'module.exports = async',
+    ];
+
+    expect(requiredExamples.filter((example) => !complete.includes(example))).toEqual([]);
+  });
 });
