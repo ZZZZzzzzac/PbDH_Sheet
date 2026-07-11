@@ -5,7 +5,7 @@
 | 上传后无法读取 | `ZIP_READ_FAILED`, `MANIFEST_MISSING` | zip 根与文件完整性 |
 | JSON 解析失败 | `MANIFEST_JSON_INVALID`, `PACKAGE_JSON_INVALID` | location.file 与 JSON 语法 |
 | 页面/模块不显示 | `MISSING_MODULE_REFERENCE` | `pb-module id` 与 modules ID |
-| 引用资源失败 | `MISSING_RESOURCE_LIBRARY_REFERENCE` | manifest Library ID 与 Module `资源库ID` |
+| 引用资源失败 | `MISSING_RESOURCE_LIBRARY_REFERENCE` | manifest Library ID 与 Picker `资源库ID` / Card Table `资源库IDs` |
 | Dependency 空值 | `MISSING_RESOURCE_FIELD_REFERENCE` | evidence 中 referenced/known fields |
 | Cards 阻止渲染 | `CARD_DEFINITION_FIELD_MISSING` | Table 配置后的 name/description 字段 |
 | Check 导入失败 | `VALIDATION_SCRIPT_SYNTAX_INVALID` | script file/line/column |

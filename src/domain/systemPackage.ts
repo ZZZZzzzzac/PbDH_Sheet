@@ -81,7 +81,9 @@ const imageFieldModuleSchema = sheetModuleBaseSchema.extend({
 const cardTableModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("cardTable"),
   标签: z.string().min(1),
-  资源库ID: z.string().min(1),
+  资源库IDs: z.array(z.string().min(1)).min(1).refine((ids) => new Set(ids).size === ids.length, {
+    message: "Card Table 的资源库IDs不能重复。",
+  }),
   状态选项: z.array(z.string().min(1)).optional(),
   显示方式: z.enum(["image", "text"]).optional(),
   卡名字段: z.string().min(1).optional(),
@@ -572,12 +574,16 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
       });
     }
 
-    if (module.类型 === "cardTable" && !findResourceLibrary(systemPackage, module.资源库ID)) {
-      issues.push({
-        level: "error",
-        code: "MISSING_RESOURCE_LIBRARY_REFERENCE",
-        text: `Card Table 引用了不存在的 Resource Library：${module.资源库ID}`,
-        path: `modules.${module.ID}.资源库ID`,
+    if (module.类型 === "cardTable") {
+      module.资源库IDs.forEach((libraryId, libraryIndex) => {
+        if (!findResourceLibrary(systemPackage, libraryId)) {
+          issues.push({
+            level: "error",
+            code: "MISSING_RESOURCE_LIBRARY_REFERENCE",
+            text: `Card Table 引用了不存在的 Resource Library：${libraryId}`,
+            path: `modules.${module.ID}.资源库IDs.${libraryIndex}`,
+          });
+        }
       });
     }
     if (module.类型 === "checkboxResource") {
@@ -860,11 +866,11 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
       continue;
     }
 
-    if (targetModule.资源库ID !== module.资源库ID) {
+    if (!targetModule.资源库IDs.includes(module.资源库ID)) {
       issues.push({
         level: "error",
         code: "CARD_TABLE_LIBRARY_MISMATCH",
-        text: `Resource Picker 与 Card Table 必须引用同一个 Resource Library：${module.ID}`,
+        text: `Resource Picker 的 Resource Library 不在 Card Table 的资源库IDs中：${module.ID}`,
         path: `modules.${module.ID}.创建卡牌.卡牌桌面模块ID`,
       });
     }
@@ -876,15 +882,17 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     if (module.类型 !== "cardTable") {
       continue;
     }
-    const artField = module.卡图字段 ?? "卡图";
-    const artFields = cardArtFieldsByLibrary.get(module.资源库ID) ?? new Set<string>();
-    artFields.add(artField);
-    cardArtFieldsByLibrary.set(module.资源库ID, artFields);
+    for (const libraryId of module.资源库IDs) {
+      const artField = module.卡图字段 ?? "卡图";
+      const artFields = cardArtFieldsByLibrary.get(libraryId) ?? new Set<string>();
+      artFields.add(artField);
+      cardArtFieldsByLibrary.set(libraryId, artFields);
 
-    const requiredFields = cardDefinitionFieldsByLibrary.get(module.资源库ID) ?? new Set<string>();
-    requiredFields.add(module.卡名字段 ?? "名称");
-    requiredFields.add(module.描述字段 ?? "描述");
-    cardDefinitionFieldsByLibrary.set(module.资源库ID, requiredFields);
+      const requiredFields = cardDefinitionFieldsByLibrary.get(libraryId) ?? new Set<string>();
+      requiredFields.add(module.卡名字段 ?? "名称");
+      requiredFields.add(module.描述字段 ?? "描述");
+      cardDefinitionFieldsByLibrary.set(libraryId, requiredFields);
+    }
   }
 
   for (const library of systemPackage.resourceLibraries ?? []) {

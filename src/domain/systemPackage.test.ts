@@ -4,6 +4,19 @@ import { findAsset, findModule, findResourceLibrary, getHtmlTemplateModuleRefere
 
 describe("validateSystemPackage", () => {
   it.each([
+    ["removed singular field", { 资源库ID: "cards" }],
+    ["empty plural field", { 资源库IDs: [] }],
+    ["duplicate plural field", { 资源库IDs: ["cards", "cards"] }],
+  ])("rejects Card Table %s", (_case, libraryConfig) => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: [{ ID: "table", 类型: "cardTable", 标签: "卡牌", ...libraryConfig }],
+    });
+
+    expect(result.ok).toBe(false);
+  });
+
+  it.each([
     ["Page", "DUPLICATE_PAGE_ID", { pages: [minimalSystemPackage.pages[0], minimalSystemPackage.pages[0]] }],
     ["Asset", "DUPLICATE_ASSET_ID", { assets: [{ ID: "same", 路径: "a.png" }, { ID: "same", 路径: "b.png" }] }],
     ["Validation Check", "DUPLICATE_VALIDATION_CHECK_ID", { validationChecks: [
@@ -42,7 +55,7 @@ describe("validateSystemPackage", () => {
     const cardResult = validateSystemPackage({
       ...minimalSystemPackage,
       resourceLibraries,
-      modules: [{ ID: "table", 类型: "cardTable", 标签: "卡牌", 资源库ID: "cards", 卡名字段: "标题", 描述字段: "正文" }],
+      modules: [{ ID: "table", 类型: "cardTable", 标签: "卡牌", 资源库IDs: ["cards"], 卡名字段: "标题", 描述字段: "正文" }],
       pages: [{
         ...minimalSystemPackage.pages[0],
         layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<pb-module id="table"></pb-module>' },
@@ -407,7 +420,7 @@ describe("validateSystemPackage", () => {
           ID: "domain-card-table",
           类型: "cardTable",
           标签: "领域卡牌桌面",
-          资源库ID: "domain-cards",
+          资源库IDs: ["domain-cards"],
         },
       ],
       pages: [
@@ -439,7 +452,7 @@ it("reports missing Card artwork asset references", () => {
       ...minimalSystemPackage,
       modules: [
         ...minimalSystemPackage.modules,
-        { ID: "domain-card-table", 类型: "cardTable", 标签: "领域卡牌桌面", 资源库ID: "domain-cards" },
+        { ID: "domain-card-table", 类型: "cardTable", 标签: "领域卡牌桌面", 资源库IDs: ["domain-cards"] },
       ],
       resourceLibraries: [
         {

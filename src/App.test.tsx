@@ -482,7 +482,7 @@ function createCardTablePackage(): SystemPackage {
         ID: "print-card-table",
         类型: "cardTable",
         标签: "打印卡牌桌面",
-        资源库ID: "print-cards",
+        资源库IDs: ["print-cards"],
       },
     ],
     resourceLibraries: [

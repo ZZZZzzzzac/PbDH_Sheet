@@ -42,11 +42,11 @@ Player value 作为文本写 Character Data。
 | `默认查询.filters` | record<string,string[]> | 否 | `{}` |
 | `默认查询.sort.field` | string | 条件 | sort 存在时非空 |
 | `默认查询.sort.direction` | `asc|desc` | 否 | `asc` |
-| `创建卡牌.卡牌桌面模块ID` | string | 条件 | 目标必须 cardTable 且同 Library |
+| `创建卡牌.卡牌桌面模块ID` | string | 条件 | 目标必须 cardTable，且其 `资源库IDs` 必须包含 Picker 的 Library |
 | `创建卡牌.默认状态` | string | 否 | Card Engine 默认状态 |
 
 选择是临时事件，不存隐藏资源引用。
 
 ## cardTable
 
-`标签`、`资源库ID` 必填。`状态选项?: string[]`；`显示方式?: image|text`；`卡名字段` 默认 `名称`，`描述字段` 默认 `描述`，`卡图字段` 默认 `卡图`，`显示方式字段?: string`。详见[Cards](cards.md)。
+`标签`、非空且不重复的 `资源库IDs: string[]` 必填。每个 ID 都必须引用已声明的 Resource Library。多个 Library 共用该桌面的状态选项、坐标系、层级和 Card Presentation 配置。旧的单数 `资源库ID` 不受支持。`状态选项?: string[]`；`显示方式?: image|text`；`卡名字段` 默认 `名称`，`描述字段` 默认 `描述`，`卡图字段` 默认 `卡图`，`显示方式字段?: string`。详见[Cards](cards.md)。

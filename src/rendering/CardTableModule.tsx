@@ -37,7 +37,6 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [cardMenu, setCardMenu] = useState<CardMenuState | null>(null);
   const [detailInstanceId, setDetailInstanceId] = useState<string | null>(null);
-  const library = findResourceLibrary(systemPackage, module.资源库ID);
   const instances = useRuntimeStore((state) => state.characterData?.cards.instances ?? []);
   const updateCardInstancePosition = useRuntimeStore((state) => state.updateCardInstancePosition);
   const bringCardInstanceToFront = useRuntimeStore((state) => state.bringCardInstanceToFront);
@@ -193,7 +192,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
         {visibleInstances.map((instance) => (
           <CardView
             instance={instance}
-            definition={library?.entries.find((entry) => entry.ID === instance.definitionId)}
+            definition={findResourceLibrary(systemPackage, instance.libraryId)?.entries.find((entry) => entry.ID === instance.definitionId)}
             module={module}
             onPointerDown={beginDrag}
             onPointerMove={continueDrag}
@@ -216,7 +215,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
       {detailInstanceId ? (
         <CardDetailOverlay
           instance={visibleInstances.find((instance) => instance.instanceId === detailInstanceId)}
-          definition={library?.entries.find((entry) => entry.ID === visibleInstances.find((instance) => instance.instanceId === detailInstanceId)?.definitionId)}
+          definition={resolveCardDefinition(systemPackage, visibleInstances.find((instance) => instance.instanceId === detailInstanceId))}
           module={module}
           onClose={() => setDetailInstanceId(null)}
         />
@@ -330,6 +329,13 @@ function CardContextMenu({
       </button>
     </div>
   );
+}
+
+function resolveCardDefinition(systemPackage: SystemPackage, instance: CardInstance | undefined): ResourceLibraryEntry | undefined {
+  if (!instance) {
+    return undefined;
+  }
+  return findResourceLibrary(systemPackage, instance.libraryId)?.entries.find((entry) => entry.ID === instance.definitionId);
 }
 
 function CardFace({ definition, module: moduleConfig, fallbackName }: { definition?: ResourceLibraryEntry; module: CardTableModuleConfig; fallbackName: string }) {

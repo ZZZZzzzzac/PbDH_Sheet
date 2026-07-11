@@ -224,6 +224,28 @@ describe("Module Registry rendering", () => {
     expect(result.container.querySelector(".play-card-description")).toHaveTextContent("描述应该独立显示。");
   });
 
+  it("resolves colliding Card Definition IDs from each instance's Resource Library", () => {
+    const systemPackage = createCardTablePackage();
+    const first = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "domain-instance",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: "domain-card:recall-test",
+    });
+    const characterData = createCardInstance(first, {
+      instanceId: "ancestry-instance",
+      tableModuleId: "domain-card-table",
+      libraryId: "ancestry-cards",
+      definitionId: "domain-card:recall-test",
+    });
+    useRuntimeStore.setState({ currentPackage: systemPackage, characterData });
+
+    render(<SheetRenderer systemPackage={systemPackage} />);
+
+    expect(screen.getByRole("article", { name: "回想测试" })).toBeVisible();
+    expect(screen.getByRole("article", { name: "种族能力" })).toBeVisible();
+  });
+
   it("lets the player resize Card Table cards from the table toolbar", () => {
     const systemPackage = createCardTablePackage();
     const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
@@ -419,13 +441,29 @@ function createCardTablePackage(): SystemPackage {
           },
         ],
       },
+      {
+        ID: "ancestry-cards",
+        名称: "种族卡",
+        路径: "resources/ancestry-cards.json",
+        fields: [
+          { key: "ID", label: "ID", visible: true, filterable: true, sortable: true },
+          { key: "名称", label: "名称", visible: true, filterable: true, sortable: true },
+          { key: "描述", label: "描述", visible: true, filterable: false, sortable: false },
+        ],
+        entries: [
+          {
+            ID: "domain-card:recall-test",
+            fields: { ID: "domain-card:recall-test", 名称: "种族能力", 描述: "来自另一个资源库。" },
+          },
+        ],
+      },
     ],
     modules: [
       {
         ID: "domain-card-table",
         类型: "cardTable",
         标签: "领域卡牌桌面",
-        资源库ID: "domain-cards",
+        资源库IDs: ["domain-cards", "ancestry-cards"],
       },
     ],
     pages: [

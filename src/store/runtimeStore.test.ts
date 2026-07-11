@@ -421,6 +421,16 @@ describe("runtime store", () => {
           ],
           entries: [{ ID: "domain-card:符文护符", fields: { ID: "domain-card:符文护符", 名称: "符文护符" } }],
         },
+        {
+          ID: "bonus-cards",
+          名称: "额外卡牌",
+          路径: "resources/bonus_cards.json",
+          fields: [
+            { key: "ID", label: "ID", visible: true, filterable: true, sortable: true },
+            { key: "名称", label: "名称", visible: true, filterable: true, sortable: true },
+          ],
+          entries: [{ ID: "bonus-card:补给", fields: { ID: "bonus-card:补给", 名称: "补给" } }],
+        },
       ],
       modules: [
         ...minimalSystemPackage.modules,
@@ -435,7 +445,14 @@ describe("runtime store", () => {
           ID: "domain-card-table",
           类型: "cardTable",
           标签: "领域卡牌桌面",
-          资源库ID: "domain-cards",
+          资源库IDs: ["domain-cards", "bonus-cards"],
+        },
+        {
+          ID: "pick-bonus-card",
+          类型: "resourcePicker",
+          按钮文本: "选择额外卡牌",
+          资源库ID: "bonus-cards",
+          创建卡牌: { 卡牌桌面模块ID: "domain-card-table", 默认状态: "vault" },
         },
       ],
     } as typeof minimalSystemPackage;
@@ -452,6 +469,9 @@ describe("runtime store", () => {
       useRuntimeStore.getState().commitResourceSelection("pick-domain-card", "domain-cards", [
         { ID: "domain-card:符文护符", fields: { ID: "domain-card:符文护符", 名称: "符文护符" } },
       ]);
+      useRuntimeStore.getState().commitResourceSelection("pick-bonus-card", "bonus-cards", [
+        { ID: "bonus-card:补给", fields: { ID: "bonus-card:补给", 名称: "补给" } },
+      ]);
     });
 
     expect(useRuntimeStore.getState().characterData?.cards.instances).toEqual([
@@ -460,6 +480,12 @@ describe("runtime store", () => {
         libraryId: "domain-cards",
         definitionId: "domain-card:符文护符",
         state: "configured",
+      }),
+      expect.objectContaining({
+        tableModuleId: "domain-card-table",
+        libraryId: "bonus-cards",
+        definitionId: "bonus-card:补给",
+        state: "vault",
       }),
     ]);
 

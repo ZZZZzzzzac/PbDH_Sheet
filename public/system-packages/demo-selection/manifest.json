@@ -32,6 +32,11 @@
       "ID": "domain-cards",
       "名称": "领域卡",
       "路径": "resources/domain_cards.json"
+    },
+    {
+      "ID": "bonus-cards",
+      "名称": "额外卡牌",
+      "路径": "resources/bonus_cards.json"
     }
   ],
   "assets": [

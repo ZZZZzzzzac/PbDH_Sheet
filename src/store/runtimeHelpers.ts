@@ -132,6 +132,10 @@ export function createCardInstancesFromSelection(
     return data;
   }
   const cardCreation = sourceModule.创建卡牌;
+  const targetTable = systemPackage.modules.find((module) => module.ID === cardCreation.卡牌桌面模块ID);
+  if (targetTable?.类型 !== "cardTable" || !targetTable.资源库IDs.includes(libraryId)) {
+    return data;
+  }
 
   return entries.reduce(
     (nextData, entry) =>
