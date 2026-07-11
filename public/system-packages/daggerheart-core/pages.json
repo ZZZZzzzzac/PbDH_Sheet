@@ -18,15 +18,5 @@
       "html": "layouts/character-story.html",
       "css": "layouts/base.css"
     }
-  },
-  {
-    "ID": "character-cards",
-    "名称": "卡牌桌面",
-    "打印": true,
-    "layout": {
-      "类型": "htmlTemplate",
-      "html": "layouts/character-cards.html",
-      "css": "layouts/base.css"
-    }
   }
 ]

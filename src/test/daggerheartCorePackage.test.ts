@@ -9,8 +9,9 @@ import modules from "../../public/system-packages/daggerheart-core/modules.json"
 import pages from "../../public/system-packages/daggerheart-core/pages.json";
 import dependencies from "../../public/system-packages/daggerheart-core/dependencies.json";
 import baseCss from "../../public/system-packages/daggerheart-core/layouts/base.css?raw";
-import cardsHtml from "../../public/system-packages/daggerheart-core/layouts/character-cards.html?raw";
 import mainHtml from "../../public/system-packages/daggerheart-core/layouts/character-main.html?raw";
+import shellCss from "../../public/system-packages/daggerheart-core/layouts/shell.css?raw";
+import shellHtml from "../../public/system-packages/daggerheart-core/layouts/shell.html?raw";
 import storyHtml from "../../public/system-packages/daggerheart-core/layouts/character-story.html?raw";
 import ancestriesJson from "../../public/system-packages/daggerheart-core/resources/ancestries.json?raw";
 import armorJson from "../../public/system-packages/daggerheart-core/resources/armor.json?raw";
@@ -36,8 +37,8 @@ describe("Daggerheart core System Package", () => {
     expect(result.package.pages.map((page) => page.ID)).toEqual([
       "character-main",
       "character-story",
-      "character-cards",
     ]);
+    expect(result.package.shell?.htmlContent).toContain("<pb-page-outlet></pb-page-outlet>");
     expect(result.package.modules).toHaveLength(99);
     expect(new Set(result.package.modules.map((module) => module.ID)).size).toBe(99);
     expect(result.package.resourceLibraries).toHaveLength(11);
@@ -206,11 +207,21 @@ describe("Daggerheart core System Package", () => {
 
   it("keeps the initial semantic layouts free of absolute positioning", () => {
     expect(baseCss).not.toMatch(/position\s*:\s*absolute/i);
+    expect(shellCss).not.toMatch(/position\s*:\s*absolute/i);
     expect(mainHtml).toContain('<section class="module-group" aria-label="角色身份">');
     expect(mainHtml).toContain('<section class="module-group" aria-label="核心属性">');
     expect(mainHtml).toContain('<section class="module-group" aria-label="防御与阈值">');
     expect(mainHtml).toContain('<section class="module-group" aria-label="角色资源">');
     expect(mainHtml).toContain('<section class="module-group" aria-label="金币">');
+  });
+
+  it("mounts Pages on the left and the shared Card Table once on the right", () => {
+    expect((shellHtml.match(/<pb-page-outlet>/g) ?? [])).toHaveLength(1);
+    expect((shellHtml.match(/id="character-card-table"/g) ?? [])).toHaveLength(1);
+    expect(shellHtml).toContain('id="pick-domain-card"');
+    expect(shellHtml).toContain('id="pick-beast-form"');
+    expect(mainHtml).not.toContain('id="character-card-table"');
+    expect(storyHtml).not.toContain('id="character-card-table"');
   });
 });
 
@@ -220,10 +231,11 @@ async function loadDaggerheartPackage() {
     "pages.json": strToU8(JSON.stringify(pages)),
     "modules.json": strToU8(JSON.stringify(modules)),
     "dependencies.json": strToU8(JSON.stringify(dependencies)),
-    "layouts/base.css": strToU8(baseCss),
-    "layouts/character-main.html": strToU8(mainHtml),
-    "layouts/character-story.html": strToU8(storyHtml),
-    "layouts/character-cards.html": strToU8(cardsHtml),
+      "layouts/base.css": strToU8(baseCss),
+      "layouts/shell.html": strToU8(shellHtml),
+      "layouts/shell.css": strToU8(shellCss),
+      "layouts/character-main.html": strToU8(mainHtml),
+      "layouts/character-story.html": strToU8(storyHtml),
     "resources/ancestries.json": strToU8(ancestriesJson),
     "resources/communities.json": strToU8(communitiesJson),
     "resources/classes.json": strToU8(classesJson),

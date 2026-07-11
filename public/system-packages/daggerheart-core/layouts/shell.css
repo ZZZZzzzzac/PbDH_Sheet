@@ -1,0 +1,60 @@
+.daggerheart-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(22rem, 1fr);
+  gap: 1.125rem;
+  align-items: start;
+  padding: 1.125rem;
+}
+
+.daggerheart-sheet-pane {
+  min-width: 0;
+  overflow: auto;
+  border: 1px solid #c8b9a6;
+  background: #f8f4ec;
+}
+
+.daggerheart-card-pane {
+  min-width: 0;
+  min-height: calc(100vh - 11rem);
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+}
+
+.card-pane-heading {
+  border: 1px solid #8d7c68;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: #fffdf8;
+}
+
+.card-pane-heading h2,
+.card-pane-heading p {
+  margin-block: 0;
+}
+
+.card-pane-heading p {
+  margin-top: 0.5rem;
+}
+
+.card-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .daggerheart-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .daggerheart-card-pane {
+    min-height: 32rem;
+  }
+}
+
+@media print {
+  .daggerheart-workspace {
+    grid-template-columns: 1fr;
+  }
+}
