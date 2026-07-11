@@ -126,6 +126,7 @@ function formatSnapshotValue(value: unknown): string {
 function serializePrintableRoot(root: Element): string {
   const clone = root.cloneNode(true) as Element;
   syncFormControls(root, clone);
+  clone.querySelectorAll("[data-output-exclude]").forEach((element) => element.remove());
   stripInteractiveRuntimeState(clone);
   return clone.outerHTML;
 }

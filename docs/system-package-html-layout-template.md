@@ -83,6 +83,24 @@ System Package 页面引用布局文件：
 }
 ```
 
+页面可以声明可选的打印覆盖：
+
+```json
+{
+  "ID": "reference",
+  "名称": "规则参考",
+  "默认隐藏": true,
+  "打印": true,
+  "layout": { "类型": "htmlTemplate", "html": "layouts/reference.html", "css": "layouts/reference.css" }
+}
+```
+
+- Player 正常阅读时，框架按 `pages.json` 顺序为运行时可见页面提供导航，一次只显示一个页面。
+- 只有一个可见页面时不显示导航；页面选择只是临时阅读状态。
+- `打印: true` 强制打印，`打印: false` 强制排除。
+- 未声明 `打印` 时，运行时可见页面打印，运行时隐藏页面不打印。
+- 导出预览、浏览器打印和 HTML snapshot 使用同一可打印页面集合，不受当前阅读页面影响。
+
 ## Sheet Module 样式接口
 
 框架渲染每个 Sheet Module 时都会公开三个稳定选择面：

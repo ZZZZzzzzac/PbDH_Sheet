@@ -149,6 +149,7 @@ describe("Module Registry rendering", () => {
     expect(screen.getByLabelText("领域名")).toHaveValue("烈焰");
     expect(screen.getByText("烈焰")).toBeVisible();
     expect(screen.getByText("选择领域后显示")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "领域页" }));
     expect(screen.getByText("隐藏页面已显示")).toBeVisible();
   });
 
@@ -159,6 +160,7 @@ describe("Module Registry rendering", () => {
 
     expect(screen.queryByLabelText("选择 烈焰")).not.toBeInTheDocument();
     expect(screen.getByLabelText("选择 幽影")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "筛选领域" }));
     fireEvent.click(screen.getByLabelText("骸骨"));
     fireEvent.click(screen.getByLabelText("选择 烈焰"));
     fireEvent.click(screen.getByLabelText("选择 幽影"));
@@ -182,6 +184,7 @@ describe("Module Registry rendering", () => {
 
     expect(screen.getByLabelText("选择 烈焰")).toBeVisible();
     expect(screen.queryByLabelText("选择 幽影")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "筛选领域" }));
     fireEvent.click(screen.getByLabelText("利刃"));
     expect(screen.getByLabelText("选择 幽影")).toBeVisible();
   });

@@ -1,5 +1,5 @@
-import { Check, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, Check, Filter, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import {
   queryResourceLibraryEntries,
   summarizeResourceEntry,
@@ -31,13 +31,24 @@ export function ResourceLibraryBrowser({
 }: ResourceLibraryBrowserProps) {
   const [filters, setFilters] = useState<Record<string, string[]>>(defaultQuery?.filters ?? {});
   const [sort, setSort] = useState<ResourceLibraryQuery["sort"]>(normalizeSort(defaultQuery?.sort));
+  const [keywords, setKeywords] = useState("");
+  const [openFilterField, setOpenFilterField] = useState<string | null>(null);
   const [draftSelectedIds, setDraftSelectedIds] = useState(selectedIds);
   const browserFields = fields ?? library.fields;
   const tableFields = browserFields.filter((field) => field.visible);
   const tableColumnFields = normalizeTableColumnWidths(tableFields);
-  const filterableFields = browserFields.filter((field) => field.filterable);
-  const sortableFields = browserFields.filter((field) => field.sortable);
-  const rows = useMemo(() => queryResourceLibraryEntries(library, { filters, sort }), [filters, library, sort]);
+  const rows = useMemo(() => queryResourceLibraryEntries(library, { filters, sort, keywords }, browserFields), [browserFields, filters, keywords, library, sort]);
+
+  useEffect(() => {
+    if (!openFilterField) return;
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest("[data-filter-ui]")) return;
+      setOpenFilterField(null);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointer, true);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePointer, true);
+  }, [openFilterField]);
 
   const toggleFilter = (field: string, value: string) => {
     setFilters((current) => {
@@ -67,13 +78,18 @@ export function ResourceLibraryBrowser({
     onCommit([entry]);
   };
 
+  const cycleSort = (field: string) => {
+    setSort((current) => current?.field !== field ? { field, direction: "asc" } : current.direction === "asc" ? { field, direction: "desc" } : undefined);
+  };
+
   return (
     <div className="resource-dialog-backdrop">
       <section className="resource-dialog" role="dialog" aria-modal="true" aria-label={`${library.名称}资源库`}>
         <header className="resource-dialog-header">
-          <div>
-            <p className="eyebrow">Resource Library</p>
-            <h2>{library.名称}</h2>
+          <h2>{library.名称}</h2>
+          <div className="resource-header-search">
+            <input id={`search-${library.ID}`} className="input compact-input" type="search" value={keywords} onChange={(event) => setKeywords(event.target.value)} placeholder="搜索" aria-label="搜索资源库" />
+            <span role="status">{rows.length} 条结果</span>
           </div>
           <button className="icon-button secondary-button" type="button" onClick={onClose} aria-label="关闭资源库">
             <X aria-hidden="true" size={18} />
@@ -82,63 +98,6 @@ export function ResourceLibraryBrowser({
         </header>
 
         <div className="resource-browser">
-          <aside className="resource-controls" aria-label="资源库筛选排序">
-            {filterableFields.map((field) => {
-              const values = uniqueResourceFieldValues(library, field.key);
-              if (values.length === 0) {
-                return null;
-              }
-
-              return (
-                <fieldset className="filter-group" key={field.key}>
-                  <legend>{field.label}</legend>
-                  {values.map((value) => (
-                    <label className="checkbox-row" key={value}>
-                      <input
-                        type="checkbox"
-                        checked={(filters[field.key] ?? []).includes(value)}
-                        onChange={() => toggleFilter(field.key, value)}
-                      />
-                      <span>{value}</span>
-                    </label>
-                  ))}
-                </fieldset>
-              );
-            })}
-
-            {sortableFields.length > 0 ? (
-              <div className="sort-controls">
-                <label className="label compact-label" htmlFor={`sort-${library.ID}`}>
-                  排序
-                </label>
-                <select
-                  id={`sort-${library.ID}`}
-                  className="input compact-input"
-                  aria-label="排序字段"
-                  value={sort?.field ?? ""}
-                  onChange={(event) =>
-                    setSort(event.target.value ? { field: event.target.value, direction: sort?.direction ?? "asc" } : undefined)
-                  }
-                >
-                  <option value="">不排序</option>
-                  {sortableFields.map((field) => (
-                    <option value={field.key} key={field.key}>
-                      {field.label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  className="button sort-direction-button"
-                  type="button"
-                  disabled={!sort}
-                  onClick={() => setSort((current) => (current ? { ...current, direction: current.direction === "asc" ? "desc" : "asc" } : current))}
-                >
-                  {sort?.direction === "desc" ? "降序" : "升序"}
-                </button>
-              </div>
-            ) : null}
-          </aside>
-
           <div className="resource-table-wrap">
             <table className="resource-table">
               <colgroup>
@@ -150,7 +109,18 @@ export function ResourceLibraryBrowser({
                 <tr>
                   {tableColumnFields.map((field) => (
                     <th scope="col" key={field.key}>
-                      {field.label}
+                      <div className="resource-column-header">
+                        <span>{field.label}</span>
+                        <div className="resource-column-tools">
+                          {field.sortable ? <button type="button" className="column-tool-button" onClick={() => cycleSort(field.key)} aria-label={`${field.label}${sort?.field === field.key ? (sort.direction === "desc" ? "降序" : "升序") : "不排序"}`}>{sort?.field === field.key ? (sort.direction === "desc" ? <ArrowDown size={14} /> : <ArrowUp size={14} />) : <ArrowUp className="inactive-sort" size={14} />}</button> : <span className="column-tool-placeholder" />}
+                          {field.filterable ? <button type="button" data-filter-ui className={`column-tool-button${(filters[field.key]?.length ?? 0) > 0 ? " active" : ""}`} onClick={() => setOpenFilterField((current) => current === field.key ? null : field.key)} aria-label={`筛选${field.label}`} aria-expanded={openFilterField === field.key}><Filter size={14} /></button> : <span className="column-tool-placeholder" />}
+                        </div>
+                        {openFilterField === field.key ? (
+                          <div className="column-filter-menu" data-filter-ui onClick={(event) => event.stopPropagation()}>
+                            {uniqueResourceFieldValues(library, field.key).map((value) => <label className="checkbox-row" key={value}><input type="checkbox" checked={(filters[field.key] ?? []).includes(value)} onChange={() => toggleFilter(field.key, value)} /><span>{value}</span></label>)}
+                          </div>
+                        ) : null}
+                      </div>
                     </th>
                   ))}
                 </tr>

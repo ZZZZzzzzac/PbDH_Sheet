@@ -1,11 +1,13 @@
-import { createElement, type ReactNode } from "react";
+import { createElement, useEffect, useState, type ReactNode } from "react";
 import type { SystemPackage } from "../domain/systemPackage";
 import { allowedHtmlTags, findModule } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
 import { RenderSheetModule } from "./moduleRegistry";
+import { printablePages, resolveCurrentPageId, runtimeVisiblePages } from "./pagePresentation";
 
 interface SheetRendererProps {
   systemPackage: SystemPackage;
+  outputMode?: boolean;
 }
 
 const allowedTemplateAttributes = new Set(["alt", "aria-label", "class", "colspan", "rowspan", "src", "title"]);
@@ -157,19 +159,27 @@ function cssStringEscape(value: string): string {
   return value.replace(/["\\]/g, "\\$&");
 }
 
-export function SheetRenderer({ systemPackage }: SheetRendererProps) {
+export function SheetRenderer({ systemPackage, outputMode = false }: SheetRendererProps) {
   const pageVisibility = useRuntimeStore((state) => state.pageVisibility);
   const moduleVisibility = useRuntimeStore((state) => state.moduleVisibility);
+  const [currentPageId, setCurrentPageId] = useState<string | null>(null);
+  const visiblePages = runtimeVisiblePages(systemPackage.pages, pageVisibility);
+  const resolvedCurrentPageId = resolveCurrentPageId(visiblePages, currentPageId);
+  const renderedPages = outputMode ? printablePages(systemPackage.pages, pageVisibility) : visiblePages.filter((page) => page.ID === resolvedCurrentPageId);
+  useEffect(() => setCurrentPageId(null), [systemPackage.manifest.ID, systemPackage.manifest.版本]);
+  useEffect(() => { if (currentPageId !== resolvedCurrentPageId) setCurrentPageId(resolvedCurrentPageId); }, [currentPageId, resolvedCurrentPageId]);
 
   return (
     <main className="sheet-tool" aria-label="Sheet Tool">
-      {systemPackage.pages.map((page) =>
-        isRuntimeVisible(page.默认隐藏, pageVisibility[page.ID]) ? (
+      {!outputMode && visiblePages.length > 1 ? <nav className="page-navigation" aria-label="页面导航">{visiblePages.map((page) => <button type="button" className={page.ID === resolvedCurrentPageId ? "active" : undefined} aria-current={page.ID === resolvedCurrentPageId ? "page" : undefined} onClick={() => setCurrentPageId(page.ID)} key={page.ID}>{page.名称}</button>)}</nav> : null}
+      {!outputMode && visiblePages.length === 0 ? <p className="empty-page-state">当前没有可见页面。</p> : null}
+      {renderedPages.map((page) =>
+        (
           <article className="sheet-page" data-template-page-id={page.ID} key={page.ID}>
             <style>{scopeTemplateCss(page.ID, page.layout.cssContent)}</style>
             {renderHtmlTemplate(systemPackage, page.layout.htmlContent, moduleVisibility)}
           </article>
-        ) : null,
+        ),
       )}
     </main>
   );

@@ -12,12 +12,14 @@
 
 .print-mode .top-bar,
 .print-mode .top-menu-bar,
+.print-mode .page-navigation,
 .print-mode .resource-picker-module,
 .print-mode .image-actions,
 .print-mode .card-table-actions,
 .print-mode .play-card-delete {
   display: none;
 }
+.print-mode .card-detail-backdrop { display: none !important; }
 
 .print-mode .sheet-tool {
   padding: 0;

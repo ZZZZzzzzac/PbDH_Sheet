@@ -1,5 +1,5 @@
 import { Layers, X } from "lucide-react";
-import { useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
 import {
   clampCardTablePosition,
   createCardTableLayout,
@@ -36,6 +36,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
   const longPressTimerRef = useRef<number | null>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [cardMenu, setCardMenu] = useState<CardMenuState | null>(null);
+  const [detailInstanceId, setDetailInstanceId] = useState<string | null>(null);
   const library = findResourceLibrary(systemPackage, module.资源库ID);
   const instances = useRuntimeStore((state) => state.characterData?.cards.instances ?? []);
   const updateCardInstancePosition = useRuntimeStore((state) => state.updateCardInstancePosition);
@@ -208,9 +209,18 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
             x={cardMenu.x}
             y={cardMenu.y}
             onClose={closeCardMenu}
+            onViewDetail={(instanceId) => { setDetailInstanceId(instanceId); closeCardMenu(); }}
           />
         ) : null}
       </div>
+      {detailInstanceId ? (
+        <CardDetailOverlay
+          instance={visibleInstances.find((instance) => instance.instanceId === detailInstanceId)}
+          definition={library?.entries.find((entry) => entry.ID === visibleInstances.find((instance) => instance.instanceId === detailInstanceId)?.definitionId)}
+          module={module}
+          onClose={() => setDetailInstanceId(null)}
+        />
+      ) : null}
     </section>
   );
 }
@@ -232,14 +242,7 @@ function CardView({
   onPointerUp: (event: PointerEvent<HTMLElement>) => void;
   onContextMenu: (event: MouseEvent<HTMLElement>, instance: CardInstance) => void;
 }) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const assetUrls = useRuntimeStore((state) => state.packageAssetUrls);
   const deleteCardInstance = useRuntimeStore((state) => state.deleteCardInstance);
-  const artField = moduleConfig.卡图字段 ?? "卡图";
-  const cardArtRef = definition?.fields[artField] ?? "";
-  const cardArtUrl = cardArtRef ? assetUrls[cardArtRef] : undefined;
-  const displayMode = resolveCardDisplayMode(definition, moduleConfig);
-  const showImage = displayMode === "image" && cardArtUrl && !imageFailed;
   const nameField = moduleConfig.卡名字段 ?? "名称";
   const name = definition?.fields[nameField] || instance.definitionId;
 
@@ -272,11 +275,7 @@ function CardView({
       >
         <X aria-hidden="true" size={14} />
       </button>
-      {showImage ? (
-        <img className="play-card-image" src={cardArtUrl} alt={name} draggable={false} onError={() => setImageFailed(true)} />
-      ) : (
-        <TextCard definition={definition} module={moduleConfig} fallbackName={name} />
-      )}
+      <CardFace definition={definition} module={moduleConfig} fallbackName={name} />
     </article>
   );
 }
@@ -287,12 +286,14 @@ function CardContextMenu({
   x,
   y,
   onClose,
+  onViewDetail,
 }: {
   instance?: CardInstance;
   stateOptions: string[];
   x: number;
   y: number;
   onClose: () => void;
+  onViewDetail: (instanceId: string) => void;
 }) {
   const updateCardInstanceState = useRuntimeStore((state) => state.updateCardInstanceState);
   const deleteCardInstance = useRuntimeStore((state) => state.deleteCardInstance);
@@ -305,6 +306,7 @@ function CardContextMenu({
 
   return (
     <div className="card-context-menu" style={{ left: x, top: y }} role="menu" onPointerDown={(event) => event.stopPropagation()}>
+      <button type="button" role="menuitem" onClick={() => onViewDetail(instance.instanceId)}>查看详情</button>
       <button
         type="button"
         role="menuitem"
@@ -326,6 +328,34 @@ function CardContextMenu({
       >
         删除
       </button>
+    </div>
+  );
+}
+
+function CardFace({ definition, module: moduleConfig, fallbackName }: { definition?: ResourceLibraryEntry; module: CardTableModuleConfig; fallbackName: string }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const assetUrls = useRuntimeStore((state) => state.packageAssetUrls);
+  const artField = moduleConfig.卡图字段 ?? "卡图";
+  const cardArtRef = definition?.fields[artField] ?? "";
+  const cardArtUrl = cardArtRef ? assetUrls[cardArtRef] : undefined;
+  const showImage = resolveCardDisplayMode(definition, moduleConfig) === "image" && cardArtUrl && !imageFailed;
+  return showImage ? <img className="play-card-image" src={cardArtUrl} alt={fallbackName} draggable={false} onError={() => setImageFailed(true)} /> : <TextCard definition={definition} module={moduleConfig} fallbackName={fallbackName} />;
+}
+
+function CardDetailOverlay({ instance, definition, module, onClose }: { instance?: CardInstance; definition?: ResourceLibraryEntry; module: CardTableModuleConfig; onClose: () => void }) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+  if (!instance) return null;
+  const name = definition?.fields[module.卡名字段 ?? "名称"] || instance.definitionId;
+  return (
+    <div className="card-detail-backdrop" data-output-exclude="true" onClick={onClose}>
+      <section className="card-detail-dialog" role="dialog" aria-modal="true" aria-label={`${name}详情`} onClick={(event) => event.stopPropagation()}>
+        <button className="card-detail-close" type="button" onClick={onClose} aria-label="关闭卡牌详情"><X aria-hidden="true" size={20} /></button>
+        <div className="card-detail-face"><CardFace definition={definition} module={module} fallbackName={name} /></div>
+      </section>
     </div>
   );
 }

@@ -288,6 +288,13 @@
   color: #8c2822;
 }
 
+.card-detail-backdrop { position: fixed; inset: 0; z-index: 140; display: grid; place-items: center; padding: 24px; background: rgba(15, 22, 24, 0.72); }
+.card-detail-dialog { position: relative; width: min(520px, 92vw); max-height: 92vh; overflow: auto; padding: 18px; background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+.card-detail-face { width: 100%; }
+.card-detail-face .play-card-image { width: 100%; height: auto; max-height: 82vh; object-fit: contain; }
+.card-detail-face .play-card-text { min-height: 420px; font-size: 1.1rem; }
+.card-detail-close { position: absolute; top: 8px; right: 8px; z-index: 1; width: 36px; height: 36px; border: 0; border-radius: 50%; background: rgba(255,255,255,.9); cursor: pointer; }
+
 @media (max-width: 640px) {
   .card-table-surface {
     min-height: 420px;

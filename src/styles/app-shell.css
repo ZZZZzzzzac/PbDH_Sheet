@@ -262,6 +262,10 @@
   background: #fbfcfc;
   border: 1px solid #cdd5d7;
 }
+.page-navigation { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 14px; }
+.page-navigation button { flex: 0 0 auto; border: 1px solid #b8c5c8; padding: 8px 14px; background: #fff; color: #243438; cursor: pointer; }
+.page-navigation button.active { border-color: #27634f; background: #e4f1eb; font-weight: 700; }
+.empty-page-state { padding: 32px; text-align: center; color: #607075; }
 
 .page-header {
   display: flex;

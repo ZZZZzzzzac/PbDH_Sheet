@@ -5,6 +5,7 @@ import {
   inferResourceFieldWidth,
   normalizeResourceLibraries,
   queryResourceLibraryEntries,
+  searchResourceLibraryEntries,
   sortResourceLibraryEntries,
 } from "./resourceLibrary";
 
@@ -56,8 +57,8 @@ describe("Resource Library normalization", () => {
           { 键: "领域", 标签: "可用领域", 默认显示: false, 可筛选: true, 可排序: false, 列宽: "compact" },
         ]),
       ).toEqual([
-        { key: "名称", label: "武器名", visible: true, filterable: false, sortable: true, width: "normal" },
-        { key: "领域", label: "可用领域", visible: false, filterable: true, sortable: false, width: "compact" },
+        { key: "名称", label: "武器名", visible: true, filterable: false, sortable: true, searchable: true, width: "normal" },
+        { key: "领域", label: "可用领域", visible: false, filterable: true, sortable: false, searchable: false, width: "compact" },
       ]);
       expect(library.entries[0].fields.伤害).toBe("d8");
     }
@@ -131,5 +132,10 @@ describe("Resource Library query", () => {
         sort: { field: "名称", direction: "asc" },
       }).map((entry) => entry.ID),
     ).toEqual(["bone-1", "blade-1"]);
+  });
+
+  it("searches case-insensitively with cross-field AND terms", () => {
+    expect(searchResourceLibraryEntries(entries, "alpha 骸骨", ["名称", "领域"]).map((entry) => entry.ID)).toEqual(["bone-1"]);
+    expect(searchResourceLibraryEntries(entries, "  利刃  ", ["名称", "领域"]).map((entry) => entry.ID)).toEqual(["blade-1"]);
   });
 });

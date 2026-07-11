@@ -9,6 +9,7 @@ export const resourceLibraryFieldTemplateSchema = z.object({
   默认显示: z.boolean().optional(),
   可筛选: z.boolean().optional(),
   可排序: z.boolean().optional(),
+  可搜索: z.boolean().optional(),
   列宽: resourceLibraryFieldWidthSchema.optional(),
 });
 
@@ -28,6 +29,7 @@ export const resourceLibraryFieldSchema = z.object({
   visible: z.boolean(),
   filterable: z.boolean(),
   sortable: z.boolean(),
+  searchable: z.boolean().default(true),
   width: resourceLibraryFieldWidthSchema.optional(),
 });
 
@@ -60,6 +62,7 @@ export type ResourceLibraryIssue = {
 };
 
 export type ResourceLibraryQuery = {
+  keywords?: string;
   filters?: Record<string, string[]>;
   sort?: {
     field: string;
@@ -201,6 +204,7 @@ function buildFieldMetadata(key: string, isComplex: boolean, values: string[]): 
     visible: true,
     filterable: !isComplex,
     sortable: !isComplex,
+    searchable: !isComplex,
     width: inferResourceFieldWidth(values),
   };
 }
@@ -223,6 +227,7 @@ export function getResourceLibraryFields(
       visible: template.默认显示 ?? true,
       filterable: template.可筛选 ?? inferred?.filterable ?? true,
       sortable: template.可排序 ?? inferred?.sortable ?? true,
+      searchable: template.可搜索 ?? template.默认显示 ?? inferred?.searchable ?? true,
       width: template.列宽 ?? inferred?.width ?? inferResourceFieldWidth(library.entries.map((entry) => entry.fields[template.键] ?? "")),
     };
   });
@@ -242,8 +247,19 @@ export function inferResourceFieldWidth(values: string[] = []): ResourceLibraryF
   return "normal";
 }
 
-export function queryResourceLibraryEntries(library: ResourceLibrary, query: ResourceLibraryQuery = {}): ResourceLibraryEntry[] {
-  return sortResourceLibraryEntries(filterResourceLibraryEntries(library.entries, query.filters ?? {}), query.sort);
+export function queryResourceLibraryEntries(library: ResourceLibrary, query: ResourceLibraryQuery = {}, fields: ResourceLibraryField[] = library.fields): ResourceLibraryEntry[] {
+  const filtered = filterResourceLibraryEntries(library.entries, query.filters ?? {});
+  const searched = searchResourceLibraryEntries(filtered, query.keywords ?? "", fields.filter((field) => field.searchable).map((field) => field.key));
+  return sortResourceLibraryEntries(searched, query.sort);
+}
+
+export function searchResourceLibraryEntries(entries: ResourceLibraryEntry[], keywords: string, searchableFieldKeys: string[]): ResourceLibraryEntry[] {
+  const terms = keywords.trim().toLocaleLowerCase().split(/\s+/u).filter(Boolean);
+  if (terms.length === 0) return entries;
+  return entries.filter((entry) => {
+    const values = searchableFieldKeys.map((key) => (entry.fields[key] ?? "").toLocaleLowerCase());
+    return terms.every((term) => values.some((value) => value.includes(term)));
+  });
 }
 
 export function filterResourceLibraryEntries(

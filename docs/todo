@@ -21,24 +21,6 @@
 
 ### 页面、资源库与 Player 体验
 
-- [ ] 增加页面切换/翻页交互。
-  - 当前 Sheet Renderer 会把所有运行时可见页面纵向渲染出来，没有 active page 或 Player 翻页入口。
-  - 页面切换只能影响显示方式，不能改变 Character Data、Dependency Logic 或 Validation Checks。
-
-- [ ] 支持页面“是否打印”声明。
-  - 当前导出预览和打印使用全部可见页面。
-  - PRD 已将该能力标为低优先级；实现时需保持默认全量打印的兼容行为。
-  - 与打印相关的长期问题统一参考 GitHub #73。
-
-- [ ] 为 Resource Library Browser 增加关键词搜索。
-  - 当前已有多字段精确筛选和排序，但没有自由文本搜索框。
-  - 搜索应覆盖 Author 声明为可搜索/可见的文本字段，并可与现有多条件筛选、排序同时使用。
-
-- [ ] 增加 Card 详情查看。
-  - 当前卡牌可显示图片或文字、拖拽、整理、删除和切换状态，但没有独立的大图/长描述查看面。
-  - 需要兼顾图片卡与文字卡、图片失败 fallback、键盘和移动端操作。
-  - 卡牌相关长期问题统一参考 GitHub #74。
-
 ### System Package Validator
 
 - [ ] 补齐第一版结构校验覆盖。
@@ -97,8 +79,5 @@
 
 1. Validator 结构覆盖与诊断契约。
 2. Author 文档和 AI 协作工作流。
-3. Resource Library 关键词搜索。
-4. 页面切换与页面打印声明。
-5. Card 详情查看。
-6. 目录包与快速 Author Preview。
-7. PWA 应用壳。
+3. 目录包与快速 Author Preview。
+4. PWA 应用壳。

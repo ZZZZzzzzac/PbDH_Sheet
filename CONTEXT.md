@@ -24,6 +24,14 @@ _Avoid_: Plugin, template, card pack when referring to the whole system
 The finished web application used by Players for one specific PbDH system.
 _Avoid_: Framework, editor
 
+**Runtime-Visible Page**:
+A System Package page currently eligible for Player navigation after its default visibility and Dependency Logic have been applied.
+_Avoid_: Current Page
+
+**Current Page**:
+The one Runtime-Visible Page currently selected in the Player's page navigation. Selecting it is UI state only and does not change Character Data or determine print eligibility.
+_Avoid_: Visible Page
+
 **Author Preview**:
 A mode of the existing Player-facing Sheet Tool that lets an Author reload and inspect a System Package under development. It is entered from a Preview action in the toolbar's System Package menu and reuses the normal page, Loader, Validator, Renderer, and Sheet Modules rather than introducing a separate preview page. Its core loop is “save package files, then refresh the browser”; the refresh re-reads a previously authorized directory and runs the normal package pipeline. It does not provide visual editing or promise automatic filesystem change watching.
 _Avoid_: Visual editor
@@ -59,6 +67,14 @@ _Avoid_: Premature numeric type
 **Resource Value**:
 The author-provided content of a Resource Library entry field, treated as display text unless it is a framework-critical identifier or reference.
 _Avoid_: Implied numeric field
+
+**Resource Keyword Search**:
+A temporary Resource Library Browser query that matches Author-approved text fields. Space-separated keywords use AND semantics across the searchable fields of one entry and combine with existing exact filters and sorting.
+_Avoid_: Dependency filter, Character Data
+
+**Card Detail View**:
+A read-only enlarged view of an existing Card Instance, opened from its Card Table context menu.
+_Avoid_: Card editor, Resource Library details panel
 
 **Sheet Module**:
 A reusable author-configured building block such as text, resource picker, image, or display content.
@@ -180,6 +196,12 @@ _Avoid_: Script plugin
 - A **System Package Validator** should be strict about IDs, references, required structural fields, and broken links, but permissive about ordinary **Sheet Values**.
 - **Resource Values** are displayed as provided; the Base Framework does not interpret their game meaning.
 - A **System Package** composes **Sheet Modules** into pages through **HTML Layout Templates**.
+- Page navigation lists **Runtime-Visible Pages** in System Package declaration order and renders one **Current Page** at a time. If the Current Page becomes hidden, the first Runtime-Visible Page becomes current; when none remain, the Sheet Tool shows an empty-page state.
+- Printing evaluates all System Package pages independently of the Current Page.
+- A page's optional **Print Override** is the `打印` boolean. `true` always includes that page and `false` always excludes it. Without an override, a Runtime-Visible Page prints and a runtime-hidden page does not.
+- The **Current Page** is ephemeral reading state. It is not part of Character Data, Character Saves, or browser persistence. It may remain selected while switching Character Saves if still visible, but package reload or browser refresh selects the first Runtime-Visible Page again.
+- Page navigation is Base Framework UI. It is hidden when fewer than two Runtime-Visible Pages exist, otherwise lists page names in declaration order with horizontal overflow on narrow screens. Authors do not provide custom navigation markup or behavior.
+- Normal reading renders only the Current Page. Export Preview temporarily renders every printable page in declaration order, hides page navigation, and restores the unchanged Current Page on exit. Browser printing and HTML snapshots share this printable-page set; an empty set produces a clear message instead of invoking output.
 - A **Resource Library** stores source entries; **Card Presentation** controls how selected entries appear to Players.
 - A **Resource Picker** is an interaction trigger over a **Resource Library**. It does not persist selected resource references into **Character Data** by default.
 - A **Card** is a core PbDH concept and may represent many kinds of resources, not only Daggerheart domain cards.
@@ -189,6 +211,8 @@ _Avoid_: Script plugin
 - Author-facing card data requires `ID`, `名称`, and `描述`; other fields are extensible and not fixed in the first-version requirements.
 - **Author Data** uses Chinese keys in author-facing formats and may use the same Chinese keys directly in code objects; an English-key mapping layer is not a requirement.
 - **Character Data** exports only character-specific state plus a System Package identifier/version, not the complete System Package.
+- **Resource Keyword Search** is transient Browser UI state. Field templates may declare `可搜索`; when omitted it follows `默认显示`. With no field template, all normalized text fields are searchable. Search is case-insensitive, trimmed, and never stored in Character Data or Dependency Logic defaults.
+- A **Card Detail View** only enlarges the card's existing presentation. It is entered through the Card Table right-click or long-press context menu and does not edit Card Instance state or introduce another Resource Library Browser detail flow.
 - First-version **Character Data** stores text and state. System images should be referenced rather than copied, but Player-provided portraits or character art may be stored with the Character Data.
 - System Package distribution is file/package based in the first version; package marketplaces, publishing platforms, and full source-code exports are outside the first-version requirement.
 - **Display Content**, adventure notes, names, and rule reference pages are all uses of **Sheet Modules**, not separate base features.

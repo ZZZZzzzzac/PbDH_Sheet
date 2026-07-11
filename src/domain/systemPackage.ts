@@ -240,6 +240,7 @@ const pageSchema = z.object({
   ID: z.string().min(1),
   名称: z.string().min(1),
   默认隐藏: z.boolean().optional(),
+  打印: z.boolean().optional(),
   layout: htmlTemplateLayoutSchema,
 });
 

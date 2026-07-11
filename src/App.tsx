@@ -13,6 +13,7 @@ import type { PackageDirectoryHandle } from "./loaders/packageVfs";
 import type { ValidationIssue } from "./domain/validationRunner";
 import { buildReadonlyHtmlSnapshot, waitForVisibleImages } from "./export/output";
 import { SheetRenderer } from "./rendering/SheetRenderer";
+import { printablePages } from "./rendering/pagePresentation";
 import { GuideSpotlight } from "./rendering/GuideSpotlight";
 import { useRuntimeStore } from "./store/runtimeStore";
 
@@ -181,14 +182,14 @@ export default function App() {
     }
 
     if (kind === "html") {
-      await preparePrintableContent();
+      if (!(await preparePrintableContent())) return;
       const printableRoot = document.querySelector(".sheet-tool");
       await waitForVisibleImages(printableRoot ?? document);
       downloadText(buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined, activeCharacterSaveName), `${baseName}.html`, "text/html");
       return;
     }
 
-    await preparePrintableContent();
+    if (!(await preparePrintableContent())) return;
     await waitForVisibleImages(document.querySelector(".sheet-tool") ?? document);
     window.print();
   };
@@ -206,14 +207,19 @@ export default function App() {
 
   const preparePrintableContent = async () => {
     if (!currentPackage) {
-      return;
+      return false;
+    }
+    const packageSnapshot = currentPackage;
+    if (printablePages(packageSnapshot.pages, useRuntimeStore.getState().pageVisibility).length === 0) {
+      useRuntimeStore.setState({ importNotice: "当前没有可打印页面。" });
+      return false;
     }
 
     setPrintMode(true);
     await nextFrame();
     await nextFrame();
 
-    for (const module of currentPackage.modules) {
+    for (const module of packageSnapshot.modules) {
       if (module.类型 === "cardTable") {
         const cardCount = characterData?.cards.instances.filter((instance) => instance.tableModuleId === module.ID).length ?? 0;
         tidyCardTable(
@@ -227,6 +233,7 @@ export default function App() {
       }
     }
     await nextFrame();
+    return true;
   };
 
   const handleValidation = async () => {
@@ -541,7 +548,7 @@ export default function App() {
             : undefined
         }
       />
-      {currentPackage ? <SheetRenderer systemPackage={currentPackage} /> : null}
+      {currentPackage ? <SheetRenderer systemPackage={currentPackage} outputMode={printMode} /> : null}
       {currentPackage?.characterCreationGuide && guideSession ? (
         <GuideSpotlight
           guide={currentPackage.characterCreationGuide}
