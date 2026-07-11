@@ -159,20 +159,21 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
   };
 
   return (
-    <section className="card-table-module" data-module-id={module.ID} data-module-type={module.类型}>
+    <section className="card-table-module" data-module-id={module.ID} data-module-type={module.类型} data-part="container">
       <div
         className="card-table-surface"
+        data-part="surface"
         ref={tableRef}
         style={cardTableSurfaceStyle(tableLayout)}
         aria-label={`${module.标签}自由桌面`}
         onPointerDown={closeCardMenu}
       >
-        <div className="card-table-actions card-table-side-actions" onPointerDown={(event) => event.stopPropagation()}>
-          <button className="card-action-button" type="button" onClick={() => tidyCardTable(module.ID, tableLayout)}>
+        <div className="card-table-actions card-table-side-actions" data-part="actions" onPointerDown={(event) => event.stopPropagation()}>
+          <button className="card-action-button" data-part="tidy-button" type="button" onClick={() => tidyCardTable(module.ID, tableLayout)}>
             <Layers aria-hidden="true" size={16} />
             <span>整理</span>
           </button>
-          <label className="card-size-control">
+          <label className="card-size-control" data-part="size-control">
             <span>大小</span>
             <input
               type="range"
@@ -187,7 +188,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
           </label>
           <span className="card-count">{visibleInstances.length} 张</span>
         </div>
-        {visibleInstances.length === 0 ? <p className="card-table-empty">选择卡牌后会放到这里。</p> : null}
+        {visibleInstances.length === 0 ? <p className="card-table-empty" data-part="empty">选择卡牌后会放到这里。</p> : null}
         {visibleInstances.map((instance) => (
           <CardView
             instance={instance}

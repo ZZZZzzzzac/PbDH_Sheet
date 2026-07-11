@@ -2,7 +2,7 @@
   {
     "ID": "character-name",
     "类型": "freeText",
-    "标签": "姓名"
+    "标签": "我的姓名"
   },
   {
     "ID": "pick-class",

@@ -14,14 +14,14 @@ export function ReadOnlyDisplayModule({ module }: ReadOnlyDisplayModuleProps) {
   const altText = module.替代文本 ?? module.标签;
 
   return (
-    <article className="container container-stack" data-module-id={module.ID} data-module-type={module.类型}>
-      <h3 className="label">{module.标签}</h3>
-      {content ? <p className="value display-text">{content}</p> : null}
+    <article className="container container-stack" data-module-id={module.ID} data-module-type={module.类型} data-part="container">
+      <h3 className="label" data-part="label">{module.标签}</h3>
+      {content ? <p className="value display-text" data-part="value">{content}</p> : null}
       {module.资源ID ? (
         assetUrl && !failed ? (
-          <img className="value image-preview" src={assetUrl} alt={altText} onError={() => setFailed(true)} />
+          <img className="value image-preview" data-part="image" src={assetUrl} alt={altText} onError={() => setFailed(true)} />
         ) : (
-          <div className="image-fallback" role="img" aria-label={altText}>
+          <div className="image-fallback" data-part="image-fallback" role="img" aria-label={altText}>
             图片不可用
           </div>
         )

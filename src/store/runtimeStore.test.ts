@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { StorageService } from "../storage/storageService";
 import { minimalSystemPackage } from "../test/fixtures";
+import type { PackageDirectoryHandle } from "../loaders/packageVfs";
 import { configureRuntimeDependencies, resetRuntimeDependencies, useRuntimeStore } from "./runtimeStore";
 
 function createMemoryStorage(cachedPackage: unknown = null): StorageService & {
@@ -96,6 +97,7 @@ describe("runtime store", () => {
   let memoryStorage: ReturnType<typeof createMemoryStorage>;
 
   beforeEach(async () => {
+    sessionStorage.clear();
     memoryStorage = createMemoryStorage();
     configureRuntimeDependencies({
       loadSystemPackageFromFile: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
@@ -117,6 +119,7 @@ describe("runtime store", () => {
       storageStatus: "idle",
       importError: null,
       importNotice: null,
+      authorPreviewActive: false,
     });
     await useRuntimeStore.getState().initialize();
   });
@@ -130,6 +133,39 @@ describe("runtime store", () => {
     expect(useRuntimeStore.getState().bootStatus).toBe("ready");
     expect(useRuntimeStore.getState().currentPackage).toBeNull();
     expect(useRuntimeStore.getState().characterData).toBeNull();
+  });
+
+  it("enters and exits Author Preview without restoring the previous package", async () => {
+    const handle = { kind: "directory", name: "dev" } as PackageDirectoryHandle;
+    const saveHandle = vi.fn(async () => {});
+    configureRuntimeDependencies({
+      storage: memoryStorage,
+      savePreviewDirectoryHandle: saveHandle,
+      loadSystemPackageFromDirectoryHandle: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
+    });
+    await useRuntimeStore.getState().enterAuthorPreview(handle);
+    expect(saveHandle).toHaveBeenCalledWith(handle);
+    expect(useRuntimeStore.getState().authorPreviewActive).toBe(true);
+    expect(useRuntimeStore.getState().currentPackage?.manifest.ID).toBe(minimalSystemPackage.manifest.ID);
+    useRuntimeStore.getState().exitAuthorPreview();
+    expect(useRuntimeStore.getState().authorPreviewActive).toBe(false);
+    expect(useRuntimeStore.getState().currentPackage?.manifest.ID).toBe(minimalSystemPackage.manifest.ID);
+  });
+
+  it("restores Preview within the tab and blocks stale rendering on reload errors", async () => {
+    const handle = { kind: "directory", name: "dev", queryPermission: async () => "granted" as PermissionState } as PackageDirectoryHandle;
+    sessionStorage.setItem("pbdh-author-preview", "active");
+    configureRuntimeDependencies({
+      storage: memoryStorage,
+      loadPreviewDirectoryHandle: async () => handle,
+      loadSystemPackageFromDirectoryHandle: async () => ({ ok: false, issues: [{ level: "fatal", code: "MANIFEST_MISSING", text: "missing" }] }),
+    });
+    useRuntimeStore.setState({ currentPackage: minimalSystemPackage });
+    await useRuntimeStore.getState().initialize();
+    expect(useRuntimeStore.getState().authorPreviewActive).toBe(true);
+    expect(useRuntimeStore.getState().bootStatus).toBe("error");
+    expect(useRuntimeStore.getState().currentPackage).toBeNull();
+    expect(useRuntimeStore.getState().packageIssues[0]?.code).toBe("MANIFEST_MISSING");
   });
 
   it("updates Character Data through updateModuleValue and autosaves", async () => {

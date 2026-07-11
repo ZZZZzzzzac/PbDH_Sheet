@@ -25,8 +25,12 @@ The finished web application used by Players for one specific PbDH system.
 _Avoid_: Framework, editor
 
 **Author Preview**:
-A feedback surface that lets an Author inspect the Sheet Tool while developing a System Package.
+A mode of the existing Player-facing Sheet Tool that lets an Author reload and inspect a System Package under development. It is entered from a Preview action in the toolbar's System Package menu and reuses the normal page, Loader, Validator, Renderer, and Sheet Modules rather than introducing a separate preview page. Its core loop is “save package files, then refresh the browser”; the refresh re-reads a previously authorized directory and runs the normal package pipeline. It does not provide visual editing or promise automatic filesystem change watching.
 _Avoid_: Visual editor
+
+**Directory Package Import**:
+An enhanced System Package input path that reads selected directory files directly into the shared package VFS and then uses the same normalization, loading, validation, and caching pipeline as zip import. It does not create an intermediate zip.
+_Avoid_: Author Preview
 
 **Character Creation Guide**:
 An Author-defined linear spotlight tour that explains character creation by dimming the Sheet Tool and highlighting the page or Sheet Module relevant to each step.
@@ -150,6 +154,13 @@ _Avoid_: Script plugin
 - The first-version runtime uses one **Current System Package** at a time.
 - A **Player** may have multiple local **Character Saves** for the **Current System Package**.
 - An **Author Preview** helps an **Author** validate a **System Package** by looking at the resulting **Sheet Tool**.
+- **Directory Package Import**, **Author Preview**, and module-instance style overrides are separate capabilities: a directory is one package input source, Preview is the reload-and-inspect feedback loop, and style overrides are part of the System Package presentation contract. Author Preview depends on the directory source being re-readable across a browser refresh, but owns the refresh, validation feedback, and preview replacement behavior rather than directory traversal itself.
+- Entering **Author Preview** loads the package under development as the normal **Current System Package**, replacing any package previously loaded in that local browser. The normal Player-facing page, persistence rules, and capabilities remain available, including Character Saves, checks, import, and export, so an Author can inspect the complete Player experience and generated data. Preview is not a separate data sandbox, does not back up the previous runtime state, and does not protect same-ID local Character Saves from normal updates; the application remains local-only, so the Author's activity cannot affect other Players.
+- **Author Preview** is diagnostic-first: package loading or validation errors are shown explicitly and block the preview instead of falling back to a stale package or hiding defects behind Player-facing recovery behavior. Warnings remain continuously visible but do not block rendering. Diagnostics should identify the source file, configuration path, cause, and a useful repair hint when known. Preview never silently repairs or ignores invalid configuration; the Author fixes the source files and refreshes again.
+- **Author Preview** is scoped to the current browser-tab session. A normal page refresh remains in Preview and re-reads the development directory; explicitly exiting, closing the tab, or ending the browser session returns future app launches to Player mode.
+- Exiting **Author Preview** only stops refresh-time directory re-reading. It does not restore a previous package; the last successfully loaded development snapshot remains the normal **Current System Package** until replaced through the ordinary package workflow.
+- **Directory Package Import** may use broadly available directory-file selection without retaining a re-readable handle. **Author Preview** specifically requires the File System Access API because its refresh loop must re-read the chosen directory. The Preview entry checks support at runtime and reports an explicit warning when the browser cannot provide that capability; ordinary zip and directory import remain available.
+- If a Preview directory can no longer be read because permission was denied, revoked, or otherwise lost, Preview remains active but blocks rendering with an explicit diagnostic and offers directory reauthorization or reselection. It does not display a cached package snapshot or silently exit Preview.
 - A **System Package** may include at most one **Character Creation Guide** so a **Player** can follow its Author-defined linear explanation without choosing among multiple guides.
 - A **Character Creation Guide** is a presentation layer over the existing Sheet Tool; it explains and highlights but does not operate **Sheet Modules**, emit selection events, invoke **Dependency Logic**, manipulate **Cards**, or run **Validation Checks**.
 - A first-version **Character Creation Guide** is a linear ordered sequence without branching, loops, or Author-defined step jumps.

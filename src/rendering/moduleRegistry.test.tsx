@@ -56,6 +56,10 @@ describe("Module Registry rendering", () => {
     expect(screen.getByText("只读展示模块不会写入 Character Data。这里适合放规则提示、检查清单或静态说明。")).toBeVisible();
     expect(screen.getByAltText("阶段5示例徽记")).toBeVisible();
     expect(screen.getByRole("button", { name: "上传图片" })).toBeVisible();
+    const freeText = screen.getByLabelText("姓名").closest('[data-module-type="freeText"]');
+    expect(freeText).toHaveAttribute("data-module-id", "character-name");
+    expect(freeText).toHaveAttribute("data-part", "container");
+    expect(screen.getByLabelText("姓名")).toHaveAttribute("data-part", "input");
   });
 
   it("renders HTML Layout Template content and module slots", () => {

@@ -2,6 +2,7 @@ import Dexie, { type Table } from "dexie";
 import type { CharacterData } from "../domain/characterData";
 import type { SystemPackage } from "../domain/systemPackage";
 import type { RuntimePackageAsset } from "../loaders/assetResolver";
+import type { PackageDirectoryHandle } from "../loaders/packageVfs";
 
 interface CharacterDataRecord {
   id: string;
@@ -17,6 +18,8 @@ interface SystemPackageRecord {
   data?: SystemPackage;
   packageAssets?: RuntimePackageAsset[];
 }
+
+interface AuthorPreviewHandleRecord { id: string; handle: PackageDirectoryHandle }
 
 export interface StoredPlayerImageBlob {
   id: string;
@@ -58,6 +61,7 @@ export class PbDHDatabase extends Dexie {
   characterSaves!: Table<CharacterDataRecord, string>;
   systemPackages!: Table<SystemPackageRecord, string>;
   playerImages!: Table<StoredPlayerImageBlob, string>;
+  authorPreviewHandles!: Table<AuthorPreviewHandleRecord, string>;
 
   constructor(name = "pbdh-sheet") {
     super(name);
@@ -81,6 +85,12 @@ export class PbDHDatabase extends Dexie {
         }
         await tx.table("systemPackages").delete(record.id);
       }
+    });
+    this.version(4).stores({
+      characterSaves: "id, packageId",
+      systemPackages: "id, packageId",
+      playerImages: "id",
+      authorPreviewHandles: "id",
     });
   }
 }
@@ -218,6 +228,16 @@ export const storageService: StorageService = {
     return (await db.playerImages.get(imageId)) ?? null;
   },
 };
+
+const authorPreviewHandleId = "current-author-preview-directory";
+
+export async function saveAuthorPreviewDirectoryHandle(handle: PackageDirectoryHandle): Promise<void> {
+  await db.authorPreviewHandles.put({ id: authorPreviewHandleId, handle });
+}
+
+export async function loadAuthorPreviewDirectoryHandle(): Promise<PackageDirectoryHandle | null> {
+  return (await db.authorPreviewHandles.get(authorPreviewHandleId))?.handle ?? null;
+}
 
 function defaultSaveName(): string {
   return "未命名角色";

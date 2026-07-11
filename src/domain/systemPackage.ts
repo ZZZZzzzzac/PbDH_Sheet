@@ -865,7 +865,21 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
 }
 
 export function validateCachedSystemPackage(input: unknown): CachedPackageValidationResult {
-  const result = validateSystemPackage(input);
+  const cached = systemPackageEnvelopeSchema.safeParse(input);
+  const denormalizedInput = cached.success
+    ? {
+        ...cached.data,
+        resourceLibraries: cached.data.resourceLibraries?.map((library) => ({
+          ...library,
+          entries: Array.isArray(library.entries)
+            ? library.entries.map((entry) =>
+                isPlainObject(entry) && isPlainObject(entry.fields) ? { ...entry.fields, ID: entry.ID } : entry,
+              )
+            : library.entries,
+        })),
+      }
+    : input;
+  const result = validateSystemPackage(denormalizedInput);
   if (result.ok) {
     return { ok: true, package: result.package };
   }

@@ -23,8 +23,9 @@ import { validateCachedSystemPackage, type PackageIssue, type SystemPackage } fr
 import { runValidationChecks as runValidationChecksDomain, type ValidationIssue } from "../domain/validationRunner";
 import { parseCharacterDataText } from "../export/output";
 import { createRuntimeAssetResolver, type RuntimeAssetResolver, type RuntimePackageAsset } from "../loaders/assetResolver";
-import { loadSystemPackageFromZipFile, type PackageLoadResult } from "../loaders/systemPackageLoader";
-import { storageService, type CharacterSaveSummary, type StorageService } from "../storage/storageService";
+import type { PackageDirectoryHandle } from "../loaders/packageVfs";
+import { loadSystemPackageFromDirectoryFiles, loadSystemPackageFromDirectoryHandle, loadSystemPackageFromZipFile, type PackageLoadResult } from "../loaders/systemPackageLoader";
+import { loadAuthorPreviewDirectoryHandle, saveAuthorPreviewDirectoryHandle, storageService, type CharacterSaveSummary, type StorageService } from "../storage/storageService";
 import { generateId } from "../utils";
 import {
   createCardInstancesFromSelection,
@@ -61,8 +62,12 @@ interface RuntimeState {
   storageStatus: StorageStatus;
   importError: string | null;
   importNotice: string | null;
+  authorPreviewActive: boolean;
   initialize: () => Promise<void>;
   uploadSystemPackageFromFile: (file: Blob) => Promise<void>;
+  uploadSystemPackageFromDirectory: (files: Iterable<File>) => Promise<void>;
+  enterAuthorPreview: (handle: PackageDirectoryHandle) => Promise<void>;
+  exitAuthorPreview: () => void;
   createCharacterSave: (name?: string) => Promise<void>;
   switchCharacterSave: (saveId: string) => Promise<void>;
   renameCharacterSave: (saveId: string, name: string) => Promise<void>;
@@ -89,17 +94,54 @@ let activePackageAssetResolver: RuntimeAssetResolver | undefined;
 
 interface RuntimeDependencies {
   loadSystemPackageFromFile: (file: Blob) => Promise<PackageLoadResult>;
+  loadSystemPackageFromDirectory: (files: Iterable<File>) => Promise<PackageLoadResult>;
+  loadSystemPackageFromDirectoryHandle: (handle: PackageDirectoryHandle) => Promise<PackageLoadResult>;
+  loadPreviewDirectoryHandle: () => Promise<PackageDirectoryHandle | null>;
+  savePreviewDirectoryHandle: (handle: PackageDirectoryHandle) => Promise<void>;
   storage: StorageService;
   runValidationChecks: typeof runValidationChecksDomain;
 }
 
 const defaultRuntimeDependencies: RuntimeDependencies = {
   loadSystemPackageFromFile: (file) => loadSystemPackageFromZipFile(file),
+  loadSystemPackageFromDirectory: (files) => loadSystemPackageFromDirectoryFiles(files),
+  loadSystemPackageFromDirectoryHandle: (handle) => loadSystemPackageFromDirectoryHandle(handle),
+  loadPreviewDirectoryHandle: () => loadAuthorPreviewDirectoryHandle(),
+  savePreviewDirectoryHandle: (handle) => saveAuthorPreviewDirectoryHandle(handle),
   storage: storageService,
   runValidationChecks: runValidationChecksDomain,
 };
 
 let runtimeDependencies = defaultRuntimeDependencies;
+const authorPreviewSessionKey = "pbdh-author-preview";
+
+async function loadPreviewPackage(handle: PackageDirectoryHandle, set: (partial: Partial<RuntimeState>) => void) {
+  set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null, authorPreviewActive: true });
+  const validation = await runtimeDependencies.loadSystemPackageFromDirectoryHandle(handle);
+  if (!validation.ok) {
+    activePackageAssetResolver?.revokeAll();
+    activePackageAssetResolver = undefined;
+    set({
+      currentPackage: null,
+      packageAssetUrls: {},
+      characterData: null,
+      characterSaves: [],
+      activeCharacterSaveId: null,
+      ...emptyDerivedState(),
+      bootStatus: "error",
+      packageIssues: validation.issues,
+      authorPreviewActive: true,
+    });
+    return;
+  }
+  let storageStatus: StorageStatus = "idle";
+  try {
+    await runtimeDependencies.storage.saveCurrentSystemPackage(validation.package, validation.packageAssets ?? []);
+  } catch {
+    storageStatus = "error";
+  }
+  await loadPackageIntoState(validation.package, validation.issues, set, storageStatus, validation.packageAssets ?? []);
+}
 
 function emptyDerivedState() {
   return {
@@ -215,11 +257,26 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   storageStatus: "idle",
   importError: null,
   importNotice: null,
+  authorPreviewActive: false,
 
   async initialize() {
     set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null });
 
     try {
+      if (sessionStorage.getItem(authorPreviewSessionKey) === "active") {
+        const handle = await runtimeDependencies.loadPreviewDirectoryHandle();
+        if (!handle) {
+          set({ currentPackage: null, characterData: null, bootStatus: "error", authorPreviewActive: true, packageIssues: [{ level: "fatal", code: "PREVIEW_DIRECTORY_PERMISSION_REQUIRED", text: "Author Preview 开发目录不可用，请重新授权或选择目录。" }] });
+          return;
+        }
+        const permission = handle.queryPermission ? await handle.queryPermission({ mode: "read" }) : "granted";
+        if (permission !== "granted") {
+          set({ currentPackage: null, characterData: null, bootStatus: "error", authorPreviewActive: true, packageIssues: [{ level: "fatal", code: "PREVIEW_DIRECTORY_PERMISSION_REQUIRED", text: "无法重新读取 Author Preview 开发目录，请重新授权或选择目录。" }] });
+          return;
+        }
+        await loadPreviewPackage(handle, set);
+        return;
+      }
       const cachedPackage = await runtimeDependencies.storage.loadCurrentSystemPackage();
       if (!cachedPackage) {
         activePackageAssetResolver?.revokeAll();
@@ -270,6 +327,33 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     }
 
     await loadPackageIntoState(validation.package, validation.issues, set, packageCacheStatus, validation.packageAssets ?? []);
+  },
+
+  async uploadSystemPackageFromDirectory(files) {
+    set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null });
+    const validation = await runtimeDependencies.loadSystemPackageFromDirectory(files);
+    if (!validation.ok) {
+      set((state) => ({ bootStatus: state.currentPackage ? "ready" : "error", packageIssues: validation.issues }));
+      return;
+    }
+    let packageCacheStatus: StorageStatus = "idle";
+    try {
+      await runtimeDependencies.storage.saveCurrentSystemPackage(validation.package, validation.packageAssets ?? []);
+    } catch {
+      packageCacheStatus = "error";
+    }
+    await loadPackageIntoState(validation.package, validation.issues, set, packageCacheStatus, validation.packageAssets ?? []);
+  },
+
+  async enterAuthorPreview(handle) {
+    sessionStorage.setItem(authorPreviewSessionKey, "active");
+    await runtimeDependencies.savePreviewDirectoryHandle(handle);
+    await loadPreviewPackage(handle, set);
+  },
+
+  exitAuthorPreview() {
+    sessionStorage.removeItem(authorPreviewSessionKey);
+    set({ authorPreviewActive: false, importNotice: "已退出预览；当前 System Package 保持不变。" });
   },
 
   async createCharacterSave(name = "未命名角色") {

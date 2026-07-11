@@ -83,6 +83,80 @@ System Package 页面引用布局文件：
 }
 ```
 
+## Sheet Module 样式接口
+
+框架渲染每个 Sheet Module 时都会公开三个稳定选择面：
+
+- `data-module-id`：模块实例 ID。用于只修改一个具体模块。
+- `data-module-type`：模块类型。用于设置同类型模块的共同样式。
+- `data-part`：模块内部由框架公开的稳定部件。Author CSS 应优先使用它，不依赖内部 DOM 层级或实现 class。
+
+例如 `modules.json` 中存在两个 `freeText`：
+
+```json
+[
+  { "ID": "charname", "类型": "freeText", "标签": "姓名" },
+  { "ID": "main-class", "类型": "freeText", "标签": "主职业" }
+]
+```
+
+只修改 `charname`，不会影响 `main-class`：
+
+```css
+[data-module-id="charname"] {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: 8px;
+}
+
+[data-module-id="charname"] [data-part="label"] {
+  color: #7a263a;
+  font-weight: 700;
+}
+
+[data-module-id="charname"] [data-part="input"] {
+  border: 2px solid #7a263a;
+  border-radius: 0;
+}
+```
+
+为页面中所有 `freeText` 提供共同默认样式：
+
+```css
+[data-module-type="freeText"] [data-part="input"] {
+  min-height: 2.5rem;
+}
+```
+
+实例规则可以覆盖类型规则：
+
+```css
+[data-module-type="freeText"] [data-part="input"] {
+  border: 1px solid #999;
+}
+
+[data-module-id="charname"] [data-part="input"] {
+  border-color: crimson;
+}
+```
+
+### 稳定 parts
+
+| Module 类型 | 稳定 `data-part` |
+| --- | --- |
+| `freeText` | `container`、`label`、`input` |
+| `longText` | `container`、`label`、`input` |
+| `checkboxResource` | `container`、`label`、`options`、`option`、`input`、`option-label` |
+| `countableResource` | `container`、`label`、`counter`、`decrement-button`、`input`、`increment-button`、`maximum`、`maximum-input` |
+| `readOnlyDisplay` | `container`、`label`、`value`、`image`、`image-fallback` |
+| `imageField` | `container`、`label`、`image`、`image-fallback`、`actions`、`button` |
+| `resourcePicker` | `container`、`button` |
+| `cardTable` | `container`、`surface`、`actions`、`tidy-button`、`size-control`、`empty` |
+
+`data-part` 是 Author-facing 兼容接口。普通 class 主要服务框架自身样式，可能随实现调整，不应作为 System Package 的长期依赖。
+
+Author 不需要为每个模块声明单独 CSS 文件。实例样式、类型默认样式和页面布局都写在该页面的 `layout.css` 中。框架会把整个 CSS 文件限制到当前页面，因此这些选择器不能影响 App Shell 或其他页面。
+
 ## 允许内容
 
 - 布局容器：`main`、`section`、`article`、`header`、`footer`、`div`。
@@ -105,6 +179,7 @@ System Package 页面引用布局文件：
 - 脚本：`script`、事件属性、内联 JS、外部 JS。
 - 外部资源：外链 CSS、外链字体、外链图片、外部 `@import`。
 - 全局污染：直接影响 `html`、`body`、app shell、导入导出按钮、存档 UI。
+- 依赖未列入上表的内部 class 或 DOM 层级作为长期接口。
 
 ## 校验规则
 
@@ -124,3 +199,4 @@ System Package 页面引用布局文件：
 4. 用 CSS Grid/Flex/media query 做行列和响应式。
 5. 不写任何自定义表单控件；需要新交互时，新增或扩展 Sheet Module。
 6. 导入包后看 Validator；有模块引用错误先查 `<pb-module id>` 拼写。
+7. 修改单个模块时，以 `[data-module-id="..."]` 开头并使用其稳定 `[data-part="..."]`。

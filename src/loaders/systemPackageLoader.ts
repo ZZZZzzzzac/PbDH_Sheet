@@ -2,7 +2,7 @@ import { z } from "zod";
 import { resourceLibraryReferenceSchema, type ResourceLibraryReference } from "../domain/resourceLibrary";
 import { validateSystemPackage, type PackageValidationResult } from "../domain/systemPackage";
 import type { RuntimePackageAsset } from "./assetResolver";
-import { createVirtualFileSystemFromZipFile, type PackageVirtualFileSystem } from "./packageVfs";
+import { createVirtualFileSystemFromDirectoryFiles, createVirtualFileSystemFromDirectoryHandle, createVirtualFileSystemFromZipFile, type PackageDirectoryHandle, type PackageVirtualFileSystem } from "./packageVfs";
 import { inferMimeType } from "../utils";
 
 export const packageManifestPath = "manifest.json";
@@ -181,6 +181,18 @@ function normalizeManifestPackage(
     validationChecks,
     characterCreationGuide,
   });
+}
+
+export async function loadSystemPackageFromDirectoryFiles(files: Iterable<File>): Promise<PackageLoadResult> {
+  const vfsResult = await createVirtualFileSystemFromDirectoryFiles(files);
+  if (!vfsResult.ok) return { ok: false, issues: vfsResult.issues };
+  return loadSystemPackageFromVfs(vfsResult.vfs);
+}
+
+export async function loadSystemPackageFromDirectoryHandle(handle: PackageDirectoryHandle): Promise<PackageLoadResult> {
+  const vfsResult = await createVirtualFileSystemFromDirectoryHandle(handle);
+  if (!vfsResult.ok) return { ok: false, issues: vfsResult.issues };
+  return loadSystemPackageFromVfs(vfsResult.vfs);
 }
 
 function readPackageJsonFile(vfs: PackageVirtualFileSystem, path: string) {

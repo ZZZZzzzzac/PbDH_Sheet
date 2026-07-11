@@ -375,7 +375,7 @@ Sheet Modules 是框架提供的组件。单个模块：
 - 不直接读取 zip 文件、IndexedDB 或其他模块。
 - 不执行跨模块写入。
 
-模块样式按模块实例 ID 隔离。Author CSS 只能影响一个模块实例。
+Author 在页面 `layout.css` 中通过 `data-module-id` 精确指定模块实例，通过 `data-module-type` 设置类型默认样式，并通过稳定 `data-part` 定位模块内部部件。整个 CSS 先按页面隔离；实例规则由显式 module ID selector 隔离同页模块。
 
 ## Dependency Engine 边界
 

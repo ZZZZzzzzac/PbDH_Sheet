@@ -31,14 +31,15 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
   const setMax = (nextMax: number | null) => setState({ max: nextMax });
 
   return (
-    <div className="container" data-module-id={module.ID} data-module-type={module.类型}>
-      <div className="label">{module.标签}</div>
-      <div className="counter">
-        <button className="button stepper" type="button" onClick={() => setCurrent(current - step)} disabled={current <= min} aria-label={`${module.标签}减少`}>
+    <div className="container" data-module-id={module.ID} data-module-type={module.类型} data-part="container">
+      <div className="label" data-part="label">{module.标签}</div>
+      <div className="counter" data-part="counter">
+        <button className="button stepper" data-part="decrement-button" type="button" onClick={() => setCurrent(current - step)} disabled={current <= min} aria-label={`${module.标签}减少`}>
           -
         </button>
         <input
           className="input number-input"
+          data-part="input"
           inputMode="numeric"
           aria-label={module.标签}
           value={current}
@@ -46,6 +47,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
         />
         <button
           className="button stepper"
+          data-part="increment-button"
           type="button"
           onClick={() => setCurrent(current + step)}
           disabled={max !== null && current >= max}
@@ -54,11 +56,12 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
           +
         </button>
         {max !== null ? (
-          <span className="value">
+          <span className="value" data-part="maximum">
             /{" "}
             {editableMax ? (
               <input
                 className="input max-input"
+                data-part="maximum-input"
                 inputMode="numeric"
                 aria-label={`${module.标签}上限`}
                 value={max}

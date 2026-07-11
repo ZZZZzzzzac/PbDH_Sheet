@@ -1,8 +1,34 @@
 import { describe, expect, it } from "vitest";
 import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures";
-import { findAsset, findModule, findResourceLibrary, getHtmlTemplateModuleReferences, validateSystemPackage } from "./systemPackage";
+import { findAsset, findModule, findResourceLibrary, getHtmlTemplateModuleReferences, validateCachedSystemPackage, validateSystemPackage } from "./systemPackage";
 
 describe("validateSystemPackage", () => {
+  it("preserves normalized Resource Library fields when validating a cached package", () => {
+    const imported = validateSystemPackage({
+      ...minimalSystemPackage,
+      resourceLibraries: [
+        {
+          ID: "domain-cards",
+          名称: "领域卡",
+          路径: "resources/domain-cards.json",
+          entries: [{ ID: "domain-card:符文护符", 名称: "符文护符", 描述: "获得护甲。" }],
+        },
+      ],
+    });
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+
+    const restored = validateCachedSystemPackage(imported.package);
+
+    expect(restored.ok).toBe(true);
+    if (!restored.ok) return;
+    expect(findResourceLibrary(restored.package, "domain-cards")?.entries[0]?.fields).toMatchObject({
+      ID: "domain-card:符文护符",
+      名称: "符文护符",
+      描述: "获得护甲。",
+    });
+  });
+
   it("accepts the minimal demo System Package", () => {
     const result = validateSystemPackage(minimalSystemPackage);
 

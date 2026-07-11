@@ -26,17 +26,17 @@ export function ImageFieldModule({ module }: ImageFieldModuleProps) {
   };
 
   return (
-    <figure className="container container-stack image" data-module-id={module.ID} data-module-type={module.类型}>
-      <figcaption className="label">{module.标签}</figcaption>
+    <figure className="container container-stack image" data-module-id={module.ID} data-module-type={module.类型} data-part="container">
+      <figcaption className="label" data-part="label">{module.标签}</figcaption>
       {image ? (
-        <img className="value image-preview" src={image.dataUrl} alt={altText} />
+        <img className="value image-preview" data-part="image" src={image.dataUrl} alt={altText} />
       ) : (
-        <div className="image-fallback" role="img" aria-label={altText}>
+        <div className="image-fallback" data-part="image-fallback" role="img" aria-label={altText}>
           图片不可用
         </div>
       )}
-      <div className="image-actions">
-        <button className="button image-upload-button" type="button" onClick={() => inputRef.current?.click()}>
+      <div className="image-actions" data-part="actions">
+        <button className="button image-upload-button" data-part="button" type="button" onClick={() => inputRef.current?.click()}>
           上传图片
         </button>
         <input

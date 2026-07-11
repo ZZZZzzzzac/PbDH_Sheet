@@ -1,5 +1,5 @@
-import { Archive, Copy, Download, FileText, Map, Plus, Printer, ShieldCheck, Trash2, Type, Upload } from "lucide-react";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { Archive, Copy, Download, Eye, FileText, Map, Plus, Printer, ShieldCheck, Trash2, Type, Upload, X } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent, type InputHTMLAttributes } from "react";
 import { exportCharacterData } from "./domain/characterData";
 import { createCardTableLayout } from "./domain/cardEngine";
 import {
@@ -9,6 +9,7 @@ import {
   type GuideSession,
 } from "./domain/characterCreationGuide";
 import type { PackageIssue } from "./domain/systemPackage";
+import type { PackageDirectoryHandle } from "./loaders/packageVfs";
 import type { ValidationIssue } from "./domain/validationRunner";
 import { buildReadonlyHtmlSnapshot, waitForVisibleImages } from "./export/output";
 import { SheetRenderer } from "./rendering/SheetRenderer";
@@ -40,9 +41,10 @@ function nextFrame() {
 }
 
 function PackageIssuePanel({ issues }: { issues: PackageIssue[] }) {
+  const blocking = issues.some((issue) => issue.level === "fatal" || issue.level === "error");
   return (
-    <section className="error-panel" role="alert" aria-label="System Package error">
-      <h2>System Package 错误</h2>
+    <section className="error-panel" role={blocking ? "alert" : "status"} aria-label={blocking ? "System Package error" : "System Package warnings"}>
+      <h2>{blocking ? "System Package 错误" : "System Package 警告"}</h2>
       <ul>
         {issues.map((issue) => (
           <li key={`${issue.code}-${issue.path ?? issue.text}`}>
@@ -111,6 +113,7 @@ function ValidationIssueDialog({
 export default function App() {
   const characterFileInputRef = useRef<HTMLInputElement>(null);
   const packageFileInputRef = useRef<HTMLInputElement>(null);
+  const packageDirectoryInputRef = useRef<HTMLInputElement>(null);
   const guideButtonRef = useRef<HTMLButtonElement>(null);
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
   const [pendingOutput, setPendingOutput] = useState<OutputKind | null>(null);
@@ -135,6 +138,10 @@ export default function App() {
   const deleteCharacterSave = useRuntimeStore((state) => state.deleteCharacterSave);
   const importCharacterDataFromText = useRuntimeStore((state) => state.importCharacterDataFromText);
   const uploadSystemPackageFromFile = useRuntimeStore((state) => state.uploadSystemPackageFromFile);
+  const uploadSystemPackageFromDirectory = useRuntimeStore((state) => state.uploadSystemPackageFromDirectory);
+  const authorPreviewActive = useRuntimeStore((state) => state.authorPreviewActive);
+  const enterAuthorPreview = useRuntimeStore((state) => state.enterAuthorPreview);
+  const exitAuthorPreview = useRuntimeStore((state) => state.exitAuthorPreview);
   const runValidationChecks = useRuntimeStore((state) => state.runValidationChecks);
   const runPreOutputValidation = useRuntimeStore((state) => state.runPreOutputValidation);
   const tidyCardTable = useRuntimeStore((state) => state.tidyCardTable);
@@ -277,12 +284,31 @@ export default function App() {
     event.target.value = "";
   };
 
+  const handlePackageDirectory = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files ? [...event.target.files] : [];
+    if (files.length > 0) await uploadSystemPackageFromDirectory(files);
+    event.target.value = "";
+  };
+
+  const handleEnterAuthorPreview = async () => {
+    const previewWindow = window as typeof window & { showDirectoryPicker?: () => Promise<PackageDirectoryHandle> };
+    if (!previewWindow.showDirectoryPicker) {
+      useRuntimeStore.setState({ importNotice: "warning：当前浏览器不支持 File System Access API，无法进入预览。普通系统包导入仍可使用。" });
+      return;
+    }
+    try {
+      await enterAuthorPreview(await previewWindow.showDirectoryPicker());
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      useRuntimeStore.setState({ importError: "无法选择或授权预览开发目录。" });
+    }
+  };
+
   const closeGuide = () => {
     setGuideSession(null);
     window.requestAnimationFrame(() => guideButtonRef.current?.focus());
   };
 
-  const hasBlockingPackageIssues = packageIssues.some((issue) => issue.level === "fatal" || issue.level === "error");
   const activeCharacterSaveName = characterSaves.find((save) => save.id === activeCharacterSaveId)?.name ?? "无角色存档";
   const systemPackageLabel = currentPackage ? `${currentPackage.manifest.名称} · v${currentPackage.manifest.版本}` : bootStatus === "loading" ? "系统包加载中" : "未加载系统包";
 
@@ -308,12 +334,30 @@ export default function App() {
                 className="menu-item"
                 type="button"
                 onClick={() => packageFileInputRef.current?.click()}
-                aria-label="导入 System Package zip"
+                aria-label="上传 System Package zip"
                 disabled={bootStatus === "loading"}
               >
                 <Upload aria-hidden="true" size={16} />
-                <span>导入系统包</span>
+                <span>上传 zip</span>
               </button>
+              <button className="menu-item" type="button" onClick={() => packageDirectoryInputRef.current?.click()} disabled={bootStatus === "loading"}>
+                <Upload aria-hidden="true" size={16} />
+                <span>上传目录</span>
+              </button>
+              {authorPreviewActive ? (
+                <>
+                  <button className="menu-item" type="button" onClick={() => void handleEnterAuthorPreview()}>
+                    <Eye aria-hidden="true" size={16} /><span>重新选择预览目录</span>
+                  </button>
+                  <button className="menu-item" type="button" onClick={exitAuthorPreview}>
+                    <X aria-hidden="true" size={16} /><span>退出预览</span>
+                  </button>
+                </>
+              ) : (
+                <button className="menu-item" type="button" onClick={() => void handleEnterAuthorPreview()}>
+                  <Eye aria-hidden="true" size={16} /><span>进入预览</span>
+                </button>
+              )}
               <button
                 className="menu-item"
                 type="button"
@@ -440,8 +484,18 @@ export default function App() {
             accept=".zip,application/zip,application/x-zip-compressed"
             onChange={handlePackageFile}
           />
+          <input
+            ref={packageDirectoryInputRef}
+            className="visually-hidden"
+            type="file"
+            multiple
+            {...({ webkitdirectory: "" } as InputHTMLAttributes<HTMLInputElement>)}
+            onChange={handlePackageDirectory}
+          />
         </nav>
       </header>
+
+      {authorPreviewActive ? <div className="message message-info" role="status">预览中 · 刷新页面可重新读取开发目录</div> : null}
 
       {printMode ? (
         <section className="print-preview-bar" aria-label="导出预览">
@@ -468,7 +522,7 @@ export default function App() {
         </div>
       ) : null}
 
-      {bootStatus === "error" || hasBlockingPackageIssues ? <PackageIssuePanel issues={packageIssues} /> : null}
+      {packageIssues.length > 0 ? <PackageIssuePanel issues={packageIssues} /> : null}
       <ValidationIssueDialog
         issues={validationIssues}
         open={validationDialogOpen}

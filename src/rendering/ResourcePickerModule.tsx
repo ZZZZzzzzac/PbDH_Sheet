@@ -31,8 +31,8 @@ export function ResourcePickerModule({ module, systemPackage }: ResourcePickerMo
   };
 
   return (
-    <div className="container resource-picker-module" data-module-id={module.ID} data-module-type={module.类型}>
-      <button className="icon-button resource-picker-button" type="button" disabled={!library} onClick={() => setOpen(true)}>
+    <div className="container resource-picker-module" data-module-id={module.ID} data-module-type={module.类型} data-part="container">
+      <button className="icon-button resource-picker-button" data-part="button" type="button" disabled={!library} onClick={() => setOpen(true)}>
         <Search aria-hidden="true" size={18} />
         <span>{library ? module.按钮文本 : "资源库不可用"}</span>
       </button>

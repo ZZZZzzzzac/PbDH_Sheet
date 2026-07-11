@@ -19,6 +19,20 @@ export type PackageVirtualFileSystemResult =
   | { ok: true; vfs: PackageVirtualFileSystem }
   | { ok: false; issues: PackageIssue[] };
 
+export interface PackageFileHandle {
+  kind: "file";
+  name: string;
+  getFile(): Promise<File>;
+}
+
+export interface PackageDirectoryHandle {
+  kind: "directory";
+  name: string;
+  entries(): AsyncIterableIterator<[string, PackageFileHandle | PackageDirectoryHandle]>;
+  queryPermission?(descriptor?: { mode?: "read" }): Promise<PermissionState>;
+  requestPermission?(descriptor?: { mode?: "read" }): Promise<PermissionState>;
+}
+
 export function normalizePackagePath(path: string): PackagePathResult {
   const rawPath = path.trim().replaceAll("\\", "/");
 
@@ -116,6 +130,49 @@ export async function createVirtualFileSystemFromZipFile(file: Blob): Promise<Pa
   return createVirtualFileSystemFromZipBytes(new Uint8Array(await file.arrayBuffer()));
 }
 
+export async function createVirtualFileSystemFromDirectoryFiles(files: Iterable<File>): Promise<PackageVirtualFileSystemResult> {
+  const selectedFiles = [...files];
+  const entries = new Map<string, Uint8Array>();
+
+  for (const file of selectedFiles) {
+    const relativePath = file.webkitRelativePath || file.name;
+    const normalized = normalizePackagePath(relativePath);
+    if (!normalized.ok) {
+      return { ok: false, issues: [normalized.issue] };
+    }
+    entries.set(normalized.path, new Uint8Array(await file.arrayBuffer()));
+  }
+
+  resolvePackageRootPrefix(entries);
+  return { ok: true, vfs: createVirtualFileSystem(entries) };
+}
+
+export async function createVirtualFileSystemFromDirectoryHandle(handle: PackageDirectoryHandle): Promise<PackageVirtualFileSystemResult> {
+  const entries = new Map<string, Uint8Array>();
+  const visit = async (directory: PackageDirectoryHandle, prefix: string): Promise<PackageIssue | null> => {
+    for await (const [name, entry] of directory.entries()) {
+      const path = prefix ? `${prefix}/${name}` : name;
+      if (entry.kind === "directory") {
+        const issue = await visit(entry, path);
+        if (issue) return issue;
+      } else {
+        const normalized = normalizePackagePath(path);
+        if (!normalized.ok) return normalized.issue;
+        const file = await entry.getFile();
+        entries.set(normalized.path, new Uint8Array(await file.arrayBuffer()));
+      }
+    }
+    return null;
+  };
+  try {
+    const issue = await visit(handle, "");
+    if (issue) return { ok: false, issues: [issue] };
+    return { ok: true, vfs: createVirtualFileSystem(entries) };
+  } catch {
+    return { ok: false, issues: [{ level: "fatal", code: "DIRECTORY_READ_FAILED", text: "无法读取 Author Preview 开发目录。" }] };
+  }
+}
+
 export function createVirtualFileSystem(files: Map<string, Uint8Array>): PackageVirtualFileSystem {
   return {
     listFiles() {
@@ -165,4 +222,16 @@ function unsafePathIssue(path: string): PackagePathResult {
       path,
     },
   };
+}
+
+function resolvePackageRootPrefix(files: Map<string, Uint8Array>): void {
+  if (files.has("manifest.json")) return;
+  const manifests = [...files.keys()].filter((path) => path.endsWith("/manifest.json"));
+  if (manifests.length !== 1) return;
+  const prefix = manifests[0].slice(0, -"manifest.json".length);
+  const entries = [...files.entries()];
+  files.clear();
+  for (const [path, data] of entries) {
+    files.set(path.startsWith(prefix) ? path.slice(prefix.length) : path, data);
+  }
 }
