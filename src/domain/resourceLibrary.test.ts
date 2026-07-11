@@ -26,6 +26,13 @@ describe("Resource Library normalization", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.resourceLibraries[0].fields.map((field) => field.key)).toEqual(["ID", "名称", "领域", "等级", "描述"]);
+      expect(result.resourceLibraries[0].fields[0]).toEqual(expect.objectContaining({
+        key: "ID",
+        visible: false,
+        filterable: false,
+        sortable: false,
+        searchable: false,
+      }));
       expect(result.resourceLibraries[0].entries[0].fields).toEqual({
         ID: "blade-1",
         名称: "利刃一",
@@ -70,6 +77,34 @@ describe("Resource Library normalization", () => {
     expect(inferResourceFieldWidth(["短描述"])).toBe("compact");
     expect(inferResourceFieldWidth(["这是一段比较长的资源字段内容，应该给更多表格空间"])).toBe("fill");
     expect(inferResourceFieldWidth(["中等长度字段文本内容"])).toBe("wide");
+  });
+
+  it("lets an explicit field template opt ID back into Resource Picker presentation", () => {
+    const result = normalizeResourceLibraries([
+      {
+        ID: "diagnostics",
+        名称: "诊断资源",
+        路径: "resources/diagnostics.json",
+        entries: [{ ID: "entry-1", 名称: "测试条目" }],
+      },
+    ]);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(
+        getResourceLibraryFields(result.resourceLibraries[0], [
+          { 键: "ID", 默认显示: true, 可筛选: true, 可排序: true, 可搜索: true },
+          { 键: "名称" },
+        ])[0],
+      ).toEqual(expect.objectContaining({
+        key: "ID",
+        visible: true,
+        filterable: true,
+        sortable: true,
+        searchable: true,
+      }));
+      expect(result.resourceLibraries[0].entries[0].fields.ID).toBe("entry-1");
+    }
   });
 
   it("reports invalid library shapes and missing or duplicate entry IDs", () => {

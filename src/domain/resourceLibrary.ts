@@ -198,13 +198,14 @@ function normalizeResourceLibrary(
 }
 
 function buildFieldMetadata(key: string, isComplex: boolean, values: string[]): ResourceLibraryField {
+  const isFrameworkId = key === "ID";
   return {
     key,
     label: key,
-    visible: true,
-    filterable: !isComplex,
-    sortable: !isComplex,
-    searchable: !isComplex,
+    visible: !isFrameworkId,
+    filterable: !isFrameworkId && !isComplex,
+    sortable: !isFrameworkId && !isComplex,
+    searchable: !isFrameworkId && !isComplex,
     width: inferResourceFieldWidth(values),
   };
 }
