@@ -1,0 +1,10 @@
+[
+  {
+    "ID": "fill-missing-field",
+    "sources": [{ "类型": "resourcePicker", "模块ID": "picker" }],
+    "targets": [{ "类型": "module", "模块ID": "target" }],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "picker" },
+    "条件": { "类型": "always" },
+    "动作": [{ "类型": "fillText", "目标模块ID": "target", "内容": { "类型": "selectedResourceField", "字段": "不存在的字段" } }]
+  }
+]

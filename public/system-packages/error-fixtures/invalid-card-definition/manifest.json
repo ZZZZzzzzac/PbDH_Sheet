@@ -1,0 +1,9 @@
+{
+  "ID": "bad-card-definition",
+  "名称": "错误包：卡牌字段缺失",
+  "版本": "0.1.0",
+  "schemaVersion": "0.1.0",
+  "pages": "pages.json",
+  "modules": "modules.json",
+  "resourceLibraries": [{ "ID": "cards", "名称": "卡牌", "路径": "cards.json" }]
+}

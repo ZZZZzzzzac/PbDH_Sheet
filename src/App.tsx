@@ -50,8 +50,15 @@ function PackageIssuePanel({ issues }: { issues: PackageIssue[] }) {
         {issues.map((issue) => (
           <li key={`${issue.code}-${issue.path ?? issue.text}`}>
             <strong>{issue.code}</strong>
+            {issue.location?.file ? ` ${issue.location.file}` : ""}
             {issue.path ? ` ${issue.path}: ` : " "}
             {issue.text}
+            {(issue.entities?.length || issue.evidence?.length) ? (
+              <details>
+                <summary>诊断上下文</summary>
+                <pre>{JSON.stringify({ location: issue.location, entities: issue.entities, evidence: issue.evidence }, null, 2)}</pre>
+              </details>
+            ) : null}
           </li>
         ))}
       </ul>

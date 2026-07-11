@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { resourceLibraryReferenceSchema, type ResourceLibraryReference } from "../domain/resourceLibrary";
-import { validateSystemPackage, type PackageValidationResult } from "../domain/systemPackage";
+import { validateSystemPackage, type PackageSourceMap, type PackageValidationResult } from "../domain/systemPackage";
 import type { RuntimePackageAsset } from "./assetResolver";
 import { createVirtualFileSystemFromDirectoryFiles, createVirtualFileSystemFromDirectoryHandle, createVirtualFileSystemFromZipFile, type PackageDirectoryHandle, type PackageVirtualFileSystem } from "./packageVfs";
-import { inferMimeType } from "../utils";
+import { inferMimeType, isPlainObject } from "../utils";
 
 export const packageManifestPath = "manifest.json";
 export type LoadedPackageAsset = RuntimePackageAsset;
@@ -150,6 +150,7 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
     validationChecks.value,
     guideJson?.value,
     shell?.value,
+    buildPackageSourceMap(manifest.data, pagesJson.value),
   );
   if (!normalized.ok) {
     return normalized;
@@ -170,6 +171,7 @@ function normalizeManifestPackage(
   validationChecks?: Array<{ ID: string; 脚本: string; scriptContent: string }>,
   characterCreationGuide?: unknown,
   shell?: unknown,
+  sourceMap: PackageSourceMap = {},
 ): PackageValidationResult {
   return validateSystemPackage({
     manifest: {
@@ -186,7 +188,33 @@ function normalizeManifestPackage(
     dependencies,
     validationChecks,
     characterCreationGuide,
+  }, sourceMap);
+}
+
+function buildPackageSourceMap(manifest: z.infer<typeof packageManifestSchema>, pages: unknown): PackageSourceMap {
+  const sourceMap: PackageSourceMap = {
+    manifest: packageManifestPath,
+    pages: manifest.pages,
+    modules: manifest.modules,
+    assets: packageManifestPath,
+    ...(manifest.dependencies ? { dependencies: manifest.dependencies } : {}),
+    ...(manifest.characterCreationGuide ? { characterCreationGuide: manifest.characterCreationGuide } : {}),
+    ...(manifest.shell ? { shell: manifest.shell.html } : {}),
+  };
+  manifest.resourceLibraries?.forEach((library) => {
+    sourceMap[`resourceLibraries.${library.ID}`] = library.路径;
   });
+  manifest.validationChecks?.forEach((check, index) => {
+    sourceMap[`validationChecks.${index}`] = check.脚本;
+  });
+  if (Array.isArray(pages)) {
+    pages.forEach((page) => {
+      if (!isPlainObject(page) || typeof page.ID !== "string" || !isPlainObject(page.layout)) return;
+      if (typeof page.layout.html === "string") sourceMap[`pages.${page.ID}.layout.html`] = page.layout.html;
+      if (typeof page.layout.css === "string") sourceMap[`pages.${page.ID}.layout.css`] = page.layout.css;
+    });
+  }
+  return sourceMap;
 }
 
 function loadTemplateFilesFromVfs(vfs: PackageVirtualFileSystem, reference: { html: string; css?: string }) {

@@ -1,0 +1,12 @@
+[
+  {
+    "ID": "choices",
+    "类型": "checkboxResource",
+    "标签": "选择",
+    "选项": [
+      { "ID": "same", "标签": "甲" },
+      { "ID": "same", "标签": "乙" }
+    ]
+  },
+  { "ID": "target", "类型": "freeText", "标签": "目标" }
+]

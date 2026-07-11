@@ -1,0 +1,4 @@
+[
+  { "ID": "main", "名称": "第一页", "layout": { "类型": "htmlTemplate", "html": "layouts/main.html" } },
+  { "ID": "main", "名称": "重复页", "layout": { "类型": "htmlTemplate", "html": "layouts/main.html" } }
+]

@@ -3,6 +3,56 @@ import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures"
 import { findAsset, findModule, findResourceLibrary, getHtmlTemplateModuleReferences, validateCachedSystemPackage, validateSystemPackage } from "./systemPackage";
 
 describe("validateSystemPackage", () => {
+  it.each([
+    ["Page", "DUPLICATE_PAGE_ID", { pages: [minimalSystemPackage.pages[0], minimalSystemPackage.pages[0]] }],
+    ["Asset", "DUPLICATE_ASSET_ID", { assets: [{ ID: "same", 路径: "a.png" }, { ID: "same", 路径: "b.png" }] }],
+    ["Validation Check", "DUPLICATE_VALIDATION_CHECK_ID", { validationChecks: [
+      { ID: "same", 脚本: "a.js", scriptContent: "module.exports = () => [];" },
+      { ID: "same", 脚本: "b.js", scriptContent: "module.exports = () => [];" },
+    ] }],
+  ])("reports duplicate %s IDs", (_entity, code, override) => {
+    const result = validateSystemPackage({ ...minimalSystemPackage, ...override });
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code, level: "error" })]));
+  });
+
+  it("normalizes rule findings into one structured diagnostic contract", () => {
+    const result = validateSystemPackage({ ...minimalSystemPackage, pages: [minimalSystemPackage.pages[0], minimalSystemPackage.pages[0]] }, { pages: "pages.json" });
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "DUPLICATE_PAGE_ID",
+        location: { file: "pages.json", pointer: ["pages", 1, "ID"] },
+        entities: [{ kind: "page", index: 1 }],
+        evidence: expect.arrayContaining([{ label: "duplicateId", value: minimalSystemPackage.pages[0].ID }]),
+      }),
+    ]));
+  });
+
+  it("requires configured name and description fields only for Card Definitions", () => {
+    const resourceLibraries = [{
+      ID: "cards",
+      名称: "卡牌",
+      路径: "cards.json",
+      entries: [{ ID: "card-1", 标题: "火球" }],
+    }];
+    const ordinaryResult = validateSystemPackage({ ...minimalSystemPackage, resourceLibraries });
+    expect(ordinaryResult.ok).toBe(true);
+
+    const cardResult = validateSystemPackage({
+      ...minimalSystemPackage,
+      resourceLibraries,
+      modules: [{ ID: "table", 类型: "cardTable", 标签: "卡牌", 资源库ID: "cards", 卡名字段: "标题", 描述字段: "正文" }],
+      pages: [{
+        ...minimalSystemPackage.pages[0],
+        layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<pb-module id="table"></pb-module>' },
+      }],
+    });
+    expect(cardResult.ok).toBe(false);
+    expect(cardResult.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "CARD_DEFINITION_FIELD_MISSING", path: "resourceLibraries.cards.entries.0.正文" }),
+    ]));
+  });
   it("accepts a Sheet Shell with one Page Outlet and persistent module references", () => {
     const result = validateSystemPackage({
       ...minimalSystemPackage,
@@ -275,6 +325,63 @@ describe("validateSystemPackage", () => {
     }
   });
 
+  it("rejects Validation Script syntax without executing the script", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      validationChecks: [{ ID: "broken", 脚本: "checks/broken.js", scriptContent: "module.exports = () => {" }],
+    });
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "VALIDATION_SCRIPT_SYNTAX_INVALID", level: "error" }),
+    ]));
+  });
+
+  it("reports selected resource fields that the source Resource Library cannot provide", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      resourceLibraries: [{ ID: "classes", 名称: "职业", 路径: "classes.json", entries: [{ ID: "wizard", 名称: "法师" }] }],
+      modules: [
+        { ID: "picker", 类型: "resourcePicker", 按钮文本: "选择", 资源库ID: "classes" },
+        { ID: "target", 类型: "freeText", 标签: "结果" },
+      ],
+      pages: [{ ...minimalSystemPackage.pages[0], layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<pb-module id="picker"></pb-module><pb-module id="target"></pb-module>' } }],
+      dependencies: [{
+        ID: "fill",
+        sources: [{ 类型: "resourcePicker", 模块ID: "picker" }],
+        targets: [{ 类型: "module", 模块ID: "target" }],
+        触发: { 类型: "resourceSelected", 来源模块ID: "picker" },
+        条件: { 类型: "selectedResourceFieldEquals", 字段: "不存在", 值: "x" },
+        动作: [{ 类型: "fillText", 目标模块ID: "target", 内容: { 类型: "selectedResourceField", 字段: "也不存在" } }],
+      }],
+    });
+    expect(result.ok).toBe(false);
+    expect(result.issues.filter((issue) => issue.code === "MISSING_RESOURCE_FIELD_REFERENCE")).toHaveLength(2);
+  });
+
+  it("checks Checkbox Resource option IDs and Dependency references", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: [
+        { ID: "checks", 类型: "checkboxResource", 标签: "选项", 选项: [{ ID: "same", 标签: "甲" }, { ID: "same", 标签: "乙" }] },
+        { ID: "target", 类型: "freeText", 标签: "目标" },
+      ],
+      pages: [{ ...minimalSystemPackage.pages[0], layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<pb-module id="checks"></pb-module><pb-module id="target"></pb-module>' } }],
+      dependencies: [{
+        ID: "toggle",
+        sources: [{ 类型: "checkboxResource", 模块ID: "checks" }],
+        targets: [{ 类型: "module", 模块ID: "target" }],
+        触发: { 类型: "checkboxChanged", 来源模块ID: "checks" },
+        条件: { 类型: "checkboxOptionChecked", 选项ID: "missing" },
+        动作: [{ 类型: "setVisibility", 目标类型: "module", 目标ID: "target", 显示: true }],
+      }],
+    });
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "DUPLICATE_CHECKBOX_OPTION_ID" }),
+      expect.objectContaining({ code: "MISSING_CHECKBOX_OPTION_REFERENCE" }),
+    ]));
+  });
+
   it("accepts Card Table modules and Resource Picker card creation targets", () => {
     const packageWithCards = {
       ...minimalSystemPackage,
@@ -284,7 +391,7 @@ describe("validateSystemPackage", () => {
           ID: "domain-cards",
           名称: "领域卡",
           路径: "resources/domain_cards.json",
-          entries: [{ ID: "domain-card:符文护符", 名称: "符文护符", 等级: "1", 卡图: "assets/card.png" }],
+          entries: [{ ID: "domain-card:符文护符", 名称: "符文护符", 描述: "一张示例领域卡。", 等级: "1", 卡图: "assets/card.png" }],
         },
       ],
       modules: [

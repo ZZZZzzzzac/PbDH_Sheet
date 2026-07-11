@@ -1,0 +1,10 @@
+[
+  {
+    "ID": "missing-option",
+    "sources": [{ "类型": "checkboxResource", "模块ID": "choices" }],
+    "targets": [{ "类型": "module", "模块ID": "target" }],
+    "触发": { "类型": "checkboxChanged", "来源模块ID": "choices" },
+    "条件": { "类型": "checkboxOptionChecked", "选项ID": "missing" },
+    "动作": [{ "类型": "setVisibility", "目标类型": "module", "目标ID": "target", "显示": true }]
+  }
+]

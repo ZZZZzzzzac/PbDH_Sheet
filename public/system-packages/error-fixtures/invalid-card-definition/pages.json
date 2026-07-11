@@ -1,0 +1,1 @@
+[{ "ID": "main", "名称": "卡牌", "layout": { "类型": "htmlTemplate", "html": "layouts/main.html" } }]

@@ -95,6 +95,22 @@ describe("loadSystemPackageFromZipFile", () => {
     }
   });
 
+  it("maps Validation Script syntax diagnostics back to the script file", async () => {
+    const manifest = { ...createManifest(), validationChecks: [{ ID: "broken", 脚本: "checks/broken.js" }] };
+    const result = await loadSystemPackageFromZipFile(createPackageZip({
+      manifest,
+      validationScripts: { "checks/broken.js": "module.exports = () => {" },
+    }));
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "VALIDATION_SCRIPT_SYNTAX_INVALID",
+        location: expect.objectContaining({ file: "checks/broken.js", line: 1 }),
+        entities: [{ kind: "validationCheck", index: 0 }],
+      }),
+    ]));
+  });
+
   it("loads a Character Creation Guide from the manifest reference", async () => {
     const manifest = { ...createManifest(), characterCreationGuide: "guides/character-creation.json" };
     const guide = { 步骤: [{ ID: "intro", 标题: "开始", 说明: "第一行\n第二行" }] };

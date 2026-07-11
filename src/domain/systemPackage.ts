@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { parse as parseJavaScript } from "acorn";
 import {
   normalizeResourceLibraries,
   resourceLibraryFieldTemplateSchema,
@@ -300,13 +301,36 @@ export type DependencyAction = z.infer<typeof dependencyActionSchema>;
 export type ValidationCheck = z.infer<typeof validationCheckSchema>;
 export type { ResourceLibrary };
 
-export type PackageIssueLevel = "fatal" | "error" | "warning";
+export type PackageIssueLevel = "fatal" | "error" | "warning" | "info" | "debug";
+
+export interface PackageIssueLocation {
+  pointer: Array<string | number>;
+  file?: string;
+  line?: number;
+  column?: number;
+}
+
+export interface PackageIssueEntity {
+  kind: "manifest" | "page" | "module" | "asset" | "resourceLibrary" | "resourceEntry" | "dependency" | "validationCheck" | "guideStep";
+  id?: string;
+  index?: number;
+}
+
+export interface PackageIssueEvidence {
+  label: string;
+  value: unknown;
+}
+
+export type PackageSourceMap = Record<string, string>;
 
 export interface PackageIssue {
   level: PackageIssueLevel;
   code: string;
   text: string;
   path?: string;
+  location?: PackageIssueLocation;
+  entities?: PackageIssueEntity[];
+  evidence?: PackageIssueEvidence[];
 }
 
 export type PackageValidationResult =
@@ -414,7 +438,12 @@ function isUnsupportedCounterType(value: unknown): boolean {
   return value === "countableResource" || value === "countableChanged" || value === "counter" || value === "counterChanged";
 }
 
-export function validateSystemPackage(input: unknown): PackageValidationResult {
+export function validateSystemPackage(input: unknown, sourceMap: PackageSourceMap = {}): PackageValidationResult {
+  const result = validateSystemPackageCore(input);
+  return { ...result, issues: result.issues.map((issue) => normalizePackageIssue(issue, sourceMap)) };
+}
+
+function validateSystemPackageCore(input: unknown): PackageValidationResult {
   const parsed = systemPackageEnvelopeSchema.safeParse(input);
 
   if (!parsed.success) {
@@ -495,6 +524,16 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
   };
   const issues: PackageIssue[] = [];
 
+  collectDuplicateIdIssues(systemPackage.pages, "Page", "DUPLICATE_PAGE_ID", "pages", issues);
+  collectDuplicateIdIssues(systemPackage.assets ?? [], "Asset", "DUPLICATE_ASSET_ID", "assets", issues);
+  collectDuplicateIdIssues(
+    systemPackage.validationChecks ?? [],
+    "Validation Check",
+    "DUPLICATE_VALIDATION_CHECK_ID",
+    "validationChecks",
+    issues,
+  );
+
   if (parsed.data.manifest.schemaVersion !== frameworkSchemaVersion) {
     issues.push({
       level: "warning",
@@ -540,6 +579,9 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
         text: `Card Table 引用了不存在的 Resource Library：${module.资源库ID}`,
         path: `modules.${module.ID}.资源库ID`,
       });
+    }
+    if (module.类型 === "checkboxResource") {
+      collectDuplicateIdIssues(module.选项, "Checkbox Resource option", "DUPLICATE_CHECKBOX_OPTION_ID", `modules.${module.ID}.选项`, issues);
     }
   }
 
@@ -688,12 +730,26 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
       });
     }
 
+    if (isResourceCondition(dependency.条件)) {
+      validateSelectedResourceField(systemPackage, sourceModule, dependency.条件.字段, `dependencies.${dependency.ID}.条件.字段`, dependency.ID, issues);
+    }
+
     if (isCheckboxCondition(dependency.条件) && dependency.触发.类型 !== "checkboxChanged") {
       issues.push({
         level: "error",
         code: "UNSUPPORTED_DEPENDENCY_CONDITION",
         text: `checkbox option 条件只能用于 checkboxChanged 触发：${dependency.ID}`,
         path: `dependencies.${dependency.ID}.条件.类型`,
+      });
+    }
+    const checkboxCondition = isCheckboxCondition(dependency.条件) ? dependency.条件 : undefined;
+    if (checkboxCondition && sourceModule?.类型 === "checkboxResource" && !sourceModule.选项.some((option) => option.ID === checkboxCondition.选项ID)) {
+      issues.push({
+        level: "error",
+        code: "MISSING_CHECKBOX_OPTION_REFERENCE",
+        text: `Dependency Rule ${dependency.ID} 引用了 Checkbox Resource ${sourceModule.ID} 中不存在的选项 ${checkboxCondition.选项ID}`,
+        path: `dependencies.${dependency.ID}.条件.选项ID`,
+        evidence: [{ label: "referencedOptionId", value: checkboxCondition.选项ID }, { label: "knownOptionIds", value: sourceModule.选项.map((option) => option.ID) }],
       });
     }
 
@@ -726,6 +782,9 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
             text: `selectedResourceField 内容只能用于 resourceSelected 触发：${dependency.ID}`,
             path: `dependencies.${dependency.ID}.动作.${actionIndex}.内容.类型`,
           });
+        }
+        if (typeof action.内容 !== "string") {
+          validateSelectedResourceField(systemPackage, sourceModule, action.内容.字段, `dependencies.${dependency.ID}.动作.${actionIndex}.内容.字段`, dependency.ID, issues);
         }
       }
 
@@ -768,6 +827,8 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
             text: `setResourceDefaultFilter 目标模块必须是 Resource Picker：${action.目标模块ID}`,
             path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
           });
+        } else {
+          validateResourceLibraryField(findResourceLibrary(systemPackage, targetModule.资源库ID), action.字段, `dependencies.${dependency.ID}.动作.${actionIndex}.字段`, dependency.ID, targetModule.ID, issues);
         }
       }
     });
@@ -810,6 +871,7 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
   }
 
   const cardArtFieldsByLibrary = new Map<string, Set<string>>();
+  const cardDefinitionFieldsByLibrary = new Map<string, Set<string>>();
   for (const module of systemPackage.modules) {
     if (module.类型 !== "cardTable") {
       continue;
@@ -818,9 +880,31 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
     const artFields = cardArtFieldsByLibrary.get(module.资源库ID) ?? new Set<string>();
     artFields.add(artField);
     cardArtFieldsByLibrary.set(module.资源库ID, artFields);
+
+    const requiredFields = cardDefinitionFieldsByLibrary.get(module.资源库ID) ?? new Set<string>();
+    requiredFields.add(module.卡名字段 ?? "名称");
+    requiredFields.add(module.描述字段 ?? "描述");
+    cardDefinitionFieldsByLibrary.set(module.资源库ID, requiredFields);
   }
 
   for (const library of systemPackage.resourceLibraries ?? []) {
+    const requiredFields = cardDefinitionFieldsByLibrary.get(library.ID);
+    if (requiredFields) {
+      library.entries.forEach((entry, entryIndex) => {
+        for (const field of requiredFields) {
+          if ((entry.fields[field] ?? "").trim() !== "") {
+            continue;
+          }
+          issues.push({
+            level: "error",
+            code: "CARD_DEFINITION_FIELD_MISSING",
+            text: `Card Definition 缺少 Card Table 要求的字段：${field}`,
+            path: `resourceLibraries.${library.ID}.entries.${entryIndex}.${field}`,
+            evidence: [{ label: "requiredField", value: field }, { label: "resourceEntryId", value: entry.ID }],
+          });
+        }
+      });
+    }
     const artFields = cardArtFieldsByLibrary.get(library.ID);
     if (!artFields || artFields.size === 0) {
       continue;
@@ -870,11 +954,115 @@ export function validateSystemPackage(input: unknown): PackageValidationResult {
     if (outletCount !== 1) issues.push({ level: "error", code: "SHELL_PAGE_OUTLET_COUNT_INVALID", text: "Sheet Shell 必须且只能包含一个 pb-page-outlet。", path: "shell.html" });
   }
 
+  for (const [checkIndex, check] of (systemPackage.validationChecks ?? []).entries()) {
+    try {
+      parseJavaScript(check.scriptContent, { ecmaVersion: "latest", sourceType: "script", locations: true });
+    } catch (error) {
+      const location = getJavaScriptErrorLocation(error);
+      issues.push({
+        level: "error",
+        code: "VALIDATION_SCRIPT_SYNTAX_INVALID",
+        text: `Validation Script JavaScript 语法错误：${check.ID}${location ? `（${location.line}:${location.column}）` : ""}`,
+        path: `validationChecks.${checkIndex}.scriptContent`,
+        location: { pointer: ["validationChecks", checkIndex, "scriptContent"], line: location?.line, column: location?.column },
+        evidence: [{ label: "parserMessage", value: getErrorMessage(error) }],
+      });
+    }
+  }
+
   if (issues.some((issue) => issue.level === "error" || issue.level === "fatal")) {
     return { ok: false, issues };
   }
 
   return { ok: true, package: systemPackage, issues };
+}
+
+function collectDuplicateIdIssues<T extends { ID: string }>(
+  values: T[],
+  entityName: string,
+  code: string,
+  pathPrefix: string,
+  issues: PackageIssue[],
+) {
+  const firstIndexById = new Map<string, number>();
+  values.forEach((value, index) => {
+    const firstIndex = firstIndexById.get(value.ID);
+    if (firstIndex !== undefined) {
+      issues.push({
+        level: "error",
+        code,
+        text: `${entityName} ID 重复：${value.ID}（首次声明于索引 ${firstIndex}）`,
+        path: `${pathPrefix}.${index}.ID`,
+        evidence: [{ label: "duplicateId", value: value.ID }, { label: "firstIndex", value: firstIndex }, { label: "duplicateIndex", value: index }],
+      });
+      return;
+    }
+    firstIndexById.set(value.ID, index);
+  });
+}
+
+function validateSelectedResourceField(systemPackage: SystemPackage, sourceModule: SheetModule | undefined, field: string, path: string, dependencyId: string, issues: PackageIssue[]) {
+  if (sourceModule?.类型 !== "resourcePicker") return;
+  validateResourceLibraryField(findResourceLibrary(systemPackage, sourceModule.资源库ID), field, path, dependencyId, sourceModule.ID, issues);
+}
+
+function validateResourceLibraryField(library: ResourceLibrary | undefined, field: string, path: string, dependencyId: string, moduleId: string, issues: PackageIssue[]) {
+  if (!library || library.fields.some((candidate) => candidate.key === field)) return;
+  const knownFields = library.fields.map((candidate) => candidate.key);
+  issues.push({
+    level: "error",
+    code: "MISSING_RESOURCE_FIELD_REFERENCE",
+    text: `Dependency Rule ${dependencyId} 的模块 ${moduleId} 引用了 Resource Library ${library.ID} 中不存在的字段 ${field}；已知字段：${knownFields.join("、")}`,
+    path,
+    evidence: [{ label: "referencedField", value: field }, { label: "knownFields", value: knownFields }],
+  });
+}
+
+function getJavaScriptErrorLocation(error: unknown): { line: number; column: number } | undefined {
+  if (!isPlainObject(error) || !isPlainObject(error.loc)) return undefined;
+  return typeof error.loc.line === "number" && typeof error.loc.column === "number" ? { line: error.loc.line, column: error.loc.column } : undefined;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function normalizePackageIssue(issue: PackageIssue, sourceMap: PackageSourceMap): PackageIssue {
+  const pointer = issue.location?.pointer ?? parseDiagnosticPointer(issue.path);
+  const file = issue.location?.file ?? resolveSourceFile(pointer, sourceMap);
+  const entities = issue.entities ?? inferDiagnosticEntities(pointer);
+  return {
+    ...issue,
+    location: pointer.length > 0 || file || issue.location?.line !== undefined
+      ? { ...issue.location, pointer, ...(file ? { file } : {}) }
+      : undefined,
+    ...(entities.length > 0 ? { entities } : {}),
+  };
+}
+
+function parseDiagnosticPointer(path?: string): Array<string | number> {
+  if (!path) return [];
+  return path.split(".").filter(Boolean).map((part) => /^\d+$/.test(part) ? Number(part) : part);
+}
+
+function resolveSourceFile(pointer: Array<string | number>, sourceMap: PackageSourceMap): string | undefined {
+  for (let length = pointer.length; length > 0; length -= 1) {
+    const key = pointer.slice(0, length).join(".");
+    if (sourceMap[key]) return sourceMap[key];
+  }
+  return undefined;
+}
+
+function inferDiagnosticEntities(pointer: Array<string | number>): PackageIssueEntity[] {
+  const [root, identity] = pointer;
+  const definitions: Record<string, PackageIssueEntity["kind"]> = {
+    manifest: "manifest", pages: "page", modules: "module", assets: "asset",
+    resourceLibraries: "resourceLibrary", dependencies: "dependency",
+    validationChecks: "validationCheck", characterCreationGuide: "guideStep",
+  };
+  const kind = typeof root === "string" ? definitions[root] : undefined;
+  if (!kind) return [];
+  return [{ kind, ...(typeof identity === "number" ? { index: identity } : typeof identity === "string" ? { id: identity } : {}) }];
 }
 
 export function validateCachedSystemPackage(input: unknown): CachedPackageValidationResult {
@@ -912,7 +1100,9 @@ export function findResourceLibrary(systemPackage: SystemPackage, libraryId: str
   return systemPackage.resourceLibraries?.find((library) => library.ID === libraryId);
 }
 
-function isResourceCondition(condition: DependencyCondition | undefined): boolean {
+function isResourceCondition(
+  condition: DependencyCondition | undefined,
+): condition is Extract<DependencyCondition, { 类型: "selectedResourceFieldEquals" | "selectedResourceFieldIn" | "selectedResourceFieldNotEquals" }> {
   return (
     condition?.类型 === "selectedResourceFieldEquals" ||
     condition?.类型 === "selectedResourceFieldIn" ||
@@ -920,7 +1110,9 @@ function isResourceCondition(condition: DependencyCondition | undefined): boolea
   );
 }
 
-function isCheckboxCondition(condition: DependencyCondition | undefined): boolean {
+function isCheckboxCondition(
+  condition: DependencyCondition | undefined,
+): condition is Extract<DependencyCondition, { 类型: "checkboxOptionChecked" | "checkboxOptionUnchecked" }> {
   return condition?.类型 === "checkboxOptionChecked" || condition?.类型 === "checkboxOptionUnchecked";
 }
 

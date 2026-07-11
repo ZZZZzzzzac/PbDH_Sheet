@@ -41,16 +41,15 @@
 
 ### System Package Validator
 
-- [ ] 补齐第一版结构校验覆盖。
+- [x] 补齐第一版结构校验覆盖。
   - 检查重复 page ID，以及其他目前只构建 Map、未显式报告重复的稳定 ID。
   - 对 Card Definition 强制检查 `ID`、`名称`、`描述`；普通 Resource Library entry 仍只要求稳定 `ID`，避免把通用资源误当卡牌。
   - 检查 Dependency Logic 引用的资源字段是否在对应 Resource Library 中存在或可解释。
   - 在导入阶段检查 Validation Script 的基础语法；运行时异常继续由 Validation Runner 转为 issue。
-  - 梳理 PRD 中“中文键名拼写错误”的可执行边界，只校验框架已知字段，不猜测普通 Author Data。
 
-- [ ] 完善 Validator 诊断层级。
+- [x] 完善 Validator 诊断层级。
   - 当前已有 `level`、`code`、`text` 和 `path`。
-  - 尚缺稳定的修复建议字段，以及与普通 Author 错误视图分离的 AI debug 信息。
+  - 使用统一的 `location`、`entities` 和 `evidence` 诊断上下文；不生成推测性修复建议，也不维护 Author/AI 两套诊断。
   - 为每类新增诊断补合法/非法包测试和机器可读错误码说明。
 
 ### Author 文档与 AI 协作
