@@ -255,7 +255,7 @@ describe("validateSystemPackage", () => {
           名称: "领域",
           路径: "resources/domains.json",
           entries: [
-            { ID: "blade-1", 名称: "利刃一", 领域: "利刃", 等级: "1" },
+            { ID: "blade-1", 名称: "利刃一", 领域: "利刃", 等级: "1", 生命: "5" },
             { ID: "bone-1", 名称: "骸骨一", 领域: "骸骨" },
           ],
         },
@@ -277,15 +277,24 @@ describe("validateSystemPackage", () => {
           类型: "freeText",
           标签: "领域名",
         },
+        {
+          ID: "hp",
+          类型: "countableResource",
+          标签: "生命",
+          最大值: 10,
+        },
       ],
       dependencies: [
         {
           ID: "fill-domain",
           sources: [{ 类型: "resourcePicker", 模块ID: "domain-pick" }],
-          targets: [{ 类型: "module", 模块ID: "domain-name" }],
+          targets: [{ 类型: "module", 模块ID: "domain-name" }, { 类型: "module", 模块ID: "hp" }],
           触发: { 类型: "resourceSelected", 来源模块ID: "domain-pick" },
           条件: { 类型: "always" },
-          动作: [{ 类型: "fillText", 目标模块ID: "domain-name", 内容: { 类型: "selectedResourceField", 字段: "名称" } }],
+          动作: [
+            { 类型: "fillText", 目标模块ID: "domain-name", 内容: { 类型: "selectedResourceField", 字段: "名称" } },
+            { 类型: "fillCountable", 目标模块ID: "hp", 当前值: { 类型: "selectedResourceField", 字段: "生命" }, 最大值: 8 },
+          ],
         },
       ],
       pages: [
@@ -293,7 +302,7 @@ describe("validateSystemPackage", () => {
           ...minimalSystemPackage.pages[0],
           layout: {
             ...minimalSystemPackage.pages[0].layout,
-            htmlContent: `${minimalSystemPackage.pages[0].layout.htmlContent}<pb-module id="domain-pick"></pb-module><pb-module id="domain-name"></pb-module>`,
+            htmlContent: `${minimalSystemPackage.pages[0].layout.htmlContent}<pb-module id="domain-pick"></pb-module><pb-module id="domain-name"></pb-module><pb-module id="hp"></pb-module>`,
           },
         },
       ],

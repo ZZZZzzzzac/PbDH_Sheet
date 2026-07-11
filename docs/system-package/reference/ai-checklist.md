@@ -12,7 +12,8 @@
 8. Guide 只生成线性说明和单目标，不生成完成条件、动作或 Character Data 访问。
 9. Validation Script 只读输入并返回 issues；不访问 DOM、网络或框架状态。
 10. 所有路径安全相对，所有 ID 唯一，所有引用存在。
-11. Card Definition 只有在被 Card Table 消费时才要求 name/description；按 Module 配置字段检查。
-12. 运行 Validator 后按 `location/entities/evidence` 修复；不要要求或虚构 suggestion，不要尝试关闭规则。
+11. `fillCountable` 只使用整数常量或可严格解析为整数的 Resource 字段；多选 Picker 声明 `选择索引`。
+12. Card Definition 只有在被 Card Table 消费时才要求 name/description；按 Module 配置字段检查。
+13. 运行 Validator 后按 `location/entities/evidence` 修复；不要要求或虚构 suggestion，不要尝试关闭规则。
 
 生成顺序建议：manifest → resources/assets → modules → pages/layouts/shell → dependencies → guide → checks → Validator → Preview。

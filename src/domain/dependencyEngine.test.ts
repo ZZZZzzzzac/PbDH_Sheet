@@ -132,6 +132,80 @@ describe("Dependency Engine v1", () => {
     expect(uncheckedResult.dataPatches["helper-text"]).toBeUndefined();
     expect(uncheckedResult.moduleVisibility["helper-text"]).toBe(false);
   });
+
+  it("fills countable current and maximum values from selected Resource fields", () => {
+    const basePackage = createDependencyPackage();
+    const systemPackage = {
+      ...basePackage,
+      modules: [
+        ...basePackage.modules,
+        { ID: "hp", 类型: "countableResource", 标签: "生命", 最小值: 0, 最大值: 6, 默认值: 1 },
+      ],
+      dependencies: [
+        {
+          ID: "fill-hp",
+          sources: [{ 类型: "resourcePicker", 模块ID: "pick-class" }],
+          targets: [{ 类型: "module", 模块ID: "hp" }],
+          触发: { 类型: "resourceSelected", 来源模块ID: "pick-class" },
+          条件: { 类型: "always" },
+          动作: [{
+            类型: "fillCountable",
+            目标模块ID: "hp",
+            当前值: { 类型: "selectedResourceField", 字段: "当前生命" },
+            最大值: { 类型: "selectedResourceField", 字段: "生命上限" },
+          }],
+        },
+      ],
+    } as unknown as SystemPackage;
+    const data = createEmptyCharacterData(systemPackage);
+
+    const result = evaluateDependencies(data, systemPackage, {
+      type: "resourceSelected",
+      sourceModuleId: "pick-class",
+      libraryId: "classes",
+      selectedEntries: [{ ID: "class:test", fields: { 当前生命: "4", 生命上限: "8" } }],
+    });
+    const next = applyDependencyResultToCharacterData(data, result);
+
+    expect(next.character.values.hp).toEqual({ current: 4, max: 8 });
+  });
+
+  it("preserves partial Countable State, clamps values, and skips invalid integers", () => {
+    const basePackage = createDependencyPackage();
+    const systemPackage = {
+      ...basePackage,
+      modules: [...basePackage.modules, { ID: "hope", 类型: "countableResource", 标签: "希望", 最小值: 1, 最大值: 6, 默认值: 3 }],
+      dependencies: [{
+        ID: "fill-hope",
+        sources: [{ 类型: "resourcePicker", 模块ID: "pick-class" }],
+        targets: [{ 类型: "module", 模块ID: "hope" }],
+        触发: { 类型: "resourceSelected", 来源模块ID: "pick-class" },
+        条件: { 类型: "always" },
+        动作: [
+          { 类型: "fillCountable", 目标模块ID: "hope", 当前值: 99 },
+          { 类型: "fillCountable", 目标模块ID: "hope", 最大值: { 类型: "selectedResourceField", 字段: "上限" } },
+        ],
+      }],
+    } as unknown as SystemPackage;
+    const data = createEmptyCharacterData(systemPackage);
+
+    const invalidResult = evaluateDependencies(data, systemPackage, {
+      type: "resourceSelected",
+      sourceModuleId: "pick-class",
+      libraryId: "classes",
+      selectedEntries: [{ ID: "class:test", fields: { 上限: "6点" } }],
+    });
+    expect(applyDependencyResultToCharacterData(data, invalidResult).character.values.hope).toEqual({ current: 6, max: 6 });
+    expect(invalidResult.warnings).toEqual([expect.stringContaining("skipped invalid countable maximum integer")]);
+
+    const validResult = evaluateDependencies(data, systemPackage, {
+      type: "resourceSelected",
+      sourceModuleId: "pick-class",
+      libraryId: "classes",
+      selectedEntries: [{ ID: "class:test", fields: { 上限: "4" } }],
+    });
+    expect(applyDependencyResultToCharacterData(data, validResult).character.values.hope).toEqual({ current: 4, max: 4 });
+  });
 });
 
 function createDependencyPackage(options: { dependencies?: SystemPackage["dependencies"] } = {}): SystemPackage {

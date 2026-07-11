@@ -17,7 +17,12 @@
       { "类型": "fillText", "目标模块ID": "class-name", "内容": { "类型": "selectedResourceField", "字段": "名称" } },
       { "类型": "fillText", "目标模块ID": "class-domains", "内容": { "类型": "selectedResourceField", "字段": "领域" } },
       { "类型": "fillText", "目标模块ID": "class-evasion", "内容": { "类型": "selectedResourceField", "字段": "初始闪避值" } },
-      { "类型": "fillText", "目标模块ID": "class-hp", "内容": { "类型": "selectedResourceField", "字段": "初始生命点" } },
+      {
+        "类型": "fillCountable",
+        "目标模块ID": "class-hp",
+        "当前值": { "类型": "selectedResourceField", "字段": "初始生命点" },
+        "最大值": { "类型": "selectedResourceField", "字段": "初始生命点" }
+      },
       { "类型": "fillText", "目标模块ID": "class-hope", "内容": { "类型": "selectedResourceField", "字段": "希望特性" } },
       { "类型": "fillText", "目标模块ID": "class-feature", "内容": { "类型": "selectedResourceField", "字段": "职业特性" } },
       { "类型": "fillText", "目标模块ID": "class-background-questions", "内容": { "类型": "selectedResourceField", "字段": "背景问题" } }

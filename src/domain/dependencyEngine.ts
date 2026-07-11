@@ -1,6 +1,7 @@
-import { updateCharacterValue, type CharacterData, type CheckboxState } from "./characterData";
+import { updateCharacterValue, type CharacterData, type CheckboxState, type CountableState, type SheetValue } from "./characterData";
 import type { ResourceLibraryEntry, ResourceLibraryQuery } from "./resourceLibrary";
 import { findModule, type DependencyAction, type DependencyCondition, type SystemPackage } from "./systemPackage";
+import { clampInt } from "../utils";
 
 export interface ResourceSelectedEvent {
   type: "resourceSelected";
@@ -20,7 +21,7 @@ export interface CheckboxChangedEvent {
 export type DependencyEvent = ResourceSelectedEvent | CheckboxChangedEvent;
 
 export interface DependencyEvaluationResult {
-  dataPatches: Record<string, string>;
+  dataPatches: Record<string, SheetValue>;
   readOnlyDisplayContent: Record<string, string>;
   moduleVisibility: Record<string, boolean>;
   pageVisibility: Record<string, boolean>;
@@ -58,6 +59,7 @@ export function evaluateDependencies(
     for (const action of rule.动作) {
       applyAction({
         action,
+        data,
         systemPackage,
         event,
         result,
@@ -107,6 +109,7 @@ function conditionMatches(condition: DependencyCondition | undefined, event: Dep
 
 function applyAction({
   action,
+  data,
   systemPackage,
   event,
   result,
@@ -114,6 +117,7 @@ function applyAction({
   writtenTargets,
 }: {
   action: DependencyAction;
+  data: CharacterData;
   systemPackage: SystemPackage;
   event: DependencyEvent;
   result: DependencyEvaluationResult;
@@ -135,6 +139,43 @@ function applyAction({
       if (targetModule?.类型 === "freeText" || targetModule?.类型 === "longText") {
         result.dataPatches[action.目标模块ID] = value;
       }
+      return;
+    }
+
+    case "fillCountable": {
+      const targetModule = findModule(systemPackage, action.目标模块ID);
+      if (targetModule?.类型 !== "countableResource") {
+        return;
+      }
+      const existingPatch = result.dataPatches[action.目标模块ID];
+      const existingValue = isCountableState(existingPatch) ? existingPatch : data.character.values[action.目标模块ID];
+      const min = targetModule.最小值 ?? 0;
+      const initial: CountableState = isCountableState(existingValue)
+        ? existingValue
+        : { current: clampInt(targetModule.默认值 ?? min, min, targetModule.最大值 ?? null), max: targetModule.最大值 ?? null };
+      const current = resolveCountableValue(action.当前值, event, result, ruleId, "current");
+      const maximum = action.最大值 === null
+        ? null
+        : resolveCountableValue(action.最大值, event, result, ruleId, "maximum");
+
+      if (action.当前值 !== undefined && current !== undefined) {
+        recordWrite(result, writtenTargets, `countable:${action.目标模块ID}:current`, `countable current ${action.目标模块ID}`, ruleId);
+      }
+      if (action.最大值 !== undefined && (action.最大值 === null || maximum !== undefined)) {
+        recordWrite(result, writtenTargets, `countable:${action.目标模块ID}:maximum`, `countable maximum ${action.目标模块ID}`, ruleId);
+      }
+
+      let nextMax: number | null = initial.max;
+      if (action.最大值 === null) {
+        nextMax = null;
+      } else if (typeof maximum === "number") {
+        nextMax = Math.max(min, maximum);
+      }
+      const nextCurrentInput = typeof current === "number" ? current : initial.current;
+      result.dataPatches[action.目标模块ID] = {
+        current: clampInt(nextCurrentInput, min, nextMax),
+        max: nextMax,
+      };
       return;
     }
 
@@ -167,6 +208,37 @@ function applyAction({
     }
   }
 
+}
+
+function resolveCountableValue(
+  content: Extract<DependencyAction, { 类型: "fillCountable" }>["当前值"] | Extract<DependencyAction, { 类型: "fillCountable" }>["最大值"],
+  event: DependencyEvent,
+  result: DependencyEvaluationResult,
+  ruleId: string,
+  field: "current" | "maximum",
+): number | null | undefined {
+  if (content === undefined || content === null || typeof content === "number") {
+    return content;
+  }
+  if (event.type !== "resourceSelected") {
+    return undefined;
+  }
+  const raw = event.selectedEntries[content.选择索引 ?? 0]?.fields[content.字段] ?? "";
+  const trimmed = raw.trim();
+  if (!/^[+-]?\d+$/.test(trimmed)) {
+    result.warnings.push(`Dependency ${ruleId} skipped invalid countable ${field} integer: ${JSON.stringify(raw)}.`);
+    return undefined;
+  }
+  const value = Number(trimmed);
+  if (!Number.isSafeInteger(value)) {
+    result.warnings.push(`Dependency ${ruleId} skipped unsafe countable ${field} integer: ${JSON.stringify(raw)}.`);
+    return undefined;
+  }
+  return value;
+}
+
+function isCountableState(value: SheetValue | undefined): value is CountableState {
+  return typeof value === "object" && value !== null && "current" in value && "max" in value;
 }
 
 function recordWrite(

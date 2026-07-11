@@ -1,19 +1,21 @@
 # DaggerHeart Character 车卡器 → System Package 重构映射（审阅稿）
 
-状态：核心范围已初步确认；不包含实现，不代表已批准扩展 Base Framework。
+状态：核心范围与模块方向已确认；等待最后两项行为决策后进入实现规划。
 
 已确认的产品决定（2026-07-11）：
 
-- 三态 Checkbox 暂不实现；资源轨道第一版使用 `countableResource` Counter，三态能力列入 Future Plan。
+- 不需要三态 Checkbox；资源轨道使用 `countableResource` Counter，其 `最大值可改` 能力满足玩家调整上限的需求。
 - 第一版只支持纯血种族；混血选择与合成列入 Future Plan。
 - 职业选择后不自动弹出子职选择器；由玩家手动选择子职。
 - 阈值关系“实际阈值 = 护甲基础阈值 + 等级”由 Validation Check 计算并报告，不自动回填。
 - 皮肤、Player 自定义卡包和卡牌编辑器不在本次范围内。
 - 本次优先完成核心人物卡、核心 Resource Libraries、选择填充和 Character Data。
-- 多 Resource Library 共用一个 Card Table 是核心前置能力；本方案假定该能力由另一任务完成并可用。
-- 人物卡布局由 Author 后续手工调整；实现阶段优先交付 Modules、Resources 与 Dependencies。
+- 多 Resource Library 共用一个 Card Table 已由提交 `0c1040b` 完成；本方案使用正式的 `资源库IDs` 接口。
+- 不要求控件绝对定位。实现阶段先按大致关系组织语义 HTML，Author 后续手工调整布局。
 - 生命、压力、金币、希望、护甲和熟练度使用 `countableResource` counter，不展开为多个 Checkbox options。
 - 关系问题允许玩家修改，使用 `freeText`。
+- 旧 JavaScript/JSON 数据允许清洗、拆分、合并和补充派生显示字段，以适配 Resource Library、Dependency 和 Card Definition 契约。
+- 不迁移仅用于旧实现暂存领域名的 `ClassDomainTextbox`。
 
 ## 1. 目标与依据
 
@@ -46,11 +48,11 @@
 
 | Page ID | 名称 | 原布局 | 建议 |
 | --- | --- | --- | --- |
-| `character-main` | 人物卡 | `index.html #page-1`，固定背景图 page 1 + 绝对定位控件 | HTML Layout Template。背景图作为 Asset；用安全 HTML、`pb-module` 和 page-scoped CSS 重建。当前不是 Overlay Layout。 |
-| `character-story` | 背景与关系 | `index.html #page-2`，固定背景图 page 2 + 绝对定位控件 | HTML Layout Template；背景图作为 Asset。 |
-| `character-cards` | 卡牌桌面 | 全局 `#card-container` | 单独 Page，放置一个支持多 Resource Library 的统一 `cardTable`；假定核心前置能力已经完成。 |
+| `character-main` | 人物卡 | `index.html #page-1` | HTML Layout Template；按身份与属性、资源 Counter、经历与职业特性、装备与物品等大致关系组织 `pb-module`。不做绝对定位。 |
+| `character-story` | 背景与关系 | `index.html #page-2` | HTML Layout Template；按事件/形象、背景、关系分组。不做绝对定位。 |
+| `character-cards` | 卡牌桌面 | 全局 `#card-container` | 单独 Page，放置使用 `资源库IDs` 的统一 `cardTable`。 |
 
-两张人物卡背景图建议登记为 `sheet-page-1`、`sheet-page-2` Assets。旧页面中的 inline `style` 必须迁移到 page CSS，因为 HTML Layout Template 禁止 inline style。布局精调由 Author 后续手工完成；模块实现不以像素级布局完成为前提。
+两张人物卡背景图可登记为 `sheet-page-1`、`sheet-page-2` Assets，供 Author 后续布局调试使用。第一轮 HTML 只提供清晰的分组、标题和模块占位；不迁移旧 inline 坐标，也不以像素级还原为验收条件。
 
 ### 3.2 Resource Libraries
 
@@ -86,7 +88,6 @@
 | `ancestry-name` | `RaceTextbox` | `freeText` | 直接 | 由种族 Picker 的 Dependency `fillText` 写入，也允许玩家编辑。 |
 | `community-name` | `CommunityTextbox` | `freeText` | 直接 | 由社群 Picker 填入。 |
 | `class-name` | `ClassTextbox` | `freeText` | 直接 | 由职业/子职 Picker 填入；职业与子职拼接需预先成为资源字段。 |
-| `class-domains` | `ClassDomainTextbox`（隐藏） | `readOnlyDisplay` | 近似 | 不应保存隐藏选择状态；用于显示当前领域或提示玩家。若只为过滤，应由 Dependency 直接设置目标 Picker 默认筛选。 |
 | `level` | `LevelTextbox` | `countableResource` | 直接 | 最小值 1、默认值 1；最大值按系统规则决定。 |
 | `evasion` | `EvasionTextbox` | `freeText` | 直接 | 保持 Sheet Value 文本语义，可由职业选择填入。 |
 | `armor-score` | `ArmorTextbox` | `freeText` | 直接 | 与护甲条目中的“护甲值”分开保存。 |
@@ -120,22 +121,26 @@
 | `handful-gold` | 9 个两态槽 | `countableResource` | 近似 | Counter；默认值 1，建议最小值 0、最大值 9。 |
 | `bag-gold` | 9 个两态槽 | `countableResource` | 近似 | Counter；建议最小值 0、最大值 9。 |
 | `chest-gold` | 1 个两态槽 | `countableResource` | 近似 | Counter；建议最小值 0、最大值按核心规则确认。 |
-| `primary-weapon-hands` | `TwohandedCheckbox1` | `checkboxResource` | 近似 | options 建议“单手/双手”；原三态互斥语义需玩家明确选择。 |
-| `backup-weapon-1-hands`、`backup-weapon-2-hands` | `TwohandedCheckbox2/3` | 2 × `checkboxResource` | 近似 | 同上。 |
-| `backup-weapon-1-kind`、`backup-weapon-2-kind` | Primary/Secondary 方框 | 2 × `checkboxResource` | 近似 | options 为“主武器/副武器”；当前 checkbox options 不保证互斥。 |
+| `primary-weapon-hands` | `TwohandedCheckbox1` | `freeText` | 近似 | 由武器资源的“单手/双手”字段直接填入，避免用非互斥 Checkbox 模拟。 |
+| `backup-weapon-1-hands`、`backup-weapon-2-hands` | `TwohandedCheckbox2/3` | 2 × `freeText` | 近似 | 由所选武器资源填入。 |
+| `backup-weapon-1-kind`、`backup-weapon-2-kind` | Primary/Secondary 方框 | 2 × `freeText` | 近似 | 在合并后的 `backup-weapons` Library 中增加“武器类别”字段并填入“主武器/副武器”。 |
 
-第一版明确接受 Counter 替代纸卡槽视觉。三态纸卡槽仍保留为 Future Plan；未来若恢复，应新增框架级深模块，不能靠包内脚本模拟。
+Counter 直接替代旧纸卡槽视觉，并使用 `最大值可改: true` 的模块内置能力让玩家调整生命、压力和护甲等上限；不再规划三态 Checkbox。
 
 ### 4.4 装备与物品文本
 
 | 建议 Module ID | 原控件 | Module 类型 | 等级 |
 | --- | --- | --- | --- |
-| `primary-weapon-name/stat/damage/trait` | 4 个 PrimaryWeapon Textbox | 3 × `freeText` + 1 × `longText` | 直接 |
-| `secondary-weapon-name/stat/damage/trait` | 4 个 SecondaryWeapon Textbox | 3 × `freeText` + 1 × `longText` | 直接 |
-| `armor-name/threshold/entry-score/trait` | 4 个 Armor Textbox | 3 × `freeText` + 1 × `longText` | 直接 |
-| `inventory` | `ItemSlot1Textbox` | `longText` | 直接 |
-| `backup-weapon-1-name/stat/damage/trait` | 4 个 Backup1 Textbox | 3 × `freeText` + 1 × `longText` | 直接 |
-| `backup-weapon-2-name/stat/damage/trait` | 4 个 Backup2 Textbox | 3 × `freeText` + 1 × `longText` | 直接 |
+| `primary-weapon-name/stat/range/damage/type/trait` | PrimaryWeapon 控件 | 5 × `freeText` + 1 × `longText` | 直接 |
+| `secondary-weapon-name/stat/range/damage/type/trait` | SecondaryWeapon 控件 | 5 × `freeText` + 1 × `longText` | 直接 |
+| `armor-name/base-major/base-severe/score/trait` | Armor 控件 | 5 × `freeText` + 1 × `longText` | 直接 |
+| `item-1` … `item-5` | 原单一物品长文本区 | 5 × `freeText` | 直接 |
+| `backup-weapon-1-name/stat/range/damage/type/trait` | Backup1 控件 | 5 × `freeText` + 1 × `longText` | 直接 |
+| `backup-weapon-2-name/stat/range/damage/type/trait` | Backup2 控件 | 5 × `freeText` + 1 × `longText` | 直接 |
+
+装备字段不再要求预先组合“属性/距离”或“伤害/类型”。Resource Library 可以保留独立的 `属性`、`距离`、`伤害`、`伤害类型`、`描述` 字段，Dependency 分别写入对应 Sheet Values。旧数据允许在迁移时重命名和正规化字段。
+
+五个物品槽分别配套 `pick-item-1` … `pick-item-5`，五个 Picker 都引用同一个 `loot` Resource Library，各自把所选条目的显示文本写入对应 `item-N`。这样无需追加字符串或动态判断下一个空槽。
 
 ### 4.5 第二页文本与头像
 
@@ -155,38 +160,38 @@
 | --- | --- | --- | --- | --- |
 | `pick-ancestry` | `add-ancestry-card-btn` | `resourcePicker` | `ancestries` → 单选一个纯血种族、填名称并创建到 `character-card-table` | 直接 |
 | `pick-community` | `add-community-card-btn` | `resourcePicker` | `communities` → 填名称并创建到 `character-card-table` | 直接 |
-| `pick-class` | `add-class-card-btn` | `resourcePicker` | `classes` → 填职业、领域、闪避、特性、问题 | 近似 |
+| `pick-class` | `add-class-card-btn` | `resourcePicker` | `classes` → 填职业、闪避、特性、问题，并设置子职/领域卡默认筛选 | 近似 |
 | `pick-subclass` | 隐藏 `add-subclass-card-btn` | `resourcePicker` | `subclasses` → 按主职默认筛选、创建卡牌 | 近似 |
-| `pick-primary-weapon` | 主武器 + 号 | `resourcePicker` | 填 4 个主武器字段 | 直接 |
-| `pick-secondary-weapon` | 副武器 + 号 | `resourcePicker` | 填 4 个副武器字段 | 直接 |
-| `pick-backup-weapon-1/2` | 两个备用武器 + 号 | 2 × `resourcePicker` | 填各自 4 个字段 | 直接 |
-| `pick-armor` | 护甲 + 号 | `resourcePicker` | 填护甲名称、条目阈值、护甲值、描述 | 近似 |
-| `pick-loot` | 物品 + 号 | `resourcePicker` | 填 `inventory` | 近似 |
+| `pick-primary-weapon` | 主武器 + 号 | `resourcePicker` | 分别填名称、属性、距离、伤害、类型、描述 | 直接 |
+| `pick-secondary-weapon` | 副武器 + 号 | `resourcePicker` | 分别填名称、属性、距离、伤害、类型、描述 | 直接 |
+| `pick-backup-weapon-1/2` | 两个备用武器 + 号 | 2 × `resourcePicker` | 分别填各自名称、属性、距离、伤害、类型、描述 | 直接 |
+| `pick-armor` | 护甲 + 号 | `resourcePicker` | 填护甲名称、基础阈值、护甲值、描述 | 近似 |
+| `pick-item-1` … `pick-item-5` | 五个物品槽选择入口 | 5 × `resourcePicker` | 全部引用 `loot`，分别填 `item-1` … `item-5` | 直接 |
 | `pick-domain-card` | 添加领域卡 | `resourcePicker` | `domain-cards` → 创建到 `character-card-table` | 直接 |
 | `pick-beast-form` | 添加野兽形态卡 | `resourcePicker` | `beast-forms` → 创建到 `character-card-table` | 直接 |
-| `character-card-table` | 原统一卡牌桌面 | `cardTable`（多 Library 能力） | Libraries `ancestries`、`communities`、`subclasses`、`domain-cards`、`beast-forms` | 直接；假定前置框架能力已完成 |
+| `character-card-table` | 原统一卡牌桌面 | `cardTable` | `资源库IDs: ["ancestries", "communities", "subclasses", "domain-cards", "beast-forms"]` | 直接；已由当前框架支持 |
 
-多 Resource Library Card Table 是核心要求。本文不再设计多个 Card Table 的降级方案，也不通过复制资源构建综合 Library。所有创建卡牌的 Resource Picker 均指向 `character-card-table`；实现时以另一任务完成后的最终接口为准。
+多 Resource Library Card Table 已在提交 `0c1040b` 落地。Card Instance 使用 `libraryId + definitionId` 解析，因此不同 Library 可以安全复用条目 ID。所有创建卡牌的 Resource Picker 均指向 `character-card-table`，且各 Picker 的 `资源库ID` 必须包含在该 Table 的 `资源库IDs` 中。
 
 ## 5. Dependency Logic 映射
 
 ### 可直接声明
 
-1. 各装备 Picker 将资源字段填入对应名称、属性/距离、伤害/类型和描述模块。组合字符串应在 Resource Entry 中预先准备成一个显示字段，因为 `fillText` 不提供格式化表达式。
+1. 各装备 Picker 将资源字段分别填入名称、属性、距离、伤害、伤害类型和描述模块，不依赖字符串格式化。
 2. 社群 Picker 填 `community-name`。
-3. 职业 Picker 填 `class-name`、`class-domains`、`evasion`、`class-features`、六个问题模块。
+3. 职业 Picker 填 `class-name`、`evasion`、`class-features` 和六个问题模块；不创建 `ClassDomainTextbox` 对应模块。
 4. 职业 Picker 对 `pick-subclass` 使用 `setResourceDefaultFilter`，字段为“主职”。
 5. 职业 Picker 可对 `pick-domain-card` 按职业领域设置默认筛选；若一个职业有两个领域，应把它们作为 filter allowed-values。
-6. Picker 的 `创建卡牌` 将领域、种族、社群、子职和野兽形态 Card Instance 创建到统一的 `character-card-table`；依赖多 Library Card Table 前置能力。
+6. Picker 的 `创建卡牌` 将领域、种族、社群、子职和野兽形态 Card Instance 创建到统一的 `character-card-table`。
+7. 五个物品 Picker 分别将同一个 `loot` Library 的资源写入五个独立物品槽。
 
 ### 当前不能声明
 
 1. 职业选择后自动打开子职 Picker。
 2. 用“等级 + 护甲基础阈值”算出实际重伤/严重阈值。
-3. 选择职业或护甲后改变槽位数量或可用上限。
-4. 物品选择后把新条目追加而不是覆盖已有长文本。
-5. 两次选择种族，再抽取两条描述合成一个新的混血卡定义；第一版不需要。
-6. 一次 Dependency 写入后触发下一条 Dependency；Engine 明确为单轮、非递归。
+3. Dependency 的 `fillText` 目标只支持 `freeText`、`longText`、`readOnlyDisplay`，不能写入 `countableResource`。因此职业选择不能自动设置 HP Counter，护甲选择也不能自动设置 Armor Counter 的当前值或最大值；玩家仍可用 Counter 自带 UI 手动调整。
+4. 两次选择种族，再抽取两条描述合成一个新的混血卡定义；第一版不需要。
+5. 一次 Dependency 写入后触发下一条 Dependency；Engine 明确为单轮、非递归。
 
 ## 6. Base Framework 能力与包外功能
 
@@ -216,23 +221,23 @@
 
 仍需审阅：
 
-1. **布局保真度**：第一版使用当前 HTML Layout Template + page CSS 模拟固定背景覆盖层，是否可以接受？
-2. **背景问题文本**：仅“关系问题”已确认可修改；职业背景问题仍需确认是只读派生内容还是允许玩家改写。
+1. **职业初始生命**：职业选择无法写入 HP Counter。第一版是否接受玩家按职业资料手动设置 HP Counter 上限，Validation Check 只负责报告不一致？
+2. **护甲 Counter**：护甲选择无法写入 Armor Counter 或最大值。第一版是否接受玩家按所选护甲的“护甲值”手动设置，Validation Check 只负责报告不一致？
+3. **背景问题文本**：仅“关系问题”已确认可修改；职业背景问题仍需确认是只读派生内容还是允许玩家改写。
 
 ## 8. Future Plan
 
 以下能力不阻塞核心人物卡第一版：
 
-1. 新增三态/容量槽 Sheet Module，表达“已标记、可用但未标记、超出当前上限”，并支持安全地修改上限。
-2. 支持选择两个种族并生成混血角色/卡牌；实现前需明确特性选取规则和 Character Data 契约。
-3. 如未来需要自动写入护甲派生阈值，设计受控派生值能力；Validation Check 继续保持只读。
+1. 支持选择两个种族并生成混血角色/卡牌；实现前需明确特性选取规则和 Character Data 契约。
+2. 如未来需要自动写入职业初始生命、护甲 Counter 或护甲派生阈值，设计受控的 Counter/派生值写入能力；Validation Check 继续保持只读。
 
 ## 9. 建议模块边界（供 PRD 审阅）
 
 建议把后续工作分为三个互不混淆的边界：
 
 1. **Daggerheart System Package**：资源转换、稳定 ID、Modules、Pages、Layouts、Dependencies、Guide、Checks、Assets。
-2. **System Package 契约缺口**：多 Library Card Table 是核心前置能力并由另一任务处理；三态槽与受控派生计算留在 Future Plan。这些都是 Base Framework 增强，不写成包内特例。
+2. **System Package 契约缺口**：多 Library Card Table 已完成。Counter 的 Dependency 写入和受控派生计算留在 Future Plan，不写成包内特例。
 3. **旧产品附加功能**：Player 自定义卡包、卡编辑、皮肤/主题；已排除在本次核心人物卡范围外。
 
-本任务暂挂。恢复后先读取多 Library Card Table 的最终接口，再按“Modules → Resources → Dependencies → 基础 Layout”的顺序继续；像素级布局由 Author 手工调整。
+确认剩余行为决策后，按“Modules → Resources → Dependencies → Validation Check → 语义化基础 Layout”的顺序继续；布局精调由 Author 手工完成。

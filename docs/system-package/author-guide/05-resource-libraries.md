@@ -12,4 +12,4 @@ Resource Library 是可选择的系统资料集合，例如职业、武器或卡
 
 没有字段模板时，框架从条目推断字段；普通文本字段默认显示、可搜索、可筛选和可排序，复杂值通常不参与搜索筛选。关键词按空白拆分，忽略大小写，在一条记录的可搜索字段间使用 AND；搜索与精确筛选、排序组合，关闭 Browser 后清空。
 
-`默认查询.filters` 是字段到允许文本数组的映射；`sort.field` 指定字段，方向默认升序。选择 Resource 不直接写 Character Data，通常由 Dependency 的 `fillText` 抄写字段。
+`默认查询.filters` 是字段到允许文本数组的映射；`sort.field` 指定字段，方向默认升序。选择 Resource 不直接写 Character Data，通常由 Dependency 的 `fillText` 抄写文本字段，或由 `fillCountable` 将完整整数字段写入 countableResource。

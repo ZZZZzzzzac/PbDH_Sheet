@@ -91,8 +91,12 @@
   },
   {
     "ID": "class-hp",
-    "类型": "freeText",
-    "标签": "生命"
+    "类型": "countableResource",
+    "标签": "生命",
+    "最小值": 0,
+    "最大值": 6,
+    "默认值": 6,
+    "最大值可改": true
   },
   {
     "ID": "class-hope",

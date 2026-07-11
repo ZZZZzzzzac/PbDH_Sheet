@@ -9,7 +9,7 @@
 3. `layouts/shell.html`：观察唯一 `pb-page-outlet`。
 4. `modules.json`：观察 Resource Picker、文本目标、Card Table 和字段模板。
 5. `resources/*.json`：观察普通资源与 Card Definitions。
-6. `dependencies.json`：观察 resourceSelected、checkboxChanged、fillText、visibility 和 filter。
+6. `dependencies.json`：观察 resourceSelected、checkboxChanged、fillText、fillCountable、visibility 和 filter。
 7. `guides/character-creation.json`：观察线性 Page/Module target。
 8. `checks/*.js`：观察只读规则报告。
 

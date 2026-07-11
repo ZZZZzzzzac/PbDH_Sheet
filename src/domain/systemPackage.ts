@@ -189,12 +189,31 @@ const fillTextContentSchema = z.union([
   }),
 ]);
 
+const fillCountableContentSchema = z.union([
+  z.number().int(),
+  z.object({
+    类型: z.literal("selectedResourceField"),
+    字段: z.string().min(1),
+    选择索引: z.number().int().min(0).optional(),
+  }),
+]);
+
+const fillCountableActionSchema = z.object({
+  类型: z.literal("fillCountable"),
+  目标模块ID: z.string().min(1),
+  当前值: fillCountableContentSchema.optional(),
+  最大值: z.union([fillCountableContentSchema, z.null()]).optional(),
+}).refine((action) => action.当前值 !== undefined || action.最大值 !== undefined, {
+  message: "fillCountable 至少需要 当前值 或 最大值。",
+});
+
 const dependencyActionSchema = z.discriminatedUnion("类型", [
   z.object({
     类型: z.literal("fillText"),
     目标模块ID: z.string().min(1),
     内容: fillTextContentSchema,
   }),
+  fillCountableActionSchema,
   z.object({
     类型: z.literal("setVisibility"),
     目标类型: z.enum(["page", "module"]),
@@ -791,6 +810,50 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
         }
         if (typeof action.内容 !== "string") {
           validateSelectedResourceField(systemPackage, sourceModule, action.内容.字段, `dependencies.${dependency.ID}.动作.${actionIndex}.内容.字段`, dependency.ID, issues);
+        }
+      }
+
+      if (action.类型 === "fillCountable") {
+        const targetModule = moduleById.get(action.目标模块ID);
+        if (!targetModule) {
+          issues.push({
+            level: "error",
+            code: "MISSING_DEPENDENCY_TARGET_MODULE",
+            text: `Dependency Rule 引用了不存在的目标模块：${action.目标模块ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
+          });
+          return;
+        }
+        if (targetModule.类型 !== "countableResource") {
+          issues.push({
+            level: "error",
+            code: "UNSUPPORTED_DEPENDENCY_TARGET_MODULE",
+            text: `fillCountable 目标模块必须是 Countable Resource：${action.目标模块ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
+          });
+        }
+
+        for (const [fieldName, content] of [["当前值", action.当前值], ["最大值", action.最大值]] as const) {
+          if (!content || typeof content === "number") {
+            continue;
+          }
+          if (dependency.触发.类型 !== "resourceSelected") {
+            issues.push({
+              level: "error",
+              code: "UNSUPPORTED_DEPENDENCY_ACTION_CONTENT",
+              text: `fillCountable selectedResourceField 只能用于 resourceSelected 触发：${dependency.ID}`,
+              path: `dependencies.${dependency.ID}.动作.${actionIndex}.${fieldName}.类型`,
+            });
+          }
+          validateSelectedResourceField(systemPackage, sourceModule, content.字段, `dependencies.${dependency.ID}.动作.${actionIndex}.${fieldName}.字段`, dependency.ID, issues);
+          if (sourceModule?.类型 === "resourcePicker" && sourceModule.多选 && content.选择索引 === undefined) {
+            issues.push({
+              level: "error",
+              code: "COUNTABLE_SELECTION_INDEX_REQUIRED",
+              text: `多选 Resource Picker 的 fillCountable selectedResourceField 必须声明选择索引：${dependency.ID}`,
+              path: `dependencies.${dependency.ID}.动作.${actionIndex}.${fieldName}.选择索引`,
+            });
+          }
         }
       }
 
