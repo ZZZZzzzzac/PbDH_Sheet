@@ -143,6 +143,8 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
     "类型": "freeText",
     "标签": "角色名",
     "默认值": "无名冒险者",
+    "隐藏标签": false,
+    "占位文本": "请输入角色名",
     "默认隐藏": false
   },
   {
@@ -151,6 +153,8 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
     "标签": "角色背景",
     "默认值": "",
     "行数": 6,
+    "隐藏标签": true,
+    "占位文本": "记录角色的经历与动机",
     "默认隐藏": false
   },
   {
@@ -262,8 +266,8 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
 | 类型 | 可选字段 |
 | --- | --- |
 | 所有 Module | `默认隐藏`，省略为 `false` |
-| freeText | `默认值` |
-| longText | `默认值`、`行数`（2–20） |
+| freeText | `默认值`、`隐藏标签`、`占位文本` |
+| longText | `默认值`、`行数`（2–20）、`隐藏标签`、`占位文本` |
 | checkboxResource option | `默认选中` |
 | countableResource | `最小值`、`最大值`、`默认值`、`步长`、`最大值可改` |
 | readOnlyDisplay | `内容`、`资源ID`、`替代文本`；内容/资源至少一个 |

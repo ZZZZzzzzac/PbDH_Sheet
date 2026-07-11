@@ -6,14 +6,17 @@
 
 | 字段 | 类型 | 必填 | 默认/约束 |
 | --- | --- | --- | --- |
-| `标签` | string | 是 | 非空 |
+| `标签` | string | 是 | 空字符串等价于隐藏视觉标签 |
 | `默认值` | string | 否 | `""` at Character initialization |
+| `隐藏标签` | boolean | 否 | `false`；为 `true` 时只隐藏视觉标签；`标签: ""` 也会隐藏 |
+| `占位文本` | string | 否 | 输入框 placeholder；不写入 Character Data |
 
 Player value 作为文本写 Character Data。
+隐藏视觉标签时，输入框依次使用非空 `标签`、`占位文本`、Module `ID` 作为无障碍名称。
 
 ## longText
 
-同 freeText，另有 `行数?: integer`，范围 2–20；省略时由组件默认高度决定。
+同 freeText（包括 `隐藏标签`、`占位文本`），另有 `行数?: integer`，范围 2–20；省略时由组件默认高度决定。
 
 ## checkboxResource
 

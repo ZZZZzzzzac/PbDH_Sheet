@@ -123,7 +123,7 @@
     "类型": "countableResource",
     "标签": "熟练度",
     "最小值": 0,
-    "最大值": 5,
+    "最大值": 6,
     "默认值": 1,
     "步长": 1
   },
@@ -242,45 +242,40 @@
     "行数": 8
   },
   {
-    "ID": "subclass-spellcast",
-    "类型": "freeText",
-    "标签": "施法属性"
-  },
-  {
-    "ID": "subclass-feature",
-    "类型": "longText",
-    "标签": "子职特性",
-    "行数": 8
-  },
-  {
     "ID": "background-question-1",
     "类型": "freeText",
-    "标签": "背景问题一"
+    "标签": "背景问题一",
+    "隐藏标签": true
   },
   {
     "ID": "background-question-2",
     "类型": "freeText",
-    "标签": "背景问题二"
+    "标签": "背景问题二",
+    "隐藏标签": true
   },
   {
     "ID": "background-question-3",
     "类型": "freeText",
-    "标签": "背景问题三"
+    "标签": "背景问题三",
+    "隐藏标签": true
   },
   {
     "ID": "connection-question-1",
     "类型": "freeText",
-    "标签": "关系问题一"
+    "标签": "关系问题一",
+    "隐藏标签": true
   },
   {
     "ID": "connection-question-2",
     "类型": "freeText",
-    "标签": "关系问题二"
+    "标签": "关系问题二",
+    "隐藏标签": true
   },
   {
     "ID": "connection-question-3",
     "类型": "freeText",
-    "标签": "关系问题三"
+    "标签": "关系问题三",
+    "隐藏标签": true
   },
   {
     "ID": "pick-primary-weapon",
@@ -297,38 +292,45 @@
   {
     "ID": "primary-weapon-name",
     "类型": "freeText",
-    "标签": "主武器名称"
+    "标签": "主武器名称",
+    "隐藏标签": true
   },
   {
     "ID": "primary-weapon-stat",
     "类型": "freeText",
-    "标签": "属性"
+    "标签": "属性",
+    "隐藏标签": true
   },
   {
     "ID": "primary-weapon-range",
     "类型": "freeText",
-    "标签": "距离"
+    "标签": "距离",
+    "隐藏标签": true
   },
   {
     "ID": "primary-weapon-damage",
     "类型": "freeText",
-    "标签": "伤害"
+    "标签": "伤害",
+    "隐藏标签": true
   },
   {
     "ID": "primary-weapon-damage-type",
     "类型": "freeText",
-    "标签": "伤害类型"
+    "标签": "伤害类型",
+    "隐藏标签": true
   },
   {
     "ID": "primary-weapon-hands",
     "类型": "freeText",
-    "标签": "持握方式"
+    "标签": "持握方式",
+    "隐藏标签": true
   },
   {
     "ID": "primary-weapon-description",
     "类型": "longText",
     "标签": "主武器描述",
-    "行数": 4
+    "行数": 2,
+    "隐藏标签": true
   },
   {
     "ID": "pick-secondary-weapon",
@@ -345,38 +347,45 @@
   {
     "ID": "secondary-weapon-name",
     "类型": "freeText",
-    "标签": "副武器名称"
+    "标签": "副武器名称",
+    "隐藏标签": true
   },
   {
     "ID": "secondary-weapon-stat",
     "类型": "freeText",
-    "标签": "属性"
+    "标签": "属性",
+    "隐藏标签": true
   },
   {
     "ID": "secondary-weapon-range",
     "类型": "freeText",
-    "标签": "距离"
+    "标签": "距离",
+    "隐藏标签": true
   },
   {
     "ID": "secondary-weapon-damage",
     "类型": "freeText",
-    "标签": "伤害"
+    "标签": "伤害",
+    "隐藏标签": true
   },
   {
     "ID": "secondary-weapon-damage-type",
     "类型": "freeText",
-    "标签": "伤害类型"
+    "标签": "伤害类型",
+    "隐藏标签": true
   },
   {
     "ID": "secondary-weapon-hands",
     "类型": "freeText",
-    "标签": "持握方式"
+    "标签": "持握方式",
+    "隐藏标签": true
   },
   {
     "ID": "secondary-weapon-description",
     "类型": "longText",
     "标签": "副武器描述",
-    "行数": 4
+    "行数": 2,
+    "隐藏标签": true
   },
   {
     "ID": "pick-backup-weapon-1",
@@ -393,43 +402,51 @@
   {
     "ID": "backup-weapon-1-name",
     "类型": "freeText",
-    "标签": "备用武器一名称"
+    "标签": "备用武器一名称",
+    "隐藏标签": true
   },
   {
     "ID": "backup-weapon-1-stat",
     "类型": "freeText",
-    "标签": "属性"
+    "标签": "属性",
+    "隐藏标签": true
   },
   {
     "ID": "backup-weapon-1-range",
     "类型": "freeText",
-    "标签": "距离"
+    "标签": "距离",
+    "隐藏标签": true
   },
   {
     "ID": "backup-weapon-1-damage",
     "类型": "freeText",
-    "标签": "伤害"
+    "标签": "伤害",
+    "隐藏标签": true
   },
   {
     "ID": "backup-weapon-1-damage-type",
     "类型": "freeText",
-    "标签": "伤害类型"
+    "标签": "伤害类型",
+    "隐藏标签": true
   },
   {
     "ID": "backup-weapon-1-hands",
     "类型": "freeText",
-    "标签": "持握方式"
+    "标签": "持握方式",
+    "隐藏标签": true
   },
   {
     "ID": "backup-weapon-1-category",
     "类型": "freeText",
-    "标签": "武器类别"
+    "标签": "武器类别",
+    "隐藏标签": true
   },
   {
     "ID": "backup-weapon-1-description",
     "类型": "longText",
     "标签": "备用武器一描述",
-    "行数": 4
+    "行数": 2,
+    "隐藏标签": true
   },
   {
     "ID": "pick-backup-weapon-2",
@@ -446,43 +463,51 @@
   {
     "ID": "backup-weapon-2-name",
     "类型": "freeText",
-    "标签": "备用武器二名称"
+    "标签": "备用武器二名称",
+    "隐藏标签": true
   },
   {
     "ID": "backup-weapon-2-stat",
     "类型": "freeText",
-    "标签": "属性"
+    "标签": "属性",
+    "隐藏标签": true
   },
   {
     "ID": "backup-weapon-2-range",
     "类型": "freeText",
-    "标签": "距离"
+    "标签": "距离",
+    "隐藏标签": true
   },
   {
     "ID": "backup-weapon-2-damage",
     "类型": "freeText",
-    "标签": "伤害"
+    "标签": "伤害",
+    "隐藏标签": true
   },
   {
     "ID": "backup-weapon-2-damage-type",
     "类型": "freeText",
-    "标签": "伤害类型"
+    "标签": "伤害类型",
+    "隐藏标签": true
   },
   {
     "ID": "backup-weapon-2-hands",
     "类型": "freeText",
-    "标签": "持握方式"
+    "标签": "持握方式",
+    "隐藏标签": true
   },
   {
     "ID": "backup-weapon-2-category",
     "类型": "freeText",
-    "标签": "武器类别"
+    "标签": "武器类别",
+    "隐藏标签": true
   },
   {
     "ID": "backup-weapon-2-description",
     "类型": "longText",
     "标签": "备用武器二描述",
-    "行数": 4
+    "行数": 2,
+    "隐藏标签": true
   },
   {
     "ID": "pick-armor",
@@ -499,17 +524,19 @@
   {
     "ID": "armor-name",
     "类型": "freeText",
-    "标签": "护甲名称"
+    "标签": "护甲名称",
+    "隐藏标签": true
   },
   {
     "ID": "armor-base-major",
     "类型": "freeText",
-    "标签": "基础重伤阈值"
+    "标签": "阈值"
   },
   {
     "ID": "armor-base-severe",
     "类型": "freeText",
-    "标签": "基础严重阈值"
+    "标签": "严重",
+    "隐藏标签": true
   },
   {
     "ID": "armor-value",
@@ -520,7 +547,8 @@
     "ID": "armor-description",
     "类型": "longText",
     "标签": "护甲描述",
-    "行数": 4
+    "行数": 2,
+    "隐藏标签": true
   },
   {
     "ID": "pick-item-1",
@@ -646,51 +674,45 @@
     "替代文本": "角色头像"
   },
   {
-    "ID": "character-appearance",
-    "类型": "longText",
-    "标签": "角色形象",
-    "行数": 6
-  },
-  {
-    "ID": "event-log",
-    "类型": "longText",
-    "标签": "事件记录",
-    "行数": 10
-  },
-  {
     "ID": "background-answer-1",
     "类型": "longText",
     "标签": "背景回答 1",
-    "行数": 4
+    "行数": 2,
+    "隐藏标签": true
   },
   {
     "ID": "connection-answer-1",
     "类型": "longText",
     "标签": "关系回答 1",
-    "行数": 4
+    "行数": 2,
+    "隐藏标签": true
   },
   {
     "ID": "background-answer-2",
     "类型": "longText",
     "标签": "背景回答 2",
-    "行数": 4
+    "行数": 2,
+    "隐藏标签": true
   },
   {
     "ID": "connection-answer-2",
     "类型": "longText",
     "标签": "关系回答 2",
-    "行数": 4
+    "行数": 2,
+    "隐藏标签": true
   },
   {
     "ID": "background-answer-3",
     "类型": "longText",
     "标签": "背景回答 3",
-    "行数": 4
+    "行数": 2,
+    "隐藏标签": true
   },
   {
     "ID": "connection-answer-3",
     "类型": "longText",
     "标签": "关系回答 3",
-    "行数": 4
+    "行数": 2,
+    "隐藏标签": true
   }
 ]

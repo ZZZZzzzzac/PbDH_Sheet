@@ -29,15 +29,19 @@ const sheetModuleBaseSchema = z.object({
 
 const freeTextModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("freeText"),
-  标签: z.string().min(1),
+  标签: z.string(),
   默认值: z.string().optional(),
+  隐藏标签: z.boolean().optional(),
+  占位文本: z.string().optional(),
 });
 
 const longTextModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("longText"),
-  标签: z.string().min(1),
+  标签: z.string(),
   默认值: z.string().optional(),
   行数: z.number().int().min(2).max(20).optional(),
+  隐藏标签: z.boolean().optional(),
+  占位文本: z.string().optional(),
 });
 
 const checkboxResourceModuleSchema = sheetModuleBaseSchema.extend({

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCardInstance } from "../domain/cardEngine";
 import { createEmptyCharacterData } from "../domain/characterData";
@@ -123,6 +124,60 @@ describe("Module Registry rendering", () => {
 
     const values = useRuntimeStore.getState().characterData?.character.values;
     expect(values?.vitality).toEqual({ current: 7, max: 10 });
+  });
+
+  it("hides text labels and renders placeholders while preserving accessible names", () => {
+    const packageWithPresentationOptions: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => {
+        if (module.ID === "character-name" && module.类型 === "freeText") {
+          return { ...module, 隐藏标签: true, 占位文本: "请输入姓名" };
+        }
+        if (module.ID === "background" && module.类型 === "longText") {
+          return { ...module, 隐藏标签: true, 占位文本: "请输入背景" };
+        }
+        return module;
+      }),
+    };
+
+    renderModuleDemo(packageWithPresentationOptions);
+
+    const nameInput = screen.getByLabelText("姓名");
+    const backgroundInput = screen.getByLabelText("背景");
+    expect(nameInput).toHaveAttribute("placeholder", "请输入姓名");
+    expect(backgroundInput).toHaveAttribute("placeholder", "请输入背景");
+    expect(nameInput.closest('[data-module-type="freeText"]')?.querySelector('[data-part="label"]')).toBeNull();
+    expect(backgroundInput.closest('[data-module-type="longText"]')?.querySelector('[data-part="label"]')).toBeNull();
+    expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("");
+    expect(useRuntimeStore.getState().characterData?.character.values.background).toBe("写下角色的来历。");
+  });
+
+  it("treats an empty text label as hidden and lets a freeText input fill the container", () => {
+    const packageWithEmptyLabels: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => {
+        if (module.ID === "character-name" && module.类型 === "freeText") {
+          return { ...module, 标签: "", 占位文本: "请输入姓名" };
+        }
+        if (module.ID === "background" && module.类型 === "longText") {
+          return { ...module, 标签: "", 占位文本: "请输入背景" };
+        }
+        return module;
+      }),
+    };
+
+    const result = renderModuleDemo(packageWithEmptyLabels);
+
+    const nameInput = screen.getByLabelText("请输入姓名");
+    const backgroundInput = screen.getByLabelText("请输入背景");
+    const nameContainer = nameInput.closest('[data-module-type="freeText"]');
+    expect(nameContainer).toHaveAttribute("data-label-hidden", "true");
+    expect(backgroundInput.closest('[data-module-type="longText"]')).toHaveAttribute("data-label-hidden", "true");
+    expect(nameContainer?.querySelector('[data-part="label"]')).toBeNull();
+    expect(backgroundInput.closest('[data-module-type="longText"]')?.querySelector('[data-part="label"]')).toBeNull();
+    const moduleStyles = readFileSync("src/styles/modules.css", "utf8");
+    expect(moduleStyles).toMatch(/\.container\[data-label-hidden="true"\]\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/s);
+    expect(result.container.querySelector('[data-module-id="character-name"] input')).toHaveAttribute("placeholder", "请输入姓名");
   });
 
   it("opens Resource Picker browser and fills target text modules without storing a selection value", () => {

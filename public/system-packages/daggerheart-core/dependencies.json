@@ -227,14 +227,6 @@
       {
         "类型": "module",
         "模块ID": "subclass-name"
-      },
-      {
-        "类型": "module",
-        "模块ID": "subclass-spellcast"
-      },
-      {
-        "类型": "module",
-        "模块ID": "subclass-feature"
       }
     ],
     "触发": {
@@ -251,22 +243,6 @@
         "内容": {
           "类型": "selectedResourceField",
           "字段": "名称"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "subclass-spellcast",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "施法属性"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "subclass-feature",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "描述"
         }
       }
     ]

@@ -3,6 +3,52 @@ import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures"
 import { findAsset, findModule, findResourceLibrary, getHtmlTemplateModuleReferences, validateCachedSystemPackage, validateSystemPackage } from "./systemPackage";
 
 describe("validateSystemPackage", () => {
+  it("accepts text module label visibility and placeholder presentation options", () => {
+    const result = validateSystemPackage({
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => {
+        if (module.ID === "character-name" && module.类型 === "freeText") {
+          return { ...module, 隐藏标签: true, 占位文本: "请输入姓名" };
+        }
+        if (module.ID === "background" && module.类型 === "longText") {
+          return { ...module, 隐藏标签: true, 占位文本: "请输入背景" };
+        }
+        return module;
+      }),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(findModule(result.package, "character-name")).toEqual(expect.objectContaining({ 隐藏标签: true, 占位文本: "请输入姓名" }));
+      expect(findModule(result.package, "background")).toEqual(expect.objectContaining({ 隐藏标签: true, 占位文本: "请输入背景" }));
+    }
+  });
+
+  it("accepts empty labels for freeText and longText as an implicit hidden-label configuration", () => {
+    const result = validateSystemPackage({
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => {
+        if (module.类型 === "freeText" || module.类型 === "longText") return { ...module, 标签: "" };
+        return module;
+      }),
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  it.each([
+    ["隐藏标签", "yes"],
+    ["占位文本", 123],
+  ])("rejects an invalid freeText %s", (field, value) => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: minimalSystemPackage.modules.map((module) => module.ID === "character-name" ? { ...module, [field]: value } : module),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "PACKAGE_SHAPE_INVALID" })]));
+  });
+
   it.each([
     ["removed singular field", { 资源库ID: "cards" }],
     ["empty plural field", { 资源库IDs: [] }],
