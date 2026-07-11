@@ -1,0 +1,74 @@
+.daggerheart-sheet {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: 1.5rem;
+}
+
+.sheet-heading,
+.module-group {
+  border: 1px solid #8d7c68;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: #fffdf8;
+}
+
+.sheet-heading h1,
+.module-group h2,
+.sheet-heading p,
+.module-group p {
+  margin-block: 0;
+}
+
+.sheet-heading p,
+.module-group p {
+  margin-top: 0.5rem;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.identity-grid {
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.trait-grid {
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+}
+
+.defense-grid {
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
+
+.resource-grid,
+.currency-grid {
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+
+.feature-grid,
+.question-grid {
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.equipment-stack {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.equipment-slot {
+  border: 1px solid #c8b9a6;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+}
+
+.equipment-grid,
+.item-grid,
+.story-grid {
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}

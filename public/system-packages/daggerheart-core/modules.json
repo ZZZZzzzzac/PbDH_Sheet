@@ -1,0 +1,697 @@
+[
+  {
+    "ID": "character-name",
+    "类型": "freeText",
+    "标签": "姓名"
+  },
+  {
+    "ID": "ancestry-name",
+    "类型": "freeText",
+    "标签": "种族"
+  },
+  {
+    "ID": "community-name",
+    "类型": "freeText",
+    "标签": "社群"
+  },
+  {
+    "ID": "class-name",
+    "类型": "freeText",
+    "标签": "职业"
+  },
+  {
+    "ID": "subclass-name",
+    "类型": "freeText",
+    "标签": "子职"
+  },
+  {
+    "ID": "level",
+    "类型": "countableResource",
+    "标签": "等级",
+    "最小值": 1,
+    "最大值": 10,
+    "默认值": 1,
+    "步长": 1
+  },
+  {
+    "ID": "evasion",
+    "类型": "freeText",
+    "标签": "闪避"
+  },
+  {
+    "ID": "agility",
+    "类型": "freeText",
+    "标签": "敏捷"
+  },
+  {
+    "ID": "strength",
+    "类型": "freeText",
+    "标签": "力量"
+  },
+  {
+    "ID": "finesse",
+    "类型": "freeText",
+    "标签": "灵巧"
+  },
+  {
+    "ID": "instinct",
+    "类型": "freeText",
+    "标签": "本能"
+  },
+  {
+    "ID": "presence",
+    "类型": "freeText",
+    "标签": "风度"
+  },
+  {
+    "ID": "knowledge",
+    "类型": "freeText",
+    "标签": "知识"
+  },
+  {
+    "ID": "major-threshold",
+    "类型": "freeText",
+    "标签": "重伤阈值"
+  },
+  {
+    "ID": "severe-threshold",
+    "类型": "freeText",
+    "标签": "严重阈值"
+  },
+  {
+    "ID": "hp",
+    "类型": "countableResource",
+    "标签": "生命",
+    "最小值": 0,
+    "最大值": 6,
+    "默认值": 0,
+    "步长": 1,
+    "最大值可改": true
+  },
+  {
+    "ID": "stress",
+    "类型": "countableResource",
+    "标签": "压力",
+    "最小值": 0,
+    "最大值": 6,
+    "默认值": 0,
+    "步长": 1,
+    "最大值可改": true
+  },
+  {
+    "ID": "hope",
+    "类型": "countableResource",
+    "标签": "希望",
+    "最小值": 0,
+    "最大值": 6,
+    "默认值": 2,
+    "步长": 1,
+    "最大值可改": true
+  },
+  {
+    "ID": "armor-slots",
+    "类型": "countableResource",
+    "标签": "护甲",
+    "最小值": 0,
+    "最大值": 0,
+    "默认值": 0,
+    "步长": 1,
+    "最大值可改": true
+  },
+  {
+    "ID": "proficiency",
+    "类型": "countableResource",
+    "标签": "熟练度",
+    "最小值": 0,
+    "最大值": 5,
+    "默认值": 1,
+    "步长": 1
+  },
+  {
+    "ID": "handful-gold",
+    "类型": "countableResource",
+    "标签": "一把金币",
+    "最小值": 0,
+    "最大值": 9,
+    "默认值": 1,
+    "步长": 1
+  },
+  {
+    "ID": "bag-gold",
+    "类型": "countableResource",
+    "标签": "一袋金币",
+    "最小值": 0,
+    "最大值": 9,
+    "默认值": 0,
+    "步长": 1
+  },
+  {
+    "ID": "chest-gold",
+    "类型": "countableResource",
+    "标签": "一箱金币",
+    "最小值": 0,
+    "默认值": 0,
+    "步长": 1
+  },
+  {
+    "ID": "pick-ancestry",
+    "类型": "resourcePicker",
+    "按钮文本": "选择种族",
+    "资源库ID": "ancestries",
+    "创建卡牌": {
+      "卡牌桌面模块ID": "character-card-table",
+      "默认状态": "configured"
+    },
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    }
+  },
+  {
+    "ID": "pick-community",
+    "类型": "resourcePicker",
+    "按钮文本": "选择社群",
+    "资源库ID": "communities",
+    "创建卡牌": {
+      "卡牌桌面模块ID": "character-card-table",
+      "默认状态": "configured"
+    },
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    }
+  },
+  {
+    "ID": "character-card-table",
+    "类型": "cardTable",
+    "标签": "角色卡牌",
+    "资源库IDs": [
+      "ancestries",
+      "communities",
+      "subclasses",
+      "domain-cards",
+      "beast-forms"
+    ],
+    "状态选项": [
+      "configured",
+      "vault"
+    ],
+    "显示方式": "text"
+  },
+  {
+    "ID": "pick-class",
+    "类型": "resourcePicker",
+    "按钮文本": "选择职业",
+    "资源库ID": "classes",
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    }
+  },
+  {
+    "ID": "pick-subclass",
+    "类型": "resourcePicker",
+    "按钮文本": "选择子职",
+    "资源库ID": "subclasses",
+    "创建卡牌": {
+      "卡牌桌面模块ID": "character-card-table",
+      "默认状态": "configured"
+    },
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    }
+  },
+  {
+    "ID": "class-hope-feature",
+    "类型": "longText",
+    "标签": "希望特性",
+    "行数": 4
+  },
+  {
+    "ID": "class-feature",
+    "类型": "longText",
+    "标签": "职业特性",
+    "行数": 8
+  },
+  {
+    "ID": "subclass-spellcast",
+    "类型": "freeText",
+    "标签": "施法属性"
+  },
+  {
+    "ID": "subclass-feature",
+    "类型": "longText",
+    "标签": "子职特性",
+    "行数": 8
+  },
+  {
+    "ID": "background-question-1",
+    "类型": "freeText",
+    "标签": "背景问题一"
+  },
+  {
+    "ID": "background-question-2",
+    "类型": "freeText",
+    "标签": "背景问题二"
+  },
+  {
+    "ID": "background-question-3",
+    "类型": "freeText",
+    "标签": "背景问题三"
+  },
+  {
+    "ID": "connection-question-1",
+    "类型": "freeText",
+    "标签": "关系问题一"
+  },
+  {
+    "ID": "connection-question-2",
+    "类型": "freeText",
+    "标签": "关系问题二"
+  },
+  {
+    "ID": "connection-question-3",
+    "类型": "freeText",
+    "标签": "关系问题三"
+  },
+  {
+    "ID": "pick-primary-weapon",
+    "类型": "resourcePicker",
+    "按钮文本": "选择主武器",
+    "资源库ID": "primary-weapons",
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    }
+  },
+  {
+    "ID": "primary-weapon-name",
+    "类型": "freeText",
+    "标签": "主武器名称"
+  },
+  {
+    "ID": "primary-weapon-stat",
+    "类型": "freeText",
+    "标签": "属性"
+  },
+  {
+    "ID": "primary-weapon-range",
+    "类型": "freeText",
+    "标签": "距离"
+  },
+  {
+    "ID": "primary-weapon-damage",
+    "类型": "freeText",
+    "标签": "伤害"
+  },
+  {
+    "ID": "primary-weapon-damage-type",
+    "类型": "freeText",
+    "标签": "伤害类型"
+  },
+  {
+    "ID": "primary-weapon-hands",
+    "类型": "freeText",
+    "标签": "持握方式"
+  },
+  {
+    "ID": "primary-weapon-description",
+    "类型": "longText",
+    "标签": "主武器描述",
+    "行数": 4
+  },
+  {
+    "ID": "pick-secondary-weapon",
+    "类型": "resourcePicker",
+    "按钮文本": "选择副武器",
+    "资源库ID": "secondary-weapons",
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    }
+  },
+  {
+    "ID": "secondary-weapon-name",
+    "类型": "freeText",
+    "标签": "副武器名称"
+  },
+  {
+    "ID": "secondary-weapon-stat",
+    "类型": "freeText",
+    "标签": "属性"
+  },
+  {
+    "ID": "secondary-weapon-range",
+    "类型": "freeText",
+    "标签": "距离"
+  },
+  {
+    "ID": "secondary-weapon-damage",
+    "类型": "freeText",
+    "标签": "伤害"
+  },
+  {
+    "ID": "secondary-weapon-damage-type",
+    "类型": "freeText",
+    "标签": "伤害类型"
+  },
+  {
+    "ID": "secondary-weapon-hands",
+    "类型": "freeText",
+    "标签": "持握方式"
+  },
+  {
+    "ID": "secondary-weapon-description",
+    "类型": "longText",
+    "标签": "副武器描述",
+    "行数": 4
+  },
+  {
+    "ID": "pick-backup-weapon-1",
+    "类型": "resourcePicker",
+    "按钮文本": "选择备用武器一",
+    "资源库ID": "backup-weapons",
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    }
+  },
+  {
+    "ID": "backup-weapon-1-name",
+    "类型": "freeText",
+    "标签": "备用武器一名称"
+  },
+  {
+    "ID": "backup-weapon-1-stat",
+    "类型": "freeText",
+    "标签": "属性"
+  },
+  {
+    "ID": "backup-weapon-1-range",
+    "类型": "freeText",
+    "标签": "距离"
+  },
+  {
+    "ID": "backup-weapon-1-damage",
+    "类型": "freeText",
+    "标签": "伤害"
+  },
+  {
+    "ID": "backup-weapon-1-damage-type",
+    "类型": "freeText",
+    "标签": "伤害类型"
+  },
+  {
+    "ID": "backup-weapon-1-hands",
+    "类型": "freeText",
+    "标签": "持握方式"
+  },
+  {
+    "ID": "backup-weapon-1-category",
+    "类型": "freeText",
+    "标签": "武器类别"
+  },
+  {
+    "ID": "backup-weapon-1-description",
+    "类型": "longText",
+    "标签": "备用武器一描述",
+    "行数": 4
+  },
+  {
+    "ID": "pick-backup-weapon-2",
+    "类型": "resourcePicker",
+    "按钮文本": "选择备用武器二",
+    "资源库ID": "backup-weapons",
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    }
+  },
+  {
+    "ID": "backup-weapon-2-name",
+    "类型": "freeText",
+    "标签": "备用武器二名称"
+  },
+  {
+    "ID": "backup-weapon-2-stat",
+    "类型": "freeText",
+    "标签": "属性"
+  },
+  {
+    "ID": "backup-weapon-2-range",
+    "类型": "freeText",
+    "标签": "距离"
+  },
+  {
+    "ID": "backup-weapon-2-damage",
+    "类型": "freeText",
+    "标签": "伤害"
+  },
+  {
+    "ID": "backup-weapon-2-damage-type",
+    "类型": "freeText",
+    "标签": "伤害类型"
+  },
+  {
+    "ID": "backup-weapon-2-hands",
+    "类型": "freeText",
+    "标签": "持握方式"
+  },
+  {
+    "ID": "backup-weapon-2-category",
+    "类型": "freeText",
+    "标签": "武器类别"
+  },
+  {
+    "ID": "backup-weapon-2-description",
+    "类型": "longText",
+    "标签": "备用武器二描述",
+    "行数": 4
+  },
+  {
+    "ID": "pick-armor",
+    "类型": "resourcePicker",
+    "按钮文本": "选择护甲",
+    "资源库ID": "armor",
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    }
+  },
+  {
+    "ID": "armor-name",
+    "类型": "freeText",
+    "标签": "护甲名称"
+  },
+  {
+    "ID": "armor-base-major",
+    "类型": "freeText",
+    "标签": "基础重伤阈值"
+  },
+  {
+    "ID": "armor-base-severe",
+    "类型": "freeText",
+    "标签": "基础严重阈值"
+  },
+  {
+    "ID": "armor-value",
+    "类型": "freeText",
+    "标签": "护甲值"
+  },
+  {
+    "ID": "armor-description",
+    "类型": "longText",
+    "标签": "护甲描述",
+    "行数": 4
+  },
+  {
+    "ID": "pick-item-1",
+    "类型": "resourcePicker",
+    "按钮文本": "选择物品 1",
+    "资源库ID": "loot",
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    }
+  },
+  {
+    "ID": "item-1",
+    "类型": "freeText",
+    "标签": "物品 1"
+  },
+  {
+    "ID": "pick-item-2",
+    "类型": "resourcePicker",
+    "按钮文本": "选择物品 2",
+    "资源库ID": "loot",
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    }
+  },
+  {
+    "ID": "item-2",
+    "类型": "freeText",
+    "标签": "物品 2"
+  },
+  {
+    "ID": "pick-item-3",
+    "类型": "resourcePicker",
+    "按钮文本": "选择物品 3",
+    "资源库ID": "loot",
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    }
+  },
+  {
+    "ID": "item-3",
+    "类型": "freeText",
+    "标签": "物品 3"
+  },
+  {
+    "ID": "pick-item-4",
+    "类型": "resourcePicker",
+    "按钮文本": "选择物品 4",
+    "资源库ID": "loot",
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    }
+  },
+  {
+    "ID": "item-4",
+    "类型": "freeText",
+    "标签": "物品 4"
+  },
+  {
+    "ID": "pick-item-5",
+    "类型": "resourcePicker",
+    "按钮文本": "选择物品 5",
+    "资源库ID": "loot",
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    }
+  },
+  {
+    "ID": "item-5",
+    "类型": "freeText",
+    "标签": "物品 5"
+  },
+  {
+    "ID": "pick-domain-card",
+    "类型": "resourcePicker",
+    "按钮文本": "选择领域卡",
+    "资源库ID": "domain-cards",
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    },
+    "创建卡牌": {
+      "卡牌桌面模块ID": "character-card-table",
+      "默认状态": "configured"
+    }
+  },
+  {
+    "ID": "pick-beast-form",
+    "类型": "resourcePicker",
+    "按钮文本": "选择野兽形态",
+    "资源库ID": "beast-forms",
+    "默认查询": {
+      "sort": {
+        "field": "名称",
+        "direction": "asc"
+      }
+    },
+    "创建卡牌": {
+      "卡牌桌面模块ID": "character-card-table",
+      "默认状态": "configured"
+    }
+  },
+  {
+    "ID": "character-avatar",
+    "类型": "imageField",
+    "标签": "角色头像",
+    "替代文本": "角色头像"
+  },
+  {
+    "ID": "character-appearance",
+    "类型": "longText",
+    "标签": "角色形象",
+    "行数": 6
+  },
+  {
+    "ID": "event-log",
+    "类型": "longText",
+    "标签": "事件记录",
+    "行数": 10
+  },
+  {
+    "ID": "background-answer-1",
+    "类型": "longText",
+    "标签": "背景回答 1",
+    "行数": 4
+  },
+  {
+    "ID": "connection-answer-1",
+    "类型": "longText",
+    "标签": "关系回答 1",
+    "行数": 4
+  },
+  {
+    "ID": "background-answer-2",
+    "类型": "longText",
+    "标签": "背景回答 2",
+    "行数": 4
+  },
+  {
+    "ID": "connection-answer-2",
+    "类型": "longText",
+    "标签": "关系回答 2",
+    "行数": 4
+  },
+  {
+    "ID": "background-answer-3",
+    "类型": "longText",
+    "标签": "背景回答 3",
+    "行数": 4
+  },
+  {
+    "ID": "connection-answer-3",
+    "类型": "longText",
+    "标签": "关系回答 3",
+    "行数": 4
+  }
+]
