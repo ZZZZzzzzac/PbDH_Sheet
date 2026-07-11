@@ -207,12 +207,14 @@
     "类型": "resourcePicker",
     "按钮文本": "选择职业",
     "资源库ID": "classes",
-    "默认查询": {
-      "sort": {
-        "field": "名称",
-        "direction": "asc"
-      }
-    }
+    "字段模板": [
+      {"键":"关系问题1", "默认显示": false},
+      {"键":"关系问题2", "默认显示": false},
+      {"键":"关系问题3", "默认显示": false},
+      {"键":"背景问题1", "默认显示": false},
+      {"键":"背景问题2", "默认显示": false},
+      {"键":"背景问题3", "默认显示": false}
+    ]
   },
   {
     "ID": "pick-subclass",
@@ -224,10 +226,7 @@
       "默认状态": "configured"
     },
     "默认查询": {
-      "sort": {
-        "field": "名称",
-        "direction": "asc"
-      }
+      "sort": { "field": "等级", "direction": "asc" }
     }
   },
   {

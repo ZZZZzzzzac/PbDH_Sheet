@@ -37,7 +37,7 @@ Player value 作为文本写 Character Data。
 | --- | --- | --- | --- |
 | `按钮文本` | string | 是 | 非空 |
 | `资源库ID` | string | 是 | 必须存在 |
-| `字段模板` | FieldTemplate[] | 否 | 推断 Library fields |
+| `字段模板` | FieldTemplate[] | 否 | 按 `键` 局部覆盖推断 Library fields；未声明字段保留 |
 | `多选` | boolean | 否 | `false` |
 | `默认查询.filters` | record<string,string[]> | 否 | `{}` |
 | `默认查询.sort.field` | string | 条件 | sort 存在时非空 |

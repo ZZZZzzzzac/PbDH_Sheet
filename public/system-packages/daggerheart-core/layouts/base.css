@@ -6,7 +6,7 @@
   padding: 1.5rem;
 }
 
-.sheet-heading,
+
 .module-group {
   border: 1px solid #8d7c68;
   border-radius: 0.75rem;
@@ -14,14 +14,12 @@
   background: #fffdf8;
 }
 
-.sheet-heading h1,
+
 .module-group h2,
-.sheet-heading p,
 .module-group p {
   margin-block: 0;
 }
 
-.sheet-heading p,
 .module-group p {
   margin-top: 0.5rem;
 }

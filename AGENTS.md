@@ -26,4 +26,6 @@ The authoritative System Package documentation is `docs/system-package/README.md
 
 ## Common Develop Procedure
 
-Developing new feature / debug and any other trivial task, use /to-prd /to-issue /triage workflow
+Developing new feature / debug and any other non-trivial task, use /to-prd /to-issue /triage workflow.
+- simple task can skip /to-prd.
+- use /triage alonewith /to-issue, unless human review needed.

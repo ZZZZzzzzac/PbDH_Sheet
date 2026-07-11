@@ -218,20 +218,33 @@ export function getResourceLibraryFields(
     return library.fields;
   }
 
-  const inferredFields = new Map(library.fields.map((field) => [field.key, field]));
+  const templatesByKey = new Map(templates.map((template) => [template.键, template]));
+  const inferredKeys = new Set(library.fields.map((field) => field.key));
+  const mergedFields = library.fields.map((field) =>
+    resolveResourceLibraryField(library, field.key, templatesByKey.get(field.key), field),
+  );
+  const templateOnlyFields = templates
+    .filter((template) => !inferredKeys.has(template.键))
+    .map((template) => resolveResourceLibraryField(library, template.键, template));
 
-  return templates.map((template) => {
-    const inferred = inferredFields.get(template.键);
-    return {
-      key: template.键,
-      label: template.标签 ?? inferred?.label ?? template.键,
-      visible: template.默认显示 ?? true,
-      filterable: template.可筛选 ?? inferred?.filterable ?? true,
-      sortable: template.可排序 ?? inferred?.sortable ?? true,
-      searchable: template.可搜索 ?? template.默认显示 ?? inferred?.searchable ?? true,
-      width: template.列宽 ?? inferred?.width ?? inferResourceFieldWidth(library.entries.map((entry) => entry.fields[template.键] ?? "")),
-    };
-  });
+  return [...mergedFields, ...templateOnlyFields];
+}
+
+function resolveResourceLibraryField(
+  library: ResourceLibrary,
+  key: string,
+  template?: ResourceLibraryFieldTemplate,
+  inferred?: ResourceLibraryField,
+): ResourceLibraryField {
+  return {
+    key,
+    label: template?.标签 ?? inferred?.label ?? key,
+    visible: template?.默认显示 ?? inferred?.visible ?? true,
+    filterable: template?.可筛选 ?? inferred?.filterable ?? true,
+    sortable: template?.可排序 ?? inferred?.sortable ?? true,
+    searchable: template?.可搜索 ?? template?.默认显示 ?? inferred?.searchable ?? true,
+    width: template?.列宽 ?? inferred?.width ?? inferResourceFieldWidth(library.entries.map((entry) => entry.fields[key] ?? "")),
+  };
 }
 
 export function inferResourceFieldWidth(values: string[] = []): ResourceLibraryFieldWidth {

@@ -43,7 +43,7 @@ describe("Resource Library normalization", () => {
     }
   });
 
-  it("applies module field templates without changing normalized entry fields", () => {
+  it("merges module field templates into inferred fields without changing normalized entries", () => {
     const result = normalizeResourceLibraries([
       {
         ID: "weapons",
@@ -64,8 +64,10 @@ describe("Resource Library normalization", () => {
           { 键: "领域", 标签: "可用领域", 默认显示: false, 可筛选: true, 可排序: false, 列宽: "compact" },
         ]),
       ).toEqual([
+        { key: "ID", label: "ID", visible: false, filterable: false, sortable: false, searchable: false, width: "compact" },
         { key: "名称", label: "武器名", visible: true, filterable: false, sortable: true, searchable: true, width: "normal" },
         { key: "领域", label: "可用领域", visible: false, filterable: true, sortable: false, searchable: false, width: "compact" },
+        { key: "伤害", label: "伤害", visible: true, filterable: true, sortable: true, searchable: true, width: "compact" },
       ]);
       expect(library.entries[0].fields.伤害).toBe("d8");
     }
@@ -77,6 +79,34 @@ describe("Resource Library normalization", () => {
     expect(inferResourceFieldWidth(["短描述"])).toBe("compact");
     expect(inferResourceFieldWidth(["这是一段比较长的资源字段内容，应该给更多表格空间"])).toBe("fill");
     expect(inferResourceFieldWidth(["中等长度字段文本内容"])).toBe("wide");
+  });
+
+  it("appends template-only fields after inferred fields and applies their defaults", () => {
+    const result = normalizeResourceLibraries([
+      {
+        ID: "weapons",
+        名称: "武器",
+        路径: "resources/weapons.json",
+        entries: [{ ID: "sword", 名称: "剑" }],
+      },
+    ]);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(getResourceLibraryFields(result.resourceLibraries[0], [{ 键: "自定义", 标签: "额外字段", 可排序: false }])).toEqual([
+        ...result.resourceLibraries[0].fields,
+        {
+          key: "自定义",
+          label: "额外字段",
+          visible: true,
+          filterable: true,
+          sortable: false,
+          searchable: true,
+          width: "normal",
+        },
+      ]);
+      expect(getResourceLibraryFields(result.resourceLibraries[0], [])).toBe(result.resourceLibraries[0].fields);
+    }
   });
 
   it("lets an explicit field template opt ID back into Resource Picker presentation", () => {

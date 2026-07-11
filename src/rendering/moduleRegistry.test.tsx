@@ -134,7 +134,7 @@ describe("Module Registry rendering", () => {
     expect(dialog.querySelector(".resource-table-col-compact")).not.toBeNull();
     expect(dialog.querySelector(".resource-table-col-fill")).not.toBeNull();
     expect(screen.queryByRole("columnheader", { name: "ID" })).not.toBeInTheDocument();
-    expect(screen.queryByText("assets/cards/flame.png")).not.toBeInTheDocument();
+    expect(screen.getByText("assets/cards/flame.png")).toBeVisible();
     expect(screen.queryByText("选择领域后显示")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("选择 烈焰"));
@@ -292,11 +292,11 @@ function createResourcePickerPackage(options: { multiSelect?: boolean; defaultFi
         名称: "领域",
         路径: "resources/domains.json",
         fields: [
-          { key: "ID", label: "ID", visible: true, filterable: true, sortable: true },
-          { key: "名称", label: "名称", visible: true, filterable: true, sortable: true },
-          { key: "领域", label: "领域", visible: true, filterable: true, sortable: true },
-          { key: "等级", label: "等级", visible: true, filterable: true, sortable: true },
-          { key: "卡图", label: "卡图", visible: true, filterable: false, sortable: false },
+          { key: "ID", label: "ID", visible: false, filterable: false, sortable: false, searchable: false },
+          { key: "名称", label: "名称", visible: true, filterable: true, sortable: true, searchable: true },
+          { key: "领域", label: "领域", visible: true, filterable: true, sortable: true, searchable: true },
+          { key: "等级", label: "等级", visible: true, filterable: true, sortable: true, searchable: true },
+          { key: "卡图", label: "卡图", visible: true, filterable: false, sortable: false, searchable: false },
         ],
         entries: [
           {

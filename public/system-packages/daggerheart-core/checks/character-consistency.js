@@ -6,7 +6,7 @@ module.exports = ({ characterData, resourceLibraries }) => {
   const level = countableCurrent(values.level);
 
   if (classEntry) {
-    compareCountableMax(issues, values.hp, integer(classEntry.fields["初始生命点"]), {
+    compareCountableMax(issues, values.hp, integer(classEntry.fields["生命点"]), {
       code: "CLASS_HP_MAX_MISMATCH",
       path: "character.values.hp",
       label: `职业「${classEntry.fields["名称"]}」的初始生命上限`,
