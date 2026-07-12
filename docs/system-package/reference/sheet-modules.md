@@ -20,7 +20,7 @@ Player value 作为文本写 Character Data。
 
 ## checkboxResource
 
-`标签` 必填；`选项` 为至少一项。Option：`ID`、`标签` 必填且非空，`默认选中?: boolean = false`。同一模块 option ID 唯一。Character Data 保存选中状态；`checkboxChanged` 可触发 Dependency。
+`标签` 必填；`选项` 为至少一项。Option：`ID`、`标签` 必填且非空，`默认选中?: boolean = false`，`分组?: string`。同一模块 option ID 唯一。具有相同 `分组` 的选项显示为多个 checkbox 共用第一项说明文字，但状态仍彼此独立。Character Data 保存选中状态；`checkboxChanged` 可触发 Dependency。
 
 ## countableResource
 
@@ -33,6 +33,8 @@ Player value 作为文本写 Character Data。
 ## imageField
 
 `标签` 必填；`替代文本?: string`。Player 图片以 data URL/base64 随 Character Data 恢复；System Package 图片应使用 Asset/readOnlyDisplay。
+
+Player 点击图片区域或在其聚焦时按 Enter/Space 打开本地文件选择器；上传后可点击右上角移除按钮清除图片。再次点击图片区域可替换现有图片。稳定部件包括 `container`、`label`、`surface-frame`、`surface`、`image`、`image-fallback`、`remove-button`、`input`。
 
 ## resourcePicker
 

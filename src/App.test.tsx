@@ -64,6 +64,7 @@ function createEmptyStorage(): StorageService {
       active.set(packageId, saveId);
     },
     async savePlayerImageBlob() {},
+    async deletePlayerImageBlob() {},
     async loadPlayerImageBlob() {
       return null;
     },

@@ -18,3 +18,13 @@
   flex: 0 0 auto;
   accent-color: #31565e;
 }
+
+.checkbox-row-grouped {
+  align-items: start;
+}
+
+.checkbox-input-group {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+}

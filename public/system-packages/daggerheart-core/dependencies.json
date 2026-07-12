@@ -644,7 +644,7 @@
         "目标模块ID": "primary-weapon-hands",
         "内容": {
           "类型": "selectedResourceField",
-          "字段": "双手"
+          "字段": "负荷"
         }
       },
       {
@@ -748,7 +748,7 @@
         "目标模块ID": "secondary-weapon-hands",
         "内容": {
           "类型": "selectedResourceField",
-          "字段": "双手"
+          "字段": "负荷"
         }
       },
       {
@@ -856,7 +856,7 @@
         "目标模块ID": "backup-weapon-1-hands",
         "内容": {
           "类型": "selectedResourceField",
-          "字段": "双手"
+          "字段": "负荷"
         }
       },
       {
@@ -972,7 +972,7 @@
         "目标模块ID": "backup-weapon-2-hands",
         "内容": {
           "类型": "selectedResourceField",
-          "字段": "双手"
+          "字段": "负荷"
         }
       },
       {

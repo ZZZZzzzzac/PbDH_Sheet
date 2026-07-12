@@ -87,6 +87,9 @@ function createMemoryStorage(cachedPackage: unknown = null): StorageService & {
     async loadPlayerImageBlob(imageId) {
       return playerImages.get(imageId) ?? null;
     },
+    async deletePlayerImageBlob(imageId) {
+      playerImages.delete(imageId);
+    },
     getCachedPackage() {
       return savedPackage;
     },
@@ -192,6 +195,22 @@ describe("runtime store", () => {
     await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
 
     expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("阿青");
+  });
+
+  it("removes a player image from Character Data and blob storage", async () => {
+    renderHook(() => useRuntimeStore());
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+      await useRuntimeStore.getState().uploadPlayerImage("portrait", new File(["image"], "portrait.png", { type: "image/png" }));
+    });
+    const imageId = (useRuntimeStore.getState().characterData?.character.values.portrait as { imageId: string }).imageId;
+    expect(await memoryStorage.loadPlayerImageBlob(imageId)).not.toBeNull();
+
+    await act(async () => useRuntimeStore.getState().removePlayerImage("portrait"));
+
+    expect(useRuntimeStore.getState().characterData?.character.values.portrait).toBeUndefined();
+    expect(useRuntimeStore.getState().characterData?.playerImages[imageId]).toBeUndefined();
+    expect(await memoryStorage.loadPlayerImageBlob(imageId)).toBeNull();
   });
 
   it("manages package-scoped Character Saves", async () => {

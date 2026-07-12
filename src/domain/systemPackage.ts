@@ -53,6 +53,7 @@ const checkboxResourceModuleSchema = sheetModuleBaseSchema.extend({
         ID: z.string().min(1),
         标签: z.string().min(1),
         默认选中: z.boolean().optional(),
+        分组: z.string().min(1).optional(),
       }),
     )
     .min(1),

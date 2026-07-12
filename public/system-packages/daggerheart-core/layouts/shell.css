@@ -1,51 +1,51 @@
 .daggerheart-workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(22rem, 1fr);
-  gap: 1.125rem;
-  align-items: start;
-  padding: 1.125rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 0.75rem;
 }
 
 .daggerheart-sheet-pane {
-  min-width: 0;
-  overflow: auto;
+  flex: 0 1 64rem;
+  width: min(64rem, 100%);
+  min-width: 38rem;
+  min-height: 90rem;
+  overflow: hidden;
   border: 1px solid #c8b9a6;
   background: #f8f4ec;
 }
 
 .daggerheart-card-pane {
-  min-width: 0;
-  min-height: calc(100vh - 11rem);
-  display: grid;
-  gap: 1rem;
-  align-content: start;
-}
-
-.card-pane-heading {
-  border: 1px solid #8d7c68;
-  border-radius: 0.75rem;
-  padding: 1rem;
-  background: #fffdf8;
-}
-
-.card-pane-heading h2,
-.card-pane-heading p {
-  margin-block: 0;
-}
-
-.card-pane-heading p {
-  margin-top: 0.5rem;
-}
-
-.card-picker-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex: 1 1 28rem;
+  min-width: 22rem;
+  min-height: calc(100vh - 8rem);
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
 }
 
-@media (max-width: 900px) {
+.daggerheart-card-pane > [data-module-type="cardTable"] {
+  flex: 1 1 auto;
+  min-height: 38rem;
+}
+
+.card-picker-grid {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+@media (max-width: 1080px) {
   .daggerheart-workspace {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .daggerheart-sheet-pane,
+  .daggerheart-card-pane {
+    width: 100%;
+    min-width: 0;
   }
 
   .daggerheart-card-pane {
@@ -53,8 +53,30 @@
   }
 }
 
+@media (max-width: 560px) {
+  .daggerheart-workspace {
+    padding: 0.375rem;
+  }
+
+  .card-picker-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media print {
   .daggerheart-workspace {
-    grid-template-columns: 1fr;
+    display: block;
+    padding: 0;
+  }
+
+  .daggerheart-sheet-pane {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    border: 0;
+  }
+
+  .daggerheart-card-pane {
+    display: none;
   }
 }

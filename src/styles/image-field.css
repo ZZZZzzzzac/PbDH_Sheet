@@ -1,37 +1,69 @@
 .image {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  margin: 0;
   overflow: hidden;
 }
 
-.image-preview {
+.image-surface-frame {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 180px;
+}
+
+.image-upload-surface {
   display: block;
   width: 100%;
-  min-height: 180px;
-  max-height: 280px;
-  object-fit: cover;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #e2e8e9;
+  color: #607075;
+  cursor: pointer;
+}
+
+.image-upload-surface:focus-visible {
+  outline: 3px solid #e0b441;
+  outline-offset: -3px;
+}
+
+.image-preview {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   background: #e2e8e9;
 }
 
 .image-fallback {
   display: grid;
   place-items: center;
-  min-height: 180px;
+  height: 100%;
   padding: 16px;
-  background: #e2e8e9;
-  color: #607075;
 }
 
-.image-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding: 10px 14px;
-  border-top: 1px solid #d8dfe1;
-}
-
-.image-upload-button {
-  min-height: 36px;
-  padding: 0 12px;
+.image-remove-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border: 1px solid #243438;
+  border-radius: 999px;
   background: #ffffff;
   color: #243438;
   cursor: pointer;
+}
+
+.image-remove-button:focus-visible {
+  outline: 3px solid #e0b441;
+  outline-offset: 2px;
 }

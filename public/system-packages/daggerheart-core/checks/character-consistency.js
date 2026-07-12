@@ -3,7 +3,7 @@ module.exports = ({ characterData, resourceLibraries }) => {
   const values = characterData.character.values;
   const classEntry = findEntry(resourceLibraries, "classes", text(values["class-name"]));
   const armorEntry = findEntry(resourceLibraries, "armor", text(values["armor-name"]));
-  const level = countableCurrent(values.level);
+  const level = integer(values.level);
 
   if (classEntry) {
     compareCountableMax(issues, values.hp, integer(classEntry.fields["生命点"]), {
@@ -72,5 +72,4 @@ function integer(value) {
 function isCountable(value) {
   return value && typeof value === "object" && Number.isInteger(value.current) && (value.max === null || Number.isInteger(value.max));
 }
-function countableCurrent(value) { return isCountable(value) ? value.current : undefined; }
 function add(left, right) { return left === undefined || right === undefined ? undefined : left + right; }

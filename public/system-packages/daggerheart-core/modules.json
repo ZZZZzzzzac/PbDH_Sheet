@@ -26,12 +26,9 @@
   },
   {
     "ID": "level",
-    "类型": "countableResource",
+    "类型": "freeText",
     "标签": "等级",
-    "最小值": 1,
-    "最大值": 10,
-    "默认值": 1,
-    "步长": 1
+    "默认值": "1"
   },
   {
     "ID": "evasion",
@@ -130,7 +127,7 @@
   {
     "ID": "handful-gold",
     "类型": "countableResource",
-    "标签": "一把金币",
+    "标签": "把",
     "最小值": 0,
     "最大值": 9,
     "默认值": 1,
@@ -139,7 +136,7 @@
   {
     "ID": "bag-gold",
     "类型": "countableResource",
-    "标签": "一袋金币",
+    "标签": "袋",
     "最小值": 0,
     "最大值": 9,
     "默认值": 0,
@@ -148,7 +145,7 @@
   {
     "ID": "chest-gold",
     "类型": "countableResource",
-    "标签": "一箱金币",
+    "标签": "箱",
     "最小值": 0,
     "默认值": 0,
     "步长": 1
@@ -205,7 +202,7 @@
   {
     "ID": "pick-class",
     "类型": "resourcePicker",
-    "按钮文本": "选择职业",
+    "按钮文本": "职业",
     "资源库ID": "classes",
     "字段模板": [
       {"键":"关系问题1", "默认显示": false},
@@ -219,7 +216,7 @@
   {
     "ID": "pick-subclass",
     "类型": "resourcePicker",
-    "按钮文本": "选择子职",
+    "按钮文本": "子职",
     "资源库ID": "subclasses",
     "创建卡牌": {
       "卡牌桌面模块ID": "character-card-table",
@@ -240,6 +237,66 @@
     "类型": "longText",
     "标签": "职业特性",
     "行数": 8
+  },
+  {
+    "ID": "experience-1",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "经历 1"
+  },
+  {
+    "ID": "experience-modifier-1",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "修正"
+  },
+  {
+    "ID": "experience-2",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "经历 2"
+  },
+  {
+    "ID": "experience-modifier-2",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "修正"
+  },
+  {
+    "ID": "experience-3",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "经历 3"
+  },
+  {
+    "ID": "experience-modifier-3",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "修正"
+  },
+  {
+    "ID": "experience-4",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "经历 4"
+  },
+  {
+    "ID": "experience-modifier-4",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "修正"
+  },
+  {
+    "ID": "experience-5",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "经历 5"
+  },
+  {
+    "ID": "experience-modifier-5",
+    "类型": "freeText",
+    "标签": "",
+    "占位文本": "修正"
   },
   {
     "ID": "background-question-1",
@@ -293,37 +350,43 @@
     "ID": "primary-weapon-name",
     "类型": "freeText",
     "标签": "主武器名称",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "主武器"
   },
   {
     "ID": "primary-weapon-stat",
     "类型": "freeText",
     "标签": "属性",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "属性"
   },
   {
     "ID": "primary-weapon-range",
     "类型": "freeText",
     "标签": "距离",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "距离"
   },
   {
     "ID": "primary-weapon-damage",
     "类型": "freeText",
     "标签": "伤害",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "伤害"
   },
   {
     "ID": "primary-weapon-damage-type",
     "类型": "freeText",
-    "标签": "伤害类型",
-    "隐藏标签": true
+    "标签": "类型",
+    "隐藏标签": true,
+    "占位文本": "类型"
   },
   {
     "ID": "primary-weapon-hands",
     "类型": "freeText",
-    "标签": "持握方式",
-    "隐藏标签": true
+    "标签": "负荷",
+    "隐藏标签": true,
+    "占位文本": "负荷"
   },
   {
     "ID": "primary-weapon-description",
@@ -348,37 +411,43 @@
     "ID": "secondary-weapon-name",
     "类型": "freeText",
     "标签": "副武器名称",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "副武器"
   },
   {
     "ID": "secondary-weapon-stat",
     "类型": "freeText",
     "标签": "属性",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "属性"
   },
   {
     "ID": "secondary-weapon-range",
     "类型": "freeText",
     "标签": "距离",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "距离"
   },
   {
     "ID": "secondary-weapon-damage",
     "类型": "freeText",
     "标签": "伤害",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "伤害"
   },
   {
     "ID": "secondary-weapon-damage-type",
     "类型": "freeText",
-    "标签": "伤害类型",
-    "隐藏标签": true
+    "标签": "类型",
+    "隐藏标签": true,
+    "占位文本": "类型"
   },
   {
     "ID": "secondary-weapon-hands",
     "类型": "freeText",
-    "标签": "持握方式",
-    "隐藏标签": true
+    "标签": "负荷",
+    "隐藏标签": true,
+    "占位文本": "负荷"
   },
   {
     "ID": "secondary-weapon-description",
@@ -403,43 +472,50 @@
     "ID": "backup-weapon-1-name",
     "类型": "freeText",
     "标签": "备用武器一名称",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "备用武器一"
   },
   {
     "ID": "backup-weapon-1-stat",
     "类型": "freeText",
     "标签": "属性",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "属性"
   },
   {
     "ID": "backup-weapon-1-range",
     "类型": "freeText",
     "标签": "距离",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "距离"
   },
   {
     "ID": "backup-weapon-1-damage",
     "类型": "freeText",
     "标签": "伤害",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "伤害"
   },
   {
     "ID": "backup-weapon-1-damage-type",
     "类型": "freeText",
-    "标签": "伤害类型",
-    "隐藏标签": true
+    "标签": "类型",
+    "隐藏标签": true,
+    "占位文本": "类型"
   },
   {
     "ID": "backup-weapon-1-hands",
     "类型": "freeText",
-    "标签": "持握方式",
-    "隐藏标签": true
+    "标签": "负荷",
+    "隐藏标签": true,
+    "占位文本": "负荷"
   },
   {
     "ID": "backup-weapon-1-category",
     "类型": "freeText",
     "标签": "武器类别",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "武器类别"
   },
   {
     "ID": "backup-weapon-1-description",
@@ -464,43 +540,50 @@
     "ID": "backup-weapon-2-name",
     "类型": "freeText",
     "标签": "备用武器二名称",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "备用武器二"
   },
   {
     "ID": "backup-weapon-2-stat",
     "类型": "freeText",
     "标签": "属性",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "属性"
   },
   {
     "ID": "backup-weapon-2-range",
     "类型": "freeText",
     "标签": "距离",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "距离"
   },
   {
     "ID": "backup-weapon-2-damage",
     "类型": "freeText",
     "标签": "伤害",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "伤害"
   },
   {
     "ID": "backup-weapon-2-damage-type",
     "类型": "freeText",
-    "标签": "伤害类型",
-    "隐藏标签": true
+    "标签": "类型",
+    "隐藏标签": true,
+    "占位文本": "类型"
   },
   {
     "ID": "backup-weapon-2-hands",
     "类型": "freeText",
-    "标签": "持握方式",
-    "隐藏标签": true
+    "标签": "负荷",
+    "隐藏标签": true,
+    "占位文本": "负荷"
   },
   {
     "ID": "backup-weapon-2-category",
     "类型": "freeText",
     "标签": "武器类别",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "武器类别"
   },
   {
     "ID": "backup-weapon-2-description",
@@ -525,18 +608,22 @@
     "ID": "armor-name",
     "类型": "freeText",
     "标签": "护甲名称",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "护甲"
   },
   {
     "ID": "armor-base-major",
     "类型": "freeText",
-    "标签": "阈值"
+    "标签": "阈值",
+    "隐藏标签": true,
+    "占位文本": "阈值"
   },
   {
     "ID": "armor-base-severe",
     "类型": "freeText",
     "标签": "严重",
-    "隐藏标签": true
+    "隐藏标签": true,
+    "占位文本": "严重阈值"
   },
   {
     "ID": "armor-value",
@@ -565,7 +652,8 @@
   {
     "ID": "item-1",
     "类型": "freeText",
-    "标签": "物品 1"
+    "标签": "",
+    "占位文本": "物品栏 1"
   },
   {
     "ID": "pick-item-2",
@@ -582,7 +670,8 @@
   {
     "ID": "item-2",
     "类型": "freeText",
-    "标签": "物品 2"
+    "标签": "",
+    "占位文本": "物品栏 2"
   },
   {
     "ID": "pick-item-3",
@@ -599,7 +688,8 @@
   {
     "ID": "item-3",
     "类型": "freeText",
-    "标签": "物品 3"
+    "标签": "",
+    "占位文本": "物品栏 3"
   },
   {
     "ID": "pick-item-4",
@@ -616,7 +706,8 @@
   {
     "ID": "item-4",
     "类型": "freeText",
-    "标签": "物品 4"
+    "标签": "",
+    "占位文本": "物品栏 4"
   },
   {
     "ID": "pick-item-5",
@@ -633,7 +724,8 @@
   {
     "ID": "item-5",
     "类型": "freeText",
-    "标签": "物品 5"
+    "标签": "",
+    "占位文本": "物品栏 5"
   },
   {
     "ID": "pick-domain-card",
@@ -714,5 +806,134 @@
     "标签": "关系回答 3",
     "行数": 2,
     "隐藏标签": true
+  },
+  {
+    "ID": "event-log",
+    "类型": "longText",
+    "标签": "事件记录",
+    "行数": 8,
+    "占位文本": "记录角色经历的重要事件"
+  },
+  {
+    "ID": "background-story",
+    "类型": "longText",
+    "标签": "背景故事",
+    "行数": 8,
+    "占位文本": "记录角色的背景故事"
+  },
+  {
+    "ID": "advancement-tier-2-reward",
+    "类型": "readOnlyDisplay",
+    "标签": "T2 阶段奖励",
+    "内容": "当你到达 2 级时，获得一项额外的 +2 经历，并且你的熟练值 +1。"
+  },
+  {
+    "ID": "advancement-tier-2-instructions",
+    "类型": "readOnlyDisplay",
+    "标签": "T2 升级规则",
+    "内容": "从下面列表中选择两个选项并标记它们。"
+  },
+  {
+    "ID": "advancement-tier-2",
+    "类型": "checkboxResource",
+    "标签": "T2 升级记录",
+    "选项": [
+      { "ID": "traits-1", "标签": "两项未标记的角色属性 +1，然后标记它们", "分组": "traits" },
+      { "ID": "traits-2", "标签": "两项未标记的角色属性 +1，然后标记它们", "分组": "traits" },
+      { "ID": "traits-3", "标签": "两项未标记的角色属性 +1，然后标记它们", "分组": "traits" },
+      { "ID": "hp-1", "标签": "总生命值 +1", "分组": "hp" },
+      { "ID": "hp-2", "标签": "总生命值 +1", "分组": "hp" },
+      { "ID": "stress-1", "标签": "总压力槽 +1", "分组": "stress" },
+      { "ID": "stress-2", "标签": "总压力槽 +1", "分组": "stress" },
+      { "ID": "experiences", "标签": "选择你的两项经历 +1" },
+      { "ID": "domain-card", "标签": "选择一张等级小于或等于角色等级的领域卡（最高为 4 级）" },
+      { "ID": "evasion", "标签": "闪避值 +1" }
+    ]
+  },
+  {
+    "ID": "advancement-tier-2-footer",
+    "类型": "readOnlyDisplay",
+    "标签": "T2 完成升级",
+    "内容": "更新你的等级并相应调整你的伤害阈值，选择一张等级小于或等于角色等级的领域卡。"
+  },
+  {
+    "ID": "advancement-tier-3-reward",
+    "类型": "readOnlyDisplay",
+    "标签": "T3 阶段奖励",
+    "内容": "当你到达 5 级时，获得一项额外的 +2 经历，然后清除你所有角色属性上的标记，并且你的熟练值 +1。"
+  },
+  {
+    "ID": "advancement-tier-3-instructions",
+    "类型": "readOnlyDisplay",
+    "标签": "T3 升级规则",
+    "内容": "从下面列表或之前的升级列表中选择两个选项并标记它们。"
+  },
+  {
+    "ID": "advancement-tier-3",
+    "类型": "checkboxResource",
+    "标签": "T3 升级记录",
+    "选项": [
+      { "ID": "traits-1", "标签": "两项未标记的角色属性 +1，然后标记它们", "分组": "traits" },
+      { "ID": "traits-2", "标签": "两项未标记的角色属性 +1，然后标记它们", "分组": "traits" },
+      { "ID": "traits-3", "标签": "两项未标记的角色属性 +1，然后标记它们", "分组": "traits" },
+      { "ID": "hp-1", "标签": "总生命值 +1", "分组": "hp" },
+      { "ID": "hp-2", "标签": "总生命值 +1", "分组": "hp" },
+      { "ID": "stress-1", "标签": "总压力槽 +1", "分组": "stress" },
+      { "ID": "stress-2", "标签": "总压力槽 +1", "分组": "stress" },
+      { "ID": "experiences", "标签": "选择你的两项经历 +1" },
+      { "ID": "domain-card", "标签": "选择一张等级小于或等于角色等级的领域卡（最高为 7 级）" },
+      { "ID": "subclass", "标签": "升级你的子职并划掉兼任选项" },
+      { "ID": "evasion", "标签": "闪避值 +1" },
+      { "ID": "proficiency-1", "标签": "熟练值 +1（一次性占用两个可选项）", "分组": "proficiency" },
+      { "ID": "proficiency-2", "标签": "熟练值 +1（一次性占用两个可选项）", "分组": "proficiency" },
+      { "ID": "multiclass-1", "标签": "兼职：为角色选择一个额外子职，然后划去该职业中的升级子职业选项和此后所有兼任选项", "分组": "multiclass" },
+      { "ID": "multiclass-2", "标签": "兼职：为角色选择一个额外子职，然后划去该职业中的升级子职业选项和此后所有兼任选项", "分组": "multiclass" }
+    ]
+  },
+  {
+    "ID": "advancement-tier-3-footer",
+    "类型": "readOnlyDisplay",
+    "标签": "T3 完成升级",
+    "内容": "更新你的等级并相应调整你的伤害阈值，选择一张等级小于或等于角色等级的领域卡。"
+  },
+  {
+    "ID": "advancement-tier-4-reward",
+    "类型": "readOnlyDisplay",
+    "标签": "T4 阶段奖励",
+    "内容": "当你到达 8 级时，获得一项额外的 +2 经历，然后清除你所有角色属性上的标记，并且你的熟练值 +1。"
+  },
+  {
+    "ID": "advancement-tier-4-instructions",
+    "类型": "readOnlyDisplay",
+    "标签": "T4 升级规则",
+    "内容": "从下面列表或之前的升级列表中选择两个选项并标记它们。"
+  },
+  {
+    "ID": "advancement-tier-4",
+    "类型": "checkboxResource",
+    "标签": "T4 升级记录",
+    "选项": [
+      { "ID": "traits-1", "标签": "两项未标记的角色属性 +1，然后标记它们", "分组": "traits" },
+      { "ID": "traits-2", "标签": "两项未标记的角色属性 +1，然后标记它们", "分组": "traits" },
+      { "ID": "traits-3", "标签": "两项未标记的角色属性 +1，然后标记它们", "分组": "traits" },
+      { "ID": "hp-1", "标签": "总生命值 +1", "分组": "hp" },
+      { "ID": "hp-2", "标签": "总生命值 +1", "分组": "hp" },
+      { "ID": "stress-1", "标签": "总压力槽 +1", "分组": "stress" },
+      { "ID": "stress-2", "标签": "总压力槽 +1", "分组": "stress" },
+      { "ID": "experiences", "标签": "选择你的两项经历 +1" },
+      { "ID": "domain-card", "标签": "选择一张等级小于或等于角色等级的领域卡（最高为 10 级）" },
+      { "ID": "subclass", "标签": "升级你的子职并划掉兼任选项" },
+      { "ID": "evasion", "标签": "闪避值 +1" },
+      { "ID": "proficiency-1", "标签": "熟练值 +1（一次性占用两个可选项）", "分组": "proficiency" },
+      { "ID": "proficiency-2", "标签": "熟练值 +1（一次性占用两个可选项）", "分组": "proficiency" },
+      { "ID": "multiclass-1", "标签": "兼职：为角色选择一个额外子职，然后划去该职业中的升级子职业选项和此后所有兼任选项", "分组": "multiclass" },
+      { "ID": "multiclass-2", "标签": "兼职：为角色选择一个额外子职，然后划去该职业中的升级子职业选项和此后所有兼任选项", "分组": "multiclass" }
+    ]
+  },
+  {
+    "ID": "advancement-tier-4-footer",
+    "类型": "readOnlyDisplay",
+    "标签": "T4 完成升级",
+    "内容": "更新你的等级并相应调整你的伤害阈值，选择一张等级小于或等于角色等级的领域卡。"
   }
 ]

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures";
 import { createCardInstance } from "./cardEngine";
-import { createEmptyCharacterData, exportCharacterData, parseCharacterDataJson, updateCharacterValue, updatePlayerImage } from "./characterData";
+import { createEmptyCharacterData, exportCharacterData, parseCharacterDataJson, removePlayerImage, updateCharacterValue, updatePlayerImage } from "./characterData";
 
 describe("Character Data import/export", () => {
   it("exports values plus System Package identity, not the full System Package", () => {
@@ -108,6 +108,22 @@ describe("Character Data import/export", () => {
       dataUrl: "data:image/png;base64,AA==",
     });
     expect(result.ok).toBe(true);
+  });
+
+  it("removes replaced and explicitly removed player images", () => {
+    const original = updatePlayerImage(createEmptyCharacterData(moduleDemoSystemPackage), "portrait", {
+      id: "portrait-old", name: "old.png", mimeType: "image/png", dataUrl: "data:image/png;base64,AA==",
+    });
+    const replaced = updatePlayerImage(original, "portrait", {
+      id: "portrait-new", name: "new.png", mimeType: "image/png", dataUrl: "data:image/png;base64,BB==",
+    });
+
+    expect(replaced.playerImages["portrait-old"]).toBeUndefined();
+    expect(replaced.character.values.portrait).toEqual({ kind: "player-image", imageId: "portrait-new" });
+
+    const removed = removePlayerImage(replaced, "portrait");
+    expect(removed.character.values.portrait).toBeUndefined();
+    expect(removed.playerImages["portrait-new"]).toBeUndefined();
   });
 
   it("rejects hidden Resource Library selection refs in Character Data", () => {

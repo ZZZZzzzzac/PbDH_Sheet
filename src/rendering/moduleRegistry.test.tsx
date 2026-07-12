@@ -1,8 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCardInstance } from "../domain/cardEngine";
-import { createEmptyCharacterData } from "../domain/characterData";
+import { createEmptyCharacterData, updatePlayerImage } from "../domain/characterData";
 import type { SystemPackage } from "../domain/systemPackage";
 import { moduleDemoSystemPackage } from "../test/fixtures";
 import { useRuntimeStore } from "../store/runtimeStore";
@@ -56,7 +56,8 @@ describe("Module Registry rendering", () => {
     expect(screen.getByLabelText("气力")).toHaveValue("3");
     expect(screen.getByText("只读展示模块不会写入 Character Data。这里适合放规则提示、检查清单或静态说明。")).toBeVisible();
     expect(screen.getByAltText("阶段5示例徽记")).toBeVisible();
-    expect(screen.getByRole("button", { name: "上传图片" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "上传头像" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "上传图片" })).not.toBeInTheDocument();
     const freeText = screen.getByLabelText("姓名").closest('[data-module-type="freeText"]');
     expect(freeText).toHaveAttribute("data-module-id", "character-name");
     expect(freeText).toHaveAttribute("data-part", "container");
@@ -124,6 +125,54 @@ describe("Module Registry rendering", () => {
 
     const values = useRuntimeStore.getState().characterData?.character.values;
     expect(values?.vitality).toEqual({ current: 7, max: 10 });
+  });
+
+  it("renders grouped checkbox options as multiple independent inputs with one visible description", () => {
+    const packageWithGroupedOptions: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "conditions" && module.类型 === "checkboxResource"
+        ? {
+            ...module,
+            选项: [
+              { ID: "mark-1", 标签: "共享说明", 分组: "marks" },
+              { ID: "mark-2", 标签: "共享说明", 分组: "marks" },
+            ],
+          }
+        : module),
+    };
+    const result = renderModuleDemo(packageWithGroupedOptions);
+
+    expect(screen.getAllByText("共享说明")).toHaveLength(1);
+    expect(screen.getByLabelText("共享说明 1")).not.toBeChecked();
+    expect(screen.getByLabelText("共享说明 2")).not.toBeChecked();
+    fireEvent.click(screen.getByLabelText("共享说明 1"));
+    expect(screen.getByLabelText("共享说明 1")).toBeChecked();
+    expect(screen.getByLabelText("共享说明 2")).not.toBeChecked();
+    expect(result.container.querySelector('[data-option-group="marks"] [data-part="option-label"]')).toHaveTextContent("共享说明");
+  });
+
+  it("uses the image surface for replacement and provides a separate removal control", () => {
+    const removePlayerImage = vi.fn(async () => {});
+    renderModuleDemo();
+    const current = useRuntimeStore.getState().characterData!;
+    act(() => {
+      useRuntimeStore.setState({
+        characterData: updatePlayerImage(current, "portrait", {
+          id: "portrait-test", name: "portrait.png", mimeType: "image/png", dataUrl: "data:image/png;base64,AA==",
+        }),
+        removePlayerImage,
+      });
+    });
+
+    expect(screen.getByRole("button", { name: "更换头像" })).toBeVisible();
+    expect(screen.getByRole("img", { name: "角色头像" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "移除头像" }));
+    expect(removePlayerImage).toHaveBeenCalledWith("portrait");
+
+    const imageStyles = readFileSync("src/styles/image-field.css", "utf8");
+    expect(imageStyles).toMatch(/\.image\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*100%[^}]*height:\s*100%[^}]*margin:\s*0/s);
+    expect(imageStyles).toMatch(/\.image-preview\s*\{[^}]*position:\s*absolute[^}]*height:\s*100%[^}]*object-fit:\s*contain/s);
+    expect(imageStyles).not.toMatch(/\.image-preview\s*\{[^}]*(?:min-height|max-height):/s);
   });
 
   it("hides text labels and renders placeholders while preserving accessible names", () => {

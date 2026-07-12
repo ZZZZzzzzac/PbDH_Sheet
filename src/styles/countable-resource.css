@@ -1,7 +1,10 @@
 .counter {
   display: flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
+  width: 100%;
   align-items: center;
+  justify-content: space-between;
   gap: 4px;
   padding: 2px 12px;
 }

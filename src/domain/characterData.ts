@@ -162,13 +162,39 @@ export function updateCharacterValue(data: CharacterData, moduleId: string, valu
 }
 
 export function updatePlayerImage(data: CharacterData, moduleId: string, image: PlayerImageData): CharacterData {
+  const previousValue = data.character.values[moduleId];
+  const previousImageId = isPlayerImageValue(previousValue) ? previousValue.imageId : undefined;
+  const playerImages = { ...data.playerImages };
+  if (previousImageId) delete playerImages[previousImageId];
+
   return {
     ...updateCharacterValue(data, moduleId, { kind: "player-image", imageId: image.id }),
     playerImages: {
-      ...data.playerImages,
+      ...playerImages,
       [image.id]: image,
     },
   };
+}
+
+export function removePlayerImage(data: CharacterData, moduleId: string): CharacterData {
+  const value = data.character.values[moduleId];
+  if (!isPlayerImageValue(value)) return data;
+
+  const values = { ...data.character.values };
+  const playerImages = { ...data.playerImages };
+  delete values[moduleId];
+  delete playerImages[value.imageId];
+
+  return {
+    ...data,
+    character: { ...data.character, values },
+    playerImages,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function isPlayerImageValue(value: unknown): value is PlayerImageValue {
+  return typeof value === "object" && value !== null && "kind" in value && (value as PlayerImageValue).kind === "player-image";
 }
 
 export function exportCharacterData(data: CharacterData): string {

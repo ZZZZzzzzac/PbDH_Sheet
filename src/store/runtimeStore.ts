@@ -13,8 +13,10 @@ import {
   createEmptyCharacterData,
   updateCharacterValue,
   updatePlayerImage,
+  removePlayerImage as removePlayerImageData,
   type CharacterData,
   type PlayerImageData,
+  type PlayerImageValue,
   type SheetValue,
 } from "../domain/characterData";
 import { applyDependencyResultToCharacterData, evaluateDependencies } from "../domain/dependencyEngine";
@@ -85,6 +87,7 @@ interface RuntimeState {
   runValidationChecks: () => Promise<void>;
   runPreOutputValidation: () => Promise<ValidationIssue[]>;
   uploadPlayerImage: (moduleId: string, file: File) => Promise<void>;
+  removePlayerImage: (moduleId: string) => Promise<void>;
   importCharacterDataFromText: (text: string) => Promise<void>;
   clearImportMessage: () => void;
 }
@@ -723,6 +726,10 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       return;
     }
 
+    const previousValue = characterData.character.values[moduleId];
+    const previousImageId = isPlayerImageValue(previousValue)
+      ? previousValue.imageId
+      : undefined;
     const imageId = generateId(`${moduleId}-`);
     const dataUrl = await fileToDataUrl(file);
     const image: PlayerImageData = {
@@ -739,6 +746,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
         mimeType: image.mimeType,
         blob: file,
       });
+      if (previousImageId) await runtimeDependencies.storage.deletePlayerImageBlob(previousImageId);
     } catch {
       set({ storageStatus: "error" });
       return;
@@ -750,6 +758,25 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       importNotice: null,
     }));
 
+    scheduleAutosave(
+      () => get().characterData,
+      (status) => set({ storageStatus: status }),
+    );
+  },
+
+  async removePlayerImage(moduleId) {
+    const characterData = get().characterData;
+    const value = characterData?.character.values[moduleId];
+    if (!characterData || !isPlayerImageValue(value)) return;
+
+    try {
+      await runtimeDependencies.storage.deletePlayerImageBlob(value.imageId);
+    } catch {
+      set({ storageStatus: "error" });
+      return;
+    }
+
+    set((state) => ({ characterData: state.characterData ? removePlayerImageData(state.characterData, moduleId) : null }));
     scheduleAutosave(
       () => get().characterData,
       (status) => set({ storageStatus: status }),
@@ -816,4 +843,8 @@ export function configureRuntimeDependencies(dependencies: Partial<RuntimeDepend
 
 export function resetRuntimeDependencies() {
   runtimeDependencies = defaultRuntimeDependencies;
+}
+
+function isPlayerImageValue(value: unknown): value is PlayerImageValue {
+  return typeof value === "object" && value !== null && "kind" in value && (value as PlayerImageValue).kind === "player-image";
 }

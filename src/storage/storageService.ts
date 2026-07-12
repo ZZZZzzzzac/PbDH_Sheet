@@ -55,6 +55,7 @@ export interface StorageService {
   setActiveCharacterSaveId(packageId: string, saveId: string): Promise<void>;
   savePlayerImageBlob(image: StoredPlayerImageBlob): Promise<void>;
   loadPlayerImageBlob(imageId: string): Promise<StoredPlayerImageBlob | null>;
+  deletePlayerImageBlob(imageId: string): Promise<void>;
 }
 
 export class PbDHDatabase extends Dexie {
@@ -226,6 +227,10 @@ export const storageService: StorageService = {
 
   async loadPlayerImageBlob(imageId: string): Promise<StoredPlayerImageBlob | null> {
     return (await db.playerImages.get(imageId)) ?? null;
+  },
+
+  async deletePlayerImageBlob(imageId: string): Promise<void> {
+    await db.playerImages.delete(imageId);
   },
 };
 
