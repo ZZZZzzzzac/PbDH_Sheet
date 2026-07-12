@@ -90,7 +90,7 @@ describe("Daggerheart core System Package", () => {
     const next = applyDependencyResultToCharacterData(data, result);
 
     expect(next.character.values["armor-name"]).toBe(armor.fields.名称);
-    expect(next.character.values["armor-base-major"]).toBe(armor.fields.重伤阈值);
+    expect(next.character.values["armor-base-major"]).toBe(armor.fields.重度阈值);
     expect(next.character.values["armor-description"]).toBe(armor.fields.描述);
     expect(next.character.values["armor-slots"]).toEqual(expect.objectContaining({ current: 0, max: Number(armor.fields.护甲值) }));
   });
@@ -135,7 +135,7 @@ describe("Daggerheart core System Package", () => {
     data = updateCharacterValue(data, "level", "2");
     data = updateCharacterValue(data, "hp", { current: 0, max: Number(druid.fields.初始生命点) });
     data = updateCharacterValue(data, "armor-slots", { current: 0, max: Number(armor.fields.护甲值) });
-    data = updateCharacterValue(data, "major-threshold", String(Number(armor.fields.重伤阈值) + 2));
+    data = updateCharacterValue(data, "major-threshold", String(Number(armor.fields.重度阈值) + 2));
     data = updateCharacterValue(data, "severe-threshold", String(Number(armor.fields.严重阈值) + 2));
     const snapshot = JSON.stringify(data);
 
@@ -180,6 +180,13 @@ describe("Daggerheart core System Package", () => {
     ]));
   });
 
+  it("stores Domain Card level and recall as player-facing display strings", () => {
+    const cards = JSON.parse(domainCardsJson) as Array<Record<string, unknown>>;
+    expect(cards).toHaveLength(189);
+    expect(cards.every((card) => typeof card.等级 === "string" && /^\d+级$/.test(card.等级))).toBe(true);
+    expect(cards.every((card) => typeof card.回想 === "string" && /^\d+⚡$/.test(card.回想))).toBe(true);
+  });
+
   it("declares the complete Counter set with intentional maximum editing", async () => {
     const countables = modules.filter((module) => module.类型 === "countableResource");
 
@@ -220,6 +227,41 @@ describe("Daggerheart core System Package", () => {
     expect(baseCss).toMatch(/\.story-overview \[data-module-type="longText"\] \[data-part="input"\]\s*\{[^}]*flex:\s*1 1 auto[^}]*height:\s*100%/s);
     expect(storyHtml).toContain('<section class="question-layout" aria-label="背景与关系">');
     expect(storyHtml).toContain('<section class="advancement-region" aria-label="升级记录">');
+  });
+
+  it("keeps the desktop character-sheet grid when a narrow print viewport also matches mobile rules", () => {
+    const mobileBreakpoint = baseCss.indexOf("@media (max-width: 800px)");
+    const printBreakpoint = baseCss.lastIndexOf("@media print");
+    const printCss = baseCss.slice(printBreakpoint);
+
+    expect(mobileBreakpoint).toBeGreaterThan(-1);
+    expect(printBreakpoint).toBeGreaterThan(mobileBreakpoint);
+    expect(printCss).toMatch(/\.identity-panel\s*\{[^}]*grid-template-columns:\s*9rem minmax\(0, 1fr\) 8rem/s);
+    expect(printCss).toMatch(/\.upper-stat-layout\s*\{[^}]*grid-template-columns:\s*minmax\(15rem, 0\.9fr\) minmax\(0, 1\.8fr\)/s);
+    expect(printCss).toMatch(/\.sheet-body-layout\s*\{[^}]*grid-template-columns:\s*minmax\(24rem, 1\.15fr\) minmax\(21rem, 1\.05fr\)/s);
+  });
+
+  it("fits its layout inside the framework A4 content box and prints the Card Table on a following A4 page", () => {
+    const shellPrintCss = shellCss.slice(shellCss.lastIndexOf("@media print"));
+
+    expect(shellPrintCss).toMatch(/\.daggerheart-sheet-pane\s*\{[^}]*width:\s*100%[^}]*min-width:\s*0/s);
+    expect(shellPrintCss).not.toContain("zoom:");
+    expect(shellPrintCss).toMatch(/\.daggerheart-card-pane\s*\{[^}]*display:\s*block/s);
+    expect(shellPrintCss).not.toMatch(/break-before|page-break-before/);
+    expect(shellHtml).toContain('data-print-page="true"');
+    expect(shellPrintCss).not.toMatch(/\.daggerheart-card-pane\s*\{[^}]*(?:210mm|297mm|padding:)/s);
+    expect(shellPrintCss).not.toMatch(/\.daggerheart-card-pane\s*\{[^}]*display:\s*none/s);
+  });
+
+  it("starts the story page directly with its content and keeps question answers at two rows", () => {
+    expect(storyHtml).not.toContain("角色设定与升级");
+    expect(storyHtml).not.toContain("story-page-heading");
+    expect(modules.filter((module) => module.ID.includes("-answer-") && module.类型 === "longText")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ID: "background-answer-1", 行数: 2 }),
+        expect.objectContaining({ ID: "connection-answer-1", 行数: 2 }),
+      ]),
+    );
   });
 
   it("mounts each intended Sheet Module once and leaves subclass text to Cards", () => {
@@ -280,7 +322,7 @@ describe("Daggerheart core System Package", () => {
     expect(mainHtml.indexOf('class="picker-field ancestry-field"')).toBeLessThan(mainHtml.indexOf('class="picker-field community-field"'));
     expect(baseCss).toMatch(/\.class-field\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto auto/s);
     expect(mainHtml).toContain('class="equipment-fields weapon-fields"');
-    expect(mainHtml).not.toContain("<h3>主武器</h3>");
+    expect(mainHtml).toContain('<h3 class="equipment-slot-title">主武器</h3>');
     expect(baseCss).toMatch(/data-module-type="resourcePicker"[^}]*font-size:\s*0/s);
     expect(modules).toEqual(expect.arrayContaining([
       expect.objectContaining({ ID: "primary-weapon-name", 占位文本: "主武器" }),
@@ -289,6 +331,14 @@ describe("Daggerheart core System Package", () => {
       expect.objectContaining({ ID: "bag-gold", 标签: "袋" }),
       expect.objectContaining({ ID: "chest-gold", 标签: "箱" }),
     ]));
+  });
+
+  it("adds compact vertical titles without inserting them into field grids", () => {
+    for (const title of ["经历", "物品栏", "金币区", "备用武器"]) {
+      expect(mainHtml).toContain(`<h2 class="section-title">${title}</h2>`);
+    }
+    expect(mainHtml).toContain('<h3 class="equipment-slot-title">副武器</h3>');
+    expect(baseCss).toMatch(/\.sheet-region > \.section-title,\s*\.equipment-slot-title\s*\{[^}]*display:\s*block[^}]*border-bottom:/s);
   });
 
   it("uses aligned compact Pickers, a wider left body column, and a zero-gap vertical inventory", () => {

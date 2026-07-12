@@ -55,10 +55,10 @@ fieldset.container {
 }
 
 .textarea {
-  min-height: 56px;
+  min-height: 48px;
   padding-top: 3px;
   padding-bottom: 3px;
-  line-height: 1.35;
+  line-height: 1.2;
   resize: vertical;
 }
 

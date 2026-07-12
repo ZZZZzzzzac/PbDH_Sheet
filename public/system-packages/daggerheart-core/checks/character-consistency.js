@@ -21,10 +21,10 @@ module.exports = ({ characterData, resourceLibraries }) => {
     });
 
     if (level !== undefined) {
-      compareTextInteger(issues, values["major-threshold"], add(integer(armorEntry.fields["重伤阈值"]), level), {
+      compareTextInteger(issues, values["major-threshold"], add(integer(armorEntry.fields["重度阈值"]), level), {
         code: "MAJOR_THRESHOLD_MISMATCH",
         path: "character.values.major-threshold",
-        label: "重伤阈值",
+        label: "重度阈值",
       });
       compareTextInteger(issues, values["severe-threshold"], add(integer(armorEntry.fields["严重阈值"]), level), {
         code: "SEVERE_THRESHOLD_MISMATCH",

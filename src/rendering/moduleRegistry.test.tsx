@@ -65,7 +65,7 @@ describe("Module Registry rendering", () => {
     const compactModuleStyles = readFileSync("src/styles/modules.css", "utf8");
     expect(compactModuleStyles).toMatch(/\.container\s*\{[^}]*min-height:\s*32px/s);
     expect(compactModuleStyles).toMatch(/\.input\s*\{[^}]*min-height:\s*30px[^}]*font-size:\s*0\.92rem/s);
-    expect(compactModuleStyles).toMatch(/\.textarea\s*\{[^}]*min-height:\s*56px/s);
+    expect(compactModuleStyles).toMatch(/\.textarea\s*\{[^}]*min-height:\s*48px[^}]*line-height:\s*1\.2/s);
   });
 
   it("renders HTML Layout Template content and module slots", () => {

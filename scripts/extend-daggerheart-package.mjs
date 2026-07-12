@@ -41,7 +41,7 @@ for (const config of [
 additions.push(
   picker("pick-armor", "选择护甲", "armor"),
   text("armor-name", "护甲名称"),
-  text("armor-base-major", "基础重伤阈值"),
+  text("armor-base-major", "基础重度阈值"),
   text("armor-base-severe", "基础严重阈值"),
   text("armor-value", "护甲值"),
   longText("armor-description", "护甲描述", 4),
@@ -54,7 +54,7 @@ rules.push({
   条件: { 类型: "always" },
   动作: [
     fillText("armor-name", "名称"),
-    fillText("armor-base-major", "重伤阈值"),
+    fillText("armor-base-major", "重度阈值"),
     fillText("armor-base-severe", "严重阈值"),
     fillText("armor-value", "护甲值"),
     fillText("armor-description", "描述"),

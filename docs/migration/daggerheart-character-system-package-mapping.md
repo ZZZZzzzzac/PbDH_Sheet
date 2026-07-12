@@ -100,7 +100,7 @@
 | `instinct` | `InstinctTextbox` | `freeText` | 直接 | 本能。 |
 | `presence` | `PresenceTextbox` | `freeText` | 直接 | 风度。 |
 | `knowledge` | `KnowledgeTextbox` | `freeText` | 直接 | 知识。 |
-| `major-threshold` | `MajorTextbox` | `freeText` | 直接 | 重伤阈值；自动算术见缺口。 |
+| `major-threshold` | `MajorTextbox` | `freeText` | 直接 | 重度阈值；自动算术见缺口。 |
 | `severe-threshold` | `SevereTextbox` | `freeText` | 直接 | 严重阈值；自动算术见缺口。 |
 
 ### 4.2 经历与职业特性

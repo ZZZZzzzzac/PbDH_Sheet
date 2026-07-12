@@ -68,7 +68,7 @@
   {
     "ID": "major-threshold",
     "类型": "freeText",
-    "标签": "重伤阈值"
+    "标签": "重度阈值"
   },
   {
     "ID": "severe-threshold",
@@ -257,7 +257,7 @@
     "ID": "class-feature",
     "类型": "longText",
     "标签": "职业特性",
-    "行数": 12
+    "行数": 16
   },
   {
     "ID": "experience-1",

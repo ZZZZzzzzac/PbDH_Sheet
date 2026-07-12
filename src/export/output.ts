@@ -238,16 +238,50 @@ body.snapshot-body {
   padding: 0;
 }
 .snapshot-shell .sheet-page,
+.snapshot-shell [data-print-page="true"] {
+  box-sizing: border-box;
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto 16px;
+  padding: 8mm 6mm 10mm;
+  overflow: hidden;
+  background: #ffffff;
+}
+.snapshot-shell [data-print-page="true"] {
+  padding: 4mm;
+}
+.snapshot-shell .sheet-page,
 .snapshot-shell .module-slot,
 .snapshot-shell .container,
-.snapshot-shell .card-table-module,
 .snapshot-shell .play-card {
   break-inside: avoid;
   page-break-inside: avoid;
 }
+.snapshot-shell .play-card {
+  box-shadow: none !important;
+  filter: none !important;
+}
+.snapshot-shell input::placeholder,
+.snapshot-shell textarea::placeholder {
+  color: #d5dadd !important;
+  -webkit-text-fill-color: #d5dadd !important;
+  opacity: 1 !important;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
 @media print {
   @page {
-    margin: 8mm 4mm 10mm;
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  .snapshot-shell input::placeholder,
+  .snapshot-shell textarea::placeholder {
+    color: #d5dadd !important;
+    -webkit-text-fill-color: #d5dadd !important;
+    opacity: 1 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
   .snapshot-shell .card-table-surface {
@@ -260,6 +294,7 @@ body.snapshot-body {
     height: auto !important;
     min-height: 0 !important;
     overflow: visible;
+    border: 0;
   }
   .snapshot-shell .play-card {
     position: relative;
@@ -267,10 +302,26 @@ body.snapshot-body {
     top: auto !important;
     z-index: auto !important;
     transform: none !important;
+    box-shadow: none !important;
+    filter: none !important;
   }
   .snapshot-shell .sheet-page,
-  .sheet-page {
+  .snapshot-shell [data-print-page="true"],
+  .sheet-page,
+  [data-print-page="true"] {
+    box-sizing: border-box;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0;
+    padding: 8mm 6mm 10mm;
+    overflow: hidden;
     break-after: page;
+  }
+  .snapshot-shell [data-print-page="true"],
+  [data-print-page="true"] {
+    padding: 4mm;
+    break-after: auto;
+    page-break-after: auto;
   }
 }`;
 }

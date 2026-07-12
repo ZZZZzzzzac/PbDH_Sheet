@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createEmptyCharacterData, exportCharacterData, updateCharacterValue } from "../domain/characterData";
 import { minimalSystemPackage } from "../test/fixtures";
+import printCss from "../styles/print.css?raw";
 import { buildReadonlyHtmlSnapshot, extractEmbeddedCharacterJson, parseCharacterDataText, waitForVisibleImages } from "./output";
 
 describe("HTML snapshot export/import", () => {
@@ -61,12 +62,35 @@ describe("HTML snapshot export/import", () => {
 
     expect(html).toContain(".snapshot-shell .card-table-surface");
     expect(html).toContain("@page");
-    expect(html).toContain("margin: 8mm 4mm 10mm");
+    expect(html).toContain("size: A4 portrait");
+    expect(html).toContain("width: 210mm");
+    expect(html).toContain("min-height: 297mm");
     expect(html).toContain("grid-template-columns: repeat(auto-fill, minmax(0, var(--play-card-width)))");
     expect(html).toContain("gap: 4px");
     expect(html).toContain("padding: 0");
+    expect(html).toContain("border: 0");
     expect(html).toContain("left: auto !important");
     expect(html).toContain("transform: none !important");
+    expect(html).toContain("box-shadow: none !important");
+    expect(html).toContain("padding: 4mm");
+  });
+
+  it("uses the same A4 page box for Export Preview and browser printing", () => {
+    expect(printCss).toMatch(/\.print-mode \.sheet-page,\s*\.print-mode \[data-print-page="true"\]\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*210mm[^}]*min-height:\s*297mm[^}]*padding:\s*8mm 6mm 10mm/s);
+    expect(printCss).toMatch(/@page\s*\{[^}]*size:\s*A4 portrait[^}]*margin:\s*0/s);
+    expect(printCss).not.toContain("zoom:");
+    expect(printCss).toMatch(/\[data-print-page="true"\]\s*\{[^}]*break-after:\s*auto[^}]*page-break-after:\s*auto/s);
+    expect(printCss).toMatch(/\.print-mode input::placeholder,\s*\.print-mode textarea::placeholder\s*\{[^}]*color:\s*#d5dadd !important[^}]*-webkit-text-fill-color:\s*#d5dadd !important[^}]*print-color-adjust:\s*exact/s);
+  });
+
+  it("renders empty field placeholder text in light gray in HTML snapshots", () => {
+    const html = buildReadonlyHtmlSnapshot(createEmptyCharacterData(minimalSystemPackage));
+
+    expect(html).toContain(".snapshot-shell input::placeholder");
+    expect(html).toContain(".snapshot-shell textarea::placeholder");
+    expect(html).toContain("color: #d5dadd !important");
+    expect(html).toContain("-webkit-text-fill-color: #d5dadd !important");
+    expect(html).toContain("print-color-adjust: exact");
   });
 
   it("imports HTML snapshots through the Character JSON compatibility path", () => {

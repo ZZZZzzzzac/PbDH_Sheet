@@ -1024,7 +1024,7 @@
         "目标模块ID": "armor-base-major",
         "内容": {
           "类型": "selectedResourceField",
-          "字段": "重伤阈值"
+          "字段": "重度阈值"
         }
       },
       {

@@ -1,100 +1,18 @@
-# PbDH Sheet Framework 未实现功能清单
+# Daggerheart-Core 系统包
+- [ ] 更多validation规则：
+  - [ ] 升级校验
+  - [ ] 卡片数量校验
+  - [ ] 
+  
+# 系统框架
+- [ ] markdown渲染
+- [x] 打印问题
+- [ ] 美观、主题、皮肤
+- [ ] 混血
+- [ ] countable 标记模式
+- [ ] 打印成熟后取出预览界面
 
-更新时间：2026-07-11
-判定依据：`docs/PRD.md`、`CONTEXT.md`、`docs/adr/` 与当前 `src/`、测试及示例 System Packages。
-
-本文件只记录尚未实现或尚未达到 PRD 验收边界的功能。已经完成的项目骨架、zip Loader、基础 Sheet Modules、Character Saves、Dependency Logic v1、Validation Scripts、自由桌面 Card Engine、导入导出/打印和 Character Creation Guide 不再重复列入。
-
-## 第一版 PRD 缺口
-
-### System Package 与 Author 工作流
-
-- [x] 支持目录包导入。
-  - 当前只支持 zip 上传和 Virtual File System 解包。
-  - 浏览器支持 File System Access API 时，应允许 Author 选择目录并归一化为同一 System Package 输入。
-  - 目录包与 zip 必须经过同一 Loader、Validator 和缓存边界。
-
-- [x] 完成接近实时的 Author Preview 工作流。
-  - 当前已有“上传 System Package 后立即渲染并显示校验错误”的基础预览。
-  - 尚缺目录重新读取、快速刷新或等价的低摩擦反馈路径；Author 修改文件后仍需重新打包并上传。
-  - 不扩展成低代码编辑器或可视化布局编辑器。
-
-### 页面、资源库与 Player 体验
-
-- [x] 增加页面切换/翻页交互。
-  - 当前 Sheet Renderer 会把所有运行时可见页面纵向渲染出来，没有 active page 或 Player 翻页入口。
-  - 页面切换只能影响显示方式，不能改变 Character Data、Dependency Logic 或 Validation Checks。
-
-- [x] 支持页面“是否打印”声明。
-  - 当前导出预览和打印使用全部可见页面。
-  - PRD 已将该能力标为低优先级；实现时需保持默认全量打印的兼容行为。
-  - 与打印相关的长期问题统一参考 GitHub #73。
-
-- [x] 为 Resource Library Browser 增加关键词搜索。
-  - 当前已有多字段精确筛选和排序，但没有自由文本搜索框。
-  - 搜索应覆盖 Author 声明为可搜索/可见的文本字段，并可与现有多条件筛选、排序同时使用。
-
-- [x] 增加 Card 详情查看。
-  - 当前卡牌可显示图片或文字、拖拽、整理、删除和切换状态，但没有独立的大图/长描述查看面。
-  - 需要兼顾图片卡与文字卡、图片失败 fallback、键盘和移动端操作。
-  - 卡牌相关长期问题统一参考 GitHub #74。
-
-### System Package Validator
-
-- [x] 补齐第一版结构校验覆盖。
-  - 检查重复 page ID，以及其他目前只构建 Map、未显式报告重复的稳定 ID。
-  - 对 Card Definition 强制检查 `ID`、`名称`、`描述`；普通 Resource Library entry 仍只要求稳定 `ID`，避免把通用资源误当卡牌。
-  - 检查 Dependency Logic 引用的资源字段是否在对应 Resource Library 中存在或可解释。
-  - 在导入阶段检查 Validation Script 的基础语法；运行时异常继续由 Validation Runner 转为 issue。
-
-- [x] 完善 Validator 诊断层级。
-  - 当前已有 `level`、`code`、`text` 和 `path`。
-  - 使用统一的 `location`、`entities` 和 `evidence` 诊断上下文；不生成推测性修复建议，也不维护 Author/AI 两套诊断。
-  - 为每类新增诊断补合法/非法包测试和机器可读错误码说明。
-
-### Author 文档与 AI 协作
-
-- [x] 补齐完整 Author 文档集。
-  - System Package 总体结构与 manifest 字段。
-  - 每种 Sheet Module 的完整字段说明、稳定 parts/classes 和示例。
-  - Card Definition/Card Table、Validation Script、Character Data、导入导出与错误码说明。
-  - 最小包、完整包、反例和常见修复流程。
-
-- [x] 提供 AI 生成 System Package 的提示词模板与协作工作流。
-  - 明确输入材料、生成顺序、Validator 反馈回路和禁止边界。
-  - 示例应使用 `CONTEXT.md` 的正式术语，并链接对应 ADR 和接口文档。
-
-## Future Plan：不是第一版阻塞项
-
-以下功能在 PRD 中已明确推迟，不应混入第一版收尾：
-
-- [ ] 双页显示模式。
-- [ ] 完整卡牌编辑器。
-- [ ] 多 System Package 管理器。
-- [ ] System Package 在线发布、分享或市场。
-- [ ] Validation Check“一键应用建议值”。
-- [ ] 卡牌翻面、横置/竖置、缩放编辑、叠放和多种指示物。
-- [ ] Questionnaire Character Creation。
-- [ ] Overlay Layout 或其他第二种布局 adapter。
-- [ ] 云同步、账号、多人实时协作和跨系统包角色迁移。
-
-## 已确认不实施
-
-- PWA、Web App 安装入口与离线应用壳。
-  - 产品主场景是部署在服务器上供 Player 在线访问的 HTTPS 网站。
-  - 小概率离线使用不足以抵消 Service Worker 缓存、版本更新和浏览器验收成本。
-  - IndexedDB 中的 System Package cache、Character Saves 和本地文件导入继续保留；它们不依赖 PWA。
-  - 如果未来出现明确且持续的离线启动或安装需求，再重新立项评估，不作为当前路线图项目。
-
-## 已被架构决策替代，不应作为待办
-
-- PRD 旧 User Stories 中“配置/宝库/资源库三个物理卡牌区域”已被 ADR-0007 的自由桌面模型替代。`configured`、`vault` 等是 Card Instance 状态，不是物理容器。
-- 卡牌翻面、横置和数字指示物虽然仍出现在旧 Player User Story 中，但 Implementation Decisions 与 ADR-0007 已将其移到 Future Plan。
-- Flow Layout 已被 ADR-0014 的 HTML Layout Template 替代，不需要兼容或继续扩展。
-- Character Creation Guide 已按 ADR-0015 收敛为线性聚光灯说明，不增加分支、完成条件、自动填充或规则动作。
-
-## 建议实施顺序
-
-1. Validator 结构覆盖与诊断契约。
-2. Author 文档和 AI 协作工作流。
-3. 目录包与快速 Author Preview。
+# 卡牌系统
+- [ ] 卡牌的旋转/横置
+- [ ] 卡牌翻面，一个卡牌对应两个card definition
+- [ ] 卡牌放置指示物、骰子

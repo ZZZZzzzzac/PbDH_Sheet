@@ -77,6 +77,14 @@
   }
 
   .daggerheart-card-pane {
+    display: block;
+  }
+
+  .daggerheart-card-pane > .card-picker-grid {
     display: none;
+  }
+
+  .daggerheart-card-pane > [data-module-type="cardTable"] {
+    min-height: 0;
   }
 }
