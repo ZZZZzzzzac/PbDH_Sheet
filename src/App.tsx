@@ -17,7 +17,7 @@ import { printablePages } from "./rendering/pagePresentation";
 import { GuideSpotlight } from "./rendering/GuideSpotlight";
 import { useRuntimeStore } from "./store/runtimeStore";
 
-type OutputKind = "json" | "html" | "print";
+type OutputKind = "json" | "html" | "pdf" | "print";
 
 function downloadText(text: string, fileName: string, type: string) {
   const blob = new Blob([text], { type });
@@ -126,6 +126,7 @@ export default function App() {
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
   const [pendingOutput, setPendingOutput] = useState<OutputKind | null>(null);
   const [printMode, setPrintMode] = useState(false);
+  const [pdfExporting, setPdfExporting] = useState(false);
   const [guideSession, setGuideSession] = useState<GuideSession | null>(null);
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
   const characterData = useRuntimeStore((state) => state.characterData);
@@ -197,8 +198,27 @@ export default function App() {
     }
 
     if (!(await preparePrintableContent())) return;
-    await waitForVisibleImages(document.querySelector(".sheet-tool") ?? document);
-    window.print();
+    const printableRoot = document.querySelector(".sheet-tool");
+    if (!printableRoot) return;
+
+    if (kind === "print") {
+      await waitForVisibleImages(printableRoot);
+      window.print();
+      return;
+    }
+
+    setPdfExporting(true);
+    try {
+      await waitForVisibleImages(printableRoot);
+      const { exportSheetPagesToPdf } = await import("./export/pageImagePdf");
+      await exportSheetPagesToPdf(printableRoot, `${baseName}.pdf`);
+      useRuntimeStore.setState({ importError: null, importNotice: "PDF 已按当前页面快照导出。" });
+      setPrintMode(false);
+    } catch (error) {
+      useRuntimeStore.setState({ importError: `PDF 导出失败：${error instanceof Error ? error.message : "未知错误"}` });
+    } finally {
+      setPdfExporting(false);
+    }
   };
 
   const beginOutput = async (kind: OutputKind) => {
@@ -460,9 +480,13 @@ export default function App() {
               <span className="menu-trigger-text">导出</span>
             </button>
             <div className="menu-panel menu-panel-right" role="menu">
-              <button className="menu-item" type="button" onClick={() => void beginOutput("print")} aria-label="浏览器打印" disabled={!characterData}>
+              <button className="menu-item" type="button" onClick={() => void beginOutput("pdf")} aria-label="导出页面快照 PDF" disabled={!characterData || pdfExporting}>
+                <Download aria-hidden="true" size={16} />
+                <span>导出 PDF</span>
+              </button>
+              <button className="menu-item" type="button" onClick={() => void beginOutput("print")} aria-label="打开浏览器打印 PDF" disabled={!characterData || pdfExporting}>
                 <Printer aria-hidden="true" size={16} />
-                <span>打印</span>
+                <span>打印 PDF</span>
               </button>
               <button
                 className="menu-item"
@@ -513,13 +537,17 @@ export default function App() {
 
       {printMode ? (
         <section className="print-preview-bar" aria-label="导出预览">
-          <span>导出预览</span>
+          <span>{pdfExporting ? "正在生成页面图片…" : "导出预览"}</span>
           <button className="icon-button secondary-button" type="button" onClick={() => setPrintMode(false)} aria-label="退出导出预览">
             <span>退出</span>
           </button>
-          <button className="icon-button" type="button" onClick={() => void beginOutput("print")} aria-label="从预览打印">
+          <button className="icon-button" type="button" onClick={() => void beginOutput("pdf")} aria-label="从预览导出页面快照 PDF" disabled={pdfExporting}>
+            <Download aria-hidden="true" size={18} />
+            <span>导出 PDF</span>
+          </button>
+          <button className="icon-button" type="button" onClick={() => void beginOutput("print")} aria-label="从预览打开浏览器打印 PDF" disabled={pdfExporting}>
             <Printer aria-hidden="true" size={18} />
-            <span>打印</span>
+            <span>打印 PDF</span>
           </button>
         </section>
       ) : null}

@@ -18,7 +18,8 @@
     <div class="defense-summary">
       <pb-module id="evasion"></pb-module>
       <pb-module id="armor-value"></pb-module>
-      <pb-module id="armor-slots"></pb-module>
+      <pb-module id="major-threshold"></pb-module>
+      <pb-module id="severe-threshold"></pb-module>
     </div>
     <div class="trait-summary">
       <pb-module id="agility"></pb-module>
@@ -31,26 +32,18 @@
   </section>
 
   <div class="sheet-body-layout">
-    <div class="sheet-left-column">
+    <div class="sheet-left-column sheet-main-left">
       <section class="sheet-region resource-region" aria-label="生命压力与阈值">
-        <h2>生命、压力与阈值</h2>
-        <div class="threshold-row">
-          <pb-module id="major-threshold"></pb-module>
-          <pb-module id="severe-threshold"></pb-module>
-        </div>
         <div class="resource-row">
           <pb-module id="hp"></pb-module>
           <pb-module id="stress"></pb-module>
+          <pb-module id="armor-slots"></pb-module>
+          <pb-module id="hope"></pb-module>
         </div>
-      </section>
-
-      <section class="sheet-region hope-region" aria-label="希望">
-        <div class="hope-resource"><pb-module id="hope"></pb-module></div>
         <pb-module id="class-hope-feature"></pb-module>
       </section>
 
       <section class="sheet-region experience-region" aria-label="经历">
-        <h2>经历</h2>
         <div class="experience-list">
           <div><pb-module id="experience-1"></pb-module><pb-module id="experience-modifier-1"></pb-module></div>
           <div><pb-module id="experience-2"></pb-module><pb-module id="experience-modifier-2"></pb-module></div>
@@ -60,22 +53,13 @@
         </div>
       </section>
 
-      <section class="sheet-region currency-region" aria-label="金币">
-        <h2>金币</h2>
-        <div class="currency-row">
-          <pb-module id="handful-gold"></pb-module>
-          <pb-module id="bag-gold"></pb-module>
-          <pb-module id="chest-gold"></pb-module>
-        </div>
-      </section>
-
       <section class="sheet-region class-feature-region" aria-label="职业特性">
-        <h2>职业特性</h2>
         <pb-module id="class-feature"></pb-module>
       </section>
+
     </div>
 
-    <div class="sheet-right-column">
+    <div class="sheet-right-column sheet-main-right">
       <section class="sheet-region equipment-region" aria-label="装备">
         <div class="region-heading-row">
           <h2>装备</h2>
@@ -116,20 +100,25 @@
       </section>
 
       <section class="sheet-region inventory-region" aria-label="背包与备用武器">
-        <h2>背包</h2>
-        <div class="item-list">
-          <article><pb-module id="item-1"></pb-module><pb-module id="pick-item-1"></pb-module></article>
-          <article><pb-module id="item-2"></pb-module><pb-module id="pick-item-2"></pb-module></article>
-          <article><pb-module id="item-3"></pb-module><pb-module id="pick-item-3"></pb-module></article>
-          <article><pb-module id="item-4"></pb-module><pb-module id="pick-item-4"></pb-module></article>
-          <article><pb-module id="item-5"></pb-module><pb-module id="pick-item-5"></pb-module></article>
-        </div>
+      <div class="item-list">
+        <article><pb-module id="item-1"></pb-module><pb-module id="pick-item-1"></pb-module></article>
+        <article><pb-module id="item-2"></pb-module><pb-module id="pick-item-2"></pb-module></article>
+        <article><pb-module id="item-3"></pb-module><pb-module id="pick-item-3"></pb-module></article>
+        <article><pb-module id="item-4"></pb-module><pb-module id="pick-item-4"></pb-module></article>
+        <article><pb-module id="item-5"></pb-module><pb-module id="pick-item-5"></pb-module></article>
+      </div>
 
-        <div class="backup-weapons">
+      <div class="currency-row" aria-label="金币">
+        <pb-module id="handful-gold"></pb-module>
+        <pb-module id="bag-gold"></pb-module>
+        <pb-module id="chest-gold"></pb-module>
+      </div>
+
+      <div class="backup-weapons">
           <article class="equipment-slot">
             <div class="equipment-grid">
               <div class="equipment-fields backup-weapon-fields">
-                <pb-module id="backup-weapon-1-name"></pb-module><pb-module id="pick-backup-weapon-1"></pb-module><pb-module id="backup-weapon-1-category"></pb-module>
+                <pb-module id="backup-weapon-1-name"></pb-module><pb-module id="pick-backup-weapon-1"></pb-module>
                 <pb-module id="backup-weapon-1-stat"></pb-module><pb-module id="backup-weapon-1-range"></pb-module>
                 <pb-module id="backup-weapon-1-damage"></pb-module><pb-module id="backup-weapon-1-damage-type"></pb-module>
                 <pb-module id="backup-weapon-1-hands"></pb-module>
@@ -141,7 +130,7 @@
           <article class="equipment-slot">
             <div class="equipment-grid">
               <div class="equipment-fields backup-weapon-fields">
-                <pb-module id="backup-weapon-2-name"></pb-module><pb-module id="pick-backup-weapon-2"></pb-module><pb-module id="backup-weapon-2-category"></pb-module>
+                <pb-module id="backup-weapon-2-name"></pb-module><pb-module id="pick-backup-weapon-2"></pb-module>
                 <pb-module id="backup-weapon-2-stat"></pb-module><pb-module id="backup-weapon-2-range"></pb-module>
                 <pb-module id="backup-weapon-2-damage"></pb-module><pb-module id="backup-weapon-2-damage-type"></pb-module>
                 <pb-module id="backup-weapon-2-hands"></pb-module>
@@ -149,7 +138,7 @@
               <pb-module id="backup-weapon-2-description"></pb-module>
             </div>
           </article>
-        </div>
+      </div>
       </section>
     </div>
   </div>

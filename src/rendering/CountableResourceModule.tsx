@@ -37,14 +37,33 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
         <button className="button stepper" data-part="decrement-button" type="button" onClick={() => setCurrent(current - step)} disabled={current <= min} aria-label={`${module.标签}减少`}>
           -
         </button>
-        <input
-          className="input number-input"
-          data-part="input"
-          inputMode="numeric"
-          aria-label={module.标签}
-          value={current}
-          onChange={(event) => setCurrent(parseInteger(event.target.value, fallback.current))}
-        />
+        <span className="counter-value-group" data-part="value-group">
+          <input
+            className="input number-input"
+            data-part="input"
+            inputMode="numeric"
+            aria-label={module.标签}
+            value={current}
+            onChange={(event) => setCurrent(parseInteger(event.target.value, fallback.current))}
+          />
+          {max !== null ? (
+            <span className="value" data-part="maximum">
+              /{" "}
+              {editableMax ? (
+                <input
+                  className="input max-input"
+                  data-part="maximum-input"
+                  inputMode="numeric"
+                  aria-label={`${module.标签}上限`}
+                  value={max}
+                  onChange={(event) => setMax(parseIntegerNullable(event.target.value))}
+                />
+              ) : (
+                max
+              )}
+            </span>
+          ) : null}
+        </span>
         <button
           className="button stepper"
           data-part="increment-button"
@@ -55,23 +74,6 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
         >
           +
         </button>
-        {max !== null ? (
-          <span className="value" data-part="maximum">
-            /{" "}
-            {editableMax ? (
-              <input
-                className="input max-input"
-                data-part="maximum-input"
-                inputMode="numeric"
-                aria-label={`${module.标签}上限`}
-                value={max}
-                onChange={(event) => setMax(parseIntegerNullable(event.target.value))}
-              />
-            ) : (
-              max
-            )}
-          </span>
-        ) : null}
       </div>
     </div>
   );

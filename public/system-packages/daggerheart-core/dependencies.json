@@ -796,10 +796,6 @@
       },
       {
         "类型": "module",
-        "模块ID": "backup-weapon-1-category"
-      },
-      {
-        "类型": "module",
         "模块ID": "backup-weapon-1-description"
       }
     ],
@@ -861,14 +857,6 @@
       },
       {
         "类型": "fillText",
-        "目标模块ID": "backup-weapon-1-category",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "武器类别"
-        }
-      },
-      {
-        "类型": "fillText",
         "目标模块ID": "backup-weapon-1-description",
         "内容": {
           "类型": "selectedResourceField",
@@ -909,10 +897,6 @@
       {
         "类型": "module",
         "模块ID": "backup-weapon-2-hands"
-      },
-      {
-        "类型": "module",
-        "模块ID": "backup-weapon-2-category"
       },
       {
         "类型": "module",
@@ -973,14 +957,6 @@
         "内容": {
           "类型": "selectedResourceField",
           "字段": "负荷"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "backup-weapon-2-category",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "武器类别"
         }
       },
       {

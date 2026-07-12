@@ -62,6 +62,10 @@ describe("Module Registry rendering", () => {
     expect(freeText).toHaveAttribute("data-module-id", "character-name");
     expect(freeText).toHaveAttribute("data-part", "container");
     expect(screen.getByLabelText("姓名")).toHaveAttribute("data-part", "input");
+    const compactModuleStyles = readFileSync("src/styles/modules.css", "utf8");
+    expect(compactModuleStyles).toMatch(/\.container\s*\{[^}]*min-height:\s*32px/s);
+    expect(compactModuleStyles).toMatch(/\.input\s*\{[^}]*min-height:\s*30px[^}]*font-size:\s*0\.92rem/s);
+    expect(compactModuleStyles).toMatch(/\.textarea\s*\{[^}]*min-height:\s*56px/s);
   });
 
   it("renders HTML Layout Template content and module slots", () => {
@@ -110,7 +114,7 @@ describe("Module Registry rendering", () => {
   });
 
   it("lets the player edit the countable resource max when configured", () => {
-    renderModuleDemo();
+    const result = renderModuleDemo();
 
     const maxInput = screen.getByLabelText("气力上限");
     expect(maxInput).toHaveValue("6");
@@ -125,6 +129,13 @@ describe("Module Registry rendering", () => {
 
     const values = useRuntimeStore.getState().characterData?.character.values;
     expect(values?.vitality).toEqual({ current: 7, max: 10 });
+    const counter = result.container.querySelector('[data-module-id="vitality"] [data-part="counter"]');
+    expect([...counter!.children].map((child) => child.getAttribute("data-part"))).toEqual([
+      "decrement-button",
+      "value-group",
+      "increment-button",
+    ]);
+    expect(counter?.querySelector('[data-part="value-group"]')).toContainElement(maxInput);
   });
 
   it("renders grouped checkbox options as multiple independent inputs with one visible description", () => {

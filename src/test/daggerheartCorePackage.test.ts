@@ -16,14 +16,12 @@ import shellHtml from "../../public/system-packages/daggerheart-core/layouts/she
 import storyHtml from "../../public/system-packages/daggerheart-core/layouts/character-story.html?raw";
 import ancestriesJson from "../../public/system-packages/daggerheart-core/resources/ancestries.json?raw";
 import armorJson from "../../public/system-packages/daggerheart-core/resources/armor.json?raw";
-import backupWeaponsJson from "../../public/system-packages/daggerheart-core/resources/backup-weapons.json?raw";
 import beastFormsJson from "../../public/system-packages/daggerheart-core/resources/beast-forms.json?raw";
 import classesJson from "../../public/system-packages/daggerheart-core/resources/classes.json?raw";
 import communitiesJson from "../../public/system-packages/daggerheart-core/resources/communities.json?raw";
 import domainCardsJson from "../../public/system-packages/daggerheart-core/resources/domain-cards.json?raw";
 import lootJson from "../../public/system-packages/daggerheart-core/resources/loot.json?raw";
-import primaryWeaponsJson from "../../public/system-packages/daggerheart-core/resources/primary-weapons.json?raw";
-import secondaryWeaponsJson from "../../public/system-packages/daggerheart-core/resources/secondary-weapons.json?raw";
+import weaponsJson from "../../public/system-packages/daggerheart-core/resources/weapons.json?raw";
 import subclassesJson from "../../public/system-packages/daggerheart-core/resources/subclasses.json?raw";
 import consistencyCheck from "../../public/system-packages/daggerheart-core/checks/character-consistency.js?raw";
 
@@ -40,9 +38,9 @@ describe("Daggerheart core System Package", () => {
       "character-story",
     ]);
     expect(result.package.shell?.htmlContent).toContain("<pb-page-outlet></pb-page-outlet>");
-    expect(result.package.modules).toHaveLength(119);
-    expect(new Set(result.package.modules.map((module) => module.ID)).size).toBe(119);
-    expect(result.package.resourceLibraries).toHaveLength(11);
+    expect(result.package.modules).toHaveLength(117);
+    expect(new Set(result.package.modules.map((module) => module.ID)).size).toBe(117);
+    expect(result.package.resourceLibraries).toHaveLength(9);
     expect(result.issues.filter((issue) => issue.level === "fatal" || issue.level === "error")).toEqual([]);
   });
 
@@ -205,7 +203,7 @@ describe("Daggerheart core System Package", () => {
     expect(countables.find((module) => module.ID === "handful-gold")).toEqual(expect.objectContaining({ 默认值: 1, 最大值: 9 }));
     expect(modules.find((module) => module.ID === "level")).toEqual(expect.objectContaining({ 类型: "freeText", 默认值: "1" }));
     expect(baseCss).toMatch(/\.level-field \[data-module-type="freeText"\]\s*\{[^}]*height:\s*100%/s);
-    expect(baseCss).toMatch(/\.level-field \[data-part="input"\]\s*\{[^}]*font-size:\s*clamp\(1\.75rem,\s*2\.5vw,\s*2\.4rem\)/s);
+    expect(baseCss).toMatch(/\.level-field \[data-part="input"\]\s*\{[^}]*font-size:\s*clamp\(1\.4rem,\s*2vw,\s*1\.9rem\)/s);
   });
 
   it("composes the two-page layout into stable semantic regions without absolute positioning", () => {
@@ -214,12 +212,12 @@ describe("Daggerheart core System Package", () => {
     expect(mainHtml).toContain('<header class="identity-panel" aria-label="角色身份">');
     expect(mainHtml).toContain('<section class="upper-stat-layout" aria-label="防御与属性">');
     expect(mainHtml).toContain('<div class="sheet-body-layout">');
-    expect(mainHtml).toContain('<section class="sheet-region hope-region" aria-label="希望">');
     expect(mainHtml).toContain('<section class="sheet-region equipment-region" aria-label="装备">');
     expect(mainHtml).not.toContain('id="subclass-name"');
     expect(storyHtml).toContain('<section class="story-overview" aria-label="角色设定概览">');
-    expect(baseCss).toMatch(/\.story-overview\s*\{[^}]*align-items:\s*start/s);
+    expect(baseCss).toMatch(/\.story-overview\s*\{[^}]*align-items:\s*stretch/s);
     expect(baseCss).toMatch(/\.story-overview\s*>\s*\[data-module-slot-id\]\s*\{[^}]*height:\s*100%/s);
+    expect(baseCss).toMatch(/\.story-overview \[data-module-type="longText"\] \[data-part="input"\]\s*\{[^}]*flex:\s*1 1 auto[^}]*height:\s*100%/s);
     expect(storyHtml).toContain('<section class="question-layout" aria-label="背景与关系">');
     expect(storyHtml).toContain('<section class="advancement-region" aria-label="升级记录">');
   });
@@ -295,10 +293,45 @@ describe("Daggerheart core System Package", () => {
 
   it("uses aligned compact Pickers, a wider left body column, and a zero-gap vertical inventory", () => {
     expect(baseCss).toMatch(/data-module-type="resourcePicker"[^}]*align-self:\s*center/s);
-    expect(baseCss).toMatch(/data-part="button"[^}]*height:\s*2rem/s);
-    expect(baseCss).toContain("grid-template-columns: minmax(20rem, 0.95fr) minmax(0, 1.25fr)");
+    expect(baseCss).toMatch(/data-part="button"[^}]*height:\s*1\.65rem/s);
+    expect(baseCss).toContain("grid-template-columns: minmax(24rem, 1.15fr) minmax(21rem, 1.05fr)");
     expect(baseCss).toMatch(/\.item-list\s*\{[^}]*grid-template-columns:\s*1fr[^}]*gap:\s*0[^}]*margin-top:\s*0/s);
     expect(baseCss).toMatch(/\.item-list article\s*\{[^}]*gap:\s*0[^}]*margin:\s*0[^}]*padding:\s*0/s);
+  });
+
+  it("repackages main-page resources, equipment, experiences, and inventory into aligned body rows", () => {
+    const upperStart = mainHtml.indexOf('class="upper-stat-layout"');
+    const bodyStart = mainHtml.indexOf('class="sheet-body-layout"');
+    expect(mainHtml.indexOf('id="major-threshold"', upperStart)).toBeLessThan(bodyStart);
+    expect(mainHtml.indexOf('id="severe-threshold"', upperStart)).toBeLessThan(bodyStart);
+    expect(mainHtml.indexOf('id="armor-slots"')).toBeGreaterThan(bodyStart);
+
+    const resourceStart = mainHtml.indexOf('class="sheet-region resource-region"');
+    const classFeatureStart = mainHtml.indexOf('class="sheet-region class-feature-region"');
+    for (const id of ["hp", "stress", "armor-slots", "hope", "class-hope-feature"]) {
+      const position = mainHtml.indexOf(`id="${id}"`, resourceStart);
+      expect(position).toBeGreaterThan(resourceStart);
+      expect(position).toBeLessThan(classFeatureStart);
+    }
+
+    const experienceStart = mainHtml.indexOf('class="sheet-region experience-region"');
+    const classFeatureStartAfterExperience = mainHtml.indexOf('class="sheet-region class-feature-region"', experienceStart);
+    const rightColumnStart = mainHtml.indexOf('class="sheet-right-column sheet-main-right"');
+    const inventoryStart = mainHtml.indexOf('class="sheet-region inventory-region"');
+    const currencyStart = mainHtml.indexOf('class="currency-row"', inventoryStart);
+    const backupStart = mainHtml.indexOf('class="backup-weapons"', inventoryStart);
+    expect(classFeatureStartAfterExperience).toBeGreaterThan(experienceStart);
+    expect(classFeatureStartAfterExperience).toBeLessThan(rightColumnStart);
+    expect(inventoryStart).toBeGreaterThan(rightColumnStart);
+    expect(currencyStart).toBeGreaterThan(inventoryStart);
+    expect(backupStart).toBeGreaterThan(currencyStart);
+
+    expect(baseCss).toMatch(/\.weapon-fields\s*\{[^}]*3\.5em 3\.5em 4\.5em 3\.5em 3\.5em/s);
+    expect(baseCss).toMatch(/\.backup-weapon-fields\s*\{[^}]*3\.5em 3\.5em 4\.5em 3\.5em 3\.5em/s);
+    expect(modules).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ID: "class-hope-feature", 类型: "longText", 行数: 2 }),
+      expect.objectContaining({ ID: "class-feature", 类型: "longText", 行数: 12 }),
+    ]));
   });
 
   it("provides placeholders for every compact equipment value field", () => {
@@ -308,7 +341,6 @@ describe("Daggerheart core System Package", () => {
       "primary-weapon-damage": "伤害",
       "primary-weapon-damage-type": "类型",
       "primary-weapon-hands": "负荷",
-      "backup-weapon-1-category": "武器类别",
       "armor-base-major": "阈值",
       "armor-base-severe": "严重阈值",
     };
@@ -318,25 +350,40 @@ describe("Daggerheart core System Package", () => {
     }
   });
 
-  it("uses 负荷 as the canonical weapon load field across resources and dependencies", () => {
-    const weaponEntries = [primaryWeaponsJson, secondaryWeaponsJson, backupWeaponsJson]
-      .flatMap((raw) => JSON.parse(raw) as Array<Record<string, unknown>>);
+  it("uses one filtered Weapon Library without duplicate category fields", () => {
+    const weaponEntries = JSON.parse(weaponsJson) as Array<Record<string, unknown>>;
 
     expect(weaponEntries.every((entry) => "伤害类型" in entry && "负荷" in entry)).toBe(true);
+    expect(new Set(weaponEntries.map((entry) => entry.ID)).size).toBe(weaponEntries.length);
+    expect(new Set(weaponEntries.map((entry) => entry.类型))).toEqual(new Set(["主武器", "副武器"]));
     expect(weaponEntries.every((entry) => !("双手" in entry))).toBe(true);
+    expect(weaponEntries.every((entry) => !("武器类别" in entry))).toBe(true);
+    expect(manifest.resourceLibraries).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ID: "weapons", 路径: "resources/weapons.json" }),
+    ]));
+    expect(manifest.resourceLibraries.some((library) => ["primary-weapons", "secondary-weapons", "backup-weapons"].includes(library.ID))).toBe(false);
+    expect(modules).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ID: "pick-primary-weapon", 资源库ID: "weapons", 默认查询: expect.objectContaining({ filters: { 类型: ["主武器"] } }) }),
+      expect.objectContaining({ ID: "pick-secondary-weapon", 资源库ID: "weapons", 默认查询: expect.objectContaining({ filters: { 类型: ["副武器"] } }) }),
+      expect.objectContaining({ ID: "pick-backup-weapon-1", 资源库ID: "weapons" }),
+      expect.objectContaining({ ID: "pick-backup-weapon-2", 资源库ID: "weapons" }),
+    ]));
+    expect(modules.some((module) => module.ID === "backup-weapon-1-category" || module.ID === "backup-weapon-2-category")).toBe(false);
     expect(JSON.stringify(dependencies)).toContain('"字段":"伤害类型"');
     expect(JSON.stringify(dependencies)).toContain('"字段":"负荷"');
     expect(JSON.stringify(dependencies)).not.toContain('"字段":"双手"');
+    expect(JSON.stringify(dependencies)).not.toContain("武器类别");
   });
 
   it("balances upper stats, fills countable controls, and compacts equipment descriptions", () => {
     expect(baseCss).toContain("grid-template-columns: repeat(6, minmax(0, 1fr))");
     expect(baseCss).toMatch(/\.daggerheart-sheet\s*\{[^}]*align-content:\s*start/s);
-    expect(baseCss).toMatch(/\.trait-summary \[data-part="input"\][^}]*font-size:\s*clamp\(1\.5rem, 2vw, 2rem\)/s);
+    expect(baseCss).toMatch(/\.trait-summary \[data-part="input"\][^}]*font-size:\s*clamp\(1\.25rem, 1\.7vw, 1\.65rem\)/s);
     expect(countableResourceCss).toMatch(/\.counter\s*\{[^}]*width:\s*100%/s);
     expect(countableResourceCss).toMatch(/\.counter\s*\{[^}]*flex:\s*1 1 auto/s);
-    expect(countableResourceCss).toMatch(/\.counter\s*\{[^}]*justify-content:\s*space-between/s);
-    expect(baseCss).toMatch(/data-module-id\$="-description"[^}]*min-height:\s*3\.25rem/s);
+    expect(countableResourceCss).toMatch(/\.counter\s*\{[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\) auto/s);
+    expect(countableResourceCss).toMatch(/\.counter-value-group\s*\{[^}]*justify-content:\s*center/s);
+    expect(baseCss).toMatch(/data-module-id\$="-description"[^}]*min-height:\s*2\.25rem/s);
   });
 
   it("adds five compact Experience and modifier rows between Hope and Currency", () => {
@@ -348,8 +395,8 @@ describe("Daggerheart core System Package", () => {
       expect(mainHtml).toContain(`id="experience-${index}"`);
       expect(mainHtml).toContain(`id="experience-modifier-${index}"`);
     }
-    expect(mainHtml.indexOf('class="sheet-region experience-region"')).toBeGreaterThan(mainHtml.indexOf('class="sheet-region hope-region"'));
-    expect(mainHtml.indexOf('class="sheet-region experience-region"')).toBeLessThan(mainHtml.indexOf('class="sheet-region currency-region"'));
+    expect(mainHtml.indexOf('class="sheet-region experience-region"')).toBeGreaterThan(mainHtml.indexOf('class="sheet-main-left"'));
+    expect(mainHtml.indexOf('class="sheet-region experience-region"')).toBeLessThan(mainHtml.indexOf('class="sheet-right-column sheet-main-right"'));
   });
 
   it("adds Event Log and Background Story beside the portrait", () => {
@@ -388,9 +435,7 @@ async function loadDaggerheartPackage() {
     "resources/communities.json": strToU8(communitiesJson),
     "resources/classes.json": strToU8(classesJson),
     "resources/subclasses.json": strToU8(subclassesJson),
-    "resources/primary-weapons.json": strToU8(primaryWeaponsJson),
-    "resources/secondary-weapons.json": strToU8(secondaryWeaponsJson),
-    "resources/backup-weapons.json": strToU8(backupWeaponsJson),
+    "resources/weapons.json": strToU8(weaponsJson),
     "resources/armor.json": strToU8(armorJson),
     "resources/loot.json": strToU8(lootJson),
     "resources/domain-cards.json": strToU8(domainCardsJson),
