@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>未命名角色</title>
-  <style>:root { color: rgb(32, 36, 38); background: rgb(238, 241, 242); font-family: Aptos, "Segoe UI", sans-serif; font-synthesis: none; text-rendering: optimizelegibility; }
+  <style>:root { --restricted-markdown-red: #a8443e; --restricted-markdown-orange: #a35f24; --restricted-markdown-yellow: #8a741f; --restricted-markdown-green: #39704f; --restricted-markdown-blue: #356a83; --restricted-markdown-purple: #71558a; --restricted-markdown-gray: #667074; color: rgb(32, 36, 38); background: rgb(238, 241, 242); font-family: Aptos, "Segoe UI", sans-serif; font-synthesis: none; text-rendering: optimizelegibility; }
 * { box-sizing: border-box; }
 body { margin: 0px; min-width: 320px; min-height: 100vh; background: linear-gradient(90deg, rgba(32, 36, 38, 0.04) 1px, transparent 1px) 0% 0% / 28px 28px, linear-gradient(rgba(32, 36, 38, 0.04) 1px, transparent 1px), rgb(238, 241, 242); }
 button, input, textarea { font: inherit; }
@@ -43,7 +43,7 @@ h1, h2 { margin: 0px; font-weight: 700; letter-spacing: 0px; }
 .message-error { border-color: rgb(184, 92, 86); color: rgb(123, 39, 33); }
 .message-info { border-color: rgb(79, 140, 107); color: rgb(35, 84, 60); }
 .sheet-tool { width: 100%; margin: 0px; padding: clamp(12px, 2vw, 28px); }
-.sheet-page { background: rgb(251, 252, 252); border: 1px solid rgb(205, 213, 215); }
+.sheet-page { box-sizing: border-box; aspect-ratio: 210 / 297; overflow: hidden; background: rgb(251, 252, 252); border: 1px solid rgb(205, 213, 215); }
 .page-navigation { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0px 14px; }
 .page-navigation button { flex: 0 0 auto; border: 1px solid rgb(184, 197, 200); padding: 8px 14px; background: rgb(255, 255, 255); color: rgb(36, 52, 56); cursor: pointer; }
 .page-navigation button.active { border-color: rgb(39, 99, 79); background: rgb(228, 241, 235); font-weight: 700; }
@@ -70,8 +70,14 @@ fieldset.container { margin: 0px; padding: 0px; }
 .label { display: flex; align-items: center; margin: 0px; min-height: 30px; padding: 0px 4px; border-right: 1px solid rgb(216, 223, 225); color: rgb(66, 80, 86); font-weight: 700; }
 .input { width: 100%; min-height: 30px; border: 0px; padding-left: 5px; background: rgb(255, 255, 255); color: rgb(32, 36, 38); font-size: 0.92rem; }
 .container-stack .label { min-height: 24px; border-right: 0px; border-bottom: 1px solid rgb(216, 223, 225); }
-.textarea { min-height: 56px; padding-top: 3px; padding-bottom: 3px; line-height: 1.35; resize: vertical; }
+.textarea { min-height: 48px; padding-top: 3px; padding-bottom: 3px; line-height: 1.2; resize: vertical; }
 .display-text { margin: 0px; padding: 6px 8px 8px; color: rgb(32, 36, 38); line-height: 1.35; white-space: pre-wrap; }
+.container:focus-within { position: relative; z-index: 2; }
+[data-markdown-editor="true"] { min-width: 0px; }
+.markdown-preview { min-width: 0px; min-height: 30px; padding: 5px; cursor: text; overflow-wrap: anywhere; }
+[data-module-type="freeText"] [data-markdown-preview], [data-module-type="freeText"] [data-markdown-preview] [data-restricted-markdown], [data-module-type="freeText"] [data-markdown-preview] p { white-space: nowrap; overflow: hidden; overflow-wrap: normal; }
+.markdown-preview p, .markdown-preview ul, .markdown-preview ol { margin-top: 0px; margin-bottom: 0px; }
+.markdown-preview:focus-visible { outline: rgb(224, 180, 65) solid 3px; outline-offset: 2px; }
 .input:focus-visible { outline: rgb(224, 180, 65) solid 3px; outline-offset: 2px; }
 @media (max-width: 640px) {
   .container { grid-template-columns: 1fr; }
@@ -79,6 +85,10 @@ fieldset.container { margin: 0px; padding: 0px; }
 }
 .counter { display: grid; grid-template-columns: auto minmax(0px, 1fr) auto; flex: 1 1 auto; width: 100%; align-items: center; gap: 2px; padding: 1px 2px; }
 .counter-value-group { display: flex; min-width: 0px; align-items: center; justify-content: center; gap: 2px; }
+.marker-group { display: flex; flex-wrap: wrap; place-content: center; align-items: center; height: 28px; min-width: 0px; overflow: hidden; line-height: 1; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+.marker-group[data-marker-fit="overflow"] { flex-wrap: nowrap; justify-content: flex-start; overflow: auto hidden; white-space: nowrap; }
+.marker-group > [data-part="current-markers"], .marker-group > [data-part="remaining-markers"] { display: contents; }
+.marker-cell { display: inline-flex; flex: 0 0 1.25em; width: 1.25em; align-items: center; justify-content: center; text-align: center; }
 .stepper { display: inline-grid; place-items: center; width: auto; height: 28px; padding-inline: 2px; border: 0px; background: rgb(255, 255, 255); color: rgb(36, 52, 56); cursor: pointer; font-weight: 700; }
 .stepper:disabled { border-color: rgb(196, 204, 206); color: rgb(152, 164, 167); cursor: not-allowed; }
 .stepper:focus-visible { outline: rgb(224, 180, 65) solid 3px; outline-offset: 2px; }
@@ -98,6 +108,13 @@ fieldset.container { margin: 0px; padding: 0px; }
 .image-fallback { display: grid; place-items: center; height: 100%; padding: 16px; }
 .image-remove-button { position: absolute; top: 8px; right: 8px; display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0px; border: 1px solid rgb(36, 52, 56); border-radius: 999px; background: rgb(255, 255, 255); color: rgb(36, 52, 56); cursor: pointer; }
 .image-remove-button:focus-visible { outline: rgb(224, 180, 65) solid 3px; outline-offset: 2px; }
+.restricted-markdown-color[data-markdown-color="red"] { color: var(--restricted-markdown-red); }
+.restricted-markdown-color[data-markdown-color="orange"] { color: var(--restricted-markdown-orange); }
+.restricted-markdown-color[data-markdown-color="yellow"] { color: var(--restricted-markdown-yellow); }
+.restricted-markdown-color[data-markdown-color="green"] { color: var(--restricted-markdown-green); }
+.restricted-markdown-color[data-markdown-color="blue"] { color: var(--restricted-markdown-blue); }
+.restricted-markdown-color[data-markdown-color="purple"] { color: var(--restricted-markdown-purple); }
+.restricted-markdown-color[data-markdown-color="gray"] { color: var(--restricted-markdown-gray); }
 .card-table-module { display: grid; grid-template-rows: minmax(0px, 1fr); min-height: 100%; height: 100%; }
 .card-table-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .card-table-side-actions { position: absolute; top: 12px; right: 12px; z-index: 6; flex-direction: column; justify-content: flex-start; width: 64px; padding: 8px; border: 1px solid rgba(36, 52, 56, 0.48); background: rgba(248, 250, 249, 0.68); box-shadow: rgba(32, 36, 38, 0.18) 0px 10px 28px; opacity: 0.7; backdrop-filter: blur(6px); transition: opacity 120ms, background 120ms; }
@@ -117,11 +134,15 @@ fieldset.container { margin: 0px; padding: 0px; }
 .play-card-delete { position: absolute; top: -10px; right: -10px; z-index: 2; display: grid; place-items: center; width: 26px; height: 26px; padding: 0px; border: 2px solid rgb(255, 255, 255); border-radius: 999px; background: rgb(201, 48, 44); color: rgb(255, 255, 255); cursor: pointer; box-shadow: rgba(32, 36, 38, 0.28) 0px 4px 10px; }
 .play-card-delete:hover { background: rgb(159, 35, 31); }
 .play-card-image { display: block; width: 100%; aspect-ratio: 63 / 88; object-fit: cover; background: rgb(226, 232, 233); }
-.play-card-text { display: grid; grid-template-rows: auto minmax(0px, 1fr); gap: 12px; aspect-ratio: 63 / 88; min-height: 0px; overflow: hidden; padding: 14px; background: rgb(255, 253, 247); }
-.play-card-text h4 { margin: 0px 0px 8px; color: rgb(32, 36, 38); font-size: 1.05rem; }
+.play-card-text { position: relative; display: grid; grid-template-rows: auto minmax(0px, 1fr); gap: 12px; aspect-ratio: 63 / 88; min-height: 0px; overflow: hidden; padding: 14px; background: rgb(255, 253, 247); }
+.play-card-name { margin: 0px 0px 8px; color: rgb(32, 36, 38); font-size: 1.05rem; font-weight: 700; }
+.play-card-name p, .play-card-tag p, .play-card-description p { margin: 0px; }
 .play-card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
 .play-card-tag { display: inline-flex; align-items: center; max-width: 100%; min-height: 20px; padding: 1px 6px; border: 1px solid rgb(216, 208, 184); background: rgb(248, 240, 217); color: rgb(96, 112, 117); font-size: 0.78rem; line-height: 1.2; overflow-wrap: anywhere; }
-.play-card-description { margin: 0px; color: rgb(32, 36, 38); line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 8; -webkit-box-orient: vertical; overflow: hidden; }
+.play-card-description { margin: 0px; min-height: 0px; color: rgb(32, 36, 38); line-height: 1.45; white-space: normal; overflow-wrap: anywhere; overflow: hidden; }
+.play-card-description ul, .play-card-description ol { margin: 0.35em 0px; padding-inline-start: 1.25em; }
+.play-card-description li + li { margin-top: 0.35em; }
+.play-card-description-overflow { position: absolute; right: 8px; bottom: 8px; z-index: 1; display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid rgba(36, 52, 56, 0.32); border-radius: 999px; background: rgba(248, 250, 249, 0.92); color: rgb(66, 80, 86); box-shadow: rgba(32, 36, 38, 0.18) 0px 2px 8px; }
 .card-action-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; border-width: 0px 1px 0px 0px; border-style: none solid none none; border-color: currentcolor rgb(216, 223, 225) currentcolor currentcolor; border-image: none; background: rgb(255, 255, 255); color: rgb(36, 52, 56); cursor: pointer; }
 .card-table-side-actions .card-action-button { flex-direction: column; width: 100%; min-height: 48px; border: 1px solid rgba(216, 223, 225, 0.92); background: rgba(255, 255, 255, 0.78); font-size: 0.82rem; }
 .card-action-button:last-child { border-right: 0px; }
@@ -136,6 +157,7 @@ fieldset.container { margin: 0px; padding: 0px; }
 .card-detail-face { width: 100%; }
 .card-detail-face .play-card-image { width: 100%; height: auto; max-height: 82vh; object-fit: contain; }
 .card-detail-face .play-card-text { min-height: 420px; font-size: 1.1rem; }
+.card-detail-face .play-card-description { max-height: none; overflow: visible; }
 .card-detail-close { position: absolute; top: 8px; right: 8px; z-index: 1; width: 36px; height: 36px; border: 0px; border-radius: 50%; background: rgba(255, 255, 255, 0.9); cursor: pointer; }
 @media (max-width: 640px) {
   .card-table-surface { min-height: 420px; }
@@ -179,6 +201,8 @@ fieldset.container { margin: 0px; padding: 0px; }
 .resource-table tbody tr { cursor: pointer; }
 .resource-table tbody tr:hover, .selected-row { background: rgb(237, 246, 241); }
 .resource-table tbody tr:focus-visible { outline: rgb(224, 180, 65) solid 3px; outline-offset: -3px; }
+.resource-table [data-restricted-markdown] p { margin: 0px; }
+.resource-table [data-restricted-markdown] ul, .resource-table [data-restricted-markdown] ol { margin-block: 0.25em; padding-inline-start: 1.25em; }
 .resource-empty { margin: 0px; padding: 18px; color: rgb(96, 112, 117); }
 @media (max-width: 640px) {
   .selection-content { grid-template-columns: 1fr; }
@@ -218,19 +242,31 @@ fieldset.container { margin: 0px; padding: 0px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0px; margin: -1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap; border: 0px; }
 .print-mode .top-bar, .print-mode .top-menu-bar, .print-mode .page-navigation, .print-mode .resource-picker-module, .print-mode .image-actions, .print-mode .card-table-actions, .print-mode .play-card-delete { display: none; }
 .print-mode .card-detail-backdrop { display: none !important; }
+.print-mode [data-markdown-editor] { display: none !important; }
+.print-mode [data-markdown-preview] { display: block !important; }
+.print-mode [data-module-type="freeText"] [data-markdown-preview], .print-mode [data-module-type="freeText"] [data-markdown-preview] [data-restricted-markdown], .print-mode [data-module-type="freeText"] [data-markdown-preview] p { min-width: 0px; overflow: hidden !important; white-space: nowrap !important; overflow-wrap: normal !important; }
 .print-mode .sheet-tool { padding: 0px; }
-.print-mode .sheet-page { border: 0px; background: rgb(255, 255, 255); }
-.print-mode .card-table-surface { overflow: visible; background: rgb(255, 255, 255); }
-.print-mode .sheet-page, .print-mode .module-slot, .print-mode .container, .print-mode .image, .print-mode .card-table-module, .print-mode .play-card { break-inside: avoid; }
+.print-mode .sheet-page, .print-mode [data-print-page="true"] { margin: 0px auto 16px; overflow: hidden; border: 0px; background: rgb(255, 255, 255); box-sizing: border-box !important; width: 210mm !important; height: 297mm !important; padding: 5mm 4mm !important; }
+.print-mode [data-print-page="true"] { padding: 3mm !important; }
+.print-mode .card-table-surface { overflow: visible; border: 0px; background: rgb(255, 255, 255); }
+.print-mode .sheet-page, .print-mode .module-slot, .print-mode .container, .print-mode .image, .print-mode .play-card { break-inside: avoid; }
+.print-mode .play-card { box-shadow: none !important; filter: none !important; }
+.print-mode .play-card, .print-mode .play-card * { print-color-adjust: exact; }
+.print-mode input::placeholder, .print-mode textarea::placeholder { print-color-adjust: exact; color: rgb(213, 218, 221) !important; -webkit-text-fill-color: rgb(213, 218, 221) !important; opacity: 1 !important; }
 @media print {
-  @page { margin: 8mm 4mm 10mm; }
+  @page { size: a4; margin: 0px; }
   body { background: rgb(255, 255, 255); }
   .top-bar, .top-menu-bar, .print-preview-bar, .message, .validation-dialog-backdrop, .resource-dialog-backdrop, .resource-picker-module, .image-actions, .card-table-actions, .play-card-delete { display: none !important; }
   .sheet-tool { padding: 0px; }
-  .sheet-page { break-after: page; break-inside: avoid; border: 0px; background: rgb(255, 255, 255); }
-  .module-slot, .container, .image, .card-table-module, .play-card { break-inside: avoid; }
-  .card-table-surface { display: grid; grid-template-columns: repeat(auto-fill, minmax(0, var(--play-card-width))); align-items: start; align-content: start; gap: 4px; padding: 0px; overflow: visible; background: rgb(255, 255, 255); height: auto !important; min-height: 0px !important; }
-  .play-card { position: relative; left: auto !important; top: auto !important; z-index: auto !important; transform: none !important; }
+  [data-module-type="freeText"] [data-markdown-preview], [data-module-type="freeText"] [data-markdown-preview] [data-restricted-markdown], [data-module-type="freeText"] [data-markdown-preview] p { min-width: 0px; overflow: hidden !important; white-space: nowrap !important; overflow-wrap: normal !important; }
+  input::placeholder, textarea::placeholder { print-color-adjust: exact; color: rgb(213, 218, 221) !important; -webkit-text-fill-color: rgb(213, 218, 221) !important; opacity: 1 !important; }
+  .sheet-page, [data-print-page="true"] { overflow: hidden; break-inside: avoid; border: 0px; background: rgb(255, 255, 255); box-sizing: border-box !important; width: 210mm !important; height: 297mm !important; margin: 0px !important; padding: 5mm 4mm !important; }
+  .sheet-page + .sheet-page, .sheet-page + [data-print-page="true"], [data-print-page="true"] + [data-print-page="true"], [data-print-page="true"] + .sheet-page { break-before: page; }
+  [data-print-page="true"] { padding: 3mm !important; }
+  .module-slot, .container, .image, .play-card { break-inside: avoid; }
+  .card-table-surface { display: grid; grid-template-columns: repeat(auto-fill, minmax(0, var(--play-card-width))); align-items: start; align-content: start; gap: 4px; padding: 0px; overflow: visible; border: 0px; background: rgb(255, 255, 255); height: auto !important; min-height: 0px !important; }
+  .play-card { position: relative; width: var(--play-card-width) !important; left: auto !important; top: auto !important; z-index: auto !important; transform: none !important; box-shadow: none !important; filter: none !important; }
+  .play-card, .play-card * { print-color-adjust: exact; }
 }
 [data-sonner-toaster][dir="ltr"], html[dir="ltr"] { --toast-icon-margin-start: -3px; --toast-icon-margin-end: 4px; --toast-svg-margin-start: -1px; --toast-svg-margin-end: 0px; --toast-button-margin-start: auto; --toast-button-margin-end: 0; --toast-close-button-start: 0; --toast-close-button-end: unset; --toast-close-button-transform: translate(-35%, -35%); }
 [data-sonner-toaster][dir="rtl"], html[dir="rtl"] { --toast-icon-margin-start: 4px; --toast-icon-margin-end: -3px; --toast-svg-margin-start: 0px; --toast-svg-margin-end: -1px; --toast-button-margin-start: 0; --toast-button-margin-end: auto; --toast-close-button-start: unset; --toast-close-button-end: 0; --toast-close-button-transform: translate(35%, -35%); }
@@ -913,26 +949,29 @@ fieldset.container { margin: 0px; padding: 0px; }
 @property --rf-tw-duration { syntax: "*"; inherits: false; }
 @property --rf-tw-ease { syntax: "*"; inherits: false; }
 @property --rf-tw-content { syntax: "*"; inherits: false; initial-value: ""; }
-[data-template-shell="true"] .daggerheart-workspace { display: flex; gap: 1rem; align-items: flex-start; min-width: 0px; padding: 0.75rem; }
-[data-template-shell="true"] .daggerheart-sheet-pane { flex: 0 1 64rem; width: min(64rem, 100%); min-width: 38rem; min-height: 90rem; overflow: hidden; border: 1px solid rgb(200, 185, 166); background: rgb(248, 244, 236); }
+[data-template-shell="true"] .daggerheart-workspace { display: flex; gap: 1rem; align-items: stretch; min-width: 0px; padding: 0.75rem; }
+[data-template-shell="true"] .daggerheart-sheet-pane { flex: 0 1 54rem; width: min(54rem, 100%); min-width: 38rem; min-height: 90rem; overflow: hidden; border: 1px solid rgb(200, 185, 166); background: rgb(248, 244, 236); }
 [data-template-shell="true"] .daggerheart-card-pane { flex: 1 1 28rem; min-width: 22rem; min-height: calc(-8rem + 100vh); display: flex; flex-direction: column; gap: 0.75rem; }
-[data-template-shell="true"] .daggerheart-card-pane > [data-module-type="cardTable"] { flex: 1 1 auto; min-height: 38rem; }
+[data-template-shell="true"] .daggerheart-card-table-slot { flex: 1 1 auto; display: grid; min-height: 38rem; }
 [data-template-shell="true"] .card-picker-grid { flex: 0 0 auto; display: grid; grid-template-columns: repeat(2, minmax(0px, 1fr)); gap: 0.5rem; }
-@media (max-width: 1080px) {
+@media screen and (max-width: 1080px) {
   [data-template-shell="true"] .daggerheart-workspace { flex-direction: column; }
   [data-template-shell="true"] .daggerheart-sheet-pane, [data-template-shell="true"] .daggerheart-card-pane { width: 100%; min-width: 0px; }
   [data-template-shell="true"] .daggerheart-card-pane { min-height: 32rem; }
+  [data-template-shell="true"] .daggerheart-card-table-slot { min-height: 32rem; }
 }
-@media (max-width: 560px) {
+@media screen and (max-width: 560px) {
   [data-template-shell="true"] .daggerheart-workspace { padding: 0.375rem; }
   [data-template-shell="true"] .card-picker-grid { grid-template-columns: 1fr; }
 }
 @media print {
   [data-template-shell="true"] .daggerheart-workspace { display: block; padding: 0px; }
   [data-template-shell="true"] .daggerheart-sheet-pane { width: 100%; min-width: 0px; min-height: 0px; border: 0px; }
-  [data-template-shell="true"] .daggerheart-card-pane { display: none; }
+  [data-template-shell="true"] .daggerheart-card-pane { display: block; }
+  [data-template-shell="true"] .daggerheart-card-pane > .card-picker-grid { display: none; }
+  [data-template-shell="true"] .daggerheart-card-table-slot { min-height: 0px; }
 }
-[data-template-page-id="character-main"] .daggerheart-sheet { box-sizing: border-box; display: grid; align-content: start; gap: 0.3rem; width: 100%; min-height: 90rem; padding: 0.4rem; background: rgb(255, 255, 255); color: rgb(32, 36, 38); }
+[data-template-page-id="character-main"] .daggerheart-sheet { box-sizing: border-box; display: grid; align-content: start; gap: 0.3rem; width: 100%; min-height: 100%; padding: 0.4rem; background: rgb(255, 255, 255); color: rgb(32, 36, 38); }
 [data-template-page-id="character-main"] .daggerheart-sheet *, [data-template-page-id="character-main"] .daggerheart-sheet ::before, [data-template-page-id="character-main"] .daggerheart-sheet ::after { box-sizing: border-box; }
 [data-template-page-id="character-main"] .daggerheart-sheet h1, [data-template-page-id="character-main"] .daggerheart-sheet h2, [data-template-page-id="character-main"] .daggerheart-sheet h3 { margin: 0px; }
 [data-template-page-id="character-main"] .daggerheart-sheet h2 { font-size: 0.85rem; }
@@ -969,22 +1008,23 @@ fieldset.container { margin: 0px; padding: 0px; }
 [data-template-page-id="character-main"] .class-feature-region { flex: 1 1 auto; min-height: 15rem; }
 [data-template-page-id="character-main"] .class-feature-region > [data-module-slot-id="class-feature"] { margin-top: 0px; }
 [data-template-page-id="character-main"] .region-heading-row { display: flex; gap: 0.25rem; align-items: center; justify-content: space-between; }
-[data-template-page-id="character-main"] .region-heading-row > [data-module-slot-id="proficiency"] { flex: 0 1 14rem; }
+[data-template-page-id="character-main"] .region-heading-row > [data-module-slot-id="proficiency"] { flex: 0 1 16rem; }
 [data-template-page-id="character-main"] .equipment-slot { min-width: 0px; padding-top: 0.15rem; border-top: 1px solid rgb(211, 216, 218); }
 [data-template-page-id="character-main"] .equipment-slot + .equipment-slot { margin-top: 0.15rem; }
 [data-template-page-id="character-main"] .equipment-grid { display: grid; gap: 0.125rem; margin-top: 0.125rem; }
 [data-template-page-id="character-main"] .equipment-fields { display: grid; gap: 0.125rem; }
-[data-template-page-id="character-main"] .weapon-fields { grid-template-columns: minmax(7rem, 1fr) auto 3.5em 3.5em 4.5em 3.5em 3.5em; }
-[data-template-page-id="character-main"] .backup-weapon-fields { grid-template-columns: minmax(6.5rem, 1fr) auto 3.5em 3.5em 4.5em 3.5em 3.5em; }
+[data-template-page-id="character-main"] .weapon-fields { grid-template-columns: minmax(7rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em; }
+[data-template-page-id="character-main"] .backup-weapon-fields { grid-template-columns: minmax(6.5rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em; }
 [data-template-page-id="character-main"] .armor-fields { grid-template-columns: minmax(8rem, 2fr) auto repeat(2, minmax(4rem, 1fr)); }
+[data-template-page-id="character-main"] .equipment-fields [data-module-type="freeText"]:not([data-module-id$="-name"]) [data-part="input"] { font-size: 0.8rem; }
 [data-template-page-id="character-main"] [data-module-id$="-description"] [data-part="input"] { min-height: 2.25rem; padding-block: 0.125rem; }
 [data-template-page-id="character-main"] .inventory-region { flex: 1 1 auto; }
 [data-template-page-id="character-main"] .item-list { display: grid; grid-template-columns: 1fr; gap: 0px; margin-top: 0px; }
 [data-template-page-id="character-main"] .item-list article { display: grid; grid-template-columns: minmax(0px, 1fr) auto; gap: 0px; margin: 0px; padding: 0px; }
 [data-template-page-id="character-main"] .backup-weapons { margin-top: 0.25rem; }
 [data-template-page-id="character-main"] .sheet-region > h2, [data-template-page-id="character-main"] .region-heading-row > h2, [data-template-page-id="character-main"] .advancement-region > h2 { display: none; }
-[data-template-page-id="character-main"] .story-page-heading { padding: 0.2rem 0.3rem; border-bottom: 1px solid rgb(97, 107, 110); text-align: center; }
-[data-template-page-id="character-main"] .story-page-heading h1 { font-size: 1.1rem; }
+[data-template-page-id="character-main"] .sheet-region > .section-title, [data-template-page-id="character-main"] .equipment-slot-title { display: block; margin: 0.2rem 0px 0.125rem; padding: 0px 0.2rem 0.1rem; border-bottom: 1px solid rgb(97, 107, 110); font-size: 0.75rem; line-height: 1.2; text-align: left; }
+[data-template-page-id="character-main"] .equipment-slot-title { margin-top: 0px; }
 [data-template-page-id="character-main"] .story-overview { display: grid; grid-template-columns: repeat(3, minmax(0px, 1fr)); align-items: stretch; gap: 0.3rem; min-height: 16rem; }
 [data-template-page-id="character-main"] .story-overview > [data-module-slot-id] { height: 100%; min-width: 0px; }
 [data-template-page-id="character-main"] .story-overview > [data-module-slot-id] > [data-module-type] { height: 100%; }
@@ -1007,7 +1047,10 @@ fieldset.container { margin: 0px; padding: 0px; }
 [data-template-page-id="character-main"] .advancement-grid [data-part="group-inputs"] { width: 2.5rem; gap: 0.05rem; }
 [data-template-page-id="character-main"] .advancement-grid [data-part="option-label"] { min-width: 0px; font-size: 0.75rem; line-height: 1.2; text-align: left; }
 [data-template-page-id="character-main"] .advancement-grid [data-part="input"] { width: 0.75rem; height: 0.75rem; margin: 0px; }
-@media (max-width: 800px) {
+@media print {
+  [data-template-page-id="character-main"] .daggerheart-sheet { min-height: 0px; }
+}
+@media screen and (max-width: 800px) {
   [data-template-page-id="character-main"] .daggerheart-sheet { min-height: 0px; padding: 0.5rem; }
   [data-template-page-id="character-main"] .identity-panel, [data-template-page-id="character-main"] .upper-stat-layout, [data-template-page-id="character-main"] .sheet-body-layout, [data-template-page-id="character-main"] .question-layout { grid-template-columns: 1fr; }
   [data-template-page-id="character-main"] .level-field { grid-area: auto; }
@@ -1017,14 +1060,11 @@ fieldset.container { margin: 0px; padding: 0px; }
   [data-template-page-id="character-main"] .advancement-grid { grid-template-columns: 1fr; }
   [data-template-page-id="character-main"] .story-overview { grid-template-columns: 1fr; }
 }
-@media (max-width: 480px) {
+@media screen and (max-width: 480px) {
   [data-template-page-id="character-main"] .identity-fields, [data-template-page-id="character-main"] .defense-summary, [data-template-page-id="character-main"] .trait-summary, [data-template-page-id="character-main"] .threshold-row, [data-template-page-id="character-main"] .resource-row, [data-template-page-id="character-main"] .currency-row, [data-template-page-id="character-main"] .hope-region, [data-template-page-id="character-main"] .item-list { grid-template-columns: 1fr; }
   [data-template-page-id="character-main"] .item-list article { grid-template-columns: 1fr; }
 }
-@media print {
-  [data-template-page-id="character-main"] .daggerheart-sheet { min-height: 0px; padding: 0.4rem; break-after: page; }
-}
-[data-template-page-id="character-story"] .daggerheart-sheet { box-sizing: border-box; display: grid; align-content: start; gap: 0.3rem; width: 100%; min-height: 90rem; padding: 0.4rem; background: rgb(255, 255, 255); color: rgb(32, 36, 38); }
+[data-template-page-id="character-story"] .daggerheart-sheet { box-sizing: border-box; display: grid; align-content: start; gap: 0.3rem; width: 100%; min-height: 100%; padding: 0.4rem; background: rgb(255, 255, 255); color: rgb(32, 36, 38); }
 [data-template-page-id="character-story"] .daggerheart-sheet *, [data-template-page-id="character-story"] .daggerheart-sheet ::before, [data-template-page-id="character-story"] .daggerheart-sheet ::after { box-sizing: border-box; }
 [data-template-page-id="character-story"] .daggerheart-sheet h1, [data-template-page-id="character-story"] .daggerheart-sheet h2, [data-template-page-id="character-story"] .daggerheart-sheet h3 { margin: 0px; }
 [data-template-page-id="character-story"] .daggerheart-sheet h2 { font-size: 0.85rem; }
@@ -1061,22 +1101,23 @@ fieldset.container { margin: 0px; padding: 0px; }
 [data-template-page-id="character-story"] .class-feature-region { flex: 1 1 auto; min-height: 15rem; }
 [data-template-page-id="character-story"] .class-feature-region > [data-module-slot-id="class-feature"] { margin-top: 0px; }
 [data-template-page-id="character-story"] .region-heading-row { display: flex; gap: 0.25rem; align-items: center; justify-content: space-between; }
-[data-template-page-id="character-story"] .region-heading-row > [data-module-slot-id="proficiency"] { flex: 0 1 14rem; }
+[data-template-page-id="character-story"] .region-heading-row > [data-module-slot-id="proficiency"] { flex: 0 1 16rem; }
 [data-template-page-id="character-story"] .equipment-slot { min-width: 0px; padding-top: 0.15rem; border-top: 1px solid rgb(211, 216, 218); }
 [data-template-page-id="character-story"] .equipment-slot + .equipment-slot { margin-top: 0.15rem; }
 [data-template-page-id="character-story"] .equipment-grid { display: grid; gap: 0.125rem; margin-top: 0.125rem; }
 [data-template-page-id="character-story"] .equipment-fields { display: grid; gap: 0.125rem; }
-[data-template-page-id="character-story"] .weapon-fields { grid-template-columns: minmax(7rem, 1fr) auto 3.5em 3.5em 4.5em 3.5em 3.5em; }
-[data-template-page-id="character-story"] .backup-weapon-fields { grid-template-columns: minmax(6.5rem, 1fr) auto 3.5em 3.5em 4.5em 3.5em 3.5em; }
+[data-template-page-id="character-story"] .weapon-fields { grid-template-columns: minmax(7rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em; }
+[data-template-page-id="character-story"] .backup-weapon-fields { grid-template-columns: minmax(6.5rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em; }
 [data-template-page-id="character-story"] .armor-fields { grid-template-columns: minmax(8rem, 2fr) auto repeat(2, minmax(4rem, 1fr)); }
+[data-template-page-id="character-story"] .equipment-fields [data-module-type="freeText"]:not([data-module-id$="-name"]) [data-part="input"] { font-size: 0.8rem; }
 [data-template-page-id="character-story"] [data-module-id$="-description"] [data-part="input"] { min-height: 2.25rem; padding-block: 0.125rem; }
 [data-template-page-id="character-story"] .inventory-region { flex: 1 1 auto; }
 [data-template-page-id="character-story"] .item-list { display: grid; grid-template-columns: 1fr; gap: 0px; margin-top: 0px; }
 [data-template-page-id="character-story"] .item-list article { display: grid; grid-template-columns: minmax(0px, 1fr) auto; gap: 0px; margin: 0px; padding: 0px; }
 [data-template-page-id="character-story"] .backup-weapons { margin-top: 0.25rem; }
 [data-template-page-id="character-story"] .sheet-region > h2, [data-template-page-id="character-story"] .region-heading-row > h2, [data-template-page-id="character-story"] .advancement-region > h2 { display: none; }
-[data-template-page-id="character-story"] .story-page-heading { padding: 0.2rem 0.3rem; border-bottom: 1px solid rgb(97, 107, 110); text-align: center; }
-[data-template-page-id="character-story"] .story-page-heading h1 { font-size: 1.1rem; }
+[data-template-page-id="character-story"] .sheet-region > .section-title, [data-template-page-id="character-story"] .equipment-slot-title { display: block; margin: 0.2rem 0px 0.125rem; padding: 0px 0.2rem 0.1rem; border-bottom: 1px solid rgb(97, 107, 110); font-size: 0.75rem; line-height: 1.2; text-align: left; }
+[data-template-page-id="character-story"] .equipment-slot-title { margin-top: 0px; }
 [data-template-page-id="character-story"] .story-overview { display: grid; grid-template-columns: repeat(3, minmax(0px, 1fr)); align-items: stretch; gap: 0.3rem; min-height: 16rem; }
 [data-template-page-id="character-story"] .story-overview > [data-module-slot-id] { height: 100%; min-width: 0px; }
 [data-template-page-id="character-story"] .story-overview > [data-module-slot-id] > [data-module-type] { height: 100%; }
@@ -1099,7 +1140,10 @@ fieldset.container { margin: 0px; padding: 0px; }
 [data-template-page-id="character-story"] .advancement-grid [data-part="group-inputs"] { width: 2.5rem; gap: 0.05rem; }
 [data-template-page-id="character-story"] .advancement-grid [data-part="option-label"] { min-width: 0px; font-size: 0.75rem; line-height: 1.2; text-align: left; }
 [data-template-page-id="character-story"] .advancement-grid [data-part="input"] { width: 0.75rem; height: 0.75rem; margin: 0px; }
-@media (max-width: 800px) {
+@media print {
+  [data-template-page-id="character-story"] .daggerheart-sheet { min-height: 0px; }
+}
+@media screen and (max-width: 800px) {
   [data-template-page-id="character-story"] .daggerheart-sheet { min-height: 0px; padding: 0.5rem; }
   [data-template-page-id="character-story"] .identity-panel, [data-template-page-id="character-story"] .upper-stat-layout, [data-template-page-id="character-story"] .sheet-body-layout, [data-template-page-id="character-story"] .question-layout { grid-template-columns: 1fr; }
   [data-template-page-id="character-story"] .level-field { grid-area: auto; }
@@ -1109,14 +1153,18 @@ fieldset.container { margin: 0px; padding: 0px; }
   [data-template-page-id="character-story"] .advancement-grid { grid-template-columns: 1fr; }
   [data-template-page-id="character-story"] .story-overview { grid-template-columns: 1fr; }
 }
-@media (max-width: 480px) {
+@media screen and (max-width: 480px) {
   [data-template-page-id="character-story"] .identity-fields, [data-template-page-id="character-story"] .defense-summary, [data-template-page-id="character-story"] .trait-summary, [data-template-page-id="character-story"] .threshold-row, [data-template-page-id="character-story"] .resource-row, [data-template-page-id="character-story"] .currency-row, [data-template-page-id="character-story"] .hope-region, [data-template-page-id="character-story"] .item-list { grid-template-columns: 1fr; }
   [data-template-page-id="character-story"] .item-list article { grid-template-columns: 1fr; }
 }
-@media print {
-  [data-template-page-id="character-story"] .daggerheart-sheet { min-height: 0px; padding: 0.4rem; break-after: page; }
-}
 :root {
+  --restricted-markdown-red: #a8443e;
+  --restricted-markdown-orange: #a35f24;
+  --restricted-markdown-yellow: #8a741f;
+  --restricted-markdown-green: #39704f;
+  --restricted-markdown-blue: #356a83;
+  --restricted-markdown-purple: #71558a;
+  --restricted-markdown-gray: #667074;
   color: #202426;
   background: #eef1f2;
   font-family: "Aptos", "Segoe UI", sans-serif;
@@ -1413,6 +1461,9 @@ h2 {
 }
 
 .sheet-page {
+  box-sizing: border-box;
+  aspect-ratio: 210 / 297;
+  overflow: hidden;
   background: #fbfcfc;
   border: 1px solid #cdd5d7;
 }
@@ -1545,10 +1596,10 @@ fieldset.container {
 }
 
 .textarea {
-  min-height: 56px;
+  min-height: 48px;
   padding-top: 3px;
   padding-bottom: 3px;
-  line-height: 1.35;
+  line-height: 1.2;
   resize: vertical;
 }
 
@@ -1558,6 +1609,43 @@ fieldset.container {
   color: #202426;
   line-height: 1.35;
   white-space: pre-wrap;
+}
+
+.container:focus-within {
+  position: relative;
+  z-index: 2;
+}
+
+[data-markdown-editor="true"] {
+  min-width: 0;
+}
+
+.markdown-preview {
+  min-width: 0;
+  min-height: 30px;
+  padding: 5px;
+  cursor: text;
+  overflow-wrap: anywhere;
+}
+
+[data-module-type="freeText"] [data-markdown-preview],
+[data-module-type="freeText"] [data-markdown-preview] [data-restricted-markdown],
+[data-module-type="freeText"] [data-markdown-preview] p {
+  white-space: nowrap;
+  overflow: hidden;
+  overflow-wrap: normal;
+}
+
+.markdown-preview p,
+.markdown-preview ul,
+.markdown-preview ol {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.markdown-preview:focus-visible {
+  outline: 3px solid #e0b441;
+  outline-offset: 2px;
 }
 
 .input:focus-visible {
@@ -1593,6 +1681,43 @@ fieldset.container {
   align-items: center;
   justify-content: center;
   gap: 2px;
+}
+
+.marker-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.marker-group[data-marker-fit="overflow"] {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+
+.marker-group > [data-part="current-markers"],
+.marker-group > [data-part="remaining-markers"] {
+  display: contents;
+}
+
+.marker-cell {
+  display: inline-flex;
+  flex: 0 0 1.25em;
+  width: 1.25em;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .stepper {
@@ -1742,6 +1867,14 @@ fieldset.container {
   outline: 3px solid #e0b441;
   outline-offset: 2px;
 }
+
+.restricted-markdown-color[data-markdown-color="red"] { color: var(--restricted-markdown-red); }
+.restricted-markdown-color[data-markdown-color="orange"] { color: var(--restricted-markdown-orange); }
+.restricted-markdown-color[data-markdown-color="yellow"] { color: var(--restricted-markdown-yellow); }
+.restricted-markdown-color[data-markdown-color="green"] { color: var(--restricted-markdown-green); }
+.restricted-markdown-color[data-markdown-color="blue"] { color: var(--restricted-markdown-blue); }
+.restricted-markdown-color[data-markdown-color="purple"] { color: var(--restricted-markdown-purple); }
+.restricted-markdown-color[data-markdown-color="gray"] { color: var(--restricted-markdown-gray); }
 
 .card-table-module {
   display: grid;
@@ -1922,6 +2055,7 @@ fieldset.container {
 }
 
 .play-card-text {
+  position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 12px;
@@ -1932,10 +2066,17 @@ fieldset.container {
   background: #fffdf7;
 }
 
-.play-card-text h4 {
+.play-card-name {
   margin: 0 0 8px;
   color: #202426;
   font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.play-card-name p,
+.play-card-tag p,
+.play-card-description p {
+  margin: 0;
 }
 
 .play-card-tags {
@@ -1960,14 +2101,38 @@ fieldset.container {
 
 .play-card-description {
   margin: 0;
+  min-height: 0;
   color: #202426;
   line-height: 1.45;
-  white-space: pre-wrap;
+  white-space: normal;
   overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-line-clamp: 8;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.play-card-description ul,
+.play-card-description ol {
+  margin: 0.35em 0;
+  padding-inline-start: 1.25em;
+}
+
+.play-card-description li + li {
+  margin-top: 0.35em;
+}
+
+.play-card-description-overflow {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(36, 52, 56, 0.32);
+  border-radius: 999px;
+  background: rgba(248, 250, 249, 0.92);
+  color: #425056;
+  box-shadow: 0 2px 8px rgba(32, 36, 38, 0.18);
 }
 
 .card-action-button {
@@ -2038,6 +2203,7 @@ fieldset.container {
 .card-detail-face { width: 100%; }
 .card-detail-face .play-card-image { width: 100%; height: auto; max-height: 82vh; object-fit: contain; }
 .card-detail-face .play-card-text { min-height: 420px; font-size: 1.1rem; }
+.card-detail-face .play-card-description { max-height: none; overflow: visible; }
 .card-detail-close { position: absolute; top: 8px; right: 8px; z-index: 1; width: 36px; height: 36px; border: 0; border-radius: 50%; background: rgba(255,255,255,.9); cursor: pointer; }
 
 @media (max-width: 640px) {
@@ -2245,6 +2411,16 @@ fieldset.container {
 .resource-table tbody tr:focus-visible {
   outline: 3px solid #e0b441;
   outline-offset: -3px;
+}
+
+.resource-table [data-restricted-markdown] p {
+  margin: 0;
+}
+
+.resource-table [data-restricted-markdown] ul,
+.resource-table [data-restricted-markdown] ol {
+  margin-block: 0.25em;
+  padding-inline-start: 1.25em;
 }
 
 .resource-empty {
@@ -2464,18 +2640,40 @@ fieldset.container {
   display: none;
 }
 .print-mode .card-detail-backdrop { display: none !important; }
+.print-mode [data-markdown-editor] { display: none !important; }
+.print-mode [data-markdown-preview] { display: block !important; }
+.print-mode [data-module-type="freeText"] [data-markdown-preview],
+.print-mode [data-module-type="freeText"] [data-markdown-preview] [data-restricted-markdown],
+.print-mode [data-module-type="freeText"] [data-markdown-preview] p {
+  min-width: 0;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  overflow-wrap: normal !important;
+}
 
 .print-mode .sheet-tool {
   padding: 0;
 }
 
-.print-mode .sheet-page {
+.print-mode .sheet-page,
+.print-mode [data-print-page="true"] {
+  box-sizing: border-box !important;
+  width: 210mm !important;
+  height: 297mm !important;
+  margin: 0 auto 16px;
+  padding: 5mm 4mm 5mm !important;
+  overflow: hidden;
   border: 0;
   background: #ffffff;
 }
 
+.print-mode [data-print-page="true"] {
+  padding: 3mm !important;
+}
+
 .print-mode .card-table-surface {
   overflow: visible;
+  border: 0;
   background: #ffffff;
 }
 
@@ -2483,15 +2681,35 @@ fieldset.container {
 .print-mode .module-slot,
 .print-mode .container,
 .print-mode .image,
-.print-mode .card-table-module,
 .print-mode .play-card {
   break-inside: avoid;
   page-break-inside: avoid;
 }
 
+.print-mode .play-card {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.print-mode .play-card,
+.print-mode .play-card * {
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.print-mode input::placeholder,
+.print-mode textarea::placeholder {
+  color: #d5dadd !important;
+  -webkit-text-fill-color: #d5dadd !important;
+  opacity: 1 !important;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
 @media print {
   @page {
-    margin: 8mm 4mm 10mm;
+    size: A4 portrait;
+    margin: 0;
   }
 
   body {
@@ -2515,19 +2733,54 @@ fieldset.container {
     padding: 0;
   }
 
-  .sheet-page {
-    break-after: page;
+[data-module-type="freeText"] [data-markdown-preview],
+  [data-module-type="freeText"] [data-markdown-preview] [data-restricted-markdown],
+  [data-module-type="freeText"] [data-markdown-preview] p {
+    min-width: 0;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #d5dadd !important;
+    -webkit-text-fill-color: #d5dadd !important;
+    opacity: 1 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .sheet-page,
+  [data-print-page="true"] {
+    box-sizing: border-box !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 5mm 4mm 5mm !important;
+    overflow: hidden;
     break-inside: avoid;
-    page-break-after: always;
     page-break-inside: avoid;
     border: 0;
     background: #ffffff;
   }
 
+  .sheet-page + .sheet-page,
+  .sheet-page + [data-print-page="true"],
+  [data-print-page="true"] + [data-print-page="true"],
+  [data-print-page="true"] + .sheet-page {
+    /* 非第一个打印块之前分页,避免 break-after 在末项后多生空白页 */
+    break-before: page;
+    page-break-before: always;
+  }
+
+  [data-print-page="true"] {
+    padding: 3mm !important;
+  }
+
   .module-slot,
   .container,
   .image,
-  .card-table-module,
   .play-card {
     break-inside: avoid;
     page-break-inside: avoid;
@@ -2543,15 +2796,25 @@ fieldset.container {
     height: auto !important;
     min-height: 0 !important;
     overflow: visible;
+    border: 0;
     background: #ffffff;
   }
 
   .play-card {
     position: relative;
+    width: var(--play-card-width) !important;
     left: auto !important;
     top: auto !important;
     z-index: auto !important;
     transform: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  .play-card,
+  .play-card * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }
 
@@ -2657,12 +2920,12 @@ fieldset.container {
 [data-template-shell="true"] .daggerheart-workspace {
   display: flex;
   gap: 1rem;
-  align-items: flex-start;
+  align-items: stretch;
   min-width: 0;
   padding: 0.75rem;
 }[data-template-shell="true"] .daggerheart-sheet-pane {
-  flex: 0 1 64rem;
-  width: min(64rem, 100%);
+  flex: 0 1 54rem;
+  width: min(54rem, 100%);
   min-width: 38rem;
   min-height: 90rem;
   overflow: hidden;
@@ -2675,23 +2938,26 @@ fieldset.container {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-}[data-template-shell="true"] .daggerheart-card-pane > [data-module-type="cardTable"] {
+}[data-template-shell="true"] .daggerheart-card-table-slot {
   flex: 1 1 auto;
+  display: grid;
   min-height: 38rem;
 }[data-template-shell="true"] .card-picker-grid {
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
-}@media (max-width: 1080px) {[data-template-shell="true"] .daggerheart-workspace {
+}@media screen and (max-width: 1080px) {[data-template-shell="true"] .daggerheart-workspace {
     flex-direction: column;
   }[data-template-shell="true"] .daggerheart-sheet-pane, [data-template-shell="true"] .daggerheart-card-pane {
     width: 100%;
     min-width: 0;
   }[data-template-shell="true"] .daggerheart-card-pane {
     min-height: 32rem;
+  }[data-template-shell="true"] .daggerheart-card-table-slot {
+    min-height: 32rem;
   }
-}@media (max-width: 560px) {[data-template-shell="true"] .daggerheart-workspace {
+}@media screen and (max-width: 560px) {[data-template-shell="true"] .daggerheart-workspace {
     padding: 0.375rem;
   }[data-template-shell="true"] .card-picker-grid {
     grid-template-columns: 1fr;
@@ -2705,7 +2971,11 @@ fieldset.container {
     min-height: 0;
     border: 0;
   }[data-template-shell="true"] .daggerheart-card-pane {
+    display: block;
+  }[data-template-shell="true"] .daggerheart-card-pane > .card-picker-grid {
     display: none;
+  }[data-template-shell="true"] .daggerheart-card-table-slot {
+    min-height: 0;
   }
 }
 
@@ -2715,7 +2985,7 @@ fieldset.container {
   align-content: start;
   gap: 0.3rem;
   width: 100%;
-  min-height: 90rem;
+  min-height: 100%;
   padding: 0.4rem;
   background: #fff;
   color: #202426;
@@ -2875,7 +3145,7 @@ fieldset.container {
   align-items: center;
   justify-content: space-between;
 }[data-template-page-id="character-main"] .region-heading-row > [data-module-slot-id="proficiency"] {
-  flex: 0 1 14rem;
+  flex: 0 1 16rem;
 }[data-template-page-id="character-main"] .equipment-slot {
   min-width: 0;
   padding-top: 0.15rem;
@@ -2890,11 +3160,13 @@ fieldset.container {
   display: grid;
   gap: 0.125rem;
 }[data-template-page-id="character-main"] .weapon-fields {
-  grid-template-columns: minmax(7rem, 1fr) auto 3.5em 3.5em 4.5em 3.5em 3.5em;
+  grid-template-columns: minmax(7rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em;
 }[data-template-page-id="character-main"] .backup-weapon-fields {
-  grid-template-columns: minmax(6.5rem, 1fr) auto 3.5em 3.5em 4.5em 3.5em 3.5em;
+  grid-template-columns: minmax(6.5rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em;
 }[data-template-page-id="character-main"] .armor-fields {
   grid-template-columns: minmax(8rem, 2fr) auto repeat(2, minmax(4rem, 1fr));
+}[data-template-page-id="character-main"] .equipment-fields [data-module-type="freeText"]:not([data-module-id$="-name"]) [data-part="input"] {
+  font-size: 0.8rem;
 }[data-template-page-id="character-main"] [data-module-id$="-description"] [data-part="input"] {
   min-height: 2.25rem;
   padding-block: 0.125rem;
@@ -2915,12 +3187,16 @@ fieldset.container {
   margin-top: 0.25rem;
 }[data-template-page-id="character-main"] .sheet-region > h2, [data-template-page-id="character-main"] .region-heading-row > h2, [data-template-page-id="character-main"] .advancement-region > h2 {
   display: none;
-}[data-template-page-id="character-main"] .story-page-heading {
-  padding: 0.2rem 0.3rem;
+}[data-template-page-id="character-main"] .sheet-region > .section-title, [data-template-page-id="character-main"] .equipment-slot-title {
+  display: block;
+  margin: 0.2rem 0 0.125rem;
+  padding: 0 0.2rem 0.1rem;
   border-bottom: 1px solid #616b6e;
-  text-align: center;
-}[data-template-page-id="character-main"] .story-page-heading h1 {
-  font-size: 1.1rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  text-align: left;
+}[data-template-page-id="character-main"] .equipment-slot-title {
+  margin-top: 0;
 }[data-template-page-id="character-main"] .story-overview {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3002,7 +3278,10 @@ fieldset.container {
   width: 0.75rem;
   height: 0.75rem;
   margin: 0;
-}@media (max-width: 800px) {[data-template-page-id="character-main"] .daggerheart-sheet {
+}@media print {[data-template-page-id="character-main"] .daggerheart-sheet {
+    min-height: 0;
+  }
+}@media screen and (max-width: 800px) {[data-template-page-id="character-main"] .daggerheart-sheet {
     min-height: 0;
     padding: 0.5rem;
   }[data-template-page-id="character-main"] .identity-panel, [data-template-page-id="character-main"] .upper-stat-layout, [data-template-page-id="character-main"] .sheet-body-layout, [data-template-page-id="character-main"] .question-layout {
@@ -3022,17 +3301,14 @@ fieldset.container {
   }[data-template-page-id="character-main"] .story-overview {
     grid-template-columns: 1fr;
   }
-}@media (max-width: 480px) {[data-template-page-id="character-main"] .identity-fields, [data-template-page-id="character-main"] .defense-summary, [data-template-page-id="character-main"] .trait-summary, [data-template-page-id="character-main"] .threshold-row, [data-template-page-id="character-main"] .resource-row, [data-template-page-id="character-main"] .currency-row, [data-template-page-id="character-main"] .hope-region, [data-template-page-id="character-main"] .item-list {
+}@media screen and (max-width: 480px) {[data-template-page-id="character-main"] .identity-fields, [data-template-page-id="character-main"] .defense-summary, [data-template-page-id="character-main"] .trait-summary, [data-template-page-id="character-main"] .threshold-row, [data-template-page-id="character-main"] .resource-row, [data-template-page-id="character-main"] .currency-row, [data-template-page-id="character-main"] .hope-region, [data-template-page-id="character-main"] .item-list {
     grid-template-columns: 1fr;
   }[data-template-page-id="character-main"] .item-list article {
     grid-template-columns: 1fr;
   }
-}@media print {[data-template-page-id="character-main"] .daggerheart-sheet {
-    min-height: 0;
-    padding: 0.4rem;
-    break-after: page;
-  }
 }
+
+
 
 [data-template-page-id="character-story"] .daggerheart-sheet {
   box-sizing: border-box;
@@ -3040,7 +3316,7 @@ fieldset.container {
   align-content: start;
   gap: 0.3rem;
   width: 100%;
-  min-height: 90rem;
+  min-height: 100%;
   padding: 0.4rem;
   background: #fff;
   color: #202426;
@@ -3200,7 +3476,7 @@ fieldset.container {
   align-items: center;
   justify-content: space-between;
 }[data-template-page-id="character-story"] .region-heading-row > [data-module-slot-id="proficiency"] {
-  flex: 0 1 14rem;
+  flex: 0 1 16rem;
 }[data-template-page-id="character-story"] .equipment-slot {
   min-width: 0;
   padding-top: 0.15rem;
@@ -3215,11 +3491,13 @@ fieldset.container {
   display: grid;
   gap: 0.125rem;
 }[data-template-page-id="character-story"] .weapon-fields {
-  grid-template-columns: minmax(7rem, 1fr) auto 3.5em 3.5em 4.5em 3.5em 3.5em;
+  grid-template-columns: minmax(7rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em;
 }[data-template-page-id="character-story"] .backup-weapon-fields {
-  grid-template-columns: minmax(6.5rem, 1fr) auto 3.5em 3.5em 4.5em 3.5em 3.5em;
+  grid-template-columns: minmax(6.5rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em;
 }[data-template-page-id="character-story"] .armor-fields {
   grid-template-columns: minmax(8rem, 2fr) auto repeat(2, minmax(4rem, 1fr));
+}[data-template-page-id="character-story"] .equipment-fields [data-module-type="freeText"]:not([data-module-id$="-name"]) [data-part="input"] {
+  font-size: 0.8rem;
 }[data-template-page-id="character-story"] [data-module-id$="-description"] [data-part="input"] {
   min-height: 2.25rem;
   padding-block: 0.125rem;
@@ -3240,12 +3518,16 @@ fieldset.container {
   margin-top: 0.25rem;
 }[data-template-page-id="character-story"] .sheet-region > h2, [data-template-page-id="character-story"] .region-heading-row > h2, [data-template-page-id="character-story"] .advancement-region > h2 {
   display: none;
-}[data-template-page-id="character-story"] .story-page-heading {
-  padding: 0.2rem 0.3rem;
+}[data-template-page-id="character-story"] .sheet-region > .section-title, [data-template-page-id="character-story"] .equipment-slot-title {
+  display: block;
+  margin: 0.2rem 0 0.125rem;
+  padding: 0 0.2rem 0.1rem;
   border-bottom: 1px solid #616b6e;
-  text-align: center;
-}[data-template-page-id="character-story"] .story-page-heading h1 {
-  font-size: 1.1rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  text-align: left;
+}[data-template-page-id="character-story"] .equipment-slot-title {
+  margin-top: 0;
 }[data-template-page-id="character-story"] .story-overview {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3327,7 +3609,10 @@ fieldset.container {
   width: 0.75rem;
   height: 0.75rem;
   margin: 0;
-}@media (max-width: 800px) {[data-template-page-id="character-story"] .daggerheart-sheet {
+}@media print {[data-template-page-id="character-story"] .daggerheart-sheet {
+    min-height: 0;
+  }
+}@media screen and (max-width: 800px) {[data-template-page-id="character-story"] .daggerheart-sheet {
     min-height: 0;
     padding: 0.5rem;
   }[data-template-page-id="character-story"] .identity-panel, [data-template-page-id="character-story"] .upper-stat-layout, [data-template-page-id="character-story"] .sheet-body-layout, [data-template-page-id="character-story"] .question-layout {
@@ -3347,17 +3632,14 @@ fieldset.container {
   }[data-template-page-id="character-story"] .story-overview {
     grid-template-columns: 1fr;
   }
-}@media (max-width: 480px) {[data-template-page-id="character-story"] .identity-fields, [data-template-page-id="character-story"] .defense-summary, [data-template-page-id="character-story"] .trait-summary, [data-template-page-id="character-story"] .threshold-row, [data-template-page-id="character-story"] .resource-row, [data-template-page-id="character-story"] .currency-row, [data-template-page-id="character-story"] .hope-region, [data-template-page-id="character-story"] .item-list {
+}@media screen and (max-width: 480px) {[data-template-page-id="character-story"] .identity-fields, [data-template-page-id="character-story"] .defense-summary, [data-template-page-id="character-story"] .trait-summary, [data-template-page-id="character-story"] .threshold-row, [data-template-page-id="character-story"] .resource-row, [data-template-page-id="character-story"] .currency-row, [data-template-page-id="character-story"] .hope-region, [data-template-page-id="character-story"] .item-list {
     grid-template-columns: 1fr;
   }[data-template-page-id="character-story"] .item-list article {
     grid-template-columns: 1fr;
   }
-}@media print {[data-template-page-id="character-story"] .daggerheart-sheet {
-    min-height: 0;
-    padding: 0.4rem;
-    break-after: page;
-  }
 }
+
+
 
 
 body.snapshot-body {
@@ -3390,16 +3672,55 @@ body.snapshot-body {
   padding: 0;
 }
 .snapshot-shell .sheet-page,
+.snapshot-shell [data-print-page="true"] {
+  box-sizing: border-box;
+  width: 210mm;
+  height: 297mm;
+  margin: 0 auto 16px;
+  padding: 5mm 4mm 5mm;
+  overflow: hidden;
+  background: #ffffff;
+}
+.snapshot-shell [data-print-page="true"] {
+  padding: 3mm;
+}
+.snapshot-shell .sheet-page,
 .snapshot-shell .module-slot,
 .snapshot-shell .container,
-.snapshot-shell .card-table-module,
 .snapshot-shell .play-card {
   break-inside: avoid;
   page-break-inside: avoid;
 }
+.snapshot-shell .play-card {
+  box-shadow: none !important;
+  filter: none !important;
+}
+.snapshot-shell .play-card,
+.snapshot-shell .play-card * {
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+.snapshot-shell input::placeholder,
+.snapshot-shell textarea::placeholder {
+  color: #d5dadd !important;
+  -webkit-text-fill-color: #d5dadd !important;
+  opacity: 1 !important;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
 @media print {
   @page {
-    margin: 8mm 4mm 10mm;
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  .snapshot-shell input::placeholder,
+  .snapshot-shell textarea::placeholder {
+    color: #d5dadd !important;
+    -webkit-text-fill-color: #d5dadd !important;
+    opacity: 1 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
   .snapshot-shell .card-table-surface {
@@ -3412,17 +3733,40 @@ body.snapshot-body {
     height: auto !important;
     min-height: 0 !important;
     overflow: visible;
+    border: 0;
   }
   .snapshot-shell .play-card {
     position: relative;
+    width: var(--play-card-width) !important;
     left: auto !important;
     top: auto !important;
     z-index: auto !important;
     transform: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+  .snapshot-shell .play-card,
+  .snapshot-shell .play-card * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
   .snapshot-shell .sheet-page,
-  .sheet-page {
+  .snapshot-shell [data-print-page="true"],
+  .sheet-page,
+  [data-print-page="true"] {
+    box-sizing: border-box;
+    width: 210mm;
+    height: 297mm;
+    margin: 0;
+    padding: 5mm 4mm 5mm;
+    overflow: hidden;
     break-after: page;
+  }
+  .snapshot-shell [data-print-page="true"],
+  [data-print-page="true"] {
+    padding: 3mm;
+    break-after: auto;
+    page-break-after: auto;
   }
 }</style>
 </head>
@@ -3431,12 +3775,12 @@ body.snapshot-body {
     <main class="sheet-tool" aria-label="Sheet Tool"><div class="sheet-shell" data-template-shell="true"><style>[data-template-shell="true"] .daggerheart-workspace {
   display: flex;
   gap: 1rem;
-  align-items: flex-start;
+  align-items: stretch;
   min-width: 0;
   padding: 0.75rem;
 }[data-template-shell="true"] .daggerheart-sheet-pane {
-  flex: 0 1 64rem;
-  width: min(64rem, 100%);
+  flex: 0 1 54rem;
+  width: min(54rem, 100%);
   min-width: 38rem;
   min-height: 90rem;
   overflow: hidden;
@@ -3449,23 +3793,26 @@ body.snapshot-body {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-}[data-template-shell="true"] .daggerheart-card-pane > [data-module-type="cardTable"] {
+}[data-template-shell="true"] .daggerheart-card-table-slot {
   flex: 1 1 auto;
+  display: grid;
   min-height: 38rem;
 }[data-template-shell="true"] .card-picker-grid {
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
-}@media (max-width: 1080px) {[data-template-shell="true"] .daggerheart-workspace {
+}@media screen and (max-width: 1080px) {[data-template-shell="true"] .daggerheart-workspace {
     flex-direction: column;
   }[data-template-shell="true"] .daggerheart-sheet-pane, [data-template-shell="true"] .daggerheart-card-pane {
     width: 100%;
     min-width: 0;
   }[data-template-shell="true"] .daggerheart-card-pane {
     min-height: 32rem;
+  }[data-template-shell="true"] .daggerheart-card-table-slot {
+    min-height: 32rem;
   }
-}@media (max-width: 560px) {[data-template-shell="true"] .daggerheart-workspace {
+}@media screen and (max-width: 560px) {[data-template-shell="true"] .daggerheart-workspace {
     padding: 0.375rem;
   }[data-template-shell="true"] .card-picker-grid {
     grid-template-columns: 1fr;
@@ -3479,7 +3826,11 @@ body.snapshot-body {
     min-height: 0;
     border: 0;
   }[data-template-shell="true"] .daggerheart-card-pane {
+    display: block;
+  }[data-template-shell="true"] .daggerheart-card-pane > .card-picker-grid {
     display: none;
+  }[data-template-shell="true"] .daggerheart-card-table-slot {
+    min-height: 0;
   }
 }
 </style><main class="daggerheart-workspace">
@@ -3490,7 +3841,7 @@ body.snapshot-body {
   align-content: start;
   gap: 0.3rem;
   width: 100%;
-  min-height: 90rem;
+  min-height: 100%;
   padding: 0.4rem;
   background: #fff;
   color: #202426;
@@ -3650,7 +4001,7 @@ body.snapshot-body {
   align-items: center;
   justify-content: space-between;
 }[data-template-page-id="character-main"] .region-heading-row > [data-module-slot-id="proficiency"] {
-  flex: 0 1 14rem;
+  flex: 0 1 16rem;
 }[data-template-page-id="character-main"] .equipment-slot {
   min-width: 0;
   padding-top: 0.15rem;
@@ -3665,11 +4016,13 @@ body.snapshot-body {
   display: grid;
   gap: 0.125rem;
 }[data-template-page-id="character-main"] .weapon-fields {
-  grid-template-columns: minmax(7rem, 1fr) auto 3.5em 3.5em 4.5em 3.5em 3.5em;
+  grid-template-columns: minmax(7rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em;
 }[data-template-page-id="character-main"] .backup-weapon-fields {
-  grid-template-columns: minmax(6.5rem, 1fr) auto 3.5em 3.5em 4.5em 3.5em 3.5em;
+  grid-template-columns: minmax(6.5rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em;
 }[data-template-page-id="character-main"] .armor-fields {
   grid-template-columns: minmax(8rem, 2fr) auto repeat(2, minmax(4rem, 1fr));
+}[data-template-page-id="character-main"] .equipment-fields [data-module-type="freeText"]:not([data-module-id$="-name"]) [data-part="input"] {
+  font-size: 0.8rem;
 }[data-template-page-id="character-main"] [data-module-id$="-description"] [data-part="input"] {
   min-height: 2.25rem;
   padding-block: 0.125rem;
@@ -3690,12 +4043,16 @@ body.snapshot-body {
   margin-top: 0.25rem;
 }[data-template-page-id="character-main"] .sheet-region > h2, [data-template-page-id="character-main"] .region-heading-row > h2, [data-template-page-id="character-main"] .advancement-region > h2 {
   display: none;
-}[data-template-page-id="character-main"] .story-page-heading {
-  padding: 0.2rem 0.3rem;
+}[data-template-page-id="character-main"] .sheet-region > .section-title, [data-template-page-id="character-main"] .equipment-slot-title {
+  display: block;
+  margin: 0.2rem 0 0.125rem;
+  padding: 0 0.2rem 0.1rem;
   border-bottom: 1px solid #616b6e;
-  text-align: center;
-}[data-template-page-id="character-main"] .story-page-heading h1 {
-  font-size: 1.1rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  text-align: left;
+}[data-template-page-id="character-main"] .equipment-slot-title {
+  margin-top: 0;
 }[data-template-page-id="character-main"] .story-overview {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3777,7 +4134,10 @@ body.snapshot-body {
   width: 0.75rem;
   height: 0.75rem;
   margin: 0;
-}@media (max-width: 800px) {[data-template-page-id="character-main"] .daggerheart-sheet {
+}@media print {[data-template-page-id="character-main"] .daggerheart-sheet {
+    min-height: 0;
+  }
+}@media screen and (max-width: 800px) {[data-template-page-id="character-main"] .daggerheart-sheet {
     min-height: 0;
     padding: 0.5rem;
   }[data-template-page-id="character-main"] .identity-panel, [data-template-page-id="character-main"] .upper-stat-layout, [data-template-page-id="character-main"] .sheet-body-layout, [data-template-page-id="character-main"] .question-layout {
@@ -3797,47 +4157,44 @@ body.snapshot-body {
   }[data-template-page-id="character-main"] .story-overview {
     grid-template-columns: 1fr;
   }
-}@media (max-width: 480px) {[data-template-page-id="character-main"] .identity-fields, [data-template-page-id="character-main"] .defense-summary, [data-template-page-id="character-main"] .trait-summary, [data-template-page-id="character-main"] .threshold-row, [data-template-page-id="character-main"] .resource-row, [data-template-page-id="character-main"] .currency-row, [data-template-page-id="character-main"] .hope-region, [data-template-page-id="character-main"] .item-list {
+}@media screen and (max-width: 480px) {[data-template-page-id="character-main"] .identity-fields, [data-template-page-id="character-main"] .defense-summary, [data-template-page-id="character-main"] .trait-summary, [data-template-page-id="character-main"] .threshold-row, [data-template-page-id="character-main"] .resource-row, [data-template-page-id="character-main"] .currency-row, [data-template-page-id="character-main"] .hope-region, [data-template-page-id="character-main"] .item-list {
     grid-template-columns: 1fr;
   }[data-template-page-id="character-main"] .item-list article {
     grid-template-columns: 1fr;
   }
-}@media print {[data-template-page-id="character-main"] .daggerheart-sheet {
-    min-height: 0;
-    padding: 0.4rem;
-    break-after: page;
-  }
 }
+
+
 </style><main class="daggerheart-sheet character-main-page">
   <header class="identity-panel" aria-label="角色身份">
     <div class="brand-panel" aria-label="匕首之心">匕首之心</div>
     <div class="identity-fields">
-      <div class="character-name-field"><div class="module-slot" data-module-slot-id="character-name"><div class="container" data-module-id="character-name" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-character-name">姓名</label><input id="module-character-name" class="input" data-part="input" value="" readonly=""></div></div></div>
+      <div class="character-name-field"><div class="module-slot" data-module-slot-id="character-name"><div class="container" data-module-id="character-name" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-character-name">姓名</label><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div></div>
       <div class="picker-field class-field">
-        <div class="module-slot" data-module-slot-id="class-name"><div class="container" data-module-id="class-name" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-class-name">职业</label><input id="module-class-name" class="input" data-part="input" value="德鲁伊" readonly=""></div></div>
+        <div class="module-slot" data-module-slot-id="class-name"><div class="container" data-module-id="class-name" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-class-name">职业</label><div class="markdown-preview" data-part="input" data-markdown-preview="true" aria-label="职业"><div data-restricted-markdown="true"><p>德鲁伊</p></div></div></div></div>
         <div class="module-slot" data-module-slot-id="pick-class"><div class="container resource-picker-module" data-module-id="pick-class" data-module-type="resourcePicker" data-part="container"></div></div>
         <div class="module-slot" data-module-slot-id="pick-subclass"><div class="container resource-picker-module" data-module-id="pick-subclass" data-module-type="resourcePicker" data-part="container"></div></div>
       </div>
-      <div class="picker-field ancestry-field"><div class="module-slot" data-module-slot-id="ancestry-name"><div class="container" data-module-id="ancestry-name" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-ancestry-name">种族</label><input id="module-ancestry-name" class="input" data-part="input" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="pick-ancestry"><div class="container resource-picker-module" data-module-id="pick-ancestry" data-module-type="resourcePicker" data-part="container"></div></div></div>
-      <div class="picker-field community-field"><div class="module-slot" data-module-slot-id="community-name"><div class="container" data-module-id="community-name" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-community-name">社群</label><input id="module-community-name" class="input" data-part="input" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="pick-community"><div class="container resource-picker-module" data-module-id="pick-community" data-module-type="resourcePicker" data-part="container"></div></div></div>
+      <div class="picker-field ancestry-field"><div class="module-slot" data-module-slot-id="ancestry-name"><div class="container" data-module-id="ancestry-name" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-ancestry-name">种族</label><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="pick-ancestry"><div class="container resource-picker-module" data-module-id="pick-ancestry" data-module-type="resourcePicker" data-part="container"></div></div></div>
+      <div class="picker-field community-field"><div class="module-slot" data-module-slot-id="community-name"><div class="container" data-module-id="community-name" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-community-name">社群</label><div class="markdown-preview" data-part="input" data-markdown-preview="true" aria-label="社群"><div data-restricted-markdown="true"><p>滨海之民</p></div></div></div></div><div class="module-slot" data-module-slot-id="pick-community"><div class="container resource-picker-module" data-module-id="pick-community" data-module-type="resourcePicker" data-part="container"></div></div></div>
     </div>
-    <div class="level-field"><div class="module-slot" data-module-slot-id="level"><div class="container" data-module-id="level" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-level">等级</label><input id="module-level" class="input" data-part="input" value="1" readonly=""></div></div></div>
+    <div class="level-field"><div class="module-slot" data-module-slot-id="level"><div class="container" data-module-id="level" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-level">等级</label><div class="markdown-preview" data-part="input" data-markdown-preview="true" aria-label="等级"><div data-restricted-markdown="true"><p>1</p></div></div></div></div></div>
   </header>
 
   <section class="upper-stat-layout" aria-label="防御与属性">
     <div class="defense-summary">
-      <div class="module-slot" data-module-slot-id="evasion"><div class="container" data-module-id="evasion" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-evasion">闪避</label><input id="module-evasion" class="input" data-part="input" value="10" readonly=""></div></div>
-      <div class="module-slot" data-module-slot-id="armor-value"><div class="container" data-module-id="armor-value" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-armor-value">护甲值</label><input id="module-armor-value" class="input" data-part="input" value="" readonly=""></div></div>
-      <div class="module-slot" data-module-slot-id="major-threshold"><div class="container" data-module-id="major-threshold" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-major-threshold">重度阈值</label><input id="module-major-threshold" class="input" data-part="input" value="" readonly=""></div></div>
-      <div class="module-slot" data-module-slot-id="severe-threshold"><div class="container" data-module-id="severe-threshold" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-severe-threshold">严重阈值</label><input id="module-severe-threshold" class="input" data-part="input" value="" readonly=""></div></div>
+      <div class="module-slot" data-module-slot-id="evasion"><div class="container" data-module-id="evasion" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-evasion">闪避</label><div class="markdown-preview" data-part="input" data-markdown-preview="true" aria-label="闪避"><div data-restricted-markdown="true"><p>10</p></div></div></div></div>
+      <div class="module-slot" data-module-slot-id="armor-value"><div class="container" data-module-id="armor-value" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-armor-value">护甲值</label><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+      <div class="module-slot" data-module-slot-id="major-threshold"><div class="container" data-module-id="major-threshold" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-major-threshold">重度阈值</label><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+      <div class="module-slot" data-module-slot-id="severe-threshold"><div class="container" data-module-id="severe-threshold" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-severe-threshold">严重阈值</label><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
     </div>
     <div class="trait-summary">
-      <div class="module-slot" data-module-slot-id="agility"><div class="container" data-module-id="agility" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-agility">敏捷</label><input id="module-agility" class="input" data-part="input" value="" readonly=""></div></div>
-      <div class="module-slot" data-module-slot-id="strength"><div class="container" data-module-id="strength" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-strength">力量</label><input id="module-strength" class="input" data-part="input" value="" readonly=""></div></div>
-      <div class="module-slot" data-module-slot-id="finesse"><div class="container" data-module-id="finesse" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-finesse">灵巧</label><input id="module-finesse" class="input" data-part="input" value="" readonly=""></div></div>
-      <div class="module-slot" data-module-slot-id="instinct"><div class="container" data-module-id="instinct" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-instinct">本能</label><input id="module-instinct" class="input" data-part="input" value="" readonly=""></div></div>
-      <div class="module-slot" data-module-slot-id="presence"><div class="container" data-module-id="presence" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-presence">风度</label><input id="module-presence" class="input" data-part="input" value="" readonly=""></div></div>
-      <div class="module-slot" data-module-slot-id="knowledge"><div class="container" data-module-id="knowledge" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-knowledge">知识</label><input id="module-knowledge" class="input" data-part="input" value="" readonly=""></div></div>
+      <div class="module-slot" data-module-slot-id="agility"><div class="container" data-module-id="agility" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-agility">敏捷</label><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+      <div class="module-slot" data-module-slot-id="strength"><div class="container" data-module-id="strength" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-strength">力量</label><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+      <div class="module-slot" data-module-slot-id="finesse"><div class="container" data-module-id="finesse" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-finesse">灵巧</label><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+      <div class="module-slot" data-module-slot-id="instinct"><div class="container" data-module-id="instinct" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-instinct">本能</label><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+      <div class="module-slot" data-module-slot-id="presence"><div class="container" data-module-id="presence" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-presence">风度</label><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+      <div class="module-slot" data-module-slot-id="knowledge"><div class="container" data-module-id="knowledge" data-module-type="freeText" data-part="container"><label class="label" data-part="label" for="module-knowledge">知识</label><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
     </div>
   </section>
 
@@ -3845,27 +4202,28 @@ body.snapshot-body {
     <div class="sheet-left-column sheet-main-left">
       <section class="sheet-region resource-region" aria-label="生命压力与阈值">
         <div class="resource-row">
-          <div class="module-slot" data-module-slot-id="hp"><div class="container" data-module-id="hp" data-module-type="countableResource" data-part="container"><div class="label" data-part="label">生命</div><div class="counter" data-part="counter"><span class="counter-value-group" data-part="value-group"><input class="input number-input" data-part="input" inputmode="numeric" aria-label="生命" value="0" readonly=""><span class="value" data-part="maximum">/ <input class="input max-input" data-part="maximum-input" inputmode="numeric" aria-label="生命上限" value="6" readonly=""></span></span></div></div></div>
-          <div class="module-slot" data-module-slot-id="stress"><div class="container" data-module-id="stress" data-module-type="countableResource" data-part="container"><div class="label" data-part="label">压力</div><div class="counter" data-part="counter"><span class="counter-value-group" data-part="value-group"><input class="input number-input" data-part="input" inputmode="numeric" aria-label="压力" value="0" readonly=""><span class="value" data-part="maximum">/ <input class="input max-input" data-part="maximum-input" inputmode="numeric" aria-label="压力上限" value="6" readonly=""></span></span></div></div></div>
-          <div class="module-slot" data-module-slot-id="armor-slots"><div class="container" data-module-id="armor-slots" data-module-type="countableResource" data-part="container"><div class="label" data-part="label">护甲</div><div class="counter" data-part="counter"><span class="counter-value-group" data-part="value-group"><input class="input number-input" data-part="input" inputmode="numeric" aria-label="护甲" value="0" readonly=""><span class="value" data-part="maximum">/ <input class="input max-input" data-part="maximum-input" inputmode="numeric" aria-label="护甲上限" value="0" readonly=""></span></span></div></div></div>
-          <div class="module-slot" data-module-slot-id="hope"><div class="container" data-module-id="hope" data-module-type="countableResource" data-part="container"><div class="label" data-part="label">希望</div><div class="counter" data-part="counter"><span class="counter-value-group" data-part="value-group"><input class="input number-input" data-part="input" inputmode="numeric" aria-label="希望" value="2" readonly=""><span class="value" data-part="maximum">/ <input class="input max-input" data-part="maximum-input" inputmode="numeric" aria-label="希望上限" value="6" readonly=""></span></span></div></div></div>
+          <div class="module-slot" data-module-slot-id="hp"><div class="container" data-module-id="hp" data-module-type="countableResource" data-part="container"><div class="label" data-part="label">生命</div><div class="counter" data-part="counter"><span class="counter-value-group marker-group" data-part="marker-group" role="img" aria-label="生命：当前值 1，上限 6" data-marker-fit-pending="false" style="" data-marker-font-size="16" data-marker-fit="natural"><span data-part="current-markers"><span class="marker-cell" data-part="marker" data-marker-kind="current" aria-hidden="true">🩸</span></span><span data-part="remaining-markers"><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">❤️</span><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">❤️</span><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">❤️</span><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">❤️</span><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">❤️</span></span></span></div></div></div>
+          <div class="module-slot" data-module-slot-id="stress"><div class="container" data-module-id="stress" data-module-type="countableResource" data-part="container"><div class="label" data-part="label">压力</div><div class="counter" data-part="counter"><span class="counter-value-group marker-group" data-part="marker-group" role="img" aria-label="压力：当前值 2，上限 6" data-marker-fit-pending="false" style="" data-marker-font-size="16" data-marker-fit="natural"><span data-part="current-markers"><span class="marker-cell" data-part="marker" data-marker-kind="current" aria-hidden="true">😰</span><span class="marker-cell" data-part="marker" data-marker-kind="current" aria-hidden="true">😰</span></span><span data-part="remaining-markers"><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">😌</span><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">😌</span><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">😌</span><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">😌</span></span></span></div></div></div>
+          <div class="module-slot" data-module-slot-id="armor-slots"><div class="container" data-module-id="armor-slots" data-module-type="countableResource" data-part="container"><div class="label" data-part="label">护甲</div><div class="counter" data-part="counter"><span class="counter-value-group marker-group" data-part="marker-group" role="img" aria-label="护甲：当前值 4，上限 6" data-marker-fit-pending="false" style="" data-marker-font-size="16" data-marker-fit="natural"><span data-part="current-markers"><span class="marker-cell" data-part="marker" data-marker-kind="current" aria-hidden="true">💥</span><span class="marker-cell" data-part="marker" data-marker-kind="current" aria-hidden="true">💥</span><span class="marker-cell" data-part="marker" data-marker-kind="current" aria-hidden="true">💥</span><span class="marker-cell" data-part="marker" data-marker-kind="current" aria-hidden="true">💥</span></span><span data-part="remaining-markers"><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">🛡️</span><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">🛡️</span></span></span></div></div></div>
+          <div class="module-slot" data-module-slot-id="hope"><div class="container" data-module-id="hope" data-module-type="countableResource" data-part="container"><div class="label" data-part="label">希望</div><div class="counter" data-part="counter"><span class="counter-value-group marker-group" data-part="marker-group" role="img" aria-label="希望：当前值 3，上限 6" data-marker-fit-pending="false" style="" data-marker-font-size="16" data-marker-fit="natural"><span data-part="current-markers"><span class="marker-cell" data-part="marker" data-marker-kind="current" aria-hidden="true">✨</span><span class="marker-cell" data-part="marker" data-marker-kind="current" aria-hidden="true">✨</span><span class="marker-cell" data-part="marker" data-marker-kind="current" aria-hidden="true">✨</span></span><span data-part="remaining-markers"><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">🌑</span><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">🌑</span><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">🌑</span></span></span></div></div></div>
         </div>
-        <div class="module-slot" data-module-slot-id="class-hope-feature"><div class="container container-stack" data-module-id="class-hope-feature" data-module-type="longText" data-part="container"><label class="label" data-part="label" for="module-class-hope-feature">希望特性</label><textarea id="module-class-hope-feature" class="input textarea" data-part="input" rows="2" readonly="">幻化成兽: **花费 3 希望点** 变形成野兽形态，而无需**标记 1 压力点**。当你这样做时，选择一个属性获得+1加值，直到你解除野兽形态。</textarea></div></div>
+        <div class="module-slot" data-module-slot-id="class-hope-feature"><div class="container container-stack" data-module-id="class-hope-feature" data-module-type="longText" data-part="container"><label class="label" data-part="label" for="module-class-hope-feature">希望特性</label><div class="markdown-preview" data-part="input" data-markdown-preview="true" aria-label="希望特性"><div data-restricted-markdown="true"><p>幻化成兽: <strong>花费 3 希望点</strong> 变形成野兽形态，而无需<strong>标记 1 压力点</strong>。当你这样做时，选择一个属性获得+1加值，直到你解除野兽形态。</p></div></div></div></div>
       </section>
 
       <section class="sheet-region experience-region" aria-label="经历">
+        <h2 class="section-title">经历</h2>
         <div class="experience-list">
-          <div><div class="module-slot" data-module-slot-id="experience-1"><div class="container" data-module-id="experience-1" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-experience-1" class="input" data-part="input" aria-label="经历 1" placeholder="经历 1" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="experience-modifier-1"><div class="container" data-module-id="experience-modifier-1" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-experience-modifier-1" class="input" data-part="input" aria-label="修正" placeholder="修正" value="" readonly=""></div></div></div>
-          <div><div class="module-slot" data-module-slot-id="experience-2"><div class="container" data-module-id="experience-2" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-experience-2" class="input" data-part="input" aria-label="经历 2" placeholder="经历 2" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="experience-modifier-2"><div class="container" data-module-id="experience-modifier-2" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-experience-modifier-2" class="input" data-part="input" aria-label="修正" placeholder="修正" value="" readonly=""></div></div></div>
-          <div><div class="module-slot" data-module-slot-id="experience-3"><div class="container" data-module-id="experience-3" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-experience-3" class="input" data-part="input" aria-label="经历 3" placeholder="经历 3" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="experience-modifier-3"><div class="container" data-module-id="experience-modifier-3" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-experience-modifier-3" class="input" data-part="input" aria-label="修正" placeholder="修正" value="" readonly=""></div></div></div>
-          <div><div class="module-slot" data-module-slot-id="experience-4"><div class="container" data-module-id="experience-4" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-experience-4" class="input" data-part="input" aria-label="经历 4" placeholder="经历 4" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="experience-modifier-4"><div class="container" data-module-id="experience-modifier-4" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-experience-modifier-4" class="input" data-part="input" aria-label="修正" placeholder="修正" value="" readonly=""></div></div></div>
-          <div><div class="module-slot" data-module-slot-id="experience-5"><div class="container" data-module-id="experience-5" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-experience-5" class="input" data-part="input" aria-label="经历 5" placeholder="经历 5" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="experience-modifier-5"><div class="container" data-module-id="experience-modifier-5" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-experience-modifier-5" class="input" data-part="input" aria-label="修正" placeholder="修正" value="" readonly=""></div></div></div>
+          <div><div class="module-slot" data-module-slot-id="experience-1"><div class="container" data-module-id="experience-1" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="experience-modifier-1"><div class="container" data-module-id="experience-modifier-1" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div></div>
+          <div><div class="module-slot" data-module-slot-id="experience-2"><div class="container" data-module-id="experience-2" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="experience-modifier-2"><div class="container" data-module-id="experience-modifier-2" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div></div>
+          <div><div class="module-slot" data-module-slot-id="experience-3"><div class="container" data-module-id="experience-3" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="experience-modifier-3"><div class="container" data-module-id="experience-modifier-3" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div></div>
+          <div><div class="module-slot" data-module-slot-id="experience-4"><div class="container" data-module-id="experience-4" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="experience-modifier-4"><div class="container" data-module-id="experience-modifier-4" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div></div>
+          <div><div class="module-slot" data-module-slot-id="experience-5"><div class="container" data-module-id="experience-5" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="experience-modifier-5"><div class="container" data-module-id="experience-modifier-5" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div></div>
         </div>
       </section>
 
       <section class="sheet-region class-feature-region" aria-label="职业特性">
-        <div class="module-slot" data-module-slot-id="class-feature"><div class="container container-stack" data-module-id="class-feature" data-module-type="longText" data-part="container"><label class="label" data-part="label" for="module-class-feature">职业特性</label><textarea id="module-class-feature" class="input textarea" data-part="input" rows="12" readonly="">野兽形态: **标记 1 压力点**，即可魔法般变形成野兽形态列表中的一种生物，其位阶必须等于或低于你的位阶。你可以随时解除此形态。变身后，你无法使用武器或施展领域卡上的法术，但你仍然可以使用你拥有的其他特性或能力。你在变身前施展的法术保持激活状态，并持续其正常持续时间，你也可以正常说话和交流。此外，你获得该野兽形态的特性，将它们的闪避加值加入你的闪避值，并使用其指定的属性进行攻击。当你处于野兽形态时，你的护甲成为你身体的一部分，你像往常一样标记护甲槽；当你解除野兽形态时，那些标记的护甲槽仍然保持标记状态。如果你标记了最后一个生命点，将自动解除此形态。
-荒野恩泽: 你可以随意施展涉及自然的无害、微妙效果——比如随心所欲地让花朵快速生长、召唤一阵微风或点燃营火。</textarea></div></div>
+        <div class="module-slot" data-module-slot-id="class-feature"><div class="container container-stack" data-module-id="class-feature" data-module-type="longText" data-part="container"><label class="label" data-part="label" for="module-class-feature">职业特性</label><div class="markdown-preview" data-part="input" data-markdown-preview="true" aria-label="职业特性"><div data-restricted-markdown="true"><p>野兽形态: <strong>标记 1 压力点</strong>，即可魔法般变形成野兽形态列表中的一种生物，其位阶必须等于或低于你的位阶。你可以随时解除此形态。变身后，你无法使用武器或施展领域卡上的法术，但你仍然可以使用你拥有的其他特性或能力。你在变身前施展的法术保持激活状态，并持续其正常持续时间，你也可以正常说话和交流。此外，你获得该野兽形态的特性，将它们的闪避加值加入你的闪避值，并使用其指定的属性进行攻击。当你处于野兽形态时，你的护甲成为你身体的一部分，你像往常一样标记护甲槽；当你解除野兽形态时，那些标记的护甲槽仍然保持标记状态。如果你标记了最后一个生命点，将自动解除此形态。
+荒野恩泽: 你可以随意施展涉及自然的无害、微妙效果——比如随心所欲地让花朵快速生长、召唤一阵微风或点燃营火。</p></div></div></div></div>
       </section>
 
     </div>
@@ -3874,79 +4232,84 @@ body.snapshot-body {
       <section class="sheet-region equipment-region" aria-label="装备">
         <div class="region-heading-row">
           <h2>装备</h2>
-          <div class="module-slot" data-module-slot-id="proficiency"><div class="container" data-module-id="proficiency" data-module-type="countableResource" data-part="container"><div class="label" data-part="label">熟练度</div><div class="counter" data-part="counter"><span class="counter-value-group" data-part="value-group"><input class="input number-input" data-part="input" inputmode="numeric" aria-label="熟练度" value="1" readonly=""><span class="value" data-part="maximum">/ 6</span></span></div></div></div>
+          <div class="module-slot" data-module-slot-id="proficiency"><div class="container" data-module-id="proficiency" data-module-type="countableResource" data-part="container"><div class="label" data-part="label">熟练度</div><div class="counter" data-part="counter"><span class="counter-value-group marker-group" data-part="marker-group" role="img" aria-label="熟练度：当前值 2，上限 6" data-marker-fit-pending="false" style="" data-marker-font-size="16" data-marker-fit="natural"><span data-part="current-markers"><span class="marker-cell" data-part="marker" data-marker-kind="current" aria-hidden="true">⚔️</span><span class="marker-cell" data-part="marker" data-marker-kind="current" aria-hidden="true">⚔️</span></span><span data-part="remaining-markers"><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">▫️</span><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">▫️</span><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">▫️</span><span class="marker-cell" data-part="marker" data-marker-kind="remaining" aria-hidden="true">▫️</span></span></span></div></div></div>
         </div>
 
         <article class="equipment-slot">
+          <h3 class="equipment-slot-title">主武器</h3>
           <div class="equipment-grid">
             <div class="equipment-fields weapon-fields">
-              <div class="module-slot" data-module-slot-id="primary-weapon-name"><div class="container" data-module-id="primary-weapon-name" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-primary-weapon-name" class="input" data-part="input" aria-label="主武器名称" placeholder="主武器" value="摆动绳刃" readonly=""></div></div><div class="module-slot" data-module-slot-id="pick-primary-weapon"><div class="container resource-picker-module" data-module-id="pick-primary-weapon" data-module-type="resourcePicker" data-part="container"></div></div><div class="module-slot" data-module-slot-id="primary-weapon-stat"><div class="container" data-module-id="primary-weapon-stat" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-primary-weapon-stat" class="input" data-part="input" aria-label="属性" placeholder="属性" value="风度" readonly=""></div></div>
-              <div class="module-slot" data-module-slot-id="primary-weapon-range"><div class="container" data-module-id="primary-weapon-range" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-primary-weapon-range" class="input" data-part="input" aria-label="距离" placeholder="距离" value="近距离" readonly=""></div></div><div class="module-slot" data-module-slot-id="primary-weapon-damage"><div class="container" data-module-id="primary-weapon-damage" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-primary-weapon-damage" class="input" data-part="input" aria-label="伤害" placeholder="伤害" value="d8+9" readonly=""></div></div>
-              <div class="module-slot" data-module-slot-id="primary-weapon-damage-type"><div class="container" data-module-id="primary-weapon-damage-type" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-primary-weapon-damage-type" class="input" data-part="input" aria-label="类型" placeholder="类型" value="物理" readonly=""></div></div><div class="module-slot" data-module-slot-id="primary-weapon-hands"><div class="container" data-module-id="primary-weapon-hands" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-primary-weapon-hands" class="input" data-part="input" aria-label="负荷" placeholder="负荷" value="双手" readonly=""></div></div>
+              <div class="module-slot" data-module-slot-id="primary-weapon-name"><div class="container" data-module-id="primary-weapon-name" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="pick-primary-weapon"><div class="container resource-picker-module" data-module-id="pick-primary-weapon" data-module-type="resourcePicker" data-part="container"></div></div><div class="module-slot" data-module-slot-id="primary-weapon-stat"><div class="container" data-module-id="primary-weapon-stat" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+              <div class="module-slot" data-module-slot-id="primary-weapon-range"><div class="container" data-module-id="primary-weapon-range" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="primary-weapon-damage"><div class="container" data-module-id="primary-weapon-damage" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+              <div class="module-slot" data-module-slot-id="primary-weapon-damage-type"><div class="container" data-module-id="primary-weapon-damage-type" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="primary-weapon-hands"><div class="container" data-module-id="primary-weapon-hands" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
             </div>
-            <div class="module-slot" data-module-slot-id="primary-weapon-description"><div class="container container-stack" data-module-id="primary-weapon-description" data-module-type="longText" data-part="container" data-label-hidden="true"><textarea id="module-primary-weapon-description" class="input textarea" data-part="input" aria-label="主武器描述" rows="2" readonly="">**捕获：**在一次成功攻击后**花费 1 希望点**，使目标处于束缚状态或者将其拉至你的近战范围。</textarea></div></div>
+            <div class="module-slot" data-module-slot-id="primary-weapon-description"><div class="container container-stack" data-module-id="primary-weapon-description" data-module-type="longText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
           </div>
         </article>
 
         <article class="equipment-slot">
+          <h3 class="equipment-slot-title">副武器</h3>
           <div class="equipment-grid">
             <div class="equipment-fields weapon-fields">
-              <div class="module-slot" data-module-slot-id="secondary-weapon-name"><div class="container" data-module-id="secondary-weapon-name" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-secondary-weapon-name" class="input" data-part="input" aria-label="副武器名称" placeholder="副武器" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="pick-secondary-weapon"><div class="container resource-picker-module" data-module-id="pick-secondary-weapon" data-module-type="resourcePicker" data-part="container"></div></div><div class="module-slot" data-module-slot-id="secondary-weapon-stat"><div class="container" data-module-id="secondary-weapon-stat" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-secondary-weapon-stat" class="input" data-part="input" aria-label="属性" placeholder="属性" value="" readonly=""></div></div>
-              <div class="module-slot" data-module-slot-id="secondary-weapon-range"><div class="container" data-module-id="secondary-weapon-range" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-secondary-weapon-range" class="input" data-part="input" aria-label="距离" placeholder="距离" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="secondary-weapon-damage"><div class="container" data-module-id="secondary-weapon-damage" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-secondary-weapon-damage" class="input" data-part="input" aria-label="伤害" placeholder="伤害" value="" readonly=""></div></div>
-              <div class="module-slot" data-module-slot-id="secondary-weapon-damage-type"><div class="container" data-module-id="secondary-weapon-damage-type" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-secondary-weapon-damage-type" class="input" data-part="input" aria-label="类型" placeholder="类型" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="secondary-weapon-hands"><div class="container" data-module-id="secondary-weapon-hands" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-secondary-weapon-hands" class="input" data-part="input" aria-label="负荷" placeholder="负荷" value="" readonly=""></div></div>
+              <div class="module-slot" data-module-slot-id="secondary-weapon-name"><div class="container" data-module-id="secondary-weapon-name" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="pick-secondary-weapon"><div class="container resource-picker-module" data-module-id="pick-secondary-weapon" data-module-type="resourcePicker" data-part="container"></div></div><div class="module-slot" data-module-slot-id="secondary-weapon-stat"><div class="container" data-module-id="secondary-weapon-stat" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+              <div class="module-slot" data-module-slot-id="secondary-weapon-range"><div class="container" data-module-id="secondary-weapon-range" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="secondary-weapon-damage"><div class="container" data-module-id="secondary-weapon-damage" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+              <div class="module-slot" data-module-slot-id="secondary-weapon-damage-type"><div class="container" data-module-id="secondary-weapon-damage-type" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="secondary-weapon-hands"><div class="container" data-module-id="secondary-weapon-hands" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
             </div>
-            <div class="module-slot" data-module-slot-id="secondary-weapon-description"><div class="container container-stack" data-module-id="secondary-weapon-description" data-module-type="longText" data-part="container" data-label-hidden="true"><textarea id="module-secondary-weapon-description" class="input textarea" data-part="input" aria-label="副武器描述" rows="2" readonly=""></textarea></div></div>
+            <div class="module-slot" data-module-slot-id="secondary-weapon-description"><div class="container container-stack" data-module-id="secondary-weapon-description" data-module-type="longText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
           </div>
         </article>
 
         <article class="equipment-slot">
           <div class="equipment-grid">
             <div class="equipment-fields armor-fields">
-              <div class="module-slot" data-module-slot-id="armor-name"><div class="container" data-module-id="armor-name" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-armor-name" class="input" data-part="input" aria-label="护甲名称" placeholder="护甲" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="pick-armor"><div class="container resource-picker-module" data-module-id="pick-armor" data-module-type="resourcePicker" data-part="container"></div></div><div class="module-slot" data-module-slot-id="armor-base-major"><div class="container" data-module-id="armor-base-major" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-armor-base-major" class="input" data-part="input" aria-label="阈值" placeholder="阈值" value="" readonly=""></div></div>
-              <div class="module-slot" data-module-slot-id="armor-base-severe"><div class="container" data-module-id="armor-base-severe" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-armor-base-severe" class="input" data-part="input" aria-label="严重" placeholder="严重阈值" value="" readonly=""></div></div>
+              <div class="module-slot" data-module-slot-id="armor-name"><div class="container" data-module-id="armor-name" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="pick-armor"><div class="container resource-picker-module" data-module-id="pick-armor" data-module-type="resourcePicker" data-part="container"></div></div><div class="module-slot" data-module-slot-id="armor-base-major"><div class="container" data-module-id="armor-base-major" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+              <div class="module-slot" data-module-slot-id="armor-base-severe"><div class="container" data-module-id="armor-base-severe" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
             </div>
-            <div class="module-slot" data-module-slot-id="armor-description"><div class="container container-stack" data-module-id="armor-description" data-module-type="longText" data-part="container" data-label-hidden="true"><textarea id="module-armor-description" class="input textarea" data-part="input" aria-label="护甲描述" rows="2" readonly=""></textarea></div></div>
+            <div class="module-slot" data-module-slot-id="armor-description"><div class="container container-stack" data-module-id="armor-description" data-module-type="longText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
           </div>
         </article>
       </section>
 
       <section class="sheet-region inventory-region" aria-label="背包与备用武器">
+      <h2 class="section-title">物品栏</h2>
       <div class="item-list">
-        <article><div class="module-slot" data-module-slot-id="item-1"><div class="container" data-module-id="item-1" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-item-1" class="input" data-part="input" aria-label="物品栏 1" placeholder="物品栏 1" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="pick-item-1"><div class="container resource-picker-module" data-module-id="pick-item-1" data-module-type="resourcePicker" data-part="container"></div></div></article>
-        <article><div class="module-slot" data-module-slot-id="item-2"><div class="container" data-module-id="item-2" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-item-2" class="input" data-part="input" aria-label="物品栏 2" placeholder="物品栏 2" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="pick-item-2"><div class="container resource-picker-module" data-module-id="pick-item-2" data-module-type="resourcePicker" data-part="container"></div></div></article>
-        <article><div class="module-slot" data-module-slot-id="item-3"><div class="container" data-module-id="item-3" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-item-3" class="input" data-part="input" aria-label="物品栏 3" placeholder="物品栏 3" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="pick-item-3"><div class="container resource-picker-module" data-module-id="pick-item-3" data-module-type="resourcePicker" data-part="container"></div></div></article>
-        <article><div class="module-slot" data-module-slot-id="item-4"><div class="container" data-module-id="item-4" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-item-4" class="input" data-part="input" aria-label="物品栏 4" placeholder="物品栏 4" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="pick-item-4"><div class="container resource-picker-module" data-module-id="pick-item-4" data-module-type="resourcePicker" data-part="container"></div></div></article>
-        <article><div class="module-slot" data-module-slot-id="item-5"><div class="container" data-module-id="item-5" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-item-5" class="input" data-part="input" aria-label="物品栏 5" placeholder="物品栏 5" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="pick-item-5"><div class="container resource-picker-module" data-module-id="pick-item-5" data-module-type="resourcePicker" data-part="container"></div></div></article>
+        <article><div class="module-slot" data-module-slot-id="item-1"><div class="container" data-module-id="item-1" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="pick-item-1"><div class="container resource-picker-module" data-module-id="pick-item-1" data-module-type="resourcePicker" data-part="container"></div></div></article>
+        <article><div class="module-slot" data-module-slot-id="item-2"><div class="container" data-module-id="item-2" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="pick-item-2"><div class="container resource-picker-module" data-module-id="pick-item-2" data-module-type="resourcePicker" data-part="container"></div></div></article>
+        <article><div class="module-slot" data-module-slot-id="item-3"><div class="container" data-module-id="item-3" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="pick-item-3"><div class="container resource-picker-module" data-module-id="pick-item-3" data-module-type="resourcePicker" data-part="container"></div></div></article>
+        <article><div class="module-slot" data-module-slot-id="item-4"><div class="container" data-module-id="item-4" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="pick-item-4"><div class="container resource-picker-module" data-module-id="pick-item-4" data-module-type="resourcePicker" data-part="container"></div></div></article>
+        <article><div class="module-slot" data-module-slot-id="item-5"><div class="container" data-module-id="item-5" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="pick-item-5"><div class="container resource-picker-module" data-module-id="pick-item-5" data-module-type="resourcePicker" data-part="container"></div></div></article>
       </div>
 
+      <h2 class="section-title">金币区</h2>
       <div class="currency-row" aria-label="金币">
         <div class="module-slot" data-module-slot-id="handful-gold"><div class="container" data-module-id="handful-gold" data-module-type="countableResource" data-part="container"><div class="label" data-part="label">把</div><div class="counter" data-part="counter"><span class="counter-value-group" data-part="value-group"><input class="input number-input" data-part="input" inputmode="numeric" aria-label="把" value="1" readonly=""><span class="value" data-part="maximum">/ 9</span></span></div></div></div>
-        <div class="module-slot" data-module-slot-id="bag-gold"><div class="container" data-module-id="bag-gold" data-module-type="countableResource" data-part="container"><div class="label" data-part="label">袋</div><div class="counter" data-part="counter"><span class="counter-value-group" data-part="value-group"><input class="input number-input" data-part="input" inputmode="numeric" aria-label="袋" value="1" readonly=""><span class="value" data-part="maximum">/ 9</span></span></div></div></div>
+        <div class="module-slot" data-module-slot-id="bag-gold"><div class="container" data-module-id="bag-gold" data-module-type="countableResource" data-part="container"><div class="label" data-part="label">袋</div><div class="counter" data-part="counter"><span class="counter-value-group" data-part="value-group"><input class="input number-input" data-part="input" inputmode="numeric" aria-label="袋" value="0" readonly=""><span class="value" data-part="maximum">/ 9</span></span></div></div></div>
         <div class="module-slot" data-module-slot-id="chest-gold"><div class="container" data-module-id="chest-gold" data-module-type="countableResource" data-part="container"><div class="label" data-part="label">箱</div><div class="counter" data-part="counter"><span class="counter-value-group" data-part="value-group"><input class="input number-input" data-part="input" inputmode="numeric" aria-label="箱" value="0" readonly=""></span></div></div></div>
       </div>
 
+      <h2 class="section-title">备用武器</h2>
       <div class="backup-weapons">
           <article class="equipment-slot">
             <div class="equipment-grid">
               <div class="equipment-fields backup-weapon-fields">
-                <div class="module-slot" data-module-slot-id="backup-weapon-1-name"><div class="container" data-module-id="backup-weapon-1-name" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-backup-weapon-1-name" class="input" data-part="input" aria-label="备用武器一名称" placeholder="备用武器一" value="摆动绳刃" readonly=""></div></div><div class="module-slot" data-module-slot-id="pick-backup-weapon-1"><div class="container resource-picker-module" data-module-id="pick-backup-weapon-1" data-module-type="resourcePicker" data-part="container"></div></div>
-                <div class="module-slot" data-module-slot-id="backup-weapon-1-stat"><div class="container" data-module-id="backup-weapon-1-stat" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-backup-weapon-1-stat" class="input" data-part="input" aria-label="属性" placeholder="属性" value="风度" readonly=""></div></div><div class="module-slot" data-module-slot-id="backup-weapon-1-range"><div class="container" data-module-id="backup-weapon-1-range" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-backup-weapon-1-range" class="input" data-part="input" aria-label="距离" placeholder="距离" value="近距离" readonly=""></div></div>
-                <div class="module-slot" data-module-slot-id="backup-weapon-1-damage"><div class="container" data-module-id="backup-weapon-1-damage" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-backup-weapon-1-damage" class="input" data-part="input" aria-label="伤害" placeholder="伤害" value="d8+9" readonly=""></div></div><div class="module-slot" data-module-slot-id="backup-weapon-1-damage-type"><div class="container" data-module-id="backup-weapon-1-damage-type" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-backup-weapon-1-damage-type" class="input" data-part="input" aria-label="类型" placeholder="类型" value="物理" readonly=""></div></div>
-                <div class="module-slot" data-module-slot-id="backup-weapon-1-hands"><div class="container" data-module-id="backup-weapon-1-hands" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-backup-weapon-1-hands" class="input" data-part="input" aria-label="负荷" placeholder="负荷" value="双手" readonly=""></div></div>
+                <div class="module-slot" data-module-slot-id="backup-weapon-1-name"><div class="container" data-module-id="backup-weapon-1-name" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="pick-backup-weapon-1"><div class="container resource-picker-module" data-module-id="pick-backup-weapon-1" data-module-type="resourcePicker" data-part="container"></div></div>
+                <div class="module-slot" data-module-slot-id="backup-weapon-1-stat"><div class="container" data-module-id="backup-weapon-1-stat" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="backup-weapon-1-range"><div class="container" data-module-id="backup-weapon-1-range" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+                <div class="module-slot" data-module-slot-id="backup-weapon-1-damage"><div class="container" data-module-id="backup-weapon-1-damage" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="backup-weapon-1-damage-type"><div class="container" data-module-id="backup-weapon-1-damage-type" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+                <div class="module-slot" data-module-slot-id="backup-weapon-1-hands"><div class="container" data-module-id="backup-weapon-1-hands" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
               </div>
-              <div class="module-slot" data-module-slot-id="backup-weapon-1-description"><div class="container container-stack" data-module-id="backup-weapon-1-description" data-module-type="longText" data-part="container" data-label-hidden="true"><textarea id="module-backup-weapon-1-description" class="input textarea" data-part="input" aria-label="备用武器一描述" rows="2" readonly="">**捕获：**在一次成功攻击后**花费 1 希望点**，使目标处于束缚状态或者将其拉至你的近战范围。</textarea></div></div>
+              <div class="module-slot" data-module-slot-id="backup-weapon-1-description"><div class="container container-stack" data-module-id="backup-weapon-1-description" data-module-type="longText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
             </div>
           </article>
 
           <article class="equipment-slot">
             <div class="equipment-grid">
               <div class="equipment-fields backup-weapon-fields">
-                <div class="module-slot" data-module-slot-id="backup-weapon-2-name"><div class="container" data-module-id="backup-weapon-2-name" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-backup-weapon-2-name" class="input" data-part="input" aria-label="备用武器二名称" placeholder="备用武器二" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="pick-backup-weapon-2"><div class="container resource-picker-module" data-module-id="pick-backup-weapon-2" data-module-type="resourcePicker" data-part="container"></div></div>
-                <div class="module-slot" data-module-slot-id="backup-weapon-2-stat"><div class="container" data-module-id="backup-weapon-2-stat" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-backup-weapon-2-stat" class="input" data-part="input" aria-label="属性" placeholder="属性" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="backup-weapon-2-range"><div class="container" data-module-id="backup-weapon-2-range" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-backup-weapon-2-range" class="input" data-part="input" aria-label="距离" placeholder="距离" value="" readonly=""></div></div>
-                <div class="module-slot" data-module-slot-id="backup-weapon-2-damage"><div class="container" data-module-id="backup-weapon-2-damage" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-backup-weapon-2-damage" class="input" data-part="input" aria-label="伤害" placeholder="伤害" value="" readonly=""></div></div><div class="module-slot" data-module-slot-id="backup-weapon-2-damage-type"><div class="container" data-module-id="backup-weapon-2-damage-type" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-backup-weapon-2-damage-type" class="input" data-part="input" aria-label="类型" placeholder="类型" value="" readonly=""></div></div>
-                <div class="module-slot" data-module-slot-id="backup-weapon-2-hands"><div class="container" data-module-id="backup-weapon-2-hands" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-backup-weapon-2-hands" class="input" data-part="input" aria-label="负荷" placeholder="负荷" value="" readonly=""></div></div>
+                <div class="module-slot" data-module-slot-id="backup-weapon-2-name"><div class="container" data-module-id="backup-weapon-2-name" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="pick-backup-weapon-2"><div class="container resource-picker-module" data-module-id="pick-backup-weapon-2" data-module-type="resourcePicker" data-part="container"></div></div>
+                <div class="module-slot" data-module-slot-id="backup-weapon-2-stat"><div class="container" data-module-id="backup-weapon-2-stat" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="backup-weapon-2-range"><div class="container" data-module-id="backup-weapon-2-range" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+                <div class="module-slot" data-module-slot-id="backup-weapon-2-damage"><div class="container" data-module-id="backup-weapon-2-damage" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div><div class="module-slot" data-module-slot-id="backup-weapon-2-damage-type"><div class="container" data-module-id="backup-weapon-2-damage-type" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+                <div class="module-slot" data-module-slot-id="backup-weapon-2-hands"><div class="container" data-module-id="backup-weapon-2-hands" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
               </div>
-              <div class="module-slot" data-module-slot-id="backup-weapon-2-description"><div class="container container-stack" data-module-id="backup-weapon-2-description" data-module-type="longText" data-part="container" data-label-hidden="true"><textarea id="module-backup-weapon-2-description" class="input textarea" data-part="input" aria-label="备用武器二描述" rows="2" readonly=""></textarea></div></div>
+              <div class="module-slot" data-module-slot-id="backup-weapon-2-description"><div class="container container-stack" data-module-id="backup-weapon-2-description" data-module-type="longText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
             </div>
           </article>
       </div>
@@ -3960,7 +4323,7 @@ body.snapshot-body {
   align-content: start;
   gap: 0.3rem;
   width: 100%;
-  min-height: 90rem;
+  min-height: 100%;
   padding: 0.4rem;
   background: #fff;
   color: #202426;
@@ -4120,7 +4483,7 @@ body.snapshot-body {
   align-items: center;
   justify-content: space-between;
 }[data-template-page-id="character-story"] .region-heading-row > [data-module-slot-id="proficiency"] {
-  flex: 0 1 14rem;
+  flex: 0 1 16rem;
 }[data-template-page-id="character-story"] .equipment-slot {
   min-width: 0;
   padding-top: 0.15rem;
@@ -4135,11 +4498,13 @@ body.snapshot-body {
   display: grid;
   gap: 0.125rem;
 }[data-template-page-id="character-story"] .weapon-fields {
-  grid-template-columns: minmax(7rem, 1fr) auto 3.5em 3.5em 4.5em 3.5em 3.5em;
+  grid-template-columns: minmax(7rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em;
 }[data-template-page-id="character-story"] .backup-weapon-fields {
-  grid-template-columns: minmax(6.5rem, 1fr) auto 3.5em 3.5em 4.5em 3.5em 3.5em;
+  grid-template-columns: minmax(6.5rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em;
 }[data-template-page-id="character-story"] .armor-fields {
   grid-template-columns: minmax(8rem, 2fr) auto repeat(2, minmax(4rem, 1fr));
+}[data-template-page-id="character-story"] .equipment-fields [data-module-type="freeText"]:not([data-module-id$="-name"]) [data-part="input"] {
+  font-size: 0.8rem;
 }[data-template-page-id="character-story"] [data-module-id$="-description"] [data-part="input"] {
   min-height: 2.25rem;
   padding-block: 0.125rem;
@@ -4160,12 +4525,16 @@ body.snapshot-body {
   margin-top: 0.25rem;
 }[data-template-page-id="character-story"] .sheet-region > h2, [data-template-page-id="character-story"] .region-heading-row > h2, [data-template-page-id="character-story"] .advancement-region > h2 {
   display: none;
-}[data-template-page-id="character-story"] .story-page-heading {
-  padding: 0.2rem 0.3rem;
+}[data-template-page-id="character-story"] .sheet-region > .section-title, [data-template-page-id="character-story"] .equipment-slot-title {
+  display: block;
+  margin: 0.2rem 0 0.125rem;
+  padding: 0 0.2rem 0.1rem;
   border-bottom: 1px solid #616b6e;
-  text-align: center;
-}[data-template-page-id="character-story"] .story-page-heading h1 {
-  font-size: 1.1rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  text-align: left;
+}[data-template-page-id="character-story"] .equipment-slot-title {
+  margin-top: 0;
 }[data-template-page-id="character-story"] .story-overview {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4247,7 +4616,10 @@ body.snapshot-body {
   width: 0.75rem;
   height: 0.75rem;
   margin: 0;
-}@media (max-width: 800px) {[data-template-page-id="character-story"] .daggerheart-sheet {
+}@media print {[data-template-page-id="character-story"] .daggerheart-sheet {
+    min-height: 0;
+  }
+}@media screen and (max-width: 800px) {[data-template-page-id="character-story"] .daggerheart-sheet {
     min-height: 0;
     padding: 0.5rem;
   }[data-template-page-id="character-story"] .identity-panel, [data-template-page-id="character-story"] .upper-stat-layout, [data-template-page-id="character-story"] .sheet-body-layout, [data-template-page-id="character-story"] .question-layout {
@@ -4267,40 +4639,33 @@ body.snapshot-body {
   }[data-template-page-id="character-story"] .story-overview {
     grid-template-columns: 1fr;
   }
-}@media (max-width: 480px) {[data-template-page-id="character-story"] .identity-fields, [data-template-page-id="character-story"] .defense-summary, [data-template-page-id="character-story"] .trait-summary, [data-template-page-id="character-story"] .threshold-row, [data-template-page-id="character-story"] .resource-row, [data-template-page-id="character-story"] .currency-row, [data-template-page-id="character-story"] .hope-region, [data-template-page-id="character-story"] .item-list {
+}@media screen and (max-width: 480px) {[data-template-page-id="character-story"] .identity-fields, [data-template-page-id="character-story"] .defense-summary, [data-template-page-id="character-story"] .trait-summary, [data-template-page-id="character-story"] .threshold-row, [data-template-page-id="character-story"] .resource-row, [data-template-page-id="character-story"] .currency-row, [data-template-page-id="character-story"] .hope-region, [data-template-page-id="character-story"] .item-list {
     grid-template-columns: 1fr;
   }[data-template-page-id="character-story"] .item-list article {
     grid-template-columns: 1fr;
   }
-}@media print {[data-template-page-id="character-story"] .daggerheart-sheet {
-    min-height: 0;
-    padding: 0.4rem;
-    break-after: page;
-  }
 }
-</style><main class="daggerheart-sheet character-story-page">
-  <header class="story-page-heading">
-    <h1>角色设定与升级</h1>
-  </header>
 
+
+</style><main class="daggerheart-sheet character-story-page">
   <section class="story-overview" aria-label="角色设定概览">
-    <div class="module-slot" data-module-slot-id="event-log"><div class="container container-stack" data-module-id="event-log" data-module-type="longText" data-part="container"><label class="label" data-part="label" for="module-event-log">事件记录</label><textarea id="module-event-log" class="input textarea" data-part="input" placeholder="记录角色经历的重要事件" rows="8" readonly=""></textarea></div></div>
-    <div class="module-slot" data-module-slot-id="background-story"><div class="container container-stack" data-module-id="background-story" data-module-type="longText" data-part="container"><label class="label" data-part="label" for="module-background-story">背景故事</label><textarea id="module-background-story" class="input textarea" data-part="input" placeholder="记录角色的背景故事" rows="8" readonly=""></textarea></div></div>
+    <div class="module-slot" data-module-slot-id="event-log"><div class="container container-stack" data-module-id="event-log" data-module-type="longText" data-part="container"><label class="label" data-part="label" for="module-event-log">事件记录</label><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
+    <div class="module-slot" data-module-slot-id="background-story"><div class="container container-stack" data-module-id="background-story" data-module-type="longText" data-part="container"><label class="label" data-part="label" for="module-background-story">背景故事</label><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div>
     <div class="module-slot" data-module-slot-id="character-avatar"><figure class="container container-stack image" data-module-id="character-avatar" data-module-type="imageField" data-part="container"><figcaption class="label" data-part="label">角色头像</figcaption><div class="image-surface-frame" data-part="surface-frame"></div></figure></div>
   </section>
 
   <section class="question-layout" aria-label="背景与关系">
     <div class="question-column background-column">
       <h2>创建个人经历</h2>
-      <article class="question-pair"><div class="module-slot" data-module-slot-id="background-question-1"><div class="container" data-module-id="background-question-1" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-background-question-1" class="input" data-part="input" aria-label="背景问题一" value="你成长的社群为何如此依赖自然及其生物？" readonly=""></div></div><div class="module-slot" data-module-slot-id="background-answer-1"><div class="container container-stack" data-module-id="background-answer-1" data-module-type="longText" data-part="container" data-label-hidden="true"><textarea id="module-background-answer-1" class="input textarea" data-part="input" aria-label="背景回答 1" rows="2" readonly=""></textarea></div></div></article>
-      <article class="question-pair"><div class="module-slot" data-module-slot-id="background-question-2"><div class="container" data-module-id="background-question-2" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-background-question-2" class="input" data-part="input" aria-label="背景问题二" value="你第一个与之建立羁绊的野生动物是谁？你们的羁绊为何终结？" readonly=""></div></div><div class="module-slot" data-module-slot-id="background-answer-2"><div class="container container-stack" data-module-id="background-answer-2" data-module-type="longText" data-part="container" data-label-hidden="true"><textarea id="module-background-answer-2" class="input textarea" data-part="input" aria-label="背景回答 2" rows="2" readonly=""></textarea></div></div></article>
-      <article class="question-pair"><div class="module-slot" data-module-slot-id="background-question-3"><div class="container" data-module-id="background-question-3" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-background-question-3" class="input" data-part="input" aria-label="背景问题三" value="谁一直在试图追捕你？对方想要从你这里得到什么？" readonly=""></div></div><div class="module-slot" data-module-slot-id="background-answer-3"><div class="container container-stack" data-module-id="background-answer-3" data-module-type="longText" data-part="container" data-label-hidden="true"><textarea id="module-background-answer-3" class="input textarea" data-part="input" aria-label="背景回答 3" rows="2" readonly=""></textarea></div></div></article>
+      <article class="question-pair"><div class="module-slot" data-module-slot-id="background-question-1"><div class="container" data-module-id="background-question-1" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true" aria-label="背景问题一"><div data-restricted-markdown="true"><p>你成长的社群为何如此依赖自然及其生物？</p></div></div></div></div><div class="module-slot" data-module-slot-id="background-answer-1"><div class="container container-stack" data-module-id="background-answer-1" data-module-type="longText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div></article>
+      <article class="question-pair"><div class="module-slot" data-module-slot-id="background-question-2"><div class="container" data-module-id="background-question-2" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true" aria-label="背景问题二"><div data-restricted-markdown="true"><p>你第一个与之建立羁绊的野生动物是谁？你们的羁绊为何终结？</p></div></div></div></div><div class="module-slot" data-module-slot-id="background-answer-2"><div class="container container-stack" data-module-id="background-answer-2" data-module-type="longText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div></article>
+      <article class="question-pair"><div class="module-slot" data-module-slot-id="background-question-3"><div class="container" data-module-id="background-question-3" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true" aria-label="背景问题三"><div data-restricted-markdown="true"><p>谁一直在试图追捕你？对方想要从你这里得到什么？</p></div></div></div></div><div class="module-slot" data-module-slot-id="background-answer-3"><div class="container container-stack" data-module-id="background-answer-3" data-module-type="longText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div></article>
     </div>
     <div class="question-column connection-column">
       <h2>创建队友关系</h2>
-      <article class="question-pair"><div class="module-slot" data-module-slot-id="connection-question-1"><div class="container" data-module-id="connection-question-1" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-connection-question-1" class="input" data-part="input" aria-label="关系问题一" value="你向我倾诉了什么，让我每次都愿意为你挺身犯险？" readonly=""></div></div><div class="module-slot" data-module-slot-id="connection-answer-1"><div class="container container-stack" data-module-id="connection-answer-1" data-module-type="longText" data-part="container" data-label-hidden="true"><textarea id="module-connection-answer-1" class="input textarea" data-part="input" aria-label="关系回答 1" rows="2" readonly=""></textarea></div></div></article>
-      <article class="question-pair"><div class="module-slot" data-module-slot-id="connection-question-2"><div class="container" data-module-id="connection-question-2" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-connection-question-2" class="input" data-part="input" aria-label="关系问题二" value="你让我联想到哪种动物？" readonly=""></div></div><div class="module-slot" data-module-slot-id="connection-answer-2"><div class="container container-stack" data-module-id="connection-answer-2" data-module-type="longText" data-part="container" data-label-hidden="true"><textarea id="module-connection-answer-2" class="input textarea" data-part="input" aria-label="关系回答 2" rows="2" readonly=""></textarea></div></div></article>
-      <article class="question-pair"><div class="module-slot" data-module-slot-id="connection-question-3"><div class="container" data-module-id="connection-question-3" data-module-type="freeText" data-part="container" data-label-hidden="true"><input id="module-connection-question-3" class="input" data-part="input" aria-label="关系问题三" value="你给我起了什么亲切的绰号？" readonly=""></div></div><div class="module-slot" data-module-slot-id="connection-answer-3"><div class="container container-stack" data-module-id="connection-answer-3" data-module-type="longText" data-part="container" data-label-hidden="true"><textarea id="module-connection-answer-3" class="input textarea" data-part="input" aria-label="关系回答 3" rows="2" readonly=""></textarea></div></div></article>
+      <article class="question-pair"><div class="module-slot" data-module-slot-id="connection-question-1"><div class="container" data-module-id="connection-question-1" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true" aria-label="关系问题一"><div data-restricted-markdown="true"><p>你向我倾诉了什么，让我每次都愿意为你挺身犯险？</p></div></div></div></div><div class="module-slot" data-module-slot-id="connection-answer-1"><div class="container container-stack" data-module-id="connection-answer-1" data-module-type="longText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div></article>
+      <article class="question-pair"><div class="module-slot" data-module-slot-id="connection-question-2"><div class="container" data-module-id="connection-question-2" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true" aria-label="关系问题二"><div data-restricted-markdown="true"><p>你让我联想到哪种动物？</p></div></div></div></div><div class="module-slot" data-module-slot-id="connection-answer-2"><div class="container container-stack" data-module-id="connection-answer-2" data-module-type="longText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div></article>
+      <article class="question-pair"><div class="module-slot" data-module-slot-id="connection-question-3"><div class="container" data-module-id="connection-question-3" data-module-type="freeText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true" aria-label="关系问题三"><div data-restricted-markdown="true"><p>你给我起了什么亲切的绰号？</p></div></div></div></div><div class="module-slot" data-module-slot-id="connection-answer-3"><div class="container container-stack" data-module-id="connection-answer-3" data-module-type="longText" data-part="container" data-label-hidden="true"><div class="markdown-preview" data-part="input" data-markdown-preview="true"><div data-restricted-markdown="true"></div></div></div></div></article>
     </div>
   </section>
 
@@ -4333,12 +4698,27 @@ body.snapshot-body {
 </main>
 </article></div>
   </section>
-  <section class="daggerheart-card-pane" aria-label="持久卡牌桌面">
+  <section class="daggerheart-card-pane" data-print-page="true" aria-label="持久卡牌桌面">
     <div class="card-picker-grid">
       <div class="module-slot" data-module-slot-id="pick-domain-card"><div class="container resource-picker-module" data-module-id="pick-domain-card" data-module-type="resourcePicker" data-part="container"></div></div>
       <div class="module-slot" data-module-slot-id="pick-beast-form"><div class="container resource-picker-module" data-module-id="pick-beast-form" data-module-type="resourcePicker" data-part="container"></div></div>
     </div>
-    <div class="module-slot" data-module-slot-id="character-card-table"><section class="card-table-module" data-module-id="character-card-table" data-module-type="cardTable" data-part="container"><div class="card-table-surface" data-part="surface" aria-label="角色卡牌自由桌面" style="--play-card-width: 250px; height: 1115px; min-height: 1115px;"><div class="card-table-actions card-table-side-actions" data-part="actions"><label class="card-size-control" data-part="size-control"><span>大小</span><input min="140" max="320" step="10" aria-label="角色卡牌卡牌大小" type="range" value="250" readonly=""><output>250px</output></label><span class="card-count">0 张</span></div><p class="card-table-empty" data-part="empty">选择卡牌后会放到这里。</p></div></section></div>
+    <div class="daggerheart-card-table-slot">
+      <div class="module-slot" data-module-slot-id="character-card-table"><section class="card-table-module" data-module-id="character-card-table" data-module-type="cardTable" data-part="container"><div class="card-table-surface" data-part="surface" aria-label="角色卡牌自由桌面" style="--play-card-width: 250px; height: 1367px; min-height: 1367px;"><div class="card-table-actions card-table-side-actions" data-part="actions"><label class="card-size-control" data-part="size-control"><span>大小</span><input min="140" max="320" step="10" aria-label="角色卡牌卡牌大小" type="range" value="250" readonly=""><output>250px</output></label><span class="card-count">4 张</span></div><article class="play-card" data-card-instance-id="community-4219f980b318:a63e433e-f0e6-49a9-b822-35165084008d" aria-label="滨海之民" style="left: 0.988875%; top: 3.07692%; z-index: 1; transform: rotate(0deg) scale(1);"><div class="play-card-text"><header><div class="play-card-name" data-restricted-markdown="true"><p>滨海之民</p></div><div class="play-card-tags" aria-label="卡牌标签"><div class="play-card-tag" data-restricted-markdown="true"><p>社群</p></div><div class="play-card-tag" data-restricted-markdown="true"><p>作为滨海之民的一分子，意味着你生活在大型水域上或水域附近</p></div><div class="play-card-tag" data-restricted-markdown="true"><p>滨海之民通常表现为：直率、合作、热情、勇猛、坚定、饱经风霜。</p></div></div></header><div class="play-card-description" data-restricted-markdown="true" data-card-description-fit-pending="false" style="font-size: 13.75px;" data-card-description-fit="fitted" data-card-description-font-size="13.75"><p><span class="restricted-markdown-color" data-markdown-color="red"><strong>潮起潮落</strong></span>：你深谙生命和生活的变化无常。当你掷出恐惧结果时，在这张卡牌上放置一个指示物。你可以持有最大等于你等级数量的指示物。在你进行动作掷骰之前，你可以花费任意数量指示物，每个指示物使你的掷骰获得+1加值。在每场游戏结束时，清除所有未使用的指示物。</p></div></div></article><article class="play-card" data-card-instance-id="domain-card-ffb156d20809:4afa3af6-1f94-470a-9a58-9dbb31f98bb5" aria-label="艾娃之书" style="left: 17.4289%; top: 3.07692%; z-index: 2; transform: rotate(0deg) scale(1);"><div class="play-card-text"><header><div class="play-card-name" data-restricted-markdown="true"><p>艾娃之书</p></div><div class="play-card-tags" aria-label="卡牌标签"><div class="play-card-tag" data-restricted-markdown="true"><p>领域卡</p></div><div class="play-card-tag" data-restricted-markdown="true"><p>典籍</p></div><div class="play-card-tag" data-restricted-markdown="true"><p>1级</p></div><div class="play-card-tag" data-restricted-markdown="true"><p>术典</p></div><div class="play-card-tag" data-restricted-markdown="true"><p>2⚡</p></div></div></header><div class="play-card-description" data-restricted-markdown="true" data-card-description-fit-pending="false" style="font-size: 13.5px;" data-card-description-fit="fitted" data-card-description-font-size="13.5"><p><span class="restricted-markdown-color" data-markdown-color="red"><strong>强力推撞</strong></span>：对近战范围内的一个目标进行一次<strong>施法掷骰</strong>。成功时，目标被击退至远距离范围处，并受到使用你熟练值的<strong>d10+2</strong>点魔法伤害。</p>
+<p><span class="restricted-markdown-color" data-markdown-color="red"><strong>塔瓦的护甲</strong></span>：<strong>花费 1 希望点</strong>，使你触碰到的一个目标护甲值获得+1加值，直到其下次休息或你再次施放塔瓦的护甲。</p>
+<p><span class="restricted-markdown-color" data-markdown-color="red"><strong>冰刺</strong></span>：进行一次<strong>施法掷骰 (12)</strong>，在远距离范围内召唤一根巨大的冰刺。如果你将其用作武器，则改为对目标的难度进行施法掷骰。成功时，造成使用你熟练值的<strong>d6</strong>点物理伤害。</p></div></div></article><article class="play-card" data-card-instance-id="domain-card-b7360ae737ad:9474bb57-4a5a-4f32-827f-2e6900c61f05" aria-label="奥术恩泽" style="left: 33.869%; top: 3.07692%; z-index: 3; transform: rotate(0deg) scale(1);"><div class="play-card-text"><header><div class="play-card-name" data-restricted-markdown="true"><p>奥术恩泽</p></div><div class="play-card-tags" aria-label="卡牌标签"><div class="play-card-tag" data-restricted-markdown="true"><p>领域卡</p></div><div class="play-card-tag" data-restricted-markdown="true"><p>奥术</p></div><div class="play-card-tag" data-restricted-markdown="true"><p>7级</p></div><div class="play-card-tag" data-restricted-markdown="true"><p>能力</p></div><div class="play-card-tag" data-restricted-markdown="true"><p>2⚡</p></div></div></header><div class="play-card-description" data-restricted-markdown="true" data-card-description-fit-pending="false" style="" data-card-description-fit="natural" data-card-description-font-size="16"><p>当你的配置中有4张或更多领域卡来自奥术领域时，获得下列增益：</p>
+<ul>
+<li>施法掷骰获得+1加值</li>
+<li>每次休息一次，你可以交换你的希望骰和恐惧骰的结果。</li>
+</ul></div></div></article><article class="play-card" data-card-instance-id="domain-card-f28a51fae8c8:fb3efa03-9c53-478b-ab7a-80327cc84847" aria-label="传送术" style="left: 50.309%; top: 3.07692%; z-index: 4; transform: rotate(0deg) scale(1);"><div class="play-card-text"><header><div class="play-card-name" data-restricted-markdown="true"><p>传送术</p></div><div class="play-card-tags" aria-label="卡牌标签"><div class="play-card-tag" data-restricted-markdown="true"><p>领域卡</p></div><div class="play-card-tag" data-restricted-markdown="true"><p>典籍</p></div><div class="play-card-tag" data-restricted-markdown="true"><p>5级</p></div><div class="play-card-tag" data-restricted-markdown="true"><p>法术</p></div><div class="play-card-tag" data-restricted-markdown="true"><p>2⚡</p></div></div></header><div class="play-card-description" data-restricted-markdown="true" data-card-description-fit-pending="false" style="font-size: 11.75px;" data-card-description-fit="fitted" data-card-description-font-size="11.75"><p>每长休一次，你可以立即将自己以及近距离范围内任意数量的自愿目标传送到你曾经去过的地方。选择下列选项之一，然后进行一次<strong>施法掷骰 (16)</strong>：</p>
+<ul>
+<li>如果你对这个地方非常熟悉，获得+3加值。</li>
+<li>如果你经常去这个地方，获得+1加值。</li>
+<li>如果你很少去这个地方，不获得调整值。</li>
+<li>如果你只去过那里一次，获得−2减值。</li>
+</ul>
+<p>成功时，你出现在你打算去的地方。失败时，你出现在偏离预定地点的地方，偏离的距离取决于失败的程度。</p></div></div></article></div></section></div>
+    </div>
   </section>
 </main>
 </div></main>
@@ -4351,11 +4731,11 @@ body.snapshot-body {
     "version": "0.1.0"
   },
   "character": {
-    "id": "character-84ad94d9-c335-490d-a167-9e982102f822",
+    "id": "character-6b2c8b37-8336-44c4-a0cd-8987888878e0",
     "values": {
       "character-name": "",
       "ancestry-name": "",
-      "community-name": "",
+      "community-name": "滨海之民",
       "class-name": "德鲁伊",
       "subclass-name": "",
       "level": "1",
@@ -4369,23 +4749,23 @@ body.snapshot-body {
       "major-threshold": "",
       "severe-threshold": "",
       "hp": {
-        "current": 0,
+        "current": 1,
         "max": 6
       },
       "stress": {
-        "current": 0,
-        "max": 6
-      },
-      "hope": {
         "current": 2,
         "max": 6
       },
+      "hope": {
+        "current": 3,
+        "max": 6
+      },
       "armor-slots": {
-        "current": 0,
-        "max": 0
+        "current": 4,
+        "max": 6
       },
       "proficiency": {
-        "current": 1,
+        "current": 2,
         "max": 6
       },
       "handful-gold": {
@@ -4393,7 +4773,7 @@ body.snapshot-body {
         "max": 9
       },
       "bag-gold": {
-        "current": 1,
+        "current": 0,
         "max": 9
       },
       "chest-gold": {
@@ -4418,13 +4798,13 @@ body.snapshot-body {
       "connection-question-1": "你向我倾诉了什么，让我每次都愿意为你挺身犯险？",
       "connection-question-2": "你让我联想到哪种动物？",
       "connection-question-3": "你给我起了什么亲切的绰号？",
-      "primary-weapon-name": "摆动绳刃",
-      "primary-weapon-stat": "风度",
-      "primary-weapon-range": "近距离",
-      "primary-weapon-damage": "d8+9",
-      "primary-weapon-damage-type": "物理",
-      "primary-weapon-hands": "双手",
-      "primary-weapon-description": "**捕获：**在一次成功攻击后**花费 1 希望点**，使目标处于束缚状态或者将其拉至你的近战范围。",
+      "primary-weapon-name": "",
+      "primary-weapon-stat": "",
+      "primary-weapon-range": "",
+      "primary-weapon-damage": "",
+      "primary-weapon-damage-type": "",
+      "primary-weapon-hands": "",
+      "primary-weapon-description": "",
       "secondary-weapon-name": "",
       "secondary-weapon-stat": "",
       "secondary-weapon-range": "",
@@ -4432,21 +4812,19 @@ body.snapshot-body {
       "secondary-weapon-damage-type": "",
       "secondary-weapon-hands": "",
       "secondary-weapon-description": "",
-      "backup-weapon-1-name": "摆动绳刃",
-      "backup-weapon-1-stat": "风度",
-      "backup-weapon-1-range": "近距离",
-      "backup-weapon-1-damage": "d8+9",
-      "backup-weapon-1-damage-type": "物理",
-      "backup-weapon-1-hands": "双手",
-      "backup-weapon-1-category": "主武器",
-      "backup-weapon-1-description": "**捕获：**在一次成功攻击后**花费 1 希望点**，使目标处于束缚状态或者将其拉至你的近战范围。",
+      "backup-weapon-1-name": "",
+      "backup-weapon-1-stat": "",
+      "backup-weapon-1-range": "",
+      "backup-weapon-1-damage": "",
+      "backup-weapon-1-damage-type": "",
+      "backup-weapon-1-hands": "",
+      "backup-weapon-1-description": "",
       "backup-weapon-2-name": "",
       "backup-weapon-2-stat": "",
       "backup-weapon-2-range": "",
       "backup-weapon-2-damage": "",
       "backup-weapon-2-damage-type": "",
       "backup-weapon-2-hands": "",
-      "backup-weapon-2-category": "",
       "backup-weapon-2-description": "",
       "armor-name": "",
       "armor-base-major": "",
@@ -4467,22 +4845,33 @@ body.snapshot-body {
       "event-log": "",
       "background-story": "",
       "advancement-tier-2": {
-        "traits": false,
-        "hp": false,
-        "stress": false,
+        "traits-1": false,
+        "traits-2": false,
+        "traits-3": false,
+        "hp-1": false,
+        "hp-2": false,
+        "stress-1": false,
+        "stress-2": false,
         "experiences": false,
         "domain-card": false,
         "evasion": false
       },
       "advancement-tier-3": {
-        "traits": false,
-        "hp": false,
-        "stress": false,
+        "traits-1": false,
+        "traits-2": false,
+        "traits-3": false,
+        "hp-1": false,
+        "hp-2": false,
+        "stress-1": false,
+        "stress-2": false,
         "experiences": false,
         "domain-card": false,
         "subclass": false,
         "evasion": false,
-        "proficiency": false
+        "proficiency-1": false,
+        "proficiency-2": false,
+        "multiclass-1": false,
+        "multiclass-2": false
       },
       "advancement-tier-4": {
         "traits-1": false,
@@ -4499,19 +4888,72 @@ body.snapshot-body {
         "proficiency-1": false,
         "proficiency-2": false,
         "multiclass-1": false,
-        "multiclass-2": false,
-        "traits": false,
-        "hp": false,
-        "stress": false,
-        "proficiency": false
+        "multiclass-2": false
       }
     }
   },
   "cards": {
-    "instances": []
+    "instances": [
+      {
+        "instanceId": "community-4219f980b318:a63e433e-f0e6-49a9-b822-35165084008d",
+        "tableModuleId": "character-card-table",
+        "libraryId": "communities",
+        "definitionId": "community-4219f980b318",
+        "state": "configured",
+        "xPct": 0.9888751545117428,
+        "yPct": 3.076923076923077,
+        "zIndex": 1,
+        "face": "front",
+        "rotation": 0,
+        "scale": 1,
+        "tokenCount": 0
+      },
+      {
+        "instanceId": "domain-card-ffb156d20809:4afa3af6-1f94-470a-9a58-9dbb31f98bb5",
+        "tableModuleId": "character-card-table",
+        "libraryId": "domain-cards",
+        "definitionId": "domain-card-ffb156d20809",
+        "state": "configured",
+        "xPct": 17.428924598269468,
+        "yPct": 3.076923076923077,
+        "zIndex": 2,
+        "face": "front",
+        "rotation": 0,
+        "scale": 1,
+        "tokenCount": 0
+      },
+      {
+        "instanceId": "domain-card-b7360ae737ad:9474bb57-4a5a-4f32-827f-2e6900c61f05",
+        "tableModuleId": "character-card-table",
+        "libraryId": "domain-cards",
+        "definitionId": "domain-card-b7360ae737ad",
+        "state": "configured",
+        "xPct": 33.8689740420272,
+        "yPct": 3.076923076923077,
+        "zIndex": 3,
+        "face": "front",
+        "rotation": 0,
+        "scale": 1,
+        "tokenCount": 0
+      },
+      {
+        "instanceId": "domain-card-f28a51fae8c8:fb3efa03-9c53-478b-ab7a-80327cc84847",
+        "tableModuleId": "character-card-table",
+        "libraryId": "domain-cards",
+        "definitionId": "domain-card-f28a51fae8c8",
+        "state": "configured",
+        "xPct": 50.30902348578492,
+        "yPct": 3.076923076923077,
+        "zIndex": 4,
+        "face": "front",
+        "rotation": 0,
+        "scale": 1,
+        "tokenCount": 0
+      }
+    ]
   },
   "playerImages": {},
-  "updatedAt": "2026-07-12T12:40:26.697Z"
+  "updatedAt": "2026-07-13T16:43:22.011Z"
 }</script>
 </body>
 </html>

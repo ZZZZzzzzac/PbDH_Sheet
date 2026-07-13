@@ -181,6 +181,7 @@ describe("Module Registry rendering", () => {
     expect(markerModule.querySelector('[data-part="current-markers"]')).toHaveTextContent("❤️❤️❤️");
     expect(markerModule.querySelector('[data-part="remaining-markers"]')).toHaveTextContent("🖤🖤🖤");
     expect(markerModule.querySelectorAll('[data-part="marker"]')).toHaveLength(6);
+    expect(markerModule.querySelector('[data-marker-kind="current"]')).toHaveAttribute("data-empty-marker", "🖤");
     expect(markerModule.querySelector('[data-part="marker-group"]')).toHaveAccessibleName("气力：当前值 3，上限 6");
 
     fireEvent.click(within(markerModule as HTMLElement).getByRole("button", { name: "气力增加" }));
@@ -190,6 +191,13 @@ describe("Module Registry rendering", () => {
     expect(markerModule.querySelector('[data-part="remaining-markers"]')).toHaveTextContent("🖤");
     const styles = readFileSync("src/styles/countable-resource.css", "utf8");
     expect(styles).toMatch(/\.marker-cell\s*\{[^}]*flex:\s*0 0 1\.25em[^}]*width:\s*1\.25em[^}]*justify-content:\s*center/s);
+    expect(styles).toContain('[data-countable-print-strategy="clear-current"]');
+    expect(styles).toContain('content: attr(data-empty-marker)');
+    expect(styles).toContain('[data-countable-print-strategy="uniform-squares"]');
+    expect(styles).toContain('[data-countable-print-strategy="clear-uniform-squares"]');
+    expect(styles).toMatch(/flex:\s*0 0 4\.5mm[^}]*width:\s*4\.5mm[^}]*height:\s*4\.5mm/s);
+    expect(styles).toMatch(/width:\s*4\.2mm[^}]*height:\s*4\.2mm[^}]*border:\s*0\.35mm solid currentColor/s);
+    expect(styles).toMatch(/\[data-countable-print-strategy="uniform-squares"\] \.marker-cell\[data-marker-kind="current"\]::before\s*\{[^}]*background:\s*currentColor/s);
   });
 
   it("edits a finite Marker Presentation maximum with right-click and keeps state valid", () => {

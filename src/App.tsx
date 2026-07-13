@@ -14,7 +14,7 @@ import type { ValidationIssue } from "./domain/validationRunner";
 import { buildReadonlyHtmlSnapshot, waitForVisibleImages } from "./export/output";
 import { waitForCardDescriptionFits } from "./rendering/cardDescriptionFit";
 import { waitForMarkerPresentationFits } from "./rendering/markerPresentationFit";
-import { SheetRenderer } from "./rendering/SheetRenderer";
+import { SheetRenderer, type CountablePrintStrategy } from "./rendering/SheetRenderer";
 import { printablePages } from "./rendering/pagePresentation";
 import { GuideSpotlight } from "./rendering/GuideSpotlight";
 import { useRuntimeStore } from "./store/runtimeStore";
@@ -128,6 +128,7 @@ export default function App() {
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
   const [pendingOutput, setPendingOutput] = useState<OutputKind | null>(null);
   const [printMode, setPrintMode] = useState(false);
+  const [countablePrintStrategy, setCountablePrintStrategy] = useState<CountablePrintStrategy>("original");
   const [pdfExporting, setPdfExporting] = useState(false);
   const [guideSession, setGuideSession] = useState<GuideSession | null>(null);
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
@@ -484,6 +485,19 @@ export default function App() {
               <span className="menu-trigger-text">导出</span>
             </button>
             <div className="menu-panel menu-panel-right" role="menu">
+              <label className="menu-setting">
+                <span>打印计数资源</span>
+                <select
+                  aria-label="打印计数资源策略"
+                  value={countablePrintStrategy}
+                  onChange={(event) => setCountablePrintStrategy(event.target.value as CountablePrintStrategy)}
+                >
+                  <option value="original">原样</option>
+                  <option value="clear-current">当前值清零</option>
+                  <option value="uniform-squares">统一实心/空心方块</option>
+                  <option value="clear-uniform-squares">清零并统一方块</option>
+                </select>
+              </label>
               <button className="menu-item" type="button" onClick={() => void beginOutput("pdf")} aria-label="导出页面快照 PDF" disabled={!characterData || pdfExporting}>
                 <Download aria-hidden="true" size={16} />
                 <span>导出 PDF</span>
@@ -542,6 +556,19 @@ export default function App() {
       {printMode ? (
         <section className="print-preview-bar" aria-label="导出预览">
           <span>{pdfExporting ? "正在生成页面图片…" : "导出预览"}</span>
+          <label className="print-strategy-control">
+            <span>计数资源</span>
+            <select
+              aria-label="预览中的打印计数资源策略"
+              value={countablePrintStrategy}
+              onChange={(event) => setCountablePrintStrategy(event.target.value as CountablePrintStrategy)}
+            >
+              <option value="original">原样</option>
+              <option value="clear-current">当前值清零</option>
+              <option value="uniform-squares">统一方块</option>
+              <option value="clear-uniform-squares">清零并统一方块</option>
+            </select>
+          </label>
           <button className="icon-button secondary-button" type="button" onClick={() => setPrintMode(false)} aria-label="退出导出预览">
             <span>退出</span>
           </button>
@@ -587,7 +614,13 @@ export default function App() {
             : undefined
         }
       />
-      {currentPackage ? <SheetRenderer systemPackage={currentPackage} outputMode={printMode} /> : null}
+      {currentPackage ? (
+        <SheetRenderer
+          systemPackage={currentPackage}
+          outputMode={printMode}
+          countablePrintStrategy={countablePrintStrategy}
+        />
+      ) : null}
       {currentPackage?.characterCreationGuide && guideSession ? (
         <GuideSpotlight
           guide={currentPackage.characterCreationGuide}

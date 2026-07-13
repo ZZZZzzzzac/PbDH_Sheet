@@ -302,6 +302,30 @@ describe("App Validation Checks", () => {
     expect(exportSheetPagesToPdfMock).not.toHaveBeenCalled();
   });
 
+  it("applies the selected Countable Resource strategy to print output without changing Character Data", async () => {
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
+      storage: createEmptyStorage(),
+      runValidationChecks: async () => [],
+    });
+    const printSpy = vi.fn();
+    Object.defineProperty(window, "print", { value: printSpy, configurable: true });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+    const before = useRuntimeStore.getState().characterData;
+    await user.selectOptions(screen.getByLabelText("打印计数资源策略"), "clear-uniform-squares");
+    await user.click(screen.getByRole("button", { name: "打开浏览器打印 PDF" }));
+
+    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
+    expect(screen.getByLabelText("Sheet Tool")).toHaveAttribute("data-countable-print-strategy", "clear-uniform-squares");
+    expect(screen.getByLabelText("预览中的打印计数资源策略")).toHaveValue("clear-uniform-squares");
+    expect(useRuntimeStore.getState().characterData).toBe(before);
+  });
+
   it("retidies Card Tables after print mode changes the table width", async () => {
     const cardTablePackage = createCardTablePackage();
     configureRuntimeDependencies({

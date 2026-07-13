@@ -53,6 +53,52 @@
   text-align: center;
 }
 
+[data-countable-print-strategy="clear-current"] .marker-group:not([data-countable-unbounded="true"]) .marker-cell[data-marker-kind="current"] .marker-glyph,
+[data-countable-print-strategy="uniform-squares"] .marker-cell .marker-glyph,
+[data-countable-print-strategy="clear-uniform-squares"] .marker-cell .marker-glyph {
+  visibility: hidden;
+}
+
+[data-countable-print-strategy="clear-current"] .marker-group:not([data-countable-unbounded="true"]) .marker-cell[data-marker-kind="current"]::before {
+  content: attr(data-empty-marker);
+}
+
+[data-countable-print-strategy="uniform-squares"] .marker-cell,
+[data-countable-print-strategy="clear-uniform-squares"] .marker-cell {
+  flex: 0 0 4.5mm;
+  width: 4.5mm;
+  height: 4.5mm;
+}
+
+[data-countable-print-strategy="uniform-squares"] .marker-cell::before,
+[data-countable-print-strategy="clear-uniform-squares"] .marker-cell::before {
+  box-sizing: border-box;
+  width: 4.2mm;
+  height: 4.2mm;
+  content: "";
+  border: 0.35mm solid currentColor;
+  background: transparent;
+}
+
+[data-countable-print-strategy="uniform-squares"] .marker-cell[data-marker-kind="current"]::before {
+  background: currentColor;
+}
+
+[data-countable-print-strategy="clear-current"] .marker-group[data-countable-unbounded="true"] .marker-cell,
+[data-countable-print-strategy="clear-uniform-squares"] .marker-group[data-countable-unbounded="true"] .marker-cell {
+  display: none;
+}
+
+[data-countable-print-strategy="clear-current"] [data-module-type="countableResource"] [data-part="value-group"] > [data-part="input"],
+[data-countable-print-strategy="clear-uniform-squares"] [data-module-type="countableResource"] [data-part="value-group"] > [data-part="input"] {
+  display: none;
+}
+
+[data-countable-print-strategy="clear-current"] [data-module-type="countableResource"] [data-part="value-group"]::before,
+[data-countable-print-strategy="clear-uniform-squares"] [data-module-type="countableResource"] [data-part="value-group"]::before {
+  content: "0";
+}
+
 .stepper {
   display: inline-grid;
   place-items: center;
