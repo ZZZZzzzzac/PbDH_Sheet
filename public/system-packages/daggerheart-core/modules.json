@@ -158,12 +158,6 @@
     "创建卡牌": {
       "卡牌桌面模块ID": "character-card-table",
       "默认状态": "configured"
-    },
-    "默认查询": {
-      "sort": {
-        "field": "名称",
-        "direction": "asc"
-      }
     }
   },
   {
@@ -174,12 +168,6 @@
     "创建卡牌": {
       "卡牌桌面模块ID": "character-card-table",
       "默认状态": "configured"
-    },
-    "默认查询": {
-      "sort": {
-        "field": "名称",
-        "direction": "asc"
-      }
     }
   },
   {
@@ -360,11 +348,7 @@
     "类型": "resourcePicker",
     "按钮文本": "选择主武器",
     "资源库ID": "weapons",
-    "默认查询": {
-      "sort": {
-        "field": "名称",
-        "direction": "asc"
-      },
+    "默认查询": {      
       "filters": {
         "类型": [
           "主武器"
@@ -427,10 +411,6 @@
     "按钮文本": "选择副武器",
     "资源库ID": "weapons",
     "默认查询": {
-      "sort": {
-        "field": "名称",
-        "direction": "asc"
-      },
       "filters": {
         "类型": [
           "副武器"
@@ -491,13 +471,7 @@
     "ID": "pick-backup-weapon-1",
     "类型": "resourcePicker",
     "按钮文本": "选择备用武器一",
-    "资源库ID": "weapons",
-    "默认查询": {
-      "sort": {
-        "field": "名称",
-        "direction": "asc"
-      }
-    }
+    "资源库ID": "weapons"    
   },
   {
     "ID": "backup-weapon-1-name",
@@ -552,13 +526,7 @@
     "ID": "pick-backup-weapon-2",
     "类型": "resourcePicker",
     "按钮文本": "选择备用武器二",
-    "资源库ID": "weapons",
-    "默认查询": {
-      "sort": {
-        "field": "名称",
-        "direction": "asc"
-      }
-    }
+    "资源库ID": "weapons"
   },
   {
     "ID": "backup-weapon-2-name",
@@ -613,13 +581,7 @@
     "ID": "pick-armor",
     "类型": "resourcePicker",
     "按钮文本": "选择护甲",
-    "资源库ID": "armor",
-    "默认查询": {
-      "sort": {
-        "field": "名称",
-        "direction": "asc"
-      }
-    }
+    "资源库ID": "armor"
   },
   {
     "ID": "armor-name",
@@ -658,13 +620,7 @@
     "ID": "pick-item-1",
     "类型": "resourcePicker",
     "按钮文本": "选择物品 1",
-    "资源库ID": "loot",
-    "默认查询": {
-      "sort": {
-        "field": "名称",
-        "direction": "asc"
-      }
-    }
+    "资源库ID": "loot"    
   },
   {
     "ID": "item-1",
@@ -676,13 +632,7 @@
     "ID": "pick-item-2",
     "类型": "resourcePicker",
     "按钮文本": "选择物品 2",
-    "资源库ID": "loot",
-    "默认查询": {
-      "sort": {
-        "field": "名称",
-        "direction": "asc"
-      }
-    }
+    "资源库ID": "loot"
   },
   {
     "ID": "item-2",
@@ -694,13 +644,7 @@
     "ID": "pick-item-3",
     "类型": "resourcePicker",
     "按钮文本": "选择物品 3",
-    "资源库ID": "loot",
-    "默认查询": {
-      "sort": {
-        "field": "名称",
-        "direction": "asc"
-      }
-    }
+    "资源库ID": "loot"
   },
   {
     "ID": "item-3",
@@ -712,13 +656,7 @@
     "ID": "pick-item-4",
     "类型": "resourcePicker",
     "按钮文本": "选择物品 4",
-    "资源库ID": "loot",
-    "默认查询": {
-      "sort": {
-        "field": "名称",
-        "direction": "asc"
-      }
-    }
+    "资源库ID": "loot"
   },
   {
     "ID": "item-4",
@@ -730,13 +668,7 @@
     "ID": "pick-item-5",
     "类型": "resourcePicker",
     "按钮文本": "选择物品 5",
-    "资源库ID": "loot",
-    "默认查询": {
-      "sort": {
-        "field": "名称",
-        "direction": "asc"
-      }
-    }
+    "资源库ID": "loot"
   },
   {
     "ID": "item-5",

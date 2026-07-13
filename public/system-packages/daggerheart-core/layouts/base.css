@@ -4,7 +4,7 @@
   align-content: start;
   gap: 0.3rem;
   width: 100%;
-  min-height: 90rem;
+  min-height: 100%;
   padding: 0.4rem;
   background: #fff;
   color: #202426;
@@ -275,11 +275,11 @@
 }
 
 .weapon-fields {
-  grid-template-columns: minmax(7rem, 1fr) auto 3em 3em 6.5em 3em 3em;
+  grid-template-columns: minmax(7rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em;
 }
 
 .backup-weapon-fields {
-  grid-template-columns: minmax(6.5rem, 1fr) auto 3em 3em 6.5em 3em 3em;
+  grid-template-columns: minmax(6.5rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em;
 }
 
 .armor-fields {
@@ -464,7 +464,13 @@
   margin: 0;
 }
 
-@media (max-width: 800px) {
+@media print {
+  .daggerheart-sheet {
+    min-height: 0;
+  }
+}
+
+@media screen and (max-width: 800px) {
   .daggerheart-sheet {
     min-height: 0;
     padding: 0.5rem;
@@ -507,7 +513,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@media screen and (max-width: 480px) {
   .identity-fields,
   .defense-summary,
   .trait-summary,
@@ -524,84 +530,4 @@
   }
 }
 
-@media print {
-  .daggerheart-sheet {
-    min-height: 0;
-    padding: 0.4rem;
-  }
 
-  .identity-panel {
-    grid-template-columns: 9rem minmax(0, 1fr) 8rem;
-  }
-
-  .upper-stat-layout {
-    grid-template-columns: minmax(15rem, 0.9fr) minmax(0, 1.8fr);
-  }
-
-  .sheet-body-layout {
-    grid-template-columns: minmax(24rem, 1.15fr) minmax(21rem, 1.05fr);
-  }
-
-  .question-layout {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .level-field {
-    grid-column: 3;
-    grid-row: 1 / span 2;
-  }
-
-  .brand-panel {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-  }
-
-  .identity-fields {
-    grid-column: 2;
-    grid-row: auto;
-    grid-template-columns: 1fr 1.2fr;
-  }
-
-  .trait-summary {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
-  .weapon-fields {
-    grid-template-columns: minmax(0, 2fr) auto repeat(5, minmax(0, 1fr));
-  }
-
-  .backup-weapon-fields {
-    grid-template-columns: minmax(0, 2fr) auto repeat(5, minmax(0, 1fr));
-  }
-
-  .armor-fields {
-    grid-template-columns: minmax(0, 2fr) auto repeat(2, minmax(0, 1fr));
-  }
-
-  .advancement-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .story-overview {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .defense-summary,
-  .threshold-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .currency-row {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .resource-row,
-  .hope-region,
-  .item-list {
-    grid-template-columns: 1fr;
-  }
-
-  .item-list article {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-}

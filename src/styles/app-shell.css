@@ -259,6 +259,9 @@
 }
 
 .sheet-page {
+  box-sizing: border-box;
+  aspect-ratio: 210 / 297;
+  overflow: hidden;
   background: #fbfcfc;
   border: 1px solid #cdd5d7;
 }

@@ -28,7 +28,7 @@
   min-width: 0;
   overflow: hidden !important;
   white-space: nowrap !important;
-  text-overflow: ellipsis;
+  overflow-wrap: normal !important;
 }
 
 .print-mode .sheet-tool {
@@ -39,16 +39,16 @@
 .print-mode [data-print-page="true"] {
   box-sizing: border-box !important;
   width: 210mm !important;
-  min-height: 297mm !important;
+  height: 297mm !important;
   margin: 0 auto 16px;
-  padding: 8mm 6mm 10mm !important;
+  padding: 5mm 4mm 5mm !important;
   overflow: hidden;
   border: 0;
   background: #ffffff;
 }
 
 .print-mode [data-print-page="true"] {
-  padding: 4mm !important;
+  padding: 3mm !important;
 }
 
 .print-mode .card-table-surface {
@@ -107,13 +107,13 @@
     padding: 0;
   }
 
-  [data-module-type="freeText"] [data-markdown-preview],
+[data-module-type="freeText"] [data-markdown-preview],
   [data-module-type="freeText"] [data-markdown-preview] [data-restricted-markdown],
   [data-module-type="freeText"] [data-markdown-preview] p {
     min-width: 0;
     overflow: hidden !important;
     white-space: nowrap !important;
-    text-overflow: ellipsis;
+    overflow-wrap: normal !important;
   }
 
   input::placeholder,
@@ -129,22 +129,27 @@
   [data-print-page="true"] {
     box-sizing: border-box !important;
     width: 210mm !important;
-    min-height: 297mm !important;
+    height: 297mm !important;
     margin: 0 !important;
-    padding: 8mm 6mm 10mm !important;
+    padding: 5mm 4mm 5mm !important;
     overflow: hidden;
-    break-after: page;
     break-inside: avoid;
-    page-break-after: always;
     page-break-inside: avoid;
     border: 0;
     background: #ffffff;
   }
 
+  .sheet-page + .sheet-page,
+  .sheet-page + [data-print-page="true"],
+  [data-print-page="true"] + [data-print-page="true"],
+  [data-print-page="true"] + .sheet-page {
+    /* 非第一个打印块之前分页,避免 break-after 在末项后多生空白页 */
+    break-before: page;
+    page-break-before: always;
+  }
+
   [data-print-page="true"] {
-    padding: 4mm !important;
-    break-after: auto;
-    page-break-after: auto;
+    padding: 3mm !important;
   }
 
   .module-slot,

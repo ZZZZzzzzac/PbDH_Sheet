@@ -87,6 +87,14 @@ fieldset.container {
   overflow-wrap: anywhere;
 }
 
+[data-module-type="freeText"] [data-markdown-preview],
+[data-module-type="freeText"] [data-markdown-preview] [data-restricted-markdown],
+[data-module-type="freeText"] [data-markdown-preview] p {
+  white-space: nowrap;
+  overflow: hidden;
+  overflow-wrap: normal;
+}
+
 .markdown-preview p,
 .markdown-preview ul,
 .markdown-preview ol {
