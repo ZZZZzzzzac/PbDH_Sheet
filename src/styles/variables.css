@@ -1,4 +1,11 @@
 :root {
+  --restricted-markdown-red: #a8443e;
+  --restricted-markdown-orange: #a35f24;
+  --restricted-markdown-yellow: #8a741f;
+  --restricted-markdown-green: #39704f;
+  --restricted-markdown-blue: #356a83;
+  --restricted-markdown-purple: #71558a;
+  --restricted-markdown-gray: #667074;
   color: #202426;
   background: #eef1f2;
   font-family: "Aptos", "Segoe UI", sans-serif;

@@ -187,10 +187,17 @@
   background: #fffdf7;
 }
 
-.play-card-text h4 {
+.play-card-name {
   margin: 0 0 8px;
   color: #202426;
   font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.play-card-name p,
+.play-card-tag p,
+.play-card-description p {
+  margin: 0;
 }
 
 .play-card-tags {
@@ -215,14 +222,22 @@
 
 .play-card-description {
   margin: 0;
+  min-height: 0;
   color: #202426;
   line-height: 1.45;
-  white-space: pre-wrap;
+  white-space: normal;
   overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-line-clamp: 8;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.play-card-description ul,
+.play-card-description ol {
+  margin: 0.35em 0;
+  padding-inline-start: 1.25em;
+}
+
+.play-card-description li + li {
+  margin-top: 0.35em;
 }
 
 .card-action-button {
@@ -293,6 +308,7 @@
 .card-detail-face { width: 100%; }
 .card-detail-face .play-card-image { width: 100%; height: auto; max-height: 82vh; object-fit: contain; }
 .card-detail-face .play-card-text { min-height: 420px; font-size: 1.1rem; }
+.card-detail-face .play-card-description { max-height: none; overflow: visible; }
 .card-detail-close { position: absolute; top: 8px; right: 8px; z-index: 1; width: 36px; height: 36px; border: 0; border-radius: 50%; background: rgba(255,255,255,.9); cursor: pointer; }
 
 @media (max-width: 640px) {

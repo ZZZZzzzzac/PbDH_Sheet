@@ -205,3 +205,28 @@ module.exports = () => [{
 ```
 
 修复方向始终由 Author 决定：Validator 报告事实，不猜测应该修改引用端还是定义端，也不提供 `suggestion` 字段。
+
+## 12. Restricted Markdown 语法超出范围
+
+以下内容不会产生链接、图片、任意颜色或嵌套颜色：
+
+```md
+[外部链接](https://example.com)
+![图片](https://example.com/card.png)
+:pink[未知颜色]
+:red[外层 :blue[内层]]
+<span style="color:#f00">inline HTML/CSS</span>
+```
+
+改成批准语法：
+
+```md
+**重要规则**
+:red[警告]
+:blue[***蓝色粗斜体***]
+
+1. 第一项
+2. 第二项
+```
+
+只支持段落/换行、粗体、斜体、三星号粗斜体、有序/无序列表，以及 `red/orange/yellow/green/blue/purple/gray` 七个 directive。未知、畸形或嵌套颜色安全降级为无颜色文本。不要把 Markdown 写进标签、placeholder、按钮、Guide、诊断或无障碍名称。

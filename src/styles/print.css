@@ -20,6 +20,16 @@
   display: none;
 }
 .print-mode .card-detail-backdrop { display: none !important; }
+.print-mode [data-markdown-editor] { display: none !important; }
+.print-mode [data-markdown-preview] { display: block !important; }
+.print-mode [data-module-type="freeText"] [data-markdown-preview],
+.print-mode [data-module-type="freeText"] [data-markdown-preview] [data-restricted-markdown],
+.print-mode [data-module-type="freeText"] [data-markdown-preview] p {
+  min-width: 0;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis;
+}
 
 .print-mode .sheet-tool {
   padding: 0;
@@ -95,6 +105,15 @@
 
   .sheet-tool {
     padding: 0;
+  }
+
+  [data-module-type="freeText"] [data-markdown-preview],
+  [data-module-type="freeText"] [data-markdown-preview] [data-restricted-markdown],
+  [data-module-type="freeText"] [data-markdown-preview] p {
+    min-width: 0;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis;
   }
 
   input::placeholder,

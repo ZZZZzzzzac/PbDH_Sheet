@@ -1,5 +1,7 @@
 import type { LongTextModule as LongTextModuleConfig } from "../domain/systemPackage";
+import type { RefObject } from "react";
 import { useTextModuleState } from "./moduleState";
+import { EditableMarkdownValue } from "./EditableMarkdownValue";
 
 interface LongTextModuleProps {
   module: LongTextModuleConfig;
@@ -18,15 +20,24 @@ export function LongTextModule({ module }: LongTextModuleProps) {
           {module.标签}
         </label>
       ) : null}
-      <textarea
-        id={inputId}
-        className="input textarea"
-        data-part="input"
-        aria-label={labelHidden ? accessibleName : undefined}
-        placeholder={module.占位文本}
-        rows={module.行数 ?? 4}
+      <EditableMarkdownValue
         value={value}
-        onChange={(event) => setValue(event.target.value)}
+        accessibleName={accessibleName}
+        input={(props) => (
+          <textarea
+            ref={props.ref as RefObject<HTMLTextAreaElement>}
+            id={inputId}
+            className="input textarea"
+            data-part="input"
+            aria-label={labelHidden ? accessibleName : undefined}
+            placeholder={module.占位文本}
+            rows={module.行数 ?? 4}
+            value={props.value}
+            onFocus={props.onFocus}
+            onBlur={props.onBlur}
+            onChange={(event) => { setValue(event.target.value); props.onChange(event.target.value); }}
+          />
+        )}
       />
     </div>
   );

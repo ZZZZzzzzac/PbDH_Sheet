@@ -57,12 +57,12 @@ hello-sheet/
     "ID": "character-name",
     "类型": "freeText",
     "标签": "角色名",
-    "默认值": ""
+    "默认值": "**无名冒险者**"
   }
 ]
 ```
 
-`默认值` 可省略；`freeText` 省略时同样以空文本初始化。
+`默认值` 可省略；`freeText` 省略时同样以空文本初始化。这里的粗体是有效 Restricted Markdown；Character Data 仍保存原始字符串 `**无名冒险者**`。
 
 ## layouts/main.html
 

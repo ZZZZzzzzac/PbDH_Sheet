@@ -167,6 +167,13 @@ function syncFormControls(sourceRoot: Element, cloneRoot: Element) {
 }
 
 function stripInteractiveRuntimeState(clone: Element) {
+  clone.querySelectorAll("[data-markdown-editor]").forEach((element) => element.remove());
+  clone.querySelectorAll("[data-markdown-preview]").forEach((element) => {
+    element.removeAttribute("hidden");
+    element.removeAttribute("aria-hidden");
+    element.removeAttribute("role");
+    element.removeAttribute("tabindex");
+  });
   clone.querySelectorAll("button, input[type='file'], .resource-dialog-backdrop, .validation-dialog-backdrop, .card-context-menu").forEach((element) => {
     element.remove();
   });

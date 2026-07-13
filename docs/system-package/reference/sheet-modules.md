@@ -11,12 +11,12 @@
 | `隐藏标签` | boolean | 否 | `false`；为 `true` 时只隐藏视觉标签；`标签: ""` 也会隐藏 |
 | `占位文本` | string | 否 | 输入框 placeholder；不写入 Character Data |
 
-Player value 作为文本写 Character Data。
+Player value 作为原始文本写 Character Data，并按[Restricted Markdown](restricted-markdown.md)展示。空或聚焦时显示单行原始输入；非空失焦时显示渲染结果。列表语法不会把 freeText 改成多行控件。
 隐藏视觉标签时，输入框依次使用非空 `标签`、`占位文本`、Module `ID` 作为无障碍名称。
 
 ## longText
 
-同 freeText（包括 `隐藏标签`、`占位文本`），另有 `行数?: integer`，范围 2–20；省略时由组件默认高度决定。
+同 freeText（包括 Restricted Markdown、`隐藏标签`、`占位文本`），另有 `行数?: integer`，范围 2–20；省略时由组件默认高度决定。longText 编辑时仍是 textarea。
 
 ## checkboxResource
 

@@ -7,6 +7,7 @@ import "./styles/modules.css";
 import "./styles/countable-resource.css";
 import "./styles/checkbox-resource.css";
 import "./styles/image-field.css";
+import "./styles/restricted-markdown.css";
 import "./styles/card-table.css";
 import "./styles/resource-browser.css";
 import "./styles/validation.css";

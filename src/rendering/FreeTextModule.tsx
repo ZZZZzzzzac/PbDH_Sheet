@@ -1,5 +1,7 @@
 import type { FreeTextModule } from "../domain/systemPackage";
+import type { RefObject } from "react";
 import { useTextModuleState } from "./moduleState";
+import { EditableMarkdownValue } from "./EditableMarkdownValue";
 
 interface FreeTextModuleProps {
   module: FreeTextModule;
@@ -18,14 +20,23 @@ export function FreeTextModule({ module }: FreeTextModuleProps) {
           {module.标签}
         </label>
       ) : null}
-      <input
-        id={inputId}
-        className="input"
-        data-part="input"
-        aria-label={labelHidden ? accessibleName : undefined}
-        placeholder={module.占位文本}
+      <EditableMarkdownValue
         value={value}
-        onChange={(event) => setValue(event.target.value)}
+        accessibleName={accessibleName}
+        input={(props) => (
+          <input
+            ref={props.ref as RefObject<HTMLInputElement>}
+            id={inputId}
+            className="input"
+            data-part="input"
+            aria-label={labelHidden ? accessibleName : undefined}
+            placeholder={module.占位文本}
+            value={props.value}
+            onFocus={props.onFocus}
+            onBlur={props.onBlur}
+            onChange={(event) => { setValue(event.target.value); props.onChange(event.target.value); }}
+          />
+        )}
       />
     </div>
   );

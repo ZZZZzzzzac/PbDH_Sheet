@@ -9,6 +9,7 @@ import {
   type ResourceLibraryField,
   type ResourceLibraryQuery,
 } from "../domain/resourceLibrary";
+import { RestrictedMarkdown } from "./RestrictedMarkdown";
 
 interface ResourceLibraryBrowserProps {
   library: ResourceLibrary;
@@ -144,7 +145,7 @@ export function ResourceLibraryBrowser({
                   >
                     {tableColumnFields.map((field) => (
                       <td className={`resource-table-cell-${field.effectiveWidth}`} key={field.key}>
-                        {entry.fields[field.key]}
+                        <RestrictedMarkdown value={entry.fields[field.key]} />
                       </td>
                     ))}
                   </tr>

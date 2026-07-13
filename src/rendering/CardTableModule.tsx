@@ -1,5 +1,6 @@
 import { Layers, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
+import { createPortal } from "react-dom";
 import {
   clampCardTablePosition,
   createCardTableLayout,
@@ -12,6 +13,7 @@ import {
 import { type ResourceLibraryEntry } from "../domain/resourceLibrary";
 import { findResourceLibrary, type CardTableModule as CardTableModuleConfig, type SystemPackage } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
+import { RestrictedMarkdown } from "./RestrictedMarkdown";
 
 interface CardTableModuleProps {
   module: CardTableModuleConfig;
@@ -201,7 +203,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
             key={instance.instanceId}
           />
         ))}
-        {cardMenu ? (
+        {cardMenu ? createPortal(
           <CardContextMenu
             instance={visibleInstances.find((instance) => instance.instanceId === cardMenu.instanceId)}
             stateOptions={module.状态选项 ?? ["configured", "vault"]}
@@ -209,7 +211,8 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
             y={cardMenu.y}
             onClose={closeCardMenu}
             onViewDetail={(instanceId) => { setDetailInstanceId(instanceId); closeCardMenu(); }}
-          />
+          />,
+          document.body,
         ) : null}
       </div>
       {detailInstanceId ? (
@@ -374,18 +377,16 @@ function TextCard({ definition, module: moduleConfig, fallbackName }: { definiti
   return (
     <div className="play-card-text">
       <header>
-        <h4>{definition?.fields[nameField] ?? fallbackName}</h4>
+        <RestrictedMarkdown className="play-card-name" value={definition?.fields[nameField] ?? fallbackName} />
         {tags.length > 0 ? (
           <div className="play-card-tags" aria-label="卡牌标签">
             {tags.map((tag) => (
-              <span className="play-card-tag" key={tag}>
-                {tag}
-              </span>
+              <RestrictedMarkdown className="play-card-tag" value={tag} key={tag} />
             ))}
           </div>
         ) : null}
       </header>
-      <p className="play-card-description">{definition?.fields[descField] ?? "Card Definition 不存在。"}</p>
+      <RestrictedMarkdown className="play-card-description" value={definition?.fields[descField] ?? "Card Definition 不存在。"} />
     </div>
   );
 }

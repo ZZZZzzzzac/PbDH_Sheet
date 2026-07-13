@@ -45,6 +45,22 @@ describe("HTML snapshot export/import", () => {
     expect(html).not.toContain("编辑按钮");
   });
 
+  it("exports rendered Markdown instead of a focused raw editor", () => {
+    const data = updateCharacterValue(createEmptyCharacterData(minimalSystemPackage), "character-name", "**勇者**");
+    document.body.innerHTML = `
+      <main class="sheet-tool">
+        <div data-markdown-editor="true"><input value="**勇者**"></div>
+        <div data-markdown-preview="true" hidden aria-hidden="true" role="button" tabindex="0"><p><strong>勇者</strong></p></div>
+      </main>`;
+
+    const html = buildReadonlyHtmlSnapshot(data, document.querySelector(".sheet-tool")!);
+
+    expect(html).toContain("<strong>勇者</strong>");
+    expect(html).not.toContain("data-markdown-editor");
+    expect(html).not.toContain("aria-hidden");
+    expect(html).not.toContain('role="button"');
+  });
+
   it("includes print-only Card Table grid rules so browser PDF output does not reuse absolute drag positions", () => {
     const data = createEmptyCharacterData(minimalSystemPackage);
     document.body.innerHTML = `
@@ -81,6 +97,11 @@ describe("HTML snapshot export/import", () => {
     expect(printCss).not.toContain("zoom:");
     expect(printCss).toMatch(/\[data-print-page="true"\]\s*\{[^}]*break-after:\s*auto[^}]*page-break-after:\s*auto/s);
     expect(printCss).toMatch(/\.print-mode input::placeholder,\s*\.print-mode textarea::placeholder\s*\{[^}]*color:\s*#d5dadd !important[^}]*-webkit-text-fill-color:\s*#d5dadd !important[^}]*print-color-adjust:\s*exact/s);
+  });
+
+  it("keeps Free Text on one line in Export Preview and browser printing", () => {
+    expect(printCss).toMatch(/\.print-mode \[data-module-type="freeText"\] \[data-markdown-preview\][^{]*\{[^}]*overflow:\s*hidden[^}]*white-space:\s*nowrap/s);
+    expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\[data-module-type="freeText"\] \[data-markdown-preview\][^{]*\{[^}]*overflow:\s*hidden[^}]*white-space:\s*nowrap/s);
   });
 
   it("renders empty field placeholder text in light gray in HTML snapshots", () => {

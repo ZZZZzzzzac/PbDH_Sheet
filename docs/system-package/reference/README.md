@@ -12,6 +12,7 @@
 - [Validation Scripts](validation-scripts.md)
 - [Assets and paths](assets-and-paths.md)
 - [Character Data](character-data.md)
+- [Restricted Markdown](restricted-markdown.md)
 - [Validator diagnostics](validator-diagnostics.md)
 - [AI generation checklist](ai-checklist.md)
 

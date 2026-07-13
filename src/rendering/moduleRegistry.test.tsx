@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCardInstance } from "../domain/cardEngine";
@@ -84,6 +84,7 @@ describe("Module Registry rendering", () => {
   it("updates editable module state by module ID and leaves read-only display unstored", () => {
     renderModuleDemo();
 
+    fireEvent.click(screen.getByRole("button", { name: "背景" }));
     fireEvent.change(screen.getByLabelText("背景"), {
       target: { value: "第一行\n第二行" },
     });
@@ -105,6 +106,32 @@ describe("Module Registry rendering", () => {
     expect(values?.["rule-note"]).toBeUndefined();
     expect(values?.["sect-emblem"]).toBeUndefined();
     expect(values?.portrait).toBeUndefined();
+  });
+
+  it("switches Free Text and Long Text between raw editing and rendered Markdown", () => {
+    renderModuleDemo();
+    const nameInput = screen.getByLabelText("姓名");
+
+    fireEvent.focus(nameInput);
+    fireEvent.change(nameInput, { target: { value: "**勇者**" } });
+    expect(nameInput).toHaveValue("**勇者**");
+    fireEvent.blur(nameInput);
+    expect(screen.getByText("勇者").tagName).toBe("STRONG");
+    expect(screen.getByRole("button", { name: "姓名" })).toHaveAttribute("data-part", "input");
+    expect(screen.queryByDisplayValue("**勇者**")).not.toBeInTheDocument();
+
+    const namePreview = screen.getByRole("button", { name: "姓名" });
+    fireEvent.keyDown(namePreview, { key: "Enter" });
+    expect(screen.getByLabelText("姓名")).toHaveValue("**勇者**");
+
+    fireEvent.click(screen.getByRole("button", { name: "背景" }));
+    const backgroundInput = screen.getByLabelText("背景");
+    fireEvent.focus(backgroundInput);
+    fireEvent.change(backgroundInput, { target: { value: "- 第一项\n- 第二项" } });
+    fireEvent.blur(backgroundInput);
+    const backgroundModule = screen.getByRole("button", { name: "背景" });
+    expect(backgroundModule.querySelectorAll("li")).toHaveLength(2);
+    expect(useRuntimeStore.getState().characterData?.character.values.background).toBe("- 第一项\n- 第二项");
   });
 
   it("shows an image fallback when the package asset has no resolved URL", () => {
@@ -203,6 +230,7 @@ describe("Module Registry rendering", () => {
     renderModuleDemo(packageWithPresentationOptions);
 
     const nameInput = screen.getByLabelText("姓名");
+    fireEvent.click(screen.getByRole("button", { name: "背景" }));
     const backgroundInput = screen.getByLabelText("背景");
     expect(nameInput).toHaveAttribute("placeholder", "请输入姓名");
     expect(backgroundInput).toHaveAttribute("placeholder", "请输入背景");
@@ -229,6 +257,7 @@ describe("Module Registry rendering", () => {
     const result = renderModuleDemo(packageWithEmptyLabels);
 
     const nameInput = screen.getByLabelText("请输入姓名");
+    fireEvent.click(screen.getByRole("button", { name: "请输入背景" }));
     const backgroundInput = screen.getByLabelText("请输入背景");
     const nameContainer = nameInput.closest('[data-module-type="freeText"]');
     expect(nameContainer).toHaveAttribute("data-label-hidden", "true");
@@ -261,11 +290,23 @@ describe("Module Registry rendering", () => {
     expect(values?.["domain-choice"]).toBeUndefined();
     expect(JSON.stringify(values)).not.toContain("resource-selection");
     expect(JSON.stringify(values)).not.toContain("data:image");
-    expect(screen.getByLabelText("领域名")).toHaveValue("烈焰");
-    expect(screen.getByText("烈焰")).toBeVisible();
+    expect(screen.getByRole("button", { name: "领域名" })).toHaveTextContent("烈焰");
+    expect(screen.getAllByText("烈焰")).toHaveLength(2);
     expect(screen.getByText("选择领域后显示")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "领域页" }));
     expect(screen.getByText("隐藏页面已显示")).toBeVisible();
+  });
+
+  it("renders Restricted Markdown in Resource Library table values", () => {
+    const systemPackage = createResourcePickerPackage();
+    systemPackage.resourceLibraries[0].entries[0].fields.名称 = "**烈焰**";
+    systemPackage.resourceLibraries[0].entries[0].fields.领域 = ":red[利刃]";
+    renderModuleDemo(systemPackage);
+
+    fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
+
+    expect(screen.getByText("烈焰").tagName).toBe("STRONG");
+    expect(screen.getByText("利刃")).toHaveAttribute("data-markdown-color", "red");
   });
 
   it("supports Resource Picker multi-select and default Resource Library filters", () => {
@@ -283,7 +324,7 @@ describe("Module Registry rendering", () => {
 
     const values = useRuntimeStore.getState().characterData?.character.values;
     expect(values?.["domain-name"]).toBe("烈焰、幽影");
-    expect(screen.getByLabelText("领域名")).toHaveValue("烈焰、幽影");
+    expect(screen.getByRole("button", { name: "领域名" })).toHaveTextContent("烈焰、幽影");
   });
 
   it("applies runtime Resource Picker default filters while leaving them editable", () => {
@@ -337,6 +378,60 @@ describe("Module Registry rendering", () => {
     expect(tagRow).toHaveTextContent("1");
     expect(card.querySelector(".play-card-recall")).toBeNull();
     expect(result.container.querySelector(".play-card-description")).toHaveTextContent("描述应该独立显示。");
+  });
+
+  it("renders Restricted Markdown in Card names, descriptions, inferred tags, and Card Detail", () => {
+    const systemPackage = createCardTablePackage();
+    const definition = systemPackage.resourceLibraries[0].entries[0];
+    definition.fields.名称 = "**回想测试**";
+    definition.fields.领域 = ":purple[贤者]";
+    definition.fields.描述 = "*描述*\n\n- 第一项\n- 第二项";
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "markdown-card",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: definition.ID,
+    });
+    useRuntimeStore.setState({ currentPackage: systemPackage, characterData });
+
+    const result = render(<SheetRenderer systemPackage={systemPackage} />);
+    const card = screen.getByRole("article", { name: "**回想测试**" });
+    expect(within(card).getByText("回想测试").tagName).toBe("STRONG");
+    expect(within(card).getByText("贤者")).toHaveAttribute("data-markdown-color", "purple");
+    expect(within(card).getByText("描述").tagName).toBe("EM");
+    expect(card.querySelectorAll(".play-card-description li")).toHaveLength(2);
+
+    fireEvent.contextMenu(card);
+    const contextMenu = screen.getByRole("menu");
+    expect(contextMenu.parentElement).toBe(document.body);
+    expect(result.container.querySelector(".card-table-surface")?.contains(contextMenu)).toBe(false);
+    fireEvent.click(screen.getByRole("menuitem", { name: "查看详情" }));
+    const dialog = screen.getByRole("dialog", { name: "**回想测试**详情" });
+    expect(within(dialog).getByText("回想测试").tagName).toBe("STRONG");
+    expect(result.container.querySelector(".card-context-menu strong")).toBeNull();
+  });
+
+  it("uses the same Restricted Markdown output after Card artwork fails", () => {
+    const systemPackage = createCardTablePackage();
+    const definition = systemPackage.resourceLibraries[0].entries[0];
+    definition.fields.名称 = "**故障回退**";
+    definition.fields.卡图 = "assets/cards/failure.png";
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "image-fallback-card",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: definition.ID,
+    });
+    useRuntimeStore.setState({
+      currentPackage: systemPackage,
+      packageAssetUrls: { "assets/cards/failure.png": "blob:failure" },
+      characterData,
+    });
+
+    render(<SheetRenderer systemPackage={systemPackage} />);
+    fireEvent.error(screen.getByRole("img", { name: "**故障回退**" }));
+
+    expect(screen.getByText("故障回退").tagName).toBe("STRONG");
   });
 
   it("resolves colliding Card Definition IDs from each instance's Resource Library", () => {

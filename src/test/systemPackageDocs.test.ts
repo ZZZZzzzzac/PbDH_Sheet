@@ -75,4 +75,15 @@ describe("System Package documentation", () => {
 
     expect(requiredExamples.filter((example) => !complete.includes(example))).toEqual([]);
   });
+
+  it("documents the complete Restricted Markdown contract", () => {
+    const reference = readFileSync(join(docsRoot, "reference", "restricted-markdown.md"), "utf8");
+    const requiredTerms = [
+      "**粗体**", "*斜体*", "***粗斜体***", "- 无序项", "1. 有序项",
+      ":red[", ":orange[", ":yellow[", ":green[", ":blue[", ":purple[", ":gray[",
+      "不能嵌套", "raw HTML", "Character Data", "--restricted-markdown-blue",
+    ];
+
+    expect(requiredTerms.filter((term) => !reference.includes(term))).toEqual([]);
+  });
 });

@@ -142,7 +142,7 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
     "ID": "name",
     "类型": "freeText",
     "标签": "角色名",
-    "默认值": "无名冒险者",
+    "默认值": "***无名冒险者***",
     "隐藏标签": false,
     "占位文本": "请输入角色名",
     "默认隐藏": false
@@ -309,15 +309,15 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
   {
     "ID": "card-a",
     "名称": "坚定防守",
-    "描述": "获得防御优势。",
+    "描述": ":blue[**获得防御优势。**]",
     "卡图": "card-a-art",
     "展示": "image",
-    "流派": "守护"
+    "流派": ":green[守护]"
   },
   {
     "ID": "card-b",
     "名称": "奥秘飞弹",
-    "描述": "造成魔法伤害。",
+    "描述": "造成魔法伤害。\n\n- 无视普通护甲\n- 消耗 1 希望",
     "卡图": "",
     "展示": "text",
     "流派": "奥秘"
@@ -326,6 +326,8 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
 ```
 
 被 Card Table 使用的每个条目都必须有非空的配置后 name/description。卡图可省略；空值使用文字 fallback。
+
+上述 Card name/description/tag 与 freeText/longText value 使用同一 Restricted Markdown。颜色可与强调组合，但不能嵌套；原始字符串保持在 Resource Value/Character Data 中。
 
 ## 6. Page layouts
 

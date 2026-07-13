@@ -17,4 +17,6 @@ Sheet Module 是框架提供的交互或展示部件。共同字段是唯一 `ID
 
 `标签` 字段仍然必填，但可以写成空字符串来隐藏视觉标题，效果等同于 `隐藏标签: true`。隐藏时输入框依次使用非空 `标签`、`占位文本`、Module `ID` 作为无障碍名称。`占位文本` 只在空输入框中提示 Player，不是默认值，也不会进入 Character Data。
 
+freeText/longText value 支持[Restricted Markdown](../reference/restricted-markdown.md)。空或聚焦字段显示原始文本，非空失焦字段显示渲染结果；Character Data 始终保存原字符串。freeText 仍是单行，长列表应放 longText。标签、placeholder 与无障碍名称不解析 Markdown。
+
 `imageField` 的图片区域本身就是上传/替换入口，支持点击和键盘操作；已有图片可通过右上角移除按钮清除，不需要 Author 另放上传按钮。

@@ -15,5 +15,6 @@
 11. `fillCountable` 只使用整数常量或可严格解析为整数的 Resource 字段；多选 Picker 声明 `选择索引`。
 12. Card Definition 只有在被 Card Table 消费时才要求 name/description；按 Module 配置字段检查。
 13. 运行 Validator 后按 `location/entities/evidence` 修复；不要要求或虚构 suggestion，不要尝试关闭规则。
+14. 只在 freeText/longText value 与 Card name/description/tags 中生成 Restricted Markdown；只用批准语法和七个命名颜色，不格式化框架 UI 文本。
 
 生成顺序建议：manifest → resources/assets → modules → pages/layouts/shell → dependencies → guide → checks → Validator → Preview。
