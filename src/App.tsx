@@ -13,6 +13,7 @@ import type { PackageDirectoryHandle } from "./loaders/packageVfs";
 import type { ValidationIssue } from "./domain/validationRunner";
 import { buildReadonlyHtmlSnapshot, waitForVisibleImages } from "./export/output";
 import { waitForCardDescriptionFits } from "./rendering/cardDescriptionFit";
+import { waitForMarkerPresentationFits } from "./rendering/markerPresentationFit";
 import { SheetRenderer } from "./rendering/SheetRenderer";
 import { printablePages } from "./rendering/pagePresentation";
 import { GuideSpotlight } from "./rendering/GuideSpotlight";
@@ -262,6 +263,7 @@ export default function App() {
     }
     await nextFrame();
     await waitForCardDescriptionFits(document.querySelector(".sheet-tool") ?? document);
+    await waitForMarkerPresentationFits(document.querySelector(".sheet-tool") ?? document);
     return true;
   };
 

@@ -253,6 +253,70 @@ describe("validateSystemPackage", () => {
     }
   });
 
+  it("accepts a Countable Resource Marker Presentation with single visible emoji graphemes", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: [{
+        ID: "character-name",
+        类型: "countableResource",
+        标签: "生命",
+        显示方式: "标记",
+        当前值标记: "❤️",
+        剩余值标记: "🖤",
+        最小值: 0,
+        最大值: 6,
+        默认值: 2,
+      }],
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(findModule(result.package, "character-name")).toEqual(expect.objectContaining({
+        显示方式: "标记",
+        当前值标记: "❤️",
+        剩余值标记: "🖤",
+      }));
+    }
+  });
+
+  it("rejects a Countable Resource Marker Presentation without both marker graphemes", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: [{
+        ID: "character-name",
+        类型: "countableResource",
+        标签: "生命",
+        显示方式: "标记",
+      }],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "PACKAGE_SHAPE_INVALID" }),
+    ]));
+  });
+
+  it.each([
+    ["multiple graphemes", { 当前值标记: "❤️❤️", 剩余值标记: "🖤", 最小值: 0 }],
+    ["whitespace marker", { 当前值标记: " ", 剩余值标记: "🖤", 最小值: 0 }],
+    ["format-only marker", { 当前值标记: "\u200d", 剩余值标记: "🖤", 最小值: 0 }],
+    ["identical markers", { 当前值标记: "❤️", 剩余值标记: "❤️", 最小值: 0 }],
+    ["negative minimum", { 当前值标记: "❤️", 剩余值标记: "🖤", 最小值: -1 }],
+  ])("rejects Marker Presentation with %s", (_case, markerConfig) => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: [{
+        ID: "character-name",
+        类型: "countableResource",
+        标签: "生命",
+        显示方式: "标记",
+        ...markerConfig,
+      }],
+    });
+
+    expect(result.ok).toBe(false);
+  });
+
   it("accepts HTML Layout Template module placeholders", () => {
     const result = validateSystemPackage(moduleDemoSystemPackage);
 

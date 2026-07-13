@@ -67,7 +67,35 @@ const countableResourceModuleSchema = sheetModuleBaseSchema.extend({
   默认值: z.number().int().optional(),
   步长: z.number().int().positive().optional(),
   最大值可改: z.boolean().optional(),
+  显示方式: z.enum(["数值", "标记"]).optional(),
+  当前值标记: z.string().optional(),
+  剩余值标记: z.string().optional(),
+}).superRefine((module, context) => {
+  if (module.显示方式 !== "标记") return;
+  if (module.当前值标记 === undefined) {
+    context.addIssue({ code: "custom", path: ["当前值标记"], message: "标记展示需要当前值标记。" });
+  } else if (!isSingleVisibleGrapheme(module.当前值标记)) {
+    context.addIssue({ code: "custom", path: ["当前值标记"], message: "当前值标记必须是一个可见 Unicode 字素。" });
+  }
+  if (module.剩余值标记 === undefined) {
+    context.addIssue({ code: "custom", path: ["剩余值标记"], message: "标记展示需要剩余值标记。" });
+  } else if (!isSingleVisibleGrapheme(module.剩余值标记)) {
+    context.addIssue({ code: "custom", path: ["剩余值标记"], message: "剩余值标记必须是一个可见 Unicode 字素。" });
+  }
+  if (module.当前值标记 !== undefined && module.剩余值标记 !== undefined
+    && module.当前值标记.normalize("NFC") === module.剩余值标记.normalize("NFC")) {
+    context.addIssue({ code: "custom", path: ["剩余值标记"], message: "当前值标记与剩余值标记必须不同。" });
+  }
+  if ((module.最小值 ?? 0) < 0) {
+    context.addIssue({ code: "custom", path: ["最小值"], message: "标记展示的最小值不能为负数。" });
+  }
 });
+
+function isSingleVisibleGrapheme(value: string): boolean {
+  if (!/[^\p{White_Space}\p{Control}\p{Format}\p{Mark}]/u.test(value)) return false;
+  const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+  return [...segmenter.segment(value)].length === 1;
+}
 
 const readOnlyDisplayModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("readOnlyDisplay"),

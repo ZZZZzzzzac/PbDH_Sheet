@@ -1,7 +1,11 @@
 import type { CountableResourceModule as CountableResourceModuleConfig } from "../domain/systemPackage";
+import { canTransitionCountableState, transitionCountableState, type CountableDirection } from "../domain/countableState";
 import { useRuntimeStore } from "../store/runtimeStore";
 import { readCountableState } from "./moduleState";
+import { useMarkerPresentationFit } from "./markerPresentationFit";
+import { usePointerActions } from "./usePointerActions";
 import { clampInt } from "../utils";
+import { useRef } from "react";
 
 interface CountableResourceModuleProps {
   module: CountableResourceModuleConfig;
@@ -29,47 +33,93 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
   };
   const setCurrent = (nextCurrent: number) => setState({ current: clampInt(nextCurrent, min, max) });
   const setMax = (nextMax: number | null) => setState({ max: nextMax });
+  const markerPresentation = module.显示方式 === "标记";
+  const markerGroupRef = useRef<HTMLSpanElement>(null);
+  const normalizedState = { current, max };
+  const transitionConfig = { min, step, editableMax };
+  const applyMarkerAction = (target: "current" | "maximum", direction: CountableDirection) => {
+    const next = transitionCountableState(normalizedState, transitionConfig, target, direction);
+    if (next.current !== current || next.max !== max) updateModuleValue(module.ID, next);
+  };
+  const canUseMarkerButton = (direction: CountableDirection) =>
+    canTransitionCountableState(normalizedState, transitionConfig, "current", direction)
+    || canTransitionCountableState(normalizedState, transitionConfig, "maximum", direction);
+  const decrementPointerActions = usePointerActions(
+    () => markerPresentation ? applyMarkerAction("current", "decrement") : setCurrent(current - step),
+    () => applyMarkerAction("maximum", "decrement"),
+    markerPresentation,
+  );
+  const incrementPointerActions = usePointerActions(
+    () => markerPresentation ? applyMarkerAction("current", "increment") : setCurrent(current + step),
+    () => applyMarkerAction("maximum", "increment"),
+    markerPresentation,
+  );
+  useMarkerPresentationFit(markerGroupRef, `${module.当前值标记}:${current}:${module.剩余值标记}:${max}`, markerPresentation);
 
   return (
     <div className="container" data-module-id={module.ID} data-module-type={module.类型} data-part="container">
       <div className="label" data-part="label">{module.标签}</div>
       <div className="counter" data-part="counter">
-        <button className="button stepper" data-part="decrement-button" type="button" onClick={() => setCurrent(current - step)} disabled={current <= min} aria-label={`${module.标签}减少`}>
+        <button
+          className="button stepper"
+          data-part="decrement-button"
+          type="button"
+          {...decrementPointerActions}
+          disabled={markerPresentation ? !canUseMarkerButton("decrement") : current <= min}
+          aria-label={`${module.标签}减少`}
+        >
           -
         </button>
-        <span className="counter-value-group" data-part="value-group">
-          <input
-            className="input number-input"
-            data-part="input"
-            inputMode="numeric"
-            aria-label={module.标签}
-            value={current}
-            onChange={(event) => setCurrent(parseInteger(event.target.value, fallback.current))}
-          />
-          {max !== null ? (
-            <span className="value" data-part="maximum">
-              /{" "}
-              {editableMax ? (
-                <input
-                  className="input max-input"
-                  data-part="maximum-input"
-                  inputMode="numeric"
-                  aria-label={`${module.标签}上限`}
-                  value={max}
-                  onChange={(event) => setMax(parseIntegerNullable(event.target.value))}
-                />
-              ) : (
-                max
-              )}
+        {markerPresentation ? (
+          <span
+            ref={markerGroupRef}
+            className="counter-value-group marker-group"
+            data-part="marker-group"
+            role="img"
+            aria-label={`${module.标签}：当前值 ${current}，${max === null ? "无上限" : `上限 ${max}`}`}
+          >
+            <span data-part="current-markers">
+              {renderMarkerCells(module.当前值标记 ?? "", current, "current")}
             </span>
-          ) : null}
-        </span>
+            <span data-part="remaining-markers">
+              {renderMarkerCells(module.剩余值标记 ?? "", max === null ? 0 : Math.max(0, max - current), "remaining")}
+            </span>
+          </span>
+        ) : (
+          <span className="counter-value-group" data-part="value-group">
+            <input
+              className="input number-input"
+              data-part="input"
+              inputMode="numeric"
+              aria-label={module.标签}
+              value={current}
+              onChange={(event) => setCurrent(parseInteger(event.target.value, fallback.current))}
+            />
+            {max !== null ? (
+              <span className="value" data-part="maximum">
+                /{" "}
+                {editableMax ? (
+                  <input
+                    className="input max-input"
+                    data-part="maximum-input"
+                    inputMode="numeric"
+                    aria-label={`${module.标签}上限`}
+                    value={max}
+                    onChange={(event) => setMax(parseIntegerNullable(event.target.value))}
+                  />
+                ) : (
+                  max
+                )}
+              </span>
+            ) : null}
+          </span>
+        )}
         <button
           className="button stepper"
           data-part="increment-button"
           type="button"
-          onClick={() => setCurrent(current + step)}
-          disabled={max !== null && current >= max}
+          {...incrementPointerActions}
+          disabled={markerPresentation ? !canUseMarkerButton("increment") : max !== null && current >= max}
           aria-label={`${module.标签}增加`}
         >
           +
@@ -77,6 +127,14 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
       </div>
     </div>
   );
+}
+
+function renderMarkerCells(marker: string, count: number, kind: "current" | "remaining") {
+  return Array.from({ length: count }, (_, index) => (
+    <span key={`${kind}-${index}`} className="marker-cell" data-part="marker" data-marker-kind={kind} aria-hidden="true">
+      {marker}
+    </span>
+  ));
 }
 
 function parseInteger(value: string, fallback: number) {

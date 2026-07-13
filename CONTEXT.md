@@ -80,6 +80,14 @@ _Avoid_: Card editor, Resource Library details panel
 A reusable author-configured building block such as text, resource picker, image, or display content.
 _Avoid_: Feature when referring to primitive sheet capabilities
 
+**Countable Resource**:
+A Sheet Module that stores an integer current value and an optional integer maximum. An Author may choose its Numeric Presentation or Marker Presentation without changing its Character Data or Dependency Logic contract.
+_Avoid_: Separate counter module for each presentation
+
+**Marker Presentation**:
+An Author-selected presentation of a Countable Resource that repeats one Author-defined Unicode grapheme for the current value and, when a finite maximum exists, a different Author-defined Unicode grapheme for the remaining capacity.
+_Avoid_: New Sheet Module, text value
+
 **Resource Library**:
 An Author-defined collection of selectable system resources such as classes, weapons, abilities, traits, or cards.
 _Avoid_: Card deck when referring to the source data
@@ -218,6 +226,8 @@ _Avoid_: Script plugin
 - System Package distribution is file/package based in the first version; package marketplaces, publishing platforms, and full source-code exports are outside the first-version requirement.
 - **Display Content**, adventure notes, names, and rule reference pages are all uses of **Sheet Modules**, not separate base features.
 - An **HTML Layout Template** may include **Static Layout Content** and module placeholders, but editable Character Data still belongs to **Sheet Modules**.
+- A **Countable Resource** uses the same `{current, max}` Character Data and `fillCountable` Dependency Logic contract in both Numeric Presentation and Marker Presentation; presentation choice does not create a new Sheet Module type.
+- A **Marker Presentation** renders `current` current-value markers followed by `max - current` remaining-capacity markers. When `max` is absent, it renders only the current-value markers.
 - An **HTML Layout Template** must not define interactive form controls or custom behavior; all Player interaction that reads or writes state must use Base Framework **Sheet Modules** or other framework-provided interactive surfaces.
 - **Dependency Logic** helps Players avoid table lookup and text copying, but should not imply full automation of game rules.
 - **Dependency Logic** may consume a Resource Picker selection event and fill existing Sheet Modules with selected Resource Values.

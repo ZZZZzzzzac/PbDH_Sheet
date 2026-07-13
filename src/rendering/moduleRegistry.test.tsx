@@ -78,6 +78,7 @@ describe("Module Registry rendering", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -163,6 +164,123 @@ describe("Module Registry rendering", () => {
       "increment-button",
     ]);
     expect(counter?.querySelector('[data-part="value-group"]')).toContainElement(maxInput);
+  });
+
+  it("renders Marker Presentation and changes current by the configured step", () => {
+    const markerPackage: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "vitality" && module.类型 === "countableResource"
+        ? { ...module, 显示方式: "标记", 当前值标记: "❤️", 剩余值标记: "🖤", 步长: 2 }
+        : module),
+    };
+
+    const result = renderModuleDemo(markerPackage);
+    const markerModule = result.container.querySelector('[data-module-id="vitality"]')!;
+
+    expect(within(markerModule as HTMLElement).queryByLabelText("气力")).not.toBeInTheDocument();
+    expect(markerModule.querySelector('[data-part="current-markers"]')).toHaveTextContent("❤️❤️❤️");
+    expect(markerModule.querySelector('[data-part="remaining-markers"]')).toHaveTextContent("🖤🖤🖤");
+    expect(markerModule.querySelectorAll('[data-part="marker"]')).toHaveLength(6);
+    expect(markerModule.querySelector('[data-part="marker-group"]')).toHaveAccessibleName("气力：当前值 3，上限 6");
+
+    fireEvent.click(within(markerModule as HTMLElement).getByRole("button", { name: "气力增加" }));
+
+    expect(useRuntimeStore.getState().characterData?.character.values.vitality).toEqual({ current: 5, max: 6 });
+    expect(markerModule.querySelector('[data-part="current-markers"]')).toHaveTextContent("❤️❤️❤️❤️❤️");
+    expect(markerModule.querySelector('[data-part="remaining-markers"]')).toHaveTextContent("🖤");
+    const styles = readFileSync("src/styles/countable-resource.css", "utf8");
+    expect(styles).toMatch(/\.marker-cell\s*\{[^}]*flex:\s*0 0 1\.25em[^}]*width:\s*1\.25em[^}]*justify-content:\s*center/s);
+  });
+
+  it("edits a finite Marker Presentation maximum with right-click and keeps state valid", () => {
+    const markerPackage: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "vitality" && module.类型 === "countableResource"
+        ? { ...module, 显示方式: "标记", 当前值标记: "❤️", 剩余值标记: "🖤", 步长: 2 }
+        : module),
+    };
+
+    renderModuleDemo(markerPackage);
+    const increment = screen.getByRole("button", { name: "气力增加" });
+    const decrement = screen.getByRole("button", { name: "气力减少" });
+
+    fireEvent.contextMenu(increment);
+    expect(useRuntimeStore.getState().characterData?.character.values.vitality).toEqual({ current: 3, max: 8 });
+
+    fireEvent.contextMenu(decrement);
+    fireEvent.contextMenu(decrement);
+    fireEvent.contextMenu(decrement);
+    expect(useRuntimeStore.getState().characterData?.character.values.vitality).toEqual({ current: 2, max: 2 });
+    expect(increment).not.toBeDisabled();
+  });
+
+  it("treats touch long-press as maximum editing and suppresses the follow-up click", () => {
+    vi.useFakeTimers();
+    const markerPackage: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "vitality" && module.类型 === "countableResource"
+        ? { ...module, 显示方式: "标记", 当前值标记: "❤️", 剩余值标记: "🖤", 步长: 2 }
+        : module),
+    };
+
+    renderModuleDemo(markerPackage);
+    const increment = screen.getByRole("button", { name: "气力增加" });
+
+    fireEvent.pointerDown(increment, { pointerId: 1, pointerType: "touch", clientX: 10, clientY: 10 });
+    act(() => vi.advanceTimersByTime(600));
+    fireEvent.pointerUp(increment, { pointerId: 1, pointerType: "touch", clientX: 10, clientY: 10 });
+    fireEvent.click(increment);
+
+    expect(useRuntimeStore.getState().characterData?.character.values.vitality).toEqual({ current: 3, max: 8 });
+  });
+
+  it("cancels touch maximum editing when the pointer moves before the long-press threshold", () => {
+    vi.useFakeTimers();
+    const markerPackage: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "vitality" && module.类型 === "countableResource"
+        ? { ...module, 显示方式: "标记", 当前值标记: "❤️", 剩余值标记: "🖤", 步长: 2 }
+        : module),
+    };
+
+    renderModuleDemo(markerPackage);
+    const increment = screen.getByRole("button", { name: "气力增加" });
+    fireEvent.pointerDown(increment, { pointerId: 1, pointerType: "touch", clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(increment, { pointerId: 1, pointerType: "touch", clientX: 30, clientY: 10 });
+    act(() => vi.advanceTimersByTime(600));
+    fireEvent.pointerUp(increment, { pointerId: 1, pointerType: "touch", clientX: 30, clientY: 10 });
+    fireEvent.click(increment);
+
+    expect(useRuntimeStore.getState().characterData?.character.values.vitality).toEqual({ current: 5, max: 6 });
+  });
+
+  it("fits Marker Presentation inside a fixed-height region and exposes overflow fallback", async () => {
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.dataset.part === "marker-group" ? 28 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.dataset.part === "marker-group" ? 100 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.dataset.part === "marker-group" ? 56 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.dataset.part === "marker-group" ? 200 : 0;
+    });
+    const markerPackage: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "vitality" && module.类型 === "countableResource"
+        ? { ...module, 显示方式: "标记", 当前值标记: "❤️", 剩余值标记: "🖤" }
+        : module),
+    };
+
+    const result = renderModuleDemo(markerPackage);
+    await act(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+
+    expect(result.container.querySelector('[data-part="marker-group"]')).toHaveAttribute("data-marker-fit", "overflow");
+    const styles = readFileSync("src/styles/countable-resource.css", "utf8");
+    expect(styles).toMatch(/\.marker-group\s*\{[^}]*align-content:\s*center[^}]*align-items:\s*center[^}]*justify-content:\s*center[^}]*height:\s*28px[^}]*overflow:\s*hidden/s);
+    expect(styles).toMatch(/\[data-marker-fit="overflow"\]\s*\{[^}]*overflow-x:\s*auto[^}]*white-space:\s*nowrap/s);
   });
 
   it("renders grouped checkbox options as multiple independent inputs with one visible description", () => {

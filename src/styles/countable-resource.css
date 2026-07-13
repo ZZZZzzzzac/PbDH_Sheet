@@ -16,6 +16,43 @@
   gap: 2px;
 }
 
+.marker-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.marker-group[data-marker-fit="overflow"] {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+
+.marker-group > [data-part="current-markers"],
+.marker-group > [data-part="remaining-markers"] {
+  display: contents;
+}
+
+.marker-cell {
+  display: inline-flex;
+  flex: 0 0 1.25em;
+  width: 1.25em;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
 .stepper {
   display: inline-grid;
   place-items: center;
