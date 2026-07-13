@@ -177,6 +177,7 @@
 }
 
 .play-card-text {
+  position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   gap: 12px;
@@ -238,6 +239,22 @@
 
 .play-card-description li + li {
   margin-top: 0.35em;
+}
+
+.play-card-description-overflow {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(36, 52, 56, 0.32);
+  border-radius: 999px;
+  background: rgba(248, 250, 249, 0.92);
+  color: #425056;
+  box-shadow: 0 2px 8px rgba(32, 36, 38, 0.18);
 }
 
 .card-action-button {

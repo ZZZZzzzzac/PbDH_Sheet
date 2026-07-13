@@ -86,4 +86,13 @@ describe("System Package documentation", () => {
 
     expect(requiredTerms.filter((term) => !reference.includes(term))).toEqual([]);
   });
+
+  it("documents compact text Card description fitting without changing package data", () => {
+    const reference = readFileSync(join(docsRoot, "reference", "cards.md"), "utf8");
+    const authorGuide = readFileSync(join(docsRoot, "author-guide", "07-cards.md"), "utf8");
+    const requiredTerms = ["description 自动拟合", "9px", "Card name", "tags", "Card Detail", "省略号", "Card Instance", "Character Data"];
+
+    expect(requiredTerms.filter((term) => !reference.includes(term))).toEqual([]);
+    expect(["9px", "Card name", "tags", "Card Detail", "省略号"].filter((term) => !authorGuide.includes(term))).toEqual([]);
+  });
 });

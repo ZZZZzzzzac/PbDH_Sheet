@@ -434,6 +434,47 @@ describe("Module Registry rendering", () => {
     expect(screen.getByText("故障回退").tagName).toBe("STRONG");
   });
 
+  it("marks descriptions that still overflow at 9px without shrinking names, tags, or Card Detail", async () => {
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains("play-card-description") ? 100 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains("play-card-description") ? 200 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains("play-card-description") ? 200 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains("play-card-description") ? 200 : 0;
+    });
+    const systemPackage = createCardTablePackage();
+    const definition = systemPackage.resourceLibraries[0].entries[0];
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "overflow-card",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: definition.ID,
+    });
+    useRuntimeStore.setState({ currentPackage: systemPackage, characterData });
+
+    render(<SheetRenderer systemPackage={systemPackage} />);
+    await act(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+
+    const card = screen.getByRole("article", { name: "回想测试" });
+    const description = card.querySelector<HTMLElement>(".play-card-description");
+    expect(description).toHaveStyle({ fontSize: "9px" });
+    expect(description).toHaveAttribute("data-card-description-fit", "overflow");
+    expect(card.querySelector<HTMLElement>(".play-card-name")?.style.fontSize).toBe("");
+    expect(card.querySelector<HTMLElement>(".play-card-tag")?.style.fontSize).toBe("");
+    expect(within(card).getByRole("img", { name: "卡牌描述未完全显示；查看卡牌详情可阅读完整内容" })).toBeVisible();
+
+    fireEvent.contextMenu(card);
+    fireEvent.click(screen.getByRole("menuitem", { name: "查看详情" }));
+    const dialog = screen.getByRole("dialog", { name: "回想测试详情" });
+    expect(dialog.querySelector<HTMLElement>(".play-card-description")?.style.fontSize).toBe("");
+    expect(within(dialog).queryByRole("img", { name: "卡牌描述未完全显示；查看卡牌详情可阅读完整内容" })).toBeNull();
+  });
+
   it("resolves colliding Card Definition IDs from each instance's Resource Library", () => {
     const systemPackage = createCardTablePackage();
     const first = createCardInstance(createEmptyCharacterData(systemPackage), {

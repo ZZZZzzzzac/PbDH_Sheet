@@ -80,22 +80,27 @@ describe("HTML snapshot export/import", () => {
     expect(html).toContain("@page");
     expect(html).toContain("size: A4 portrait");
     expect(html).toContain("width: 210mm");
-    expect(html).toContain("min-height: 297mm");
+    expect(html).toContain("height: 297mm");
     expect(html).toContain("grid-template-columns: repeat(auto-fill, minmax(0, var(--play-card-width)))");
     expect(html).toContain("gap: 4px");
     expect(html).toContain("padding: 0");
     expect(html).toContain("border: 0");
     expect(html).toContain("left: auto !important");
+    expect(html).toContain("width: var(--play-card-width) !important");
     expect(html).toContain("transform: none !important");
     expect(html).toContain("box-shadow: none !important");
-    expect(html).toContain("padding: 4mm");
+    expect(html).toContain(".snapshot-shell .play-card *");
+    expect(html).toContain("-webkit-print-color-adjust: exact");
+    expect(html).toContain("padding: 3mm");
   });
 
   it("uses the same A4 page box for Export Preview and browser printing", () => {
-    expect(printCss).toMatch(/\.print-mode \.sheet-page,\s*\.print-mode \[data-print-page="true"\]\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*210mm[^}]*min-height:\s*297mm[^}]*padding:\s*8mm 6mm 10mm/s);
+    expect(printCss).toMatch(/\.print-mode \.sheet-page,\s*\.print-mode \[data-print-page="true"\]\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*210mm[^}]*height:\s*297mm[^}]*padding:\s*5mm 4mm 5mm/s);
     expect(printCss).toMatch(/@page\s*\{[^}]*size:\s*A4 portrait[^}]*margin:\s*0/s);
     expect(printCss).not.toContain("zoom:");
-    expect(printCss).toMatch(/\[data-print-page="true"\]\s*\{[^}]*break-after:\s*auto[^}]*page-break-after:\s*auto/s);
+    expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\.play-card\s*\{[^}]*width:\s*var\(--play-card-width\) !important/s);
+    expect(printCss).toMatch(/\.play-card,\s*\.play-card \*\s*\{[^}]*print-color-adjust:\s*exact[^}]*-webkit-print-color-adjust:\s*exact/s);
+    expect(printCss).toMatch(/\.sheet-page \+ \.sheet-page,[^{]*\{[^}]*break-before:\s*page[^}]*page-break-before:\s*always/s);
     expect(printCss).toMatch(/\.print-mode input::placeholder,\s*\.print-mode textarea::placeholder\s*\{[^}]*color:\s*#d5dadd !important[^}]*-webkit-text-fill-color:\s*#d5dadd !important[^}]*print-color-adjust:\s*exact/s);
   });
 

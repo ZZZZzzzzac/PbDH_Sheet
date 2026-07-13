@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
+import { strToU8, zipSync } from "fflate";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -366,6 +367,68 @@ test("HTML Layout Template from demo zip stacks columns on small screens", async
     .toBe(1);
 });
 
+test("text Card descriptions auto-fit rendered content with a 9px floor", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await uploadPackage(page, await createCardFitPackage(testInfo));
+
+  const picker = page.getByRole("button", { name: "添加测试卡" });
+  await picker.click();
+  await page.getByLabel("选择 自动拟合卡").click();
+  const fittedCard = page.getByRole("article", { name: "自动拟合卡" });
+  const fittedDescription = fittedCard.locator(".play-card-description");
+  await expect.poll(() => fittedDescription.getAttribute("data-card-description-fit")).toBe("fitted");
+  const initialFit = await cardDescriptionMetrics(fittedDescription);
+  expect(initialFit.fontSizePx).toBeGreaterThanOrEqual(9);
+  expect(initialFit.fontSizePx).toBeLessThan(16);
+  expect(initialFit.scrollHeight).toBeLessThanOrEqual(initialFit.clientHeight + 1);
+  expect(await fittedCard.locator(".play-card-name").evaluate((element) => (element as HTMLElement).style.fontSize)).toBe("");
+  expect(await fittedCard.locator(".play-card-tag").first().evaluate((element) => (element as HTMLElement).style.fontSize)).toBe("");
+
+  const sizeControl = page.getByLabel("测试卡牌桌面卡牌大小");
+  await sizeControl.fill("320");
+  await expect.poll(async () => (await cardDescriptionMetrics(fittedDescription)).fontSizePx).toBeGreaterThanOrEqual(initialFit.fontSizePx);
+
+  await picker.click();
+  await page.getByLabel("选择 极端长文本卡").click();
+  const overflowCard = page.getByRole("article", { name: "极端长文本卡" });
+  const overflowDescription = overflowCard.locator(".play-card-description");
+  await expect.poll(() => overflowDescription.getAttribute("data-card-description-fit")).toBe("overflow");
+  expect((await cardDescriptionMetrics(overflowDescription)).fontSizePx).toBe(9);
+  await expect(overflowCard.getByRole("img", { name: "卡牌描述未完全显示；查看卡牌详情可阅读完整内容" })).toBeVisible();
+
+  await overflowCard.click({ button: "right" });
+  await page.getByRole("menuitem", { name: "查看详情" }).click();
+  const detail = page.getByRole("dialog", { name: "极端长文本卡详情" });
+  await expect(detail.locator(".play-card-description")).not.toHaveAttribute("style", /font-size/);
+  await expect(detail.getByText(/极端内容段落/).first()).toBeVisible();
+  await detail.getByRole("button", { name: "关闭卡牌详情" }).click();
+
+  const htmlDownload = await downloadHtmlSnapshot(page);
+  const snapshotPath = path.join(testInfo.outputDir, "card-fit.html");
+  await htmlDownload.saveAs(snapshotPath);
+  const snapshot = await readFile(snapshotPath, "utf8");
+  expect(snapshot).toContain("data-card-description-fit=");
+  expect(snapshot).toContain("data-card-description-font-size=");
+});
+
+test("printed text Cards preserve their screen presentation", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await uploadPackage(page, await createCardFitPackage(testInfo));
+  await page.getByRole("button", { name: "添加测试卡" }).click();
+  await page.getByLabel("选择 自动拟合卡").click();
+  const card = page.getByRole("article", { name: "自动拟合卡" });
+  const description = card.locator(".play-card-description");
+  await expect.poll(() => description.getAttribute("data-card-description-fit-pending")).toBe("false");
+  const screenPresentation = await cardPresentationMetrics(card);
+
+  await page.emulateMedia({ media: "print" });
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  await expect.poll(() => description.getAttribute("data-card-description-fit-pending")).toBe("false");
+  const printPresentation = await cardPresentationMetrics(card);
+
+  expect(printPresentation).toEqual(screenPresentation);
+});
+
 const errorFixtures = [
   ["corrupt.zip", "ZIP_READ_FAILED"],
   ["missing-manifest.zip", "MANIFEST_MISSING"],
@@ -406,7 +469,7 @@ test("invalid cached System Package is cleared and leaves upload controls usable
 
   await expect(page.getByText("未加载")).toBeVisible();
   await expect(page.getByText("缓存的 System Package 已失效，已清除。请重新上传系统包。")).toBeVisible();
-  await expect(page.getByRole("button", { name: "导入 System Package zip" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /System Package zip/ })).toBeEnabled();
   await expect(page.getByLabel("Sheet Tool", { exact: true })).not.toBeVisible();
   expect(pageErrors).toEqual([]);
 
@@ -418,7 +481,7 @@ test("invalid cached System Package is cleared and leaves upload controls usable
 async function uploadPackage(page: Page, packagePath: string) {
   await openSystemPackageMenu(page);
   const packageChooserPromise = page.waitForEvent("filechooser");
-  await page.getByRole("button", { name: "导入 System Package zip" }).click();
+  await page.getByRole("button", { name: /System Package zip/ }).click();
   const packageChooser = await packageChooserPromise;
   await packageChooser.setFiles(packagePath);
 }
@@ -494,6 +557,116 @@ async function resourceTableCellPadding(container: Locator) {
       paddingLeft: style.paddingLeft,
     };
   });
+}
+
+async function cardDescriptionMetrics(description: Locator) {
+  return description.evaluate((element) => {
+    const html = element as HTMLElement;
+    return {
+      fontSizePx: Number.parseFloat(getComputedStyle(html).fontSize),
+      clientHeight: html.clientHeight,
+      scrollHeight: html.scrollHeight,
+    };
+  });
+}
+
+async function cardPresentationMetrics(card: Locator) {
+  return card.evaluate((element) => {
+    const cardElement = element as HTMLElement;
+    const cardRect = cardElement.getBoundingClientRect();
+    const face = cardElement.querySelector<HTMLElement>(".play-card-text")!;
+    const name = cardElement.querySelector<HTMLElement>(".play-card-name")!;
+    const tag = cardElement.querySelector<HTMLElement>(".play-card-tag")!;
+    const description = cardElement.querySelector<HTMLElement>(".play-card-description")!;
+    const roundedRect = (target: HTMLElement) => {
+      const rect = target.getBoundingClientRect();
+      return {
+        x: Math.round((rect.x - cardRect.x) * 100) / 100,
+        y: Math.round((rect.y - cardRect.y) * 100) / 100,
+        width: Math.round(rect.width * 100) / 100,
+        height: Math.round(rect.height * 100) / 100,
+      };
+    };
+    const pickedStyle = (target: HTMLElement) => {
+      const style = getComputedStyle(target);
+      return {
+        fontFamily: style.fontFamily,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        lineHeight: style.lineHeight,
+        color: style.color,
+        backgroundColor: style.backgroundColor,
+        padding: style.padding,
+        gap: style.gap,
+      };
+    };
+    return {
+      card: { width: Math.round(cardRect.width * 100) / 100, height: Math.round(cardRect.height * 100) / 100 },
+      face: { rect: roundedRect(face), style: pickedStyle(face) },
+      name: { rect: roundedRect(name), style: pickedStyle(name) },
+      tag: { rect: roundedRect(tag), style: pickedStyle(tag) },
+      description: { rect: roundedRect(description), style: pickedStyle(description) },
+    };
+  });
+}
+
+async function createCardFitPackage(testInfo: TestInfo): Promise<string> {
+  const mediumDescription = [
+    "**守护反击：**当近距离内的盟友受到攻击时，你可以标记 1 压力，使自己成为这次攻击的目标。",
+    "成功防御后选择一项：",
+    "- 对攻击者造成等同于熟练值的物理伤害。",
+    "- 将攻击者击退到远距离。",
+    "- 让被保护的盟友清除 1 压力并移动到安全位置。",
+    ":blue[若盟友只剩 1 生命点，你获得 1 希望。]",
+  ].join("\n\n");
+  const extremeDescription = Array.from(
+    { length: 24 },
+    (_, index) => `**极端内容段落 ${index + 1}：**这是一段用于确认九像素下限仍然无法完整容纳时会显示独立省略号角标的中文规则文字。`,
+  ).join("\n\n");
+  const files: Record<string, Uint8Array> = {
+    "manifest.json": jsonBytes({
+      ID: "card-fit-e2e",
+      名称: "Card 描述拟合测试包",
+      版本: "0.1.0",
+      schemaVersion: "0.1.0",
+      pages: "pages.json",
+      modules: "modules.json",
+      resourceLibraries: [{ ID: "fit-cards", 名称: "拟合卡牌", 路径: "resources/cards.json" }],
+    }),
+    "pages.json": jsonBytes([
+      { ID: "main", 名称: "拟合测试", layout: { 类型: "htmlTemplate", html: "layouts/main.html", css: "layouts/main.css" } },
+    ]),
+    "modules.json": jsonBytes([
+      {
+        ID: "add-fit-card",
+        类型: "resourcePicker",
+        按钮文本: "添加测试卡",
+        资源库ID: "fit-cards",
+        创建卡牌: { 卡牌桌面模块ID: "fit-card-table", 默认状态: "configured" },
+      },
+      {
+        ID: "fit-card-table",
+        类型: "cardTable",
+        标签: "测试卡牌桌面",
+        资源库IDs: ["fit-cards"],
+        显示方式: "text",
+      },
+    ]),
+    "resources/cards.json": jsonBytes([
+      { ID: "fit-card", 名称: "自动拟合卡", 类型: "能力", 等级: "3", 描述: mediumDescription },
+      { ID: "overflow-card", 名称: "极端长文本卡", 类型: "能力", 等级: "9", 描述: extremeDescription },
+    ]),
+    "layouts/main.html": strToU8('<main class="card-fit-test"><pb-module id="add-fit-card"></pb-module><pb-module id="fit-card-table"></pb-module></main>'),
+    "layouts/main.css": strToU8(".card-fit-test { width: min(56rem, 100%); }"),
+  };
+  const packagePath = path.join(testInfo.outputDir, "card-fit-package.zip");
+  await mkdir(testInfo.outputDir, { recursive: true });
+  await writeFile(packagePath, zipSync(files));
+  return packagePath;
+}
+
+function jsonBytes(value: unknown): Uint8Array {
+  return strToU8(JSON.stringify(value));
 }
 
 async function putInvalidCachedPackage(page: Page) {

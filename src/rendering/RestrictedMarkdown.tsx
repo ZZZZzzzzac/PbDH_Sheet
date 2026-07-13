@@ -1,6 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkDirective from "remark-directive";
 import type { Node } from "unist";
+import type { Ref } from "react";
 
 const colorNames = new Set(["red", "orange", "yellow", "green", "blue", "purple", "gray"]);
 const allowedElements = ["p", "br", "strong", "em", "ol", "ul", "li", "span", "img"];
@@ -8,11 +9,12 @@ const allowedElements = ["p", "br", "strong", "em", "ol", "ul", "li", "span", "i
 interface RestrictedMarkdownProps {
   value: string;
   className?: string;
+  elementRef?: Ref<HTMLDivElement>;
 }
 
-export function RestrictedMarkdown({ value, className }: RestrictedMarkdownProps) {
+export function RestrictedMarkdown({ value, className, elementRef }: RestrictedMarkdownProps) {
   return (
-    <div className={className} data-restricted-markdown="true">
+    <div className={className} data-restricted-markdown="true" ref={elementRef}>
       <ReactMarkdown
         remarkPlugins={[remarkDirective, restrictedColorDirectives, stripEmphasisBoundaries]}
         allowedElements={allowedElements}

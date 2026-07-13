@@ -1,4 +1,4 @@
-import { Layers, X } from "lucide-react";
+import { Ellipsis, Layers, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -14,6 +14,7 @@ import { type ResourceLibraryEntry } from "../domain/resourceLibrary";
 import { findResourceLibrary, type CardTableModule as CardTableModuleConfig, type SystemPackage } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
 import { RestrictedMarkdown } from "./RestrictedMarkdown";
+import { useCardDescriptionFit } from "./cardDescriptionFit";
 
 interface CardTableModuleProps {
   module: CardTableModuleConfig;
@@ -344,14 +345,24 @@ function resolveCardDefinition(systemPackage: SystemPackage, instance: CardInsta
   return findResourceLibrary(systemPackage, instance.libraryId)?.entries.find((entry) => entry.ID === instance.definitionId);
 }
 
-function CardFace({ definition, module: moduleConfig, fallbackName }: { definition?: ResourceLibraryEntry; module: CardTableModuleConfig; fallbackName: string }) {
+function CardFace({
+  definition,
+  module: moduleConfig,
+  fallbackName,
+  autoFitDescription = true,
+}: {
+  definition?: ResourceLibraryEntry;
+  module: CardTableModuleConfig;
+  fallbackName: string;
+  autoFitDescription?: boolean;
+}) {
   const [imageFailed, setImageFailed] = useState(false);
   const assetUrls = useRuntimeStore((state) => state.packageAssetUrls);
   const artField = moduleConfig.卡图字段 ?? "卡图";
   const cardArtRef = definition?.fields[artField] ?? "";
   const cardArtUrl = cardArtRef ? assetUrls[cardArtRef] : undefined;
   const showImage = resolveCardDisplayMode(definition, moduleConfig) === "image" && cardArtUrl && !imageFailed;
-  return showImage ? <img className="play-card-image" src={cardArtUrl} alt={fallbackName} draggable={false} onError={() => setImageFailed(true)} /> : <TextCard definition={definition} module={moduleConfig} fallbackName={fallbackName} />;
+  return showImage ? <img className="play-card-image" src={cardArtUrl} alt={fallbackName} draggable={false} onError={() => setImageFailed(true)} /> : <TextCard definition={definition} module={moduleConfig} fallbackName={fallbackName} autoFitDescription={autoFitDescription} />;
 }
 
 function CardDetailOverlay({ instance, definition, module, onClose }: { instance?: CardInstance; definition?: ResourceLibraryEntry; module: CardTableModuleConfig; onClose: () => void }) {
@@ -366,16 +377,27 @@ function CardDetailOverlay({ instance, definition, module, onClose }: { instance
     <div className="card-detail-backdrop" data-output-exclude="true" onClick={onClose}>
       <section className="card-detail-dialog" role="dialog" aria-modal="true" aria-label={`${name}详情`} onClick={(event) => event.stopPropagation()}>
         <button className="card-detail-close" type="button" onClick={onClose} aria-label="关闭卡牌详情"><X aria-hidden="true" size={20} /></button>
-        <div className="card-detail-face"><CardFace definition={definition} module={module} fallbackName={name} /></div>
+        <div className="card-detail-face"><CardFace definition={definition} module={module} fallbackName={name} autoFitDescription={false} /></div>
       </section>
     </div>
   );
 }
 
-function TextCard({ definition, module: moduleConfig, fallbackName }: { definition?: ResourceLibraryEntry; module: CardTableModuleConfig; fallbackName: string }) {
+function TextCard({
+  definition,
+  module: moduleConfig,
+  fallbackName,
+  autoFitDescription,
+}: {
+  definition?: ResourceLibraryEntry;
+  module: CardTableModuleConfig;
+  fallbackName: string;
+  autoFitDescription: boolean;
+}) {
   const nameField = moduleConfig.卡名字段 ?? "名称";
   const descField = moduleConfig.描述字段 ?? "描述";
   const tags = inferCardTags(definition, moduleConfig, nameField, descField);
+  const description = definition?.fields[descField] ?? "Card Definition 不存在。";
 
   return (
     <div className="play-card-text">
@@ -389,8 +411,28 @@ function TextCard({ definition, module: moduleConfig, fallbackName }: { definiti
           </div>
         ) : null}
       </header>
-      <RestrictedMarkdown className="play-card-description" value={definition?.fields[descField] ?? "Card Definition 不存在。"} />
+      <CardDescription value={description} autoFit={autoFitDescription} />
     </div>
+  );
+}
+
+function CardDescription({ value, autoFit }: { value: string; autoFit: boolean }) {
+  const descriptionRef = useRef<HTMLDivElement>(null);
+  const overflowing = useCardDescriptionFit(descriptionRef, value, autoFit);
+  return (
+    <>
+      <RestrictedMarkdown className="play-card-description" value={value} elementRef={descriptionRef} />
+      {autoFit && overflowing ? (
+        <span
+          className="play-card-description-overflow"
+          role="img"
+          aria-label="卡牌描述未完全显示；查看卡牌详情可阅读完整内容"
+          title="卡牌描述未完全显示；查看卡牌详情可阅读完整内容"
+        >
+          <Ellipsis aria-hidden="true" size={16} />
+        </span>
+      ) : null}
+    </>
   );
 }
 

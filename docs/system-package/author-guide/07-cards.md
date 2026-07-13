@@ -8,6 +8,8 @@ Resource Picker 可通过 `创建卡牌.卡牌桌面模块ID` 把选中资源创
 
 Card name、description 与推断 tags 支持[Restricted Markdown](../reference/restricted-markdown.md)，并在文字 Card、详情和图片失败 fallback 中保持一致。控件、菜单、空状态和无障碍名称仍是纯文本。
 
+紧凑文字 Card 会自动缩小 description 以尽量显示完整内容：从当前样式计算出的字号开始，最低缩至 `9px`。Card name、tags 与 Card Detail 不缩放。极端长文本在 `9px` 仍放不下时会保留裁切并显示独立省略号角标，Player 可打开 Card Detail 阅读完整 description。因此 Author 不需要也不能在 Resource Value 中写字号或溢出提示，拟合结果也不会进入角色存档或 System Package 数据。打印时框架只把自由桌面上的多张 Card 重排成纸面网格，单张紧凑 Card 的尺寸、内部布局、拟合字号和颜色保持与网页一致。
+
 Card Definition 是不可变 Author Data；Card Instance 是 Player 状态，包含位置、层级和状态。框架负责创建、删除、拖动、整理、状态切换和只读详情，不实现抽牌、费用、上限或游戏合法性。此类规则由 Validation Check 报告。
 
 图片加载失败会使用文字 fallback。不要把大型图片转成 base64 写进资源 JSON；将图片放入 Assets。

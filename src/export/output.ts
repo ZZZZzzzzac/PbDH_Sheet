@@ -248,14 +248,14 @@ body.snapshot-body {
 .snapshot-shell [data-print-page="true"] {
   box-sizing: border-box;
   width: 210mm;
-  min-height: 297mm;
+  height: 297mm;
   margin: 0 auto 16px;
-  padding: 8mm 6mm 10mm;
+  padding: 5mm 4mm 5mm;
   overflow: hidden;
   background: #ffffff;
 }
 .snapshot-shell [data-print-page="true"] {
-  padding: 4mm;
+  padding: 3mm;
 }
 .snapshot-shell .sheet-page,
 .snapshot-shell .module-slot,
@@ -267,6 +267,11 @@ body.snapshot-body {
 .snapshot-shell .play-card {
   box-shadow: none !important;
   filter: none !important;
+}
+.snapshot-shell .play-card,
+.snapshot-shell .play-card * {
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
 }
 .snapshot-shell input::placeholder,
 .snapshot-shell textarea::placeholder {
@@ -305,6 +310,7 @@ body.snapshot-body {
   }
   .snapshot-shell .play-card {
     position: relative;
+    width: var(--play-card-width) !important;
     left: auto !important;
     top: auto !important;
     z-index: auto !important;
@@ -312,21 +318,26 @@ body.snapshot-body {
     box-shadow: none !important;
     filter: none !important;
   }
+  .snapshot-shell .play-card,
+  .snapshot-shell .play-card * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
   .snapshot-shell .sheet-page,
   .snapshot-shell [data-print-page="true"],
   .sheet-page,
   [data-print-page="true"] {
     box-sizing: border-box;
     width: 210mm;
-    min-height: 297mm;
+    height: 297mm;
     margin: 0;
-    padding: 8mm 6mm 10mm;
+    padding: 5mm 4mm 5mm;
     overflow: hidden;
     break-after: page;
   }
   .snapshot-shell [data-print-page="true"],
   [data-print-page="true"] {
-    padding: 4mm;
+    padding: 3mm;
     break-after: auto;
     page-break-after: auto;
   }

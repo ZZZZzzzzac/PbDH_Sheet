@@ -71,6 +71,12 @@
   filter: none !important;
 }
 
+.print-mode .play-card,
+.print-mode .play-card * {
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
 .print-mode input::placeholder,
 .print-mode textarea::placeholder {
   color: #d5dadd !important;
@@ -176,11 +182,18 @@
 
   .play-card {
     position: relative;
+    width: var(--play-card-width) !important;
     left: auto !important;
     top: auto !important;
     z-index: auto !important;
     transform: none !important;
     box-shadow: none !important;
     filter: none !important;
+  }
+
+  .play-card,
+  .play-card * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }
