@@ -491,6 +491,21 @@ describe("Module Registry rendering", () => {
     expect(useRuntimeStore.getState().cardTableCardWidths["domain-card-table"]).toBe(300);
     expect(result.container.querySelector(".card-table-surface")).toHaveStyle({ "--play-card-width": "300px" });
   });
+
+  it("expands the Card Table surface to the height allocated by its container", () => {
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains("card-table-module") ? 1200 : 0;
+    });
+    const systemPackage = createCardTablePackage();
+    useRuntimeStore.setState({
+      currentPackage: systemPackage,
+      characterData: createEmptyCharacterData(systemPackage),
+    });
+
+    const result = render(<SheetRenderer systemPackage={systemPackage} />);
+
+    expect(result.container.querySelector(".card-table-surface")).toHaveStyle({ height: "1200px", minHeight: "1200px" });
+  });
 });
 
 function createResourcePickerPackage(options: { multiSelect?: boolean; defaultFilters?: Record<string, string[]> } = {}): SystemPackage {

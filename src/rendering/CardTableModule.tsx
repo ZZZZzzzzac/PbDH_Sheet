@@ -64,7 +64,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
     const updateSurfaceSize = () => {
       const rect = table.getBoundingClientRect();
       setSurfaceWidthPx(Math.max(0, table.clientWidth));
-      setSurfaceViewportHeightPx(Math.max(420, window.innerHeight - rect.top - 16));
+      setSurfaceViewportHeightPx(Math.max(420, window.innerHeight - rect.top - 16, table.parentElement?.clientHeight ?? 0));
     };
 
     updateSurfaceSize();
@@ -77,6 +77,9 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
     window.addEventListener("resize", updateSurfaceSize);
     const observer = new ResizeObserver(updateSurfaceSize);
     observer.observe(table);
+    if (table.parentElement) {
+      observer.observe(table.parentElement);
+    }
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", updateSurfaceSize);
