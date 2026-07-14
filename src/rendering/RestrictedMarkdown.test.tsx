@@ -64,6 +64,26 @@ describe("Restricted Markdown", () => {
     expect(result.container.querySelector("ol")?.querySelectorAll("li")).toHaveLength(2);
   });
 
+  it("preserves ordinary text line breaks one-for-one in the rendered output", () => {
+    const single = render(<RestrictedMarkdown value={'ABC\nabc'} />);
+    expect(single.container.querySelector("p")?.innerHTML).toBe("ABC<br>\nabc");
+
+    const oneBlankLine = render(<RestrictedMarkdown value={'ABC\n\nabc'} />);
+    expect([...oneBlankLine.container.querySelector('[data-restricted-markdown="true"]')!.children].map((element) => element.tagName)).toEqual([
+      "P",
+      "BR",
+      "P",
+    ]);
+
+    const twoBlankLines = render(<RestrictedMarkdown value={'ABC\n\n\nabc'} />);
+    expect([...twoBlankLines.container.querySelector('[data-restricted-markdown="true"]')!.children].map((element) => element.tagName)).toEqual([
+      "P",
+      "BR",
+      "BR",
+      "P",
+    ]);
+  });
+
   it("exposes stable CSS variables for every approved color", () => {
     const css = readFileSync("src/styles/variables.css", "utf8");
 

@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { strToU8, zipSync } from "fflate";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 test("minimal loop edits, autosaves, exports and imports Character JSON", async ({ page }, testInfo) => {
@@ -365,6 +365,32 @@ test("HTML Layout Template from demo zip stacks columns on small screens", async
       identitySection.evaluate((element) => getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length),
     )
     .toBe(1);
+});
+
+test("Daggerheart story editors fill their outer frames", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await uploadPackage(page, await createDaggerheartCorePackage(testInfo));
+  await page.getByRole("button", { name: "背景与关系", exact: true }).click();
+
+  for (const moduleId of ["event-log", "background-story"]) {
+    const module = page.locator(`[data-module-id="${moduleId}"]`);
+    const textarea = module.locator("textarea");
+    await expect(textarea).toBeVisible();
+
+    const gaps = await module.evaluate((element) => {
+      const container = element.getBoundingClientRect();
+      const input = element.querySelector("textarea")!.getBoundingClientRect();
+      return {
+        left: input.left - container.left,
+        right: container.right - input.right,
+        bottom: container.bottom - input.bottom,
+      };
+    });
+
+    expect(Math.abs(gaps.left)).toBeLessThanOrEqual(1);
+    expect(Math.abs(gaps.right)).toBeLessThanOrEqual(1);
+    expect(Math.abs(gaps.bottom)).toBeLessThanOrEqual(1);
+  }
 });
 
 test("text Card descriptions auto-fit rendered content with a 9px floor", async ({ page }, testInfo) => {
@@ -741,6 +767,30 @@ function moduleDemoPackagePath() {
 
 function selectionDemoPackagePath() {
   return path.join(process.cwd(), "public", "system-packages", "demo-selection.zip");
+}
+
+async function createDaggerheartCorePackage(testInfo: TestInfo): Promise<string> {
+  const packageRoot = path.join(process.cwd(), "public", "system-packages", "daggerheart-core");
+  const files = Object.fromEntries(
+    await Promise.all(
+      (await walkPackageFiles(packageRoot)).map(async (file) => [
+        path.relative(packageRoot, file).replaceAll("\\", "/"),
+        await readFile(file),
+      ]),
+    ),
+  );
+  const packagePath = path.join(testInfo.outputDir, "daggerheart-core.zip");
+  await mkdir(testInfo.outputDir, { recursive: true });
+  await writeFile(packagePath, zipSync(files));
+  return packagePath;
+}
+
+async function walkPackageFiles(directory: string): Promise<string[]> {
+  const entries = await readdir(directory, { withFileTypes: true });
+  return (await Promise.all(entries.map((entry) => {
+    const entryPath = path.join(directory, entry.name);
+    return entry.isDirectory() ? walkPackageFiles(entryPath) : [entryPath];
+  }))).flat();
 }
 
 function errorFixturePath(fileName: string) {

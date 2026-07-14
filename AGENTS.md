@@ -30,3 +30,9 @@ Developing new feature / debug and any other non-trivial task, use /to-prd /to-i
 - trivial task edit code directly, no /to-prd /to-issue /triage
 - simple task can skip /to-prd.
 - use /triage alonewith /to-issue, unless human review needed.
+- after human review and say ok, close related issues
+
+## GitHub CLI
+
+- Sandboxed `gh` cannot access the host authentication and returns `HTTP 401: Requires authentication`.
+- Run `gh` commands outside the sandbox with the required escalation. Do not run `gh auth login`; the host is already authenticated.

@@ -35,6 +35,8 @@ Module `标签`、`占位文本`、框架按钮、菜单、空状态、诊断、
 
 颜色可与粗体/斜体组合，但颜色 directive 不能嵌套。只接受上述七个固定名称；不能写任意颜色、inline CSS 或自定义 directive。
 
+普通文本中的换行逐个保留：单个换行显示为换行，连续两个换行保留一个空行，连续三个换行保留两个空行。编辑态与展示态因此保持相同的行结构。列表仍按原有 Markdown 语法解析。
+
 不支持 headings、links、images、blockquotes、inline/fenced code、tables、strikethrough、task lists、raw HTML。禁用语法不会产生对应元素或交互；可读文本会尽量保留。畸形 directive、未知颜色和嵌套颜色不会应用颜色。
 
 ## 编辑与存储

@@ -351,9 +351,16 @@
   height: 100%;
 }
 
+.story-overview [data-module-type="longText"] [data-markdown-editor="true"] {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .story-overview [data-module-type="longText"] [data-part="input"] {
   flex: 1 1 auto;
   height: 100%;
+  max-height: none;
   resize: none;
 }
 

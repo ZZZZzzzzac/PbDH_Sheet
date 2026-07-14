@@ -16,7 +16,7 @@ export function RestrictedMarkdown({ value, className, elementRef }: RestrictedM
   return (
     <div className={className} data-restricted-markdown="true" ref={elementRef}>
       <ReactMarkdown
-        remarkPlugins={[remarkDirective, restrictedColorDirectives, stripEmphasisBoundaries]}
+        remarkPlugins={[remarkDirective, restrictedColorDirectives, stripEmphasisBoundaries, preserveLineBreaks]}
         allowedElements={allowedElements}
         unwrapDisallowed
         components={{ img: ({ alt }) => <span>{alt}</span> }}
@@ -51,6 +51,49 @@ function stripBoundaryFromNode(node: Node): void {
   if ("children" in node && Array.isArray(node.children)) {
     node.children.forEach((child) => stripBoundaryFromNode(child as Node));
   }
+}
+
+interface MarkdownNode extends Node {
+  children?: MarkdownNode[];
+  value?: string;
+}
+
+function preserveLineBreaks() {
+  return (tree: MarkdownNode) => {
+    replaceSoftBreaks(tree);
+    preserveRootBlankLines(tree);
+  };
+}
+
+function replaceSoftBreaks(node: MarkdownNode): void {
+  if (!node.children) return;
+
+  node.children = node.children.flatMap((child) => {
+    if (child.type !== "text" || !child.value?.includes("\n")) {
+      replaceSoftBreaks(child);
+      return child;
+    }
+
+    return child.value.split("\n").flatMap((text, index) => [
+      ...(index > 0 ? [{ type: "break" } satisfies MarkdownNode] : []),
+      ...(text ? [{ ...child, value: text }] : []),
+    ]);
+  });
+}
+
+function preserveRootBlankLines(root: MarkdownNode): void {
+  if (root.type !== "root" || !root.children) return;
+
+  const children: MarkdownNode[] = [];
+  root.children.forEach((child, index) => {
+    const previous = root.children?.[index - 1];
+    const blankLines = previous?.position && child.position
+      ? child.position.start.line - previous.position.end.line - 1
+      : 0;
+    for (let line = 0; line < blankLines; line += 1) children.push({ type: "break" });
+    children.push(child);
+  });
+  root.children = children;
 }
 
 function restrictedColorDirectives() {
