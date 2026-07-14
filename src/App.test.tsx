@@ -7,9 +7,6 @@ import { configureRuntimeDependencies, resetRuntimeDependencies, useRuntimeStore
 import { minimalSystemPackage } from "./test/fixtures";
 import type { SystemPackage } from "./domain/systemPackage";
 
-const { exportSheetPagesToPdfMock } = vi.hoisted(() => ({ exportSheetPagesToPdfMock: vi.fn(async () => 1) }));
-vi.mock("./export/pageImagePdf", () => ({ exportSheetPagesToPdf: exportSheetPagesToPdfMock }));
-
 function createEmptyStorage(): StorageService {
   const saves = new Map<string, Parameters<StorageService["saveCharacterSave"]>[0]>();
   const active = new Map<string, string>();
@@ -130,7 +127,6 @@ describe("App Validation Checks", () => {
   let revokeObjectUrlSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    exportSheetPagesToPdfMock.mockClear();
     anchorClickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     createObjectUrlSpy = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:test");
     revokeObjectUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
@@ -304,32 +300,7 @@ describe("App Validation Checks", () => {
     expect(revokeObjectUrlSpy).toHaveBeenCalledWith("blob:test");
   });
 
-  it("exports rendered Sheet Pages as a PDF after clean pre-output checks", async () => {
-    configureRuntimeDependencies({
-      loadSystemPackageFromFile: async () => ({
-        ok: true,
-        package: {
-          ...minimalSystemPackage,
-          validationChecks: [{ ID: "clean-check", 脚本: "checks/clean.js", scriptContent: "module.exports = () => [];" }],
-        },
-        issues: [],
-      }),
-      storage: createEmptyStorage(),
-      runValidationChecks: async () => [],
-    });
-    const user = userEvent.setup();
-    render(<App />);
-
-    await act(async () => {
-      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
-    });
-
-    await user.click(screen.getByRole("button", { name: "导出页面快照 PDF" }));
-
-    await waitFor(() => expect(exportSheetPagesToPdfMock).toHaveBeenCalledWith(expect.any(Element), "未命名角色.pdf"));
-  });
-
-  it("keeps the browser print-to-PDF path alongside image PDF export", async () => {
+  it("uses browser printing as the only PDF output path", async () => {
     configureRuntimeDependencies({
       loadSystemPackageFromFile: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
       storage: createEmptyStorage(),
@@ -344,10 +315,10 @@ describe("App Validation Checks", () => {
       await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
     });
 
+    expect(screen.queryByRole("button", { name: "导出页面快照 PDF" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "打开浏览器打印 PDF" }));
 
     await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
-    expect(exportSheetPagesToPdfMock).not.toHaveBeenCalled();
   });
 
   it("applies the selected Countable Resource strategy to print output without changing Character Data", async () => {
@@ -392,6 +363,8 @@ describe("App Validation Checks", () => {
       return 0;
     });
     const user = userEvent.setup();
+    const printSpy = vi.fn();
+    Object.defineProperty(window, "print", { value: printSpy, configurable: true });
     render(<App />);
 
     await act(async () => {
@@ -402,9 +375,9 @@ describe("App Validation Checks", () => {
       useRuntimeStore.setState({ tidyCardTable: tidySpy });
     });
 
-    await user.click(screen.getByRole("button", { name: "导出页面快照 PDF" }));
+    await user.click(screen.getByRole("button", { name: "打开浏览器打印 PDF" }));
 
-    await waitFor(() => expect(exportSheetPagesToPdfMock).toHaveBeenCalled());
+    await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
     expect(tidySpy).toHaveBeenCalledWith("print-card-table", expect.objectContaining({ surfaceWidthPx: 600 }));
   });
 });
