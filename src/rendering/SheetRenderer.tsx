@@ -8,10 +8,7 @@ import { printablePages, resolveCurrentPageId, runtimeVisiblePages } from "./pag
 interface SheetRendererProps {
   systemPackage: SystemPackage;
   outputMode?: boolean;
-  countablePrintStrategy?: CountablePrintStrategy;
 }
-
-export type CountablePrintStrategy = "original" | "clear-current" | "uniform-squares" | "clear-uniform-squares";
 
 const allowedTemplateAttributes = new Set(["alt", "aria-label", "class", "colspan", "rowspan", "src", "title"]);
 const reactAttributeNames = new Map([
@@ -163,7 +160,7 @@ function cssStringEscape(value: string): string {
   return value.replace(/["\\]/g, "\\$&");
 }
 
-export function SheetRenderer({ systemPackage, outputMode = false, countablePrintStrategy = "original" }: SheetRendererProps) {
+export function SheetRenderer({ systemPackage, outputMode = false }: SheetRendererProps) {
   const pageVisibility = useRuntimeStore((state) => state.pageVisibility);
   const moduleVisibility = useRuntimeStore((state) => state.moduleVisibility);
   const [currentPageId, setCurrentPageId] = useState<string | null>(null);
@@ -189,7 +186,7 @@ export function SheetRenderer({ systemPackage, outputMode = false, countablePrin
     <main
       className="sheet-tool"
       aria-label="Sheet Tool"
-      data-countable-print-strategy={outputMode ? countablePrintStrategy : undefined}
+      data-countable-print-strategy={outputMode ? "clear-uniform-squares" : undefined}
     >
       {systemPackage.shell ? <div className="sheet-shell" data-template-shell="true"><style>{scopeCssBlock(systemPackage.shell.cssContent ?? "", '[data-template-shell="true"]')}</style>{renderHtmlTemplate(systemPackage, systemPackage.shell.htmlContent, moduleVisibility, outlet)}</div> : outlet}
     </main>

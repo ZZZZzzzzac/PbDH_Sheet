@@ -300,13 +300,16 @@ describe("App Validation Checks", () => {
     expect(revokeObjectUrlSpy).toHaveBeenCalledWith("blob:test");
   });
 
-  it("uses browser printing as the only PDF output path", async () => {
+  it("uses browser printing as the only PDF output path and restores the normal Sheet Tool afterward", async () => {
     configureRuntimeDependencies({
       loadSystemPackageFromFile: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
       storage: createEmptyStorage(),
       runValidationChecks: async () => [],
     });
-    const printSpy = vi.fn();
+    const printSpy = vi.fn(() => {
+      expect(document.querySelector(".app-shell")).toHaveClass("print-mode");
+      expect(screen.queryByLabelText("导出预览")).not.toBeInTheDocument();
+    });
     Object.defineProperty(window, "print", { value: printSpy, configurable: true });
     const user = userEvent.setup();
     render(<App />);
@@ -319,15 +322,38 @@ describe("App Validation Checks", () => {
     await user.click(screen.getByRole("button", { name: "打开浏览器打印 PDF" }));
 
     await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
+    expect(document.querySelector(".app-shell")).not.toHaveClass("print-mode");
   });
 
-  it("applies the selected Countable Resource strategy to print output without changing Character Data", async () => {
+  it("restores the normal Sheet Tool after exporting an HTML snapshot", async () => {
     configureRuntimeDependencies({
       loadSystemPackageFromFile: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
       storage: createEmptyStorage(),
       runValidationChecks: async () => [],
     });
-    const printSpy = vi.fn();
+    const user = userEvent.setup();
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+
+    await user.click(screen.getByRole("button", { name: "导出 HTML snapshot" }));
+
+    await waitFor(() => expect(anchorClickSpy).toHaveBeenCalledTimes(1));
+    expect(document.querySelector(".app-shell")).not.toHaveClass("print-mode");
+    expect(screen.queryByLabelText("导出预览")).not.toBeInTheDocument();
+  });
+
+  it("applies the fixed cleared hollow-square Countable Resource policy without changing Character Data", async () => {
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
+      storage: createEmptyStorage(),
+      runValidationChecks: async () => [],
+    });
+    const printSpy = vi.fn(() => {
+      expect(screen.getByLabelText("Sheet Tool")).toHaveAttribute("data-countable-print-strategy", "clear-uniform-squares");
+    });
     Object.defineProperty(window, "print", { value: printSpy, configurable: true });
     const user = userEvent.setup();
     render(<App />);
@@ -336,12 +362,11 @@ describe("App Validation Checks", () => {
       await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
     });
     const before = useRuntimeStore.getState().characterData;
-    await user.selectOptions(screen.getByLabelText("打印计数资源策略"), "clear-uniform-squares");
+    expect(screen.queryByLabelText("打印计数资源策略")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "打开浏览器打印 PDF" }));
 
     await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
-    expect(screen.getByLabelText("Sheet Tool")).toHaveAttribute("data-countable-print-strategy", "clear-uniform-squares");
-    expect(screen.getByLabelText("预览中的打印计数资源策略")).toHaveValue("clear-uniform-squares");
+    expect(document.querySelector(".app-shell")).not.toHaveClass("print-mode");
     expect(useRuntimeStore.getState().characterData).toBe(before);
   });
 

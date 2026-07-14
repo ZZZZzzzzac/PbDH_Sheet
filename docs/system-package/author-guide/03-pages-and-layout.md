@@ -10,7 +10,7 @@ Page 是 Player 导航和打印的单位。`pages.json` 按数组顺序决定导
 
 CSS 可以使用 Grid、Flex、media query 和框架公开的 `data-module-id`、`data-module-type`、`data-part`。CSS 被限制在当前页面，不能修改 `html/body`、App Shell 或其他页面，也不能用 `@import` 或外部 URL。
 
-打印与 Export Preview 使用固定 A4 纵向页面盒（210mm × 297mm），页面盒的内边距由 Base Framework 提供。不要用 `zoom`、`transform: scale(...)` 或固定像素画布补偿打印宽度；应在 `@media print` 中让模板本身适配 A4 内容区。若 Sheet Shell 中的 Persistent Module 区域需要独占一个额外打印页，可在其静态容器上声明 `data-print-page="true"`。
+浏览器打印与 HTML snapshot 的输出准备使用固定 A4 纵向页面盒（210mm × 297mm），页面盒的内边距由 Base Framework 提供。不要用 `zoom`、`transform: scale(...)` 或固定像素画布补偿打印宽度；应在 `@media print` 中让模板本身适配 A4 内容区。若 Sheet Shell 中的 Persistent Module 区域需要独占一个额外打印页，可在其静态容器上声明 `data-print-page="true"`。
 
 可选 Sheet Shell 用一个公共 HTML/CSS 包裹所有页面。Shell 必须且只能包含一个 `<pb-page-outlet></pb-page-outlet>`，可以同时放置公共 Sheet Modules。
 

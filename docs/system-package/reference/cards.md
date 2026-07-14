@@ -46,7 +46,7 @@ Card 大小或响应式容器尺寸改变、description 内容改变、实际字
 
 若 description 在 `9px` 时仍无法完整显示，紧凑 Card 继续裁切，并在 Card 角落显示独立的省略号标识；该标识不是 Resource Value 的一部分，并通过 tooltip/无障碍名称提示 Player 打开 Card Detail 阅读完整内容。Base Framework 的 Framework Check 同时产生 `TEXT_CONTENT_OVERFLOW` warning，与 Author Validation Check issues 一起显示。
 
-拟合字号与溢出状态只属于当前渲染结果，不写入 Card Definition、Card Instance、Character Data 或 System Package schema。HTML snapshot、Export Preview 和打印使用输出时已经稳定的拟合结果。打印可以把多张 Card 从自由桌面坐标重排为纸面网格，但单张 Card 保持网页紧凑 Card 的宽高、内部布局、拟合字号与颜色；框架为 Card Face 请求精确打印颜色。
+拟合字号与溢出状态只属于当前渲染结果，不写入 Card Definition、Card Instance、Character Data 或 System Package schema。HTML snapshot 和浏览器打印使用输出时已经稳定的拟合结果。打印可以把多张 Card 从自由桌面坐标重排为纸面网格，但单张 Card 保持网页紧凑 Card 的宽高、内部布局、拟合字号与颜色；框架为 Card Face 请求精确打印颜色。
 
 Card Instance 属于 Character Data/runtime state，至少通过稳定 instance ID 关联 Definition ID，并保存桌面坐标、z-order、状态、当前面、旋转和指示物。具体持久字段是框架内部契约，不允许 Author 在 Resource Entry 中伪造实例状态。
 

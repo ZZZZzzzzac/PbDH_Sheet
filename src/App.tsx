@@ -14,7 +14,7 @@ import type { ValidationIssue } from "./domain/validationRunner";
 import { buildReadonlyHtmlSnapshot, waitForVisibleImages } from "./export/output";
 import { collectFrameworkValidationIssues } from "./rendering/frameworkChecks";
 import { waitForMarkerPresentationFits } from "./rendering/markerPresentationFit";
-import { SheetRenderer, type CountablePrintStrategy } from "./rendering/SheetRenderer";
+import { SheetRenderer } from "./rendering/SheetRenderer";
 import { printablePages } from "./rendering/pagePresentation";
 import { waitForTextFits } from "./rendering/textFit";
 import { GuideSpotlight } from "./rendering/GuideSpotlight";
@@ -129,7 +129,6 @@ export default function App() {
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
   const [pendingOutput, setPendingOutput] = useState<OutputKind | null>(null);
   const [printMode, setPrintMode] = useState(false);
-  const [countablePrintStrategy, setCountablePrintStrategy] = useState<CountablePrintStrategy>("original");
   const [guideSession, setGuideSession] = useState<GuideSession | null>(null);
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
   const characterData = useRuntimeStore((state) => state.characterData);
@@ -166,20 +165,6 @@ export default function App() {
     setGuideSession(null);
   }, [currentPackage?.manifest.ID, currentPackage?.manifest.版本]);
 
-  useEffect(() => {
-    if (!printMode) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setPrintMode(false);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [printMode]);
-
   const performOutput = async (kind: OutputKind, printableContentPrepared = false) => {
     if (!characterData) {
       return;
@@ -194,18 +179,29 @@ export default function App() {
 
     if (kind === "html") {
       if (!printableContentPrepared && !(await preparePrintableContent())) return;
-      const printableRoot = document.querySelector(".sheet-tool");
-      await waitForVisibleImages(printableRoot ?? document);
-      downloadText(buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined, activeCharacterSaveName), `${baseName}.html`, "text/html");
+      try {
+        const printableRoot = document.querySelector(".sheet-tool");
+        await waitForVisibleImages(printableRoot ?? document);
+        downloadText(buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined, activeCharacterSaveName), `${baseName}.html`, "text/html");
+      } finally {
+        setPrintMode(false);
+      }
       return;
     }
 
     if (!printableContentPrepared && !(await preparePrintableContent())) return;
     const printableRoot = document.querySelector(".sheet-tool");
-    if (!printableRoot) return;
+    if (!printableRoot) {
+      setPrintMode(false);
+      return;
+    }
 
-    await waitForVisibleImages(printableRoot);
-    window.print();
+    try {
+      await waitForVisibleImages(printableRoot);
+      window.print();
+    } finally {
+      setPrintMode(false);
+    }
   };
 
   const beginOutput = async (kind: OutputKind) => {
@@ -491,19 +487,6 @@ export default function App() {
               <span className="menu-trigger-text">导出</span>
             </button>
             <div className="menu-panel menu-panel-right" role="menu">
-              <label className="menu-setting">
-                <span>打印计数资源</span>
-                <select
-                  aria-label="打印计数资源策略"
-                  value={countablePrintStrategy}
-                  onChange={(event) => setCountablePrintStrategy(event.target.value as CountablePrintStrategy)}
-                >
-                  <option value="original">原样</option>
-                  <option value="clear-current">当前值清零</option>
-                  <option value="uniform-squares">统一实心/空心方块</option>
-                  <option value="clear-uniform-squares">清零并统一方块</option>
-                </select>
-              </label>
               <button className="menu-item" type="button" onClick={() => void beginOutput("print")} aria-label="打开浏览器打印 PDF" disabled={!characterData}>
                 <Printer aria-hidden="true" size={16} />
                 <span>打印 PDF</span>
@@ -555,32 +538,6 @@ export default function App() {
 
       {authorPreviewActive ? <div className="message message-info" role="status">预览中 · 刷新页面可重新读取开发目录</div> : null}
 
-      {printMode ? (
-        <section className="print-preview-bar" aria-label="导出预览">
-          <span>导出预览</span>
-          <label className="print-strategy-control">
-            <span>计数资源</span>
-            <select
-              aria-label="预览中的打印计数资源策略"
-              value={countablePrintStrategy}
-              onChange={(event) => setCountablePrintStrategy(event.target.value as CountablePrintStrategy)}
-            >
-              <option value="original">原样</option>
-              <option value="clear-current">当前值清零</option>
-              <option value="uniform-squares">统一方块</option>
-              <option value="clear-uniform-squares">清零并统一方块</option>
-            </select>
-          </label>
-          <button className="icon-button secondary-button" type="button" onClick={() => setPrintMode(false)} aria-label="退出导出预览">
-            <span>退出</span>
-          </button>
-          <button className="icon-button" type="button" onClick={() => void beginOutput("print")} aria-label="从预览打开浏览器打印 PDF">
-            <Printer aria-hidden="true" size={18} />
-            <span>打印 PDF</span>
-          </button>
-        </section>
-      ) : null}
-
       {importError ? (
         <div className="message message-error" role="alert">
           {importError}
@@ -617,7 +574,6 @@ export default function App() {
         <SheetRenderer
           systemPackage={currentPackage}
           outputMode={printMode}
-          countablePrintStrategy={countablePrintStrategy}
         />
       ) : null}
       {currentPackage?.characterCreationGuide && guideSession ? (

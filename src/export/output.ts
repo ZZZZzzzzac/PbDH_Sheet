@@ -231,7 +231,6 @@ body.snapshot-body {
 }
 .snapshot-shell .top-bar,
 .snapshot-shell .top-menu-bar,
-.snapshot-shell .print-preview-bar,
 .snapshot-shell .message,
 .snapshot-shell .resource-dialog-backdrop,
 .snapshot-shell .validation-dialog-backdrop,

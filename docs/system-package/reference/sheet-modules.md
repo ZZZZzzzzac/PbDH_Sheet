@@ -52,7 +52,7 @@ Player value 作为原始文本写 Character Data，并按[Restricted Markdown](
 - 标记展示没有数字输入框，也不提供上限键盘快捷键或可见操作提示。按钮只在当前值与上限操作都不能生效时禁用。
 - 标记区高度固定，允许换行并自动缩小到最低 `5px`；仍溢出时内部横向滚动，不增加 Module 高度。拟合状态不写入 Character Data。
 - 标记展示额外公开稳定 parts：`marker-group`、`current-markers`、`remaining-markers`、单个等宽标记格 `marker`。现有 `container`、`label`、`counter`、`decrement-button`、`increment-button` 继续可用。
-- 输出时 Player 可临时选择 Countable Resource 策略：原样、视觉清零 current、把标记统一为约 4.5mm 的实心/空心打印方格，或清零并全部显示空心方格。方格由 CSS 按物理尺寸绘制，不依赖 Unicode 字形，便于 Player 在纸面用笔涂写。策略只改变 Export Preview、打印、PDF 与 HTML snapshot 的视觉结果，不修改 Character Data；无上限标记在清零策略下不显示槽位。
+- 浏览器打印/PDF 与 HTML snapshot 使用固定的 Countable Resource 输出策略，不提供 Player 选择：视觉清零 current；有限 Marker Presentation 按 max 把所有槽位临时替换为字号约 5.5mm 的 Unicode 空心方块 `□`；无上限 Marker Presentation 不显示槽位；数值展示把 current 显示为 `0` 并保留 max。输出不使用 Author 配置的 marker 字形，便于 Player 在纸面用笔涂写。该策略只改变输出视觉结果，不修改 Character Data。
 
 ## readOnlyDisplay
 

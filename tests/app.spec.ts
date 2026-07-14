@@ -393,6 +393,76 @@ test("Daggerheart story editors fill their outer frames", async ({ page }, testI
   }
 });
 
+test("Daggerheart story Long Text previews auto-fit without growing their frames", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await uploadPackage(page, await createDaggerheartCorePackage(testInfo));
+  await page.getByRole("button", { name: "背景与关系", exact: true }).click();
+  const longStory = Array.from({ length: 18 }, (_, index) => `第 ${index + 1} 条重要角色记录`).join("\n");
+
+  for (const moduleId of ["event-log", "background-story"]) {
+    const module = page.locator(`[data-module-id="${moduleId}"]`);
+    const textarea = module.locator("textarea");
+    await textarea.fill(longStory);
+    await textarea.evaluate((element) => element.blur());
+
+    const preview = module.locator('[data-markdown-preview="true"]');
+    await expect(preview).toBeVisible();
+    await expect.poll(() => preview.getAttribute("data-text-fit")).toBe("fitted");
+    const metrics = await preview.evaluate((element) => {
+      const htmlElement = element as HTMLElement;
+      return {
+        fontSizePx: Number.parseFloat(getComputedStyle(htmlElement).fontSize),
+        clientHeight: htmlElement.clientHeight,
+        scrollHeight: htmlElement.scrollHeight,
+      };
+    });
+    expect(metrics.fontSizePx).toBeGreaterThanOrEqual(9);
+    expect(metrics.fontSizePx).toBeLessThan(16);
+    expect(metrics.scrollHeight).toBeLessThanOrEqual(metrics.clientHeight + 1);
+  }
+});
+
+test("Daggerheart Countable Resources print as fixed hollow-square slots", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await uploadPackage(page, await createDaggerheartCorePackage(testInfo));
+  await page.evaluate(() => {
+    window.print = () => {
+      const tool = document.querySelector<HTMLElement>('[aria-label="Sheet Tool"]')!;
+      const cells = [...tool.querySelectorAll<HTMLElement>('[data-module-type="countableResource"] .marker-cell')];
+      document.documentElement.dataset.countablePrintProbe = JSON.stringify({
+        strategy: tool.dataset.countablePrintStrategy,
+        cells: cells.map((cell) => {
+          const square = getComputedStyle(cell, "::before");
+          const glyph = cell.querySelector<HTMLElement>(".marker-glyph")!;
+          return {
+            content: square.content.replaceAll('"', ""),
+            fontSize: square.fontSize,
+            flexBasis: square.flexBasis,
+            glyphDisplay: getComputedStyle(glyph).display,
+          };
+        }),
+      });
+    };
+  });
+
+  await openExportMenu(page);
+  await page.getByRole("button", { name: "打开浏览器打印 PDF" }).click();
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.countablePrintProbe)).not.toBeUndefined();
+  const probe = await page.evaluate(() => document.documentElement.dataset.countablePrintProbe!);
+  const metrics = JSON.parse(probe) as {
+    strategy: string;
+    cells: Array<{ content: string; fontSize: string; flexBasis: string; glyphDisplay: string }>;
+  };
+
+  expect(metrics.strategy).toBe("clear-uniform-squares");
+  expect(metrics.cells).toHaveLength(24);
+  expect(new Set(metrics.cells.map((cell) => cell.content))).toEqual(new Set(["□"]));
+  expect(new Set(metrics.cells.map((cell) => cell.fontSize)).size).toBe(1);
+  expect(Number.parseFloat(metrics.cells[0].fontSize)).toBeGreaterThan(20);
+  expect(new Set(metrics.cells.map((cell) => cell.flexBasis)).size).toBe(1);
+  expect(new Set(metrics.cells.map((cell) => cell.glyphDisplay))).toEqual(new Set(["none"]));
+});
+
 test("text Card descriptions auto-fit rendered content with a 9px floor", async ({ page }, testInfo) => {
   await page.goto("/");
   await uploadPackage(page, await createCardFitPackage(testInfo));

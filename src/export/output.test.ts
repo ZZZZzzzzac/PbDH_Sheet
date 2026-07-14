@@ -94,7 +94,7 @@ describe("HTML snapshot export/import", () => {
     expect(html).toContain("padding: 3mm");
   });
 
-  it("uses the same A4 page box for Export Preview and browser printing", () => {
+  it("uses the same A4 page box while preparing output and browser printing", () => {
     expect(printCss).toMatch(/\.print-mode \.sheet-page,\s*\.print-mode \[data-print-page="true"\]\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*210mm[^}]*height:\s*297mm[^}]*padding:\s*5mm 4mm 5mm/s);
     expect(printCss).toMatch(/@page\s*\{[^}]*size:\s*A4 portrait[^}]*margin:\s*0/s);
     expect(printCss).not.toContain("zoom:");
@@ -104,7 +104,7 @@ describe("HTML snapshot export/import", () => {
     expect(printCss).toMatch(/\.print-mode input::placeholder,\s*\.print-mode textarea::placeholder\s*\{[^}]*color:\s*#d5dadd !important[^}]*-webkit-text-fill-color:\s*#d5dadd !important[^}]*print-color-adjust:\s*exact/s);
   });
 
-  it("keeps Free Text on one line in Export Preview and browser printing", () => {
+  it("keeps Free Text on one line while preparing output and browser printing", () => {
     expect(printCss).toMatch(/\.print-mode \[data-module-type="freeText"\] \[data-markdown-preview\][^{]*\{[^}]*overflow:\s*hidden[^}]*white-space:\s*nowrap/s);
     expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\[data-module-type="freeText"\] \[data-markdown-preview\][^{]*\{[^}]*overflow:\s*hidden[^}]*white-space:\s*nowrap/s);
   });

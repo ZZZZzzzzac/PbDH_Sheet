@@ -80,7 +80,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
             aria-label={`${module.标签}：当前值 ${current}，${max === null ? "无上限" : `上限 ${max}`}`}
           >
             <span data-part="current-markers">
-              {renderMarkerCells(module.当前值标记 ?? "", current, "current", module.剩余值标记 ?? "")}
+              {renderMarkerCells(module.当前值标记 ?? "", current, "current")}
             </span>
             <span data-part="remaining-markers">
               {renderMarkerCells(module.剩余值标记 ?? "", max === null ? 0 : Math.max(0, max - current), "remaining")}
@@ -130,14 +130,13 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
   );
 }
 
-function renderMarkerCells(marker: string, count: number, kind: "current" | "remaining", emptyMarker = marker) {
+function renderMarkerCells(marker: string, count: number, kind: "current" | "remaining") {
   return Array.from({ length: count }, (_, index) => (
     <span
       key={`${kind}-${index}`}
       className="marker-cell"
       data-part="marker"
       data-marker-kind={kind}
-      data-empty-marker={emptyMarker}
       aria-hidden="true"
     >
       <span className="marker-glyph">{marker}</span>
