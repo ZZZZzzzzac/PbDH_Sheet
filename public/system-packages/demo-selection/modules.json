@@ -197,7 +197,7 @@
     "资源库ID": "domain-cards",
     "创建卡牌": {
       "卡牌桌面模块ID": "domain-card-table",
-      "默认状态": "configured"
+      "默认状态": "当前"
     },
     "字段模板": [
       {
@@ -269,7 +269,7 @@
     "资源库ID": "bonus-cards",
     "创建卡牌": {
       "卡牌桌面模块ID": "domain-card-table",
-      "默认状态": "configured"
+      "默认状态": "当前"
     }
   },
   {
@@ -347,8 +347,8 @@
     "标签": "领域卡牌桌面",
     "资源库IDs": ["domain-cards", "bonus-cards"],
     "状态选项": [
-      "configured",
-      "vault"
+      "当前",
+      "宝库"
     ]
   },
   {

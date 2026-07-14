@@ -46,7 +46,7 @@
   min-height: 40px;
   padding: 0 10px;
   border: 1px solid #c4ccce;
-  background: #ffffff;
+  background: var(--play-card-state-background, #ffffff);
   color: #425056;
   font-size: 0.9rem;
 }
@@ -162,6 +162,7 @@
   color: #ffffff;
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(32, 36, 38, 0.28);
+  transform: rotate(var(--card-control-counter-rotation, 0deg));
 }
 
 .play-card-delete:hover {
@@ -185,7 +186,7 @@
   min-height: 0;
   overflow: hidden;
   padding: 14px;
-  background: #fffdf7;
+  background: var(--play-card-state-background, #fffdf7);
 }
 
 .play-card-name {
@@ -239,6 +240,57 @@
 
 .play-card-description li + li {
   margin-top: 0.35em;
+}
+
+.card-indicator-column {
+  position: absolute;
+  top: 22px;
+  right: -15px;
+  z-index: 2;
+  display: grid;
+  gap: 6px;
+  transform: rotate(var(--card-control-counter-rotation, 0deg));
+  transform-origin: top center;
+}
+
+.card-indicator-badge {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 3px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: var(--card-indicator-color, #31565e);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(32, 36, 38, 0.28);
+  line-height: 1;
+}
+
+.card-indicator-badge:hover,
+.card-indicator-badge:focus-visible {
+  filter: brightness(0.84);
+}
+
+.card-indicator-badge[data-color-index="0"] { --card-indicator-color: #31565e; }
+.card-indicator-badge[data-color-index="1"] { --card-indicator-color: #9f302b; }
+.card-indicator-badge[data-color-index="2"] { --card-indicator-color: #8a6715; }
+.card-indicator-badge[data-color-index="3"] { --card-indicator-color: #397345; }
+.card-indicator-badge[data-color-index="4"] { --card-indicator-color: #3d5e9b; }
+.card-indicator-badge[data-color-index="5"] { --card-indicator-color: #744b91; }
+.card-indicator-badge[data-color-index="6"] { --card-indicator-color: #9b416d; }
+.card-indicator-badge[data-color-index="7"] { --card-indicator-color: #58656b; }
+.card-indicator-badge[data-color-index="8"] { --card-indicator-color: #a35118; }
+.card-indicator-badge[data-color-index="9"] { --card-indicator-color: #217a78; }
+
+.card-indicator-count {
+  max-width: 28px;
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
 }
 
 .play-card-description-overflow {

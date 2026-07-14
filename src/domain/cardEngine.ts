@@ -1,7 +1,16 @@
 import type { CharacterData } from "./characterData";
+import { transitionCountableState, type CountableDirection } from "./countableState";
 
-export type CardContainerId = "configured" | "vault";
 export type CardFace = "front" | "back";
+export const maxCardIndicators = 10;
+
+export interface CardIndicator {
+  indicatorId: string;
+  colorIndex: number;
+  value: number;
+}
+
+export type CardIndicatorState = CardIndicator[] | Record<string, number>;
 
 export interface CardInstance {
   instanceId: string;
@@ -15,6 +24,9 @@ export interface CardInstance {
   face: CardFace;
   rotation: number;
   scale: number;
+  /** Record form is accepted only for saves created by the earlier Author-typed indicator prototype. */
+  indicators?: CardIndicatorState;
+  /** @deprecated Kept for Character Data 0.1.0 compatibility. */
   tokenCount: number;
 }
 
@@ -73,12 +85,13 @@ export function createCardInstance(data: CharacterData, input: CreateCardInstanc
     tableModuleId: input.tableModuleId,
     libraryId: input.libraryId,
     definitionId: input.definitionId,
-    state: input.state ?? "configured",
+    state: input.state ?? "default",
     ...defaultCardPosition(siblingCount),
     zIndex: nextZIndex(data.cards.instances),
     face: "front",
     rotation: 0,
     scale: 1,
+    indicators: [],
     tokenCount: 0,
   };
 
@@ -108,6 +121,90 @@ export function updateCardInstanceState(data: CharacterData, instanceId: string,
     data,
     data.cards.instances.map((instance) => (instance.instanceId === instanceId ? { ...instance, state } : instance)),
   );
+}
+
+export function flipCardInstance(data: CharacterData, instanceId: string): CharacterData {
+  return updateCardInstances(
+    data,
+    data.cards.instances.map((instance) =>
+      instance.instanceId === instanceId ? { ...instance, face: instance.face === "front" ? "back" : "front" } : instance,
+    ),
+  );
+}
+
+export function rotateCardInstance(data: CharacterData, instanceId: string, quarterTurns: number): CharacterData {
+  return updateCardInstances(
+    data,
+    data.cards.instances.map((instance) =>
+      instance.instanceId === instanceId ? { ...instance, rotation: normalizeRotation(instance.rotation + quarterTurns * 90) } : instance,
+    ),
+  );
+}
+
+export function setCardInstanceUpright(data: CharacterData, instanceId: string): CharacterData {
+  return updateCardInstances(
+    data,
+    data.cards.instances.map((instance) => instance.instanceId === instanceId ? { ...instance, rotation: 0 } : instance),
+  );
+}
+
+export function addCardIndicator(data: CharacterData, instanceId: string, indicatorId: string): CharacterData {
+  return updateCardInstances(
+    data,
+    data.cards.instances.map((instance) => {
+      if (instance.instanceId !== instanceId) return instance;
+      const indicators = readCardIndicators(instance);
+      if (indicators.length >= maxCardIndicators) return instance;
+      const usedColors = new Set(indicators.map((indicator) => indicator.colorIndex));
+      const colorIndex = Array.from({ length: maxCardIndicators }, (_unused, index) => index).find((index) => !usedColors.has(index)) ?? indicators.length;
+      return { ...instance, indicators: [...indicators, { indicatorId, colorIndex, value: 0 }] };
+    }),
+  );
+}
+
+export function transitionCardIndicator(
+  data: CharacterData,
+  instanceId: string,
+  indicatorId: string,
+  direction: CountableDirection,
+): CharacterData {
+  return updateCardInstances(
+    data,
+    data.cards.instances.map((instance) => {
+      if (instance.instanceId !== instanceId) {
+        return instance;
+      }
+      const indicators = readCardIndicators(instance);
+      const target = indicators.find((indicator) => indicator.indicatorId === indicatorId);
+      if (!target) return instance;
+      if (direction === "decrement" && target.value === 0) {
+        return { ...instance, indicators: indicators.filter((indicator) => indicator.indicatorId !== indicatorId) };
+      }
+      const next = transitionCountableState(
+        { current: target.value, max: null },
+        { min: 0, step: 1, editableMax: false },
+        "current",
+        direction,
+      );
+      return {
+        ...instance,
+        indicators: indicators.map((indicator) => indicator.indicatorId === indicatorId ? { ...indicator, value: next.current } : indicator),
+      };
+    }),
+  );
+}
+
+export function readCardIndicators(instance: Pick<CardInstance, "indicators">): CardIndicator[] {
+  if (Array.isArray(instance.indicators)) return instance.indicators;
+  return Object.entries(instance.indicators ?? {}).slice(0, maxCardIndicators).map(([indicatorId, value], colorIndex) => ({
+    indicatorId,
+    colorIndex,
+    value,
+  }));
+}
+
+function normalizeRotation(rotation: number): number {
+  return ((Math.round(rotation / 90) * 90) % 360 + 360) % 360;
 }
 
 export function createCardTableLayout(input: CardTableLayoutInput): CardTableLayout {

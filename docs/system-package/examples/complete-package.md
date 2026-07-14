@@ -245,7 +245,7 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
     "多选": true,
     "创建卡牌": {
       "卡牌桌面模块ID": "card-table",
-      "默认状态": "configured"
+      "默认状态": "当前"
     }
   },
   {
@@ -253,12 +253,17 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
     "类型": "cardTable",
     "标签": "能力卡桌面",
     "资源库IDs": ["cards"],
-    "状态选项": ["configured", "vault", "spent"],
+    "状态选项": ["当前", "宝库", "已消耗"],
+    "状态背景色": {
+      "宝库": "#d8e2f3",
+      "已消耗": "#ead7d7"
+    },
     "显示方式": "text",
     "卡名字段": "名称",
     "描述字段": "描述",
     "卡图字段": "卡图",
     "显示方式字段": "展示",
+    "背面卡牌ID字段": "背面卡牌ID",
     "默认隐藏": false
   }
 ]
@@ -276,7 +281,7 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
 | readOnlyDisplay | `内容`、`资源ID`、`替代文本`；内容/资源至少一个 |
 | imageField | `替代文本` |
 | resourcePicker | `字段模板`、`多选`、`默认查询`、`创建卡牌` |
-| cardTable | `状态选项`、`显示方式`、四个字段名配置 |
+| cardTable | `状态选项`、`状态背景色`、`显示方式`、五个字段名配置（含 `背面卡牌ID字段`）；通用指示物不需要 Author 配置 |
 
 列宽的全部值是 `compact | normal | wide | fill`。sort direction 是 `asc | desc`。Resource Entry 的 `ID` 默认不在 Picker 显示/筛选/排序/搜索；需要时在 `字段模板` 中显式配置。
 
@@ -315,7 +320,16 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
     "描述": ":blue[**获得防御优势。**]",
     "卡图": "card-a-art",
     "展示": "image",
-    "流派": ":green[守护]"
+    "流派": ":green[守护]",
+    "背面卡牌ID": "card-a-back"
+  },
+  {
+    "ID": "card-a-back",
+    "名称": "坚定防守（背面）",
+    "描述": "本回合已经使用。",
+    "卡图": "",
+    "展示": "text",
+    "流派": "守护"
   },
   {
     "ID": "card-b",

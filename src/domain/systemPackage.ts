@@ -118,12 +118,19 @@ const cardTableModuleSchema = sheetModuleBaseSchema.extend({
   资源库IDs: z.array(z.string().min(1)).min(1).refine((ids) => new Set(ids).size === ids.length, {
     message: "Card Table 的资源库IDs不能重复。",
   }),
-  状态选项: z.array(z.string().min(1)).optional(),
+  状态选项: z.array(z.string().min(1)).min(1).refine((states) => new Set(states).size === states.length, {
+    message: "Card Table 的状态选项不能重复。",
+  }).optional(),
+  状态背景色: z.record(
+    z.string().min(1),
+    z.string().regex(/^#[0-9a-fA-F]{6}$/, "Card state 背景色必须是 #RRGGBB 六位十六进制颜色。"),
+  ).optional(),
   显示方式: z.enum(["image", "text"]).optional(),
   卡名字段: z.string().min(1).optional(),
   描述字段: z.string().min(1).optional(),
   卡图字段: z.string().min(1).optional(),
   显示方式字段: z.string().min(1).optional(),
+  背面卡牌ID字段: z.string().min(1).optional(),
 });
 
 const resourcePickerQuerySchema = z.object({
@@ -646,6 +653,17 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
           });
         }
       });
+      const stateOptions = module.状态选项 ?? [];
+      for (const state of Object.keys(module.状态背景色 ?? {})) {
+        if (!stateOptions.includes(state)) {
+          issues.push({
+            level: "error",
+            code: "CARD_STATE_COLOR_UNKNOWN_STATE",
+            text: `Card state 背景色引用了状态选项中不存在的 state：${state}`,
+            path: `modules.${module.ID}.状态背景色.${state}`,
+          });
+        }
+      }
     }
     if (module.类型 === "checkboxResource") {
       collectDuplicateIdIssues(module.选项, "Checkbox Resource option", "DUPLICATE_CHECKBOX_OPTION_ID", `modules.${module.ID}.选项`, issues);
@@ -999,6 +1017,14 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
         path: `modules.${module.ID}.创建卡牌.卡牌桌面模块ID`,
       });
     }
+    if (module.创建卡牌.默认状态 && targetModule.状态选项 && !targetModule.状态选项.includes(module.创建卡牌.默认状态)) {
+      issues.push({
+        level: "error",
+        code: "CARD_DEFAULT_STATE_UNKNOWN",
+        text: `Resource Picker 默认状态不在目标 Card Table 的状态选项中：${module.创建卡牌.默认状态}`,
+        path: `modules.${module.ID}.创建卡牌.默认状态`,
+      });
+    }
   }
 
   const cardArtFieldsByLibrary = new Map<string, Set<string>>();
@@ -1038,6 +1064,36 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
         }
       });
     }
+
+    for (const module of systemPackage.modules) {
+      if (module.类型 !== "cardTable" || !module.资源库IDs.includes(library.ID)) {
+        continue;
+      }
+      const reverseIdField = module.背面卡牌ID字段 ?? "背面卡牌ID";
+      const definitionsById = new Map(library.entries.map((entry) => [entry.ID, entry]));
+      library.entries.forEach((entry, entryIndex) => {
+        const reverseId = (entry.fields[reverseIdField] ?? "").trim();
+        if (!reverseId) {
+          return;
+        }
+        if (reverseId === entry.ID) {
+          issues.push({
+            level: "error",
+            code: "CARD_REVERSE_DEFINITION_SELF_REFERENCE",
+            text: `Card Definition 的背面不能引用自身：${entry.ID}`,
+            path: `resourceLibraries.${library.ID}.entries.${entryIndex}.${reverseIdField}`,
+          });
+        } else if (!definitionsById.has(reverseId)) {
+          issues.push({
+            level: "error",
+            code: "MISSING_CARD_REVERSE_DEFINITION_REFERENCE",
+            text: `Card Definition 引用了不存在的背面 Card Definition：${reverseId}`,
+            path: `resourceLibraries.${library.ID}.entries.${entryIndex}.${reverseIdField}`,
+          });
+        }
+      });
+    }
+
     const artFields = cardArtFieldsByLibrary.get(library.ID);
     if (!artFields || artFields.size === 0) {
       continue;

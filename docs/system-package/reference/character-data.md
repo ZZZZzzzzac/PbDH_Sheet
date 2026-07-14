@@ -2,6 +2,8 @@
 
 Character Data 是 Player-owned save，不是 System Package export。它保存 package identity/version、Sheet Values、Card Instance state 和 Player 上传图片；不复制 Resource Libraries、Layouts、Author Assets 或 Validation Scripts。
 
+Card Instance state 包含 Definition 身份、桌面位置与层级、Player 状态、当前正反面、四分之一圈旋转，以及最多十个带稳定 ID、palette 颜色索引和非负数值的通用指示物。背面 Card Definition 来自当前 System Package；指示物由框架提供，不需要 Author Data。指示物值 `0` 有意义并会保留，在 0 上再次执行减少才删除。
+
 Sheet Value 默认是文本。Checkbox/countable/image/card state 使用框架需要的专门结构，但 Author 不通过 System Package 直接声明 Character Data schema。Module ID 是值的稳定 key；改 ID 会让旧存档无法自动对应。
 
 freeText/longText 的 Restricted Markdown 只影响展示；Character Data 保存原始 Markdown 字符串，不保存渲染 HTML。Resource Values 与 `fillText` 同样保持原始字符串，不需要 schema migration。

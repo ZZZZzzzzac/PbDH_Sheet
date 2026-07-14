@@ -172,7 +172,7 @@
     "资源库ID": "ancestries",
     "创建卡牌": {
       "卡牌桌面模块ID": "character-card-table",
-      "默认状态": "configured"
+      "默认状态": "配置"
     }
   },
   {
@@ -182,7 +182,7 @@
     "资源库ID": "communities",
     "创建卡牌": {
       "卡牌桌面模块ID": "character-card-table",
-      "默认状态": "configured"
+      "默认状态": "配置"
     }
   },
   {
@@ -197,10 +197,14 @@
       "beast-forms"
     ],
     "状态选项": [
-      "configured",
-      "vault"
+      "配置",
+      "宝库"
     ],
-    "显示方式": "text"
+    "状态背景色": {
+      "宝库": "#d8e2f3"
+    },
+    "显示方式": "text",
+    "背面卡牌ID字段": "背面卡牌ID"
   },
   {
     "ID": "pick-class",
@@ -241,7 +245,7 @@
     "资源库ID": "subclasses",
     "创建卡牌": {
       "卡牌桌面模块ID": "character-card-table",
-      "默认状态": "configured"
+      "默认状态": "配置"
     },
     "默认查询": {
       "sort": {
@@ -518,7 +522,7 @@
     },
     "创建卡牌": {
       "卡牌桌面模块ID": "character-card-table",
-      "默认状态": "configured"
+      "默认状态": "配置"
     }
   },
   {
@@ -534,7 +538,7 @@
     },
     "创建卡牌": {
       "卡牌桌面模块ID": "character-card-table",
-      "默认状态": "configured"
+      "默认状态": "配置"
     }
   },
   {

@@ -3,10 +3,16 @@ import { minimalSystemPackage } from "../test/fixtures";
 import { createEmptyCharacterData } from "./characterData";
 import {
   clampCardTablePosition,
+  addCardIndicator,
   createCardInstance,
   createCardTableLayout,
   deleteCardInstance,
+  flipCardInstance,
+  readCardIndicators,
+  rotateCardInstance,
+  setCardInstanceUpright,
   tidyCardTable,
+  transitionCardIndicator,
   updateCardInstancePosition,
   updateCardInstanceState,
 } from "./cardEngine";
@@ -63,6 +69,60 @@ describe("cardEngine", () => {
     const deleted = deleteCardInstance(withSecond, "instance-1");
 
     expect(deleted.cards.instances.map((instance) => instance.instanceId)).toEqual(["instance-2"]);
+  });
+
+  it("flips and quarter-turns a Card Instance without changing unrelated state", () => {
+    const data = createCardInstance(createEmptyCharacterData(minimalSystemPackage), {
+      instanceId: "instance-1",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: "domain-card:符文护符",
+    });
+
+    const changed = rotateCardInstance(flipCardInstance(data, "instance-1"), "instance-1", -1);
+    const restored = setCardInstanceUpright(changed, "instance-1");
+
+    expect(changed.cards.instances[0]).toEqual(expect.objectContaining({ face: "back", rotation: 270, definitionId: "domain-card:符文护符" }));
+    expect(restored.cards.instances[0]).toEqual(expect.objectContaining({ face: "back", rotation: 0 }));
+    expect(rotateCardInstance(data, "instance-1", 5).cards.instances[0].rotation).toBe(90);
+  });
+
+  it("keeps a zero indicator and removes it only when decrementing at zero", () => {
+    const data = createCardInstance(createEmptyCharacterData(minimalSystemPackage), {
+      instanceId: "instance-1",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: "domain-card:符文护符",
+    });
+    const placed = addCardIndicator(data, "instance-1", "indicator-1");
+    const increased = transitionCardIndicator(placed, "instance-1", "indicator-1", "increment");
+    const zero = transitionCardIndicator(increased, "instance-1", "indicator-1", "decrement");
+    const removed = transitionCardIndicator(zero, "instance-1", "indicator-1", "decrement");
+
+    expect(readCardIndicators(placed.cards.instances[0])).toEqual([{ indicatorId: "indicator-1", colorIndex: 0, value: 0 }]);
+    expect(readCardIndicators(increased.cards.instances[0])[0].value).toBe(1);
+    expect(readCardIndicators(zero.cards.instances[0])[0].value).toBe(0);
+    expect(readCardIndicators(removed.cards.instances[0])).toEqual([]);
+  });
+
+  it("assigns ten stable colors and refuses an eleventh indicator", () => {
+    const initial = createCardInstance(createEmptyCharacterData(minimalSystemPackage), {
+      instanceId: "instance-1", tableModuleId: "domain-card-table", libraryId: "domain-cards", definitionId: "card",
+    });
+    const filled = Array.from({ length: 11 }).reduce(
+      (data, _item, index) => addCardIndicator(data, "instance-1", `indicator-${index}`),
+      initial,
+    );
+
+    expect(readCardIndicators(filled.cards.instances[0])).toHaveLength(10);
+    expect(readCardIndicators(filled.cards.instances[0]).map((indicator) => indicator.colorIndex)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  });
+
+  it("reads Author-typed prototype indicators as generic colored indicators", () => {
+    expect(readCardIndicators({ indicators: { charge: 2, shield: 0 } })).toEqual([
+      { indicatorId: "charge", colorIndex: 0, value: 2 },
+      { indicatorId: "shield", colorIndex: 1, value: 0 },
+    ]);
   });
 
   it("tidies a Card Table into a grid", () => {

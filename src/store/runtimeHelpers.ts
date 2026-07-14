@@ -144,7 +144,7 @@ export function createCardInstancesFromSelection(
         tableModuleId: cardCreation.卡牌桌面模块ID,
         libraryId,
         definitionId: entry.ID,
-        state: cardCreation.默认状态,
+        state: cardCreation.默认状态 ?? targetTable.状态选项?.[0],
       }),
     data,
   );

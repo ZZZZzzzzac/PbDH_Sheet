@@ -1,12 +1,14 @@
 import { Ellipsis, Layers, X } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import {
   clampCardTablePosition,
   createCardTableLayout,
   defaultCardWidthPx,
+  maxCardIndicators,
   maxCardWidthPx,
   minCardWidthPx,
+  readCardIndicators,
   type CardInstance,
   type CardTableLayout,
 } from "../domain/cardEngine";
@@ -15,6 +17,7 @@ import { findResourceLibrary, type CardTableModule as CardTableModuleConfig, typ
 import { useRuntimeStore } from "../store/runtimeStore";
 import { RestrictedMarkdown } from "./RestrictedMarkdown";
 import { useCardDescriptionFit } from "./cardDescriptionFit";
+import { usePointerActions } from "./usePointerActions";
 
 interface CardTableModuleProps {
   module: CardTableModuleConfig;
@@ -198,7 +201,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
         {visibleInstances.map((instance) => (
           <CardView
             instance={instance}
-            definition={findResourceLibrary(systemPackage, instance.libraryId)?.entries.find((entry) => entry.ID === instance.definitionId)}
+            definition={resolveVisibleCardDefinition(systemPackage, module, instance)}
             module={module}
             onPointerDown={beginDrag}
             onPointerMove={continueDrag}
@@ -210,7 +213,8 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
         {cardMenu ? createPortal(
           <CardContextMenu
             instance={visibleInstances.find((instance) => instance.instanceId === cardMenu.instanceId)}
-            stateOptions={module.状态选项 ?? ["configured", "vault"]}
+            canFlip={hasReverseCardDefinition(systemPackage, module, visibleInstances.find((instance) => instance.instanceId === cardMenu.instanceId))}
+            stateOptions={module.状态选项 ?? []}
             x={cardMenu.x}
             y={cardMenu.y}
             onClose={closeCardMenu}
@@ -222,7 +226,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
       {detailInstanceId ? (
         <CardDetailOverlay
           instance={visibleInstances.find((instance) => instance.instanceId === detailInstanceId)}
-          definition={resolveCardDefinition(systemPackage, visibleInstances.find((instance) => instance.instanceId === detailInstanceId))}
+          definition={resolveVisibleCardDefinition(systemPackage, module, visibleInstances.find((instance) => instance.instanceId === detailInstanceId))}
           module={module}
           onClose={() => setDetailInstanceId(null)}
         />
@@ -261,7 +265,9 @@ function CardView({
         top: `${instance.yPct}%`,
         zIndex: instance.zIndex,
         transform: `rotate(${instance.rotation}deg) scale(${instance.scale})`,
-      }}
+        "--card-control-counter-rotation": `${-instance.rotation}deg`,
+        "--play-card-state-background": moduleConfig.状态背景色?.[instance.state],
+      } as CSSProperties}
       onPointerDown={(event) => onPointerDown(event, instance)}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -281,6 +287,7 @@ function CardView({
       >
         <X aria-hidden="true" size={14} />
       </button>
+      <CardIndicatorColumn instance={instance} />
       <CardFace definition={definition} module={moduleConfig} fallbackName={name} />
     </article>
   );
@@ -288,6 +295,7 @@ function CardView({
 
 function CardContextMenu({
   instance,
+  canFlip,
   stateOptions,
   x,
   y,
@@ -295,6 +303,7 @@ function CardContextMenu({
   onViewDetail,
 }: {
   instance?: CardInstance;
+  canFlip: boolean;
   stateOptions: string[];
   x: number;
   y: number;
@@ -302,6 +311,10 @@ function CardContextMenu({
   onViewDetail: (instanceId: string) => void;
 }) {
   const updateCardInstanceState = useRuntimeStore((state) => state.updateCardInstanceState);
+  const flipCardInstance = useRuntimeStore((state) => state.flipCardInstance);
+  const rotateCardInstance = useRuntimeStore((state) => state.rotateCardInstance);
+  const setCardInstanceUpright = useRuntimeStore((state) => state.setCardInstanceUpright);
+  const addCardIndicator = useRuntimeStore((state) => state.addCardIndicator);
   const deleteCardInstance = useRuntimeStore((state) => state.deleteCardInstance);
 
   if (!instance) {
@@ -313,16 +326,35 @@ function CardContextMenu({
   return (
     <div className="card-context-menu" style={{ left: x, top: y }} role="menu" onPointerDown={(event) => event.stopPropagation()}>
       <button type="button" role="menuitem" onClick={() => onViewDetail(instance.instanceId)}>查看详情</button>
+      {canFlip ? (
+        <button type="button" role="menuitem" onClick={() => { flipCardInstance(instance.instanceId); onClose(); }}>
+          翻至{instance.face === "front" ? "背面" : "正面"}
+        </button>
+      ) : null}
+      <button type="button" role="menuitem" onClick={() => { rotateCardInstance(instance.instanceId, 1); onClose(); }}>顺时针旋转 90°</button>
+      {instance.rotation !== 0 ? (
+        <button type="button" role="menuitem" onClick={() => { setCardInstanceUpright(instance.instanceId); onClose(); }}>恢复竖置</button>
+      ) : null}
       <button
         type="button"
         role="menuitem"
-        onClick={() => {
-          updateCardInstanceState(instance.instanceId, nextState);
-          onClose();
-        }}
+        disabled={readCardIndicators(instance).length >= maxCardIndicators}
+        onClick={() => { addCardIndicator(instance.instanceId); onClose(); }}
       >
-        标记为{stateLabel(nextState)}
+        {readCardIndicators(instance).length >= maxCardIndicators ? "指示物已满（10）" : "添加指示物"}
       </button>
+      {nextState !== instance.state ? (
+        <button
+          type="button"
+          role="menuitem"
+          onClick={() => {
+            updateCardInstanceState(instance.instanceId, nextState);
+            onClose();
+          }}
+        >
+          标记为{nextState}
+        </button>
+      ) : null}
       <button
         className="danger"
         type="button"
@@ -338,7 +370,7 @@ function CardContextMenu({
   );
 }
 
-function resolveCardDefinition(systemPackage: SystemPackage, instance: CardInstance | undefined): ResourceLibraryEntry | undefined {
+function resolveFrontCardDefinition(systemPackage: SystemPackage, instance: CardInstance | undefined): ResourceLibraryEntry | undefined {
   if (!instance) {
     return undefined;
   }
@@ -362,6 +394,7 @@ function CardFace({
   const cardArtRef = definition?.fields[artField] ?? "";
   const cardArtUrl = cardArtRef ? assetUrls[cardArtRef] : undefined;
   const showImage = resolveCardDisplayMode(definition, moduleConfig) === "image" && cardArtUrl && !imageFailed;
+  useEffect(() => setImageFailed(false), [cardArtRef]);
   return showImage ? <img className="play-card-image" src={cardArtUrl} alt={fallbackName} draggable={false} onError={() => setImageFailed(true)} /> : <TextCard definition={definition} module={moduleConfig} fallbackName={fallbackName} autoFitDescription={autoFitDescription} />;
 }
 
@@ -377,7 +410,12 @@ function CardDetailOverlay({ instance, definition, module, onClose }: { instance
     <div className="card-detail-backdrop" data-output-exclude="true" onClick={onClose}>
       <section className="card-detail-dialog" role="dialog" aria-modal="true" aria-label={`${name}详情`} onClick={(event) => event.stopPropagation()}>
         <button className="card-detail-close" type="button" onClick={onClose} aria-label="关闭卡牌详情"><X aria-hidden="true" size={20} /></button>
-        <div className="card-detail-face"><CardFace definition={definition} module={module} fallbackName={name} autoFitDescription={false} /></div>
+        <div
+          className="card-detail-face"
+          style={{ "--play-card-state-background": module.状态背景色?.[instance.state] } as CSSProperties}
+        >
+          <CardFace definition={definition} module={module} fallbackName={name} autoFitDescription={false} />
+        </div>
       </section>
     </div>
   );
@@ -405,14 +443,104 @@ function TextCard({
         <RestrictedMarkdown className="play-card-name" value={definition?.fields[nameField] ?? fallbackName} />
         {tags.length > 0 ? (
           <div className="play-card-tags" aria-label="卡牌标签">
-            {tags.map((tag) => (
-              <RestrictedMarkdown className="play-card-tag" value={tag} key={tag} />
+            {tags.map((tag, index) => (
+              <RestrictedMarkdown className="play-card-tag" value={tag} key={`${tag}:${index}`} />
             ))}
           </div>
         ) : null}
       </header>
       <CardDescription value={description} autoFit={autoFitDescription} />
     </div>
+  );
+}
+
+function resolveVisibleCardDefinition(
+  systemPackage: SystemPackage,
+  module: CardTableModuleConfig,
+  instance: CardInstance | undefined,
+): ResourceLibraryEntry | undefined {
+  const front = resolveFrontCardDefinition(systemPackage, instance);
+  if (!front || !instance || instance.face === "front") {
+    return front;
+  }
+  const reverseId = front.fields[module.背面卡牌ID字段 ?? "背面卡牌ID"]?.trim();
+  return reverseId
+    ? findResourceLibrary(systemPackage, instance.libraryId)?.entries.find((entry) => entry.ID === reverseId) ?? front
+    : front;
+}
+
+function hasReverseCardDefinition(systemPackage: SystemPackage, module: CardTableModuleConfig, instance: CardInstance | undefined): boolean {
+  const front = resolveFrontCardDefinition(systemPackage, instance);
+  const reverseId = front?.fields[module.背面卡牌ID字段 ?? "背面卡牌ID"]?.trim();
+  return Boolean(reverseId && reverseId !== front?.ID
+    && findResourceLibrary(systemPackage, instance?.libraryId ?? "")?.entries.some((entry) => entry.ID === reverseId));
+}
+
+const cardIndicatorColorNames = ["青色", "红色", "金色", "绿色", "蓝色", "紫色", "粉色", "灰色", "橙色", "湖蓝色"] as const;
+
+function CardIndicatorColumn({ instance }: { instance: CardInstance }) {
+  const transitionCardIndicator = useRuntimeStore((state) => state.transitionCardIndicator);
+  const indicators = readCardIndicators(instance);
+
+  return (
+    <div className="card-indicator-column" data-part="indicator-column">
+      {indicators.map((indicator) => (
+        <CardIndicatorBadge
+          key={indicator.indicatorId}
+          colorIndex={indicator.colorIndex}
+          colorName={cardIndicatorColorNames[indicator.colorIndex] ?? `颜色 ${indicator.colorIndex + 1}`}
+          count={indicator.value}
+          onIncrement={() => transitionCardIndicator(instance.instanceId, indicator.indicatorId, "increment")}
+          onDecrement={() => transitionCardIndicator(instance.instanceId, indicator.indicatorId, "decrement")}
+        />
+      ))}
+    </div>
+  );
+}
+
+function CardIndicatorBadge({
+  colorIndex,
+  colorName,
+  count,
+  onIncrement,
+  onDecrement,
+}: {
+  colorIndex: number;
+  colorName: string;
+  count: number;
+  onIncrement: () => void;
+  onDecrement: () => void;
+}) {
+  const pointerActions = usePointerActions(onIncrement, onDecrement, true);
+  const onKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "+" || event.key === "ArrowUp") {
+      event.preventDefault();
+      onIncrement();
+    } else if (event.key === "-" || event.key === "ArrowDown") {
+      event.preventDefault();
+      onDecrement();
+    }
+  };
+
+  return (
+    <button
+      className="card-indicator-badge"
+      data-part="indicator"
+      data-color-index={colorIndex}
+      type="button"
+      title={`${colorName}指示物：${count}；左键增加，右键减少`}
+      aria-label={`${colorName}指示物：${count}；左键增加，右键减少${count === 0 ? "，再次减少会移除" : ""}`}
+      onClick={(event) => { event.stopPropagation(); pointerActions.onClick(event); }}
+      onContextMenu={(event) => { event.stopPropagation(); pointerActions.onContextMenu?.(event); }}
+      onPointerDown={(event) => { event.stopPropagation(); pointerActions.onPointerDown?.(event); }}
+      onPointerMove={pointerActions.onPointerMove}
+      onPointerUp={pointerActions.onPointerUp}
+      onPointerCancel={pointerActions.onPointerCancel}
+      onPointerLeave={pointerActions.onPointerLeave}
+      onKeyDown={onKeyDown}
+    >
+      <span className="card-indicator-count" aria-hidden="true">{count}</span>
+    </button>
   );
 }
 
@@ -457,8 +585,10 @@ function inferCardTags(
   const excludeFields = new Set<string>(["ID", nameField, descField]);
   const artField = moduleConfig.卡图字段 ?? "卡图";
   const displayModeField = moduleConfig.显示方式字段 ?? "卡牌显示方式";
+  const reverseIdField = moduleConfig.背面卡牌ID字段 ?? "背面卡牌ID";
   excludeFields.add(artField);
   excludeFields.add(displayModeField);
+  excludeFields.add(reverseIdField);
   return Object.entries(definition.fields)
     .filter(([key, value]) => !excludeFields.has(key) && value)
     .map(([, value]) => value);
@@ -499,14 +629,4 @@ function nextCardState(stateOptions: string[], currentState: string): string {
 
   const currentIndex = stateOptions.indexOf(currentState);
   return stateOptions[(currentIndex + 1) % stateOptions.length] ?? stateOptions[0];
-}
-
-function stateLabel(state: string): string {
-  if (state === "configured") {
-    return "配置";
-  }
-  if (state === "vault") {
-    return "宝库";
-  }
-  return state;
 }

@@ -68,6 +68,14 @@ const characterDataSchema: z.ZodType<CharacterData> = z.object({
           face: z.enum(["front", "back"]),
           rotation: z.number(),
           scale: z.number().positive(),
+          indicators: z.union([
+            z.array(z.object({
+              indicatorId: z.string().min(1),
+              colorIndex: z.number().int().min(0).max(9),
+              value: z.number().int().min(0),
+            })).max(10),
+            z.record(z.string().min(1), z.number().int().min(0)),
+          ]).default([]),
           tokenCount: z.number().int().min(0),
         }),
       ),

@@ -76,6 +76,10 @@ _Avoid_: Dependency filter, Character Data
 A read-only enlarged view of an existing Card Instance, opened from its Card Table context menu.
 _Avoid_: Card editor, Resource Library details panel
 
+**Card Indicator**:
+A framework-provided colored counter whose non-negative value belongs to one Card Instance and appears as a compact edge badge. Zero is a persistent value; decreasing again at zero removes the indicator.
+_Avoid_: Countable Resource, free-position token object
+
 **Sheet Module**:
 A reusable author-configured building block such as text, resource picker, image, or display content.
 _Avoid_: Feature when referring to primitive sheet capabilities
@@ -226,6 +230,9 @@ _Avoid_: Script plugin
 - **Character Data** exports only character-specific state plus a System Package identifier/version, not the complete System Package.
 - **Resource Keyword Search** is transient Browser UI state. Field templates may declare `可搜索`; when omitted it follows `默认显示`. With no field template, all normalized text fields are searchable. Search is case-insensitive, trimmed, and never stored in Character Data or Dependency Logic defaults.
 - A **Card Detail View** only enlarges the card's existing presentation. It is entered through the Card Table right-click or long-press context menu and does not edit Card Instance state or introduce another Resource Library Browser detail flow.
+- A Card Definition may reference another Card Definition in the same Resource Library as its reverse face. A Card Instance retains its front identity while face, quarter-turn rotation, and Card Indicator values remain Player-owned Character Data.
+- Card Instance state values are Author-defined through the Card Table. An Author may map selected states to Card Face background colors; unmapped states retain the framework default, and only the state string belongs to Character Data.
+- Every Card Instance can add up to ten **Card Indicators** without Author configuration. Each receives a stable color from the framework palette; badges stay outside Card Face text fitting and are not Countable Resource Sheet Modules or Dependency Logic targets.
 - First-version **Character Data** stores text and state. System images should be referenced rather than copied, but Player-provided portraits or character art may be stored with the Character Data.
 - System Package distribution is file/package based in the first version; package marketplaces, publishing platforms, and full source-code exports are outside the first-version requirement.
 - **Display Content**, adventure notes, names, and rule reference pages are all uses of **Sheet Modules**, not separate base features.

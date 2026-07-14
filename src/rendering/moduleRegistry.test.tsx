@@ -680,6 +680,134 @@ describe("Module Registry rendering", () => {
     expect(screen.getByRole("article", { name: "种族能力" })).toBeVisible();
   });
 
+  it("flips to a reverse Card Definition and rotates from the Card context menu", () => {
+    const systemPackage = createCardTablePackage();
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "physical-card",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: "domain-card:recall-test",
+      state: "configured",
+    });
+    useRuntimeStore.setState({ currentPackage: systemPackage, characterData });
+
+    render(<SheetRenderer systemPackage={systemPackage} />);
+    let card = screen.getByRole("article", { name: "回想测试" });
+    fireEvent.contextMenu(card);
+    fireEvent.click(screen.getByRole("menuitem", { name: "翻至背面" }));
+
+    card = screen.getByRole("article", { name: "卡牌背面" });
+    expect(useRuntimeStore.getState().characterData?.cards.instances[0].face).toBe("back");
+    fireEvent.contextMenu(card);
+    expect(screen.queryByRole("menuitem", { name: "逆时针旋转 90°" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("menuitem", { name: "顺时针旋转 90°" }));
+    expect(card).toHaveStyle({ transform: "rotate(90deg) scale(1)" });
+
+    fireEvent.contextMenu(card);
+    fireEvent.click(screen.getByRole("menuitem", { name: "查看详情" }));
+    expect(screen.getByRole("dialog", { name: "卡牌背面详情" })).toHaveTextContent("这是独立的背面 Card Definition。");
+  });
+
+  it("uses the Card Table state background color after switching state", () => {
+    const systemPackage = createCardTablePackage();
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "colored-card",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: "domain-card:recall-test",
+      state: "configured",
+    });
+    useRuntimeStore.setState({ currentPackage: systemPackage, characterData });
+
+    render(<SheetRenderer systemPackage={systemPackage} />);
+    const card = screen.getByRole("article", { name: "回想测试" });
+    expect(card.style.getPropertyValue("--play-card-state-background")).toBe("");
+    fireEvent.contextMenu(card);
+    fireEvent.click(screen.getByRole("menuitem", { name: "标记为vault" }));
+
+    expect(card.style.getPropertyValue("--play-card-state-background")).toBe("#abcdef");
+    fireEvent.contextMenu(card);
+    fireEvent.click(screen.getByRole("menuitem", { name: "查看详情" }));
+    expect(screen.getByRole("dialog", { name: "回想测试详情" }).querySelector(".card-detail-face"))
+      .toHaveStyle({ "--play-card-state-background": "#abcdef" });
+  });
+
+  it("does not invent Card states when the Author omits state options", () => {
+    const configuredPackage = createCardTablePackage();
+    const systemPackage: SystemPackage = {
+      ...configuredPackage,
+      modules: configuredPackage.modules.map((module) => module.类型 === "cardTable"
+        ? { ...module, 状态选项: undefined, 状态背景色: undefined }
+        : module),
+    };
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "stateless-card", tableModuleId: "domain-card-table", libraryId: "domain-cards", definitionId: "domain-card:recall-test",
+    });
+    useRuntimeStore.setState({ currentPackage: systemPackage, characterData });
+
+    render(<SheetRenderer systemPackage={systemPackage} />);
+    fireEvent.contextMenu(screen.getByRole("article", { name: "回想测试" }));
+
+    expect(screen.queryByRole("menuitem", { name: /^标记为/ })).not.toBeInTheDocument();
+  });
+
+  it("places persistent edge indicators and removes only when decrementing at zero", () => {
+    const systemPackage = createCardTablePackage();
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "indicator-card",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: "domain-card:recall-test",
+    });
+    useRuntimeStore.setState({ currentPackage: systemPackage, characterData });
+
+    const result = render(<SheetRenderer systemPackage={systemPackage} />);
+    const card = screen.getByRole("article", { name: "回想测试" });
+    fireEvent.contextMenu(card);
+    fireEvent.click(screen.getByRole("menuitem", { name: "添加指示物" }));
+    fireEvent.contextMenu(card);
+    fireEvent.click(screen.getByRole("menuitem", { name: "添加指示物" }));
+
+    let badge = screen.getByRole("button", { name: /青色指示物：0/ });
+    const secondBadge = screen.getByRole("button", { name: /红色指示物：0/ });
+    expect(badge).toHaveClass("card-indicator-badge");
+    expect(badge).toHaveAttribute("data-color-index", "0");
+    expect(secondBadge).toHaveAttribute("data-color-index", "1");
+    expect(card.querySelector(".play-card-text")?.contains(badge)).toBe(false);
+    fireEvent.click(badge);
+    badge = screen.getByRole("button", { name: /青色指示物：1/ });
+    fireEvent.contextMenu(badge);
+    expect(screen.getByRole("button", { name: /青色指示物：0/ })).toBeVisible();
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    badge = screen.getByRole("button", { name: /青色指示物：0/ });
+    fireEvent.keyDown(badge, { key: "+" });
+    badge = screen.getByRole("button", { name: /青色指示物：1/ });
+    fireEvent.keyDown(badge, { key: "ArrowDown" });
+    badge = screen.getByRole("button", { name: /青色指示物：0/ });
+    fireEvent.contextMenu(badge);
+
+    expect(screen.queryByRole("button", { name: /青色指示物/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /红色指示物：0/ })).toBeVisible();
+    expect(useRuntimeStore.getState().characterData?.cards.instances[0].indicators).toHaveLength(1);
+    expect(result.container.querySelectorAll(".card-indicator-badge")).toHaveLength(1);
+  });
+
+  it("renders an existing Card Instance saved before indicators were introduced", () => {
+    const systemPackage = createCardTablePackage();
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "legacy-card",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: "domain-card:recall-test",
+    });
+    delete (characterData.cards.instances[0] as Partial<typeof characterData.cards.instances[number]>).indicators;
+    useRuntimeStore.setState({ currentPackage: systemPackage, characterData });
+
+    expect(() => render(<SheetRenderer systemPackage={systemPackage} />)).not.toThrow();
+    expect(screen.getByRole("article", { name: "回想测试" })).toBeVisible();
+  });
+
   it("lets the player resize Card Table cards from the table toolbar", () => {
     const systemPackage = createCardTablePackage();
     const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
@@ -886,6 +1014,15 @@ function createCardTablePackage(): SystemPackage {
               等级: "1",
               回想: "1",
               描述: "描述应该独立显示。",
+              背面卡牌ID: "domain-card:back",
+            },
+          },
+          {
+            ID: "domain-card:back",
+            fields: {
+              ID: "domain-card:back",
+              名称: "卡牌背面",
+              描述: "这是独立的背面 Card Definition。",
             },
           },
         ],
@@ -913,6 +1050,8 @@ function createCardTablePackage(): SystemPackage {
         类型: "cardTable",
         标签: "领域卡牌桌面",
         资源库IDs: ["domain-cards", "ancestry-cards"],
+        状态选项: ["configured", "vault"],
+        状态背景色: { vault: "#abcdef" },
       },
     ],
     pages: [

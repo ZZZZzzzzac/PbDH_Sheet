@@ -3,6 +3,60 @@ import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures"
 import { findAsset, findModule, findResourceLibrary, getHtmlTemplateModuleReferences, validateCachedSystemPackage, validateSystemPackage } from "./systemPackage";
 
 describe("validateSystemPackage", () => {
+  it("validates reverse Card Definition references", () => {
+    const cardModule = {
+      ID: "cards",
+      类型: "cardTable",
+      标签: "卡牌",
+      资源库IDs: ["cards"],
+    } as const;
+    const library = {
+      ID: "cards",
+      名称: "卡牌",
+      路径: "resources/cards.json",
+      fields: [],
+      entries: [
+        { ID: "front", 名称: "正面", 描述: "正面描述", 背面卡牌ID: "back" },
+        { ID: "back", 名称: "背面", 描述: "背面描述" },
+      ],
+    };
+    const pages = [{ ...minimalSystemPackage.pages[0], layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<pb-module id="cards"></pb-module>' } }];
+    const valid = validateSystemPackage({ ...minimalSystemPackage, modules: [cardModule], pages, resourceLibraries: [library] });
+    const missing = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: [cardModule],
+      pages,
+      resourceLibraries: [{ ...library, entries: [{ ...library.entries[0], 背面卡牌ID: "missing" }, library.entries[1]] }],
+    });
+
+    expect(valid.ok, valid.ok ? undefined : JSON.stringify(valid.issues)).toBe(true);
+    expect(missing.ok).toBe(false);
+    if (!missing.ok) expect(missing.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "MISSING_CARD_REVERSE_DEFINITION_REFERENCE" })]));
+  });
+
+  it("accepts Card state background colors and rejects invalid colors or unknown states", () => {
+    const cardModule = {
+      ID: "cards", 类型: "cardTable", 标签: "卡牌", 资源库IDs: ["cards"],
+      状态选项: ["current", "vault"], 状态背景色: { vault: "#123456" },
+    } as const;
+    const base = {
+      ...minimalSystemPackage,
+      modules: [cardModule],
+      pages: [{ ...minimalSystemPackage.pages[0], layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<pb-module id="cards"></pb-module>' } }],
+      resourceLibraries: [{ ID: "cards", 名称: "卡牌", 路径: "resources/cards.json", entries: [] }],
+    };
+
+    const valid = validateSystemPackage(base);
+    const invalidColor = validateSystemPackage({ ...base, modules: [{ ...cardModule, 状态背景色: { vault: "blue" } }] });
+    const unknownState = validateSystemPackage({ ...base, modules: [{ ...cardModule, 状态背景色: { spent: "#abcdef" } }] });
+
+    expect(valid.ok).toBe(true);
+    expect(invalidColor.ok).toBe(false);
+    if (!invalidColor.ok) expect(invalidColor.issues.map((issue) => issue.text).join("\n")).toContain("#RRGGBB");
+    expect(unknownState.ok).toBe(false);
+    if (!unknownState.ok) expect(unknownState.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "CARD_STATE_COLOR_UNKNOWN_STATE" })]));
+  });
+
   it("accepts text module label visibility and placeholder presentation options", () => {
     const result = validateSystemPackage({
       ...moduleDemoSystemPackage,

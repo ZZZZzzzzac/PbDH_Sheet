@@ -76,10 +76,10 @@ Player 点击图片区域或在其聚焦时按 Enter/Space 打开本地文件选
 | `默认查询.sort.field` | string | 条件 | sort 存在时非空 |
 | `默认查询.sort.direction` | `asc|desc` | 否 | `asc` |
 | `创建卡牌.卡牌桌面模块ID` | string | 条件 | 目标必须 cardTable，且其 `资源库IDs` 必须包含 Picker 的 Library |
-| `创建卡牌.默认状态` | string | 否 | Card Engine 默认状态 |
+| `创建卡牌.默认状态` | string | 否 | 目标 Card Table 的第一个 `状态选项`，再回退内部 `default` |
 
 选择是临时事件，不存隐藏资源引用。
 
 ## cardTable
 
-`标签`、非空且不重复的 `资源库IDs: string[]` 必填。每个 ID 都必须引用已声明的 Resource Library。多个 Library 共用该桌面的状态选项、坐标系、层级和 Card Presentation 配置。旧的单数 `资源库ID` 不受支持。`状态选项?: string[]`；`显示方式?: image|text`；`卡名字段` 默认 `名称`，`描述字段` 默认 `描述`，`卡图字段` 默认 `卡图`，`显示方式字段?: string`。详见[Cards](cards.md)。
+`标签`、非空且不重复的 `资源库IDs: string[]` 必填。每个 ID 都必须引用已声明的 Resource Library。多个 Library 共用该桌面的状态选项、坐标系、层级和 Card Presentation 配置。旧的单数 `资源库ID` 不受支持。`状态选项?: non-empty unique string[]`；省略时框架不显示状态切换菜单，也不推断任何游戏状态。`状态背景色?: Record<string,"#RRGGBB">`，键必须属于状态选项；`显示方式?: image|text`；`卡名字段` 默认 `名称`，`描述字段` 默认 `描述`，`卡图字段` 默认 `卡图`，`显示方式字段?: string`。详见[Cards](cards.md)。

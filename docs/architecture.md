@@ -409,7 +409,9 @@ Card Definition 是不可变资源数据。Card Instance 是 Player 拥有的运
 
 卡牌以自由桌面模型展示：玩家在一个卡牌桌面区域内自由摆放卡牌，通过坐标和层级确定位置，不强制离散容器区域。卡牌实例的具体字段是实现细节，不在此固定。
 
-Card Engine 支持 MVP 范围内的展示、创建、删除、拖拽移动、排序和状态切换。翻面、横置/竖置、指示物数字等操作列入后续信号。它不实现抽牌、弃牌、洗牌、支付、数量上限、合法性检查或效果结算。合法性问题由 Validation Scripts 报告。
+Card Engine 支持展示、创建、删除、拖拽移动、排序、状态切换、双面 Card Definition 翻面、四分之一圈旋转和框架内建通用指示物。每张卡最多十个指示物，以固定十色 palette 的紧凑边缘徽章呈现；值为 0 时保留，在 0 上继续减少才移除。它复用纯计数转移边界，但不是 Author 配置或 Countable Resource Sheet Module。Card Engine 不实现抽牌、弃牌、洗牌、支付、游戏合法性检查或效果结算。合法性问题由 Validation Scripts 报告。
+
+Card Instance state 是 Author 通过 Card Table `状态选项` 定义的任意字符串。Card Table presentation 可用 `状态背景色` 把部分 state 映射到 `#RRGGBB`；未映射 state 使用框架默认 Card Face 背景。颜色来自 System Package，不进入 Character Data 或 Card Definition。
 
 ## Storage 边界
 
@@ -484,7 +486,7 @@ Validation Scripts：
 - 依赖规则索引和可选链式触发。
 - 如果出现第二个实际布局 adapter，再评估是否从 Sheet Renderer 抽出独立布局模块。
 - 如果陌生来源包变多，升级更强脚本沙箱。
-- 更丰富的卡牌容器和指示物类型。
+- 更丰富的卡牌容器、任意角度旋转、实体指示物自由摆放和规则自动化。
 - 如果包体积增长，再引入可选缩略图或打印资源。
 
 ### 成熟期

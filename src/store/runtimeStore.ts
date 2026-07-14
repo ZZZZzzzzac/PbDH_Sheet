@@ -4,7 +4,12 @@ import {
   type CardTableLayout,
   clampCardWidth,
   deleteCardInstance as deleteCardInstanceDomain,
+  flipCardInstance as flipCardInstanceDomain,
+  addCardIndicator as addCardIndicatorDomain,
+  rotateCardInstance as rotateCardInstanceDomain,
+  setCardInstanceUpright as setCardInstanceUprightDomain,
   tidyCardTable as tidyCardTableDomain,
+  transitionCardIndicator as transitionCardIndicatorDomain,
   updateCardInstancePosition as updateCardInstancePositionDomain,
   updateCardInstanceState as updateCardInstanceStateDomain,
 } from "../domain/cardEngine";
@@ -81,6 +86,11 @@ interface RuntimeState {
   updateCardInstancePosition: (instanceId: string, xPct: number, yPct: number) => void;
   bringCardInstanceToFront: (instanceId: string) => void;
   updateCardInstanceState: (instanceId: string, cardState: string) => void;
+  flipCardInstance: (instanceId: string) => void;
+  rotateCardInstance: (instanceId: string, quarterTurns: number) => void;
+  setCardInstanceUpright: (instanceId: string) => void;
+  addCardIndicator: (instanceId: string) => void;
+  transitionCardIndicator: (instanceId: string, indicatorId: string, direction: "increment" | "decrement") => void;
   tidyCardTable: (tableModuleId: string, layout: CardTableLayout) => void;
   setCardTableCardWidth: (tableModuleId: string, widthPx: number) => void;
   deleteCardInstance: (instanceId: string) => void;
@@ -764,6 +774,26 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     );
   },
 
+  flipCardInstance(instanceId) {
+    updateCardStateAndAutosave(get, set, (data) => flipCardInstanceDomain(data, instanceId));
+  },
+
+  rotateCardInstance(instanceId, quarterTurns) {
+    updateCardStateAndAutosave(get, set, (data) => rotateCardInstanceDomain(data, instanceId, quarterTurns));
+  },
+
+  setCardInstanceUpright(instanceId) {
+    updateCardStateAndAutosave(get, set, (data) => setCardInstanceUprightDomain(data, instanceId));
+  },
+
+  addCardIndicator(instanceId) {
+    updateCardStateAndAutosave(get, set, (data) => addCardIndicatorDomain(data, instanceId, generateId("card-indicator-")));
+  },
+
+  transitionCardIndicator(instanceId, indicatorId, direction) {
+    updateCardStateAndAutosave(get, set, (data) => transitionCardIndicatorDomain(data, instanceId, indicatorId, direction));
+  },
+
   async removePlayerImage(moduleId) {
     const characterData = get().characterData;
     const value = characterData?.character.values[moduleId];
@@ -843,6 +873,25 @@ export function configureRuntimeDependencies(dependencies: Partial<RuntimeDepend
 
 export function resetRuntimeDependencies() {
   runtimeDependencies = defaultRuntimeDependencies;
+}
+
+function updateCardStateAndAutosave(
+  get: () => RuntimeState,
+  set: (partial: Partial<RuntimeState> | ((state: RuntimeState) => Partial<RuntimeState>)) => void,
+  update: (data: CharacterData) => CharacterData,
+) {
+  if (!get().characterData) {
+    return;
+  }
+  set((state) => ({
+    characterData: state.characterData ? update(state.characterData) : null,
+    importError: null,
+    importNotice: null,
+  }));
+  scheduleAutosave(
+    () => get().characterData,
+    (status) => set({ storageStatus: status }),
+  );
 }
 
 function isPlayerImageValue(value: unknown): value is PlayerImageValue {

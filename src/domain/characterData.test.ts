@@ -71,7 +71,7 @@ describe("Character Data import/export", () => {
         expect.objectContaining({
           instanceId: "card-instance-1",
           definitionId: "domain-card:符文护符",
-          state: "configured",
+          state: "default",
           tableModuleId: "domain-card-table",
         }),
       ]);
@@ -108,6 +108,22 @@ describe("Character Data import/export", () => {
       dataUrl: "data:image/png;base64,AA==",
     });
     expect(result.ok).toBe(true);
+  });
+
+  it("defaults indicators when importing an existing Card Instance", () => {
+    const data = createCardInstance(createEmptyCharacterData(minimalSystemPackage), {
+      instanceId: "legacy-card",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: "domain-card:符文护符",
+    });
+    const exported = JSON.parse(exportCharacterData(data));
+    delete exported.cards.instances[0].indicators;
+
+    const result = parseCharacterDataJson(JSON.stringify(exported), minimalSystemPackage);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.cards.instances[0].indicators).toEqual([]);
   });
 
   it("removes replaced and explicitly removed player images", () => {

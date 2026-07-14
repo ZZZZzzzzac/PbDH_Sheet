@@ -70,6 +70,8 @@ describe("System Package documentation", () => {
       '"readOnlyDisplay"', '"imageField"', '"resourcePicker"', '"cardTable"', '"字段模板"', '"默认查询"',
       '"创建卡牌"', '"fillText"', '"fillCountable"', '"setVisibility"', '"setResourceDefaultFilter"',
       '"显示方式": "标记"', '"当前值标记"', '"剩余值标记"',
+      '"背面卡牌ID字段"', '"背面卡牌ID"',
+      '"状态背景色"',
       '"selectedResourceFieldEquals"', '"selectedResourceFieldNotEquals"', '"selectedResourceFieldIn"',
       '"checkboxOptionChecked"', '"checkboxOptionUnchecked"', '<pb-page-outlet>', 'module.exports = async',
     ];
@@ -107,5 +109,17 @@ describe("System Package documentation", () => {
 
     expect(requiredTerms.filter((term) => !reference.includes(term))).toEqual([]);
     expect(["当前值标记", "剩余值标记", "右键", "触屏长按", "5px", "{current,max}"].filter((term) => !authorGuide.includes(term))).toEqual([]);
+  });
+
+  it("documents Card flip, quarter-turn rotation, and persistent edge indicators", () => {
+    const reference = readFileSync(join(docsRoot, "reference", "cards.md"), "utf8");
+    const authorGuide = readFileSync(join(docsRoot, "author-guide", "07-cards.md"), "utf8");
+    const requiredTerms = [
+      "背面卡牌ID字段", "背面卡牌ID", "同一 Resource Library", "状态背景色", "#RRGGBB", "未映射", "添加指示物", "十色 palette", "最多十个",
+      "36px", "只显示放大的数值", "左键", "右键", "触屏长按", "ArrowUp", "ArrowDown", "90°", "从 1 减到 0", "Character Data",
+    ];
+
+    expect(requiredTerms.filter((term) => !reference.includes(term))).toEqual([]);
+    expect(["背面卡牌ID字段", "状态背景色", "添加指示物", "十种固定背景色", "右键", "触屏长按", "从 1 减到 0", "顺时针 90°"].filter((term) => !authorGuide.includes(term))).toEqual([]);
   });
 });
