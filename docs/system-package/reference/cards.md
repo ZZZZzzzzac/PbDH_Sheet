@@ -20,7 +20,7 @@ Card name、description 与推断 tags 都按[Restricted Markdown](restricted-ma
 
 Card 大小或响应式容器尺寸改变、description 内容改变、实际字体完成加载时会重新拟合。拖动、调整 z-order 或切换 Card state 不改变 Card 尺寸，因此不会触发拟合。卡图加载失败后的文字 fallback 使用相同行为。
 
-若 description 在 `9px` 时仍无法完整显示，紧凑 Card 继续裁切，并在 Card 角落显示独立的省略号标识；该标识不是 Resource Value 的一部分，并通过 tooltip/无障碍名称提示 Player 打开 Card Detail 阅读完整内容。
+若 description 在 `9px` 时仍无法完整显示，紧凑 Card 继续裁切，并在 Card 角落显示独立的省略号标识；该标识不是 Resource Value 的一部分，并通过 tooltip/无障碍名称提示 Player 打开 Card Detail 阅读完整内容。Base Framework 的 Framework Check 同时产生 `TEXT_CONTENT_OVERFLOW` warning，与 Author Validation Check issues 一起显示。
 
 拟合字号与溢出状态只属于当前渲染结果，不写入 Card Definition、Card Instance、Character Data 或 System Package schema。HTML snapshot、Export Preview 和打印使用输出时已经稳定的拟合结果。打印可以把多张 Card 从自由桌面坐标重排为纸面网格，但单张 Card 保持网页紧凑 Card 的宽高、内部布局、拟合字号与颜色；框架为 Card Face 请求精确打印颜色。
 

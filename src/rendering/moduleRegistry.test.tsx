@@ -395,6 +395,63 @@ describe("Module Registry rendering", () => {
     expect(result.container.querySelector('[data-module-id="character-name"] input')).toHaveAttribute("placeholder", "请输入姓名");
   });
 
+  it("gives Long Text a fixed row height and automatically fits its Markdown preview", async () => {
+    vi.spyOn(window, "getComputedStyle").mockReturnValue({ fontSize: "16px" } as CSSStyleDeclaration);
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.matches('[data-module-id="background"] [data-markdown-preview]') ? 100 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.matches('[data-module-id="background"] [data-markdown-preview]') ? 200 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockImplementation(function (this: HTMLElement) {
+      if (!this.matches('[data-module-id="background"] [data-markdown-preview]')) return 0;
+      return Number.parseFloat(this.style.fontSize || "16") <= 10 ? 80 : 200;
+    });
+    vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.matches('[data-module-id="background"] [data-markdown-preview]') ? 200 : 0;
+    });
+
+    const result = renderModuleDemo();
+    await act(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+
+    const container = result.container.querySelector<HTMLElement>('[data-module-id="background"]');
+    const preview = container?.querySelector<HTMLElement>('[data-markdown-preview]');
+    expect(container?.style.getPropertyValue("--long-text-rows")).toBe("5");
+    expect(preview).toHaveAttribute("data-text-fit", "fitted");
+    expect(Number.parseFloat(preview?.style.fontSize ?? "0")).toBeLessThanOrEqual(10);
+  });
+
+  it("automatically fits a Free Text Markdown preview to its single-line width", async () => {
+    const packageWithLongName: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "character-name" && module.类型 === "freeText"
+        ? { ...module, 默认值: "一个很长很长的角色姓名" }
+        : module),
+    };
+    vi.spyOn(window, "getComputedStyle").mockReturnValue({ fontSize: "16px" } as CSSStyleDeclaration);
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.matches('[data-module-id="character-name"] [data-markdown-preview]') ? 30 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.matches('[data-module-id="character-name"] [data-markdown-preview]') ? 100 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.matches('[data-module-id="character-name"] [data-markdown-preview] p') ? 20 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
+      if (!this.matches('[data-module-id="character-name"] [data-markdown-preview] p')) return 0;
+      const preview = this.closest<HTMLElement>('[data-markdown-preview]');
+      return Number.parseFloat(preview?.style.fontSize || "16") <= 10 ? 90 : 200;
+    });
+
+    const result = renderModuleDemo(packageWithLongName);
+    await act(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+
+    const preview = result.container.querySelector<HTMLElement>('[data-module-id="character-name"] [data-markdown-preview]');
+    expect(preview).toHaveAttribute("data-text-fit", "fitted");
+    expect(Number.parseFloat(preview?.style.fontSize ?? "0")).toBeLessThanOrEqual(10);
+  });
+
   it("opens Resource Picker browser and fills target text modules without storing a selection value", () => {
     renderModuleDemo(createResourcePickerPackage());
 

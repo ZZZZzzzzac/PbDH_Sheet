@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { RestrictedMarkdown } from "./RestrictedMarkdown";
+import { fitTextContent, useTextFit } from "./textFit";
+import type { FontSizeFitResult } from "./fontSizeFit";
 
 interface EditableMarkdownValueProps {
   value: string;
   accessibleName: string;
   input: (props: EditableMarkdownInputProps) => ReactNode;
+  autoFit?: boolean;
+  fitText?: (element: HTMLElement) => FontSizeFitResult;
 }
 
 export interface EditableMarkdownInputProps {
@@ -15,10 +19,12 @@ export interface EditableMarkdownInputProps {
   onBlur: () => void;
 }
 
-export function EditableMarkdownValue({ value, accessibleName, input }: EditableMarkdownValueProps) {
+export function EditableMarkdownValue({ value, accessibleName, input, autoFit = false, fitText = fitTextContent }: EditableMarkdownValueProps) {
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const showEditor = editing || value === "";
+  useTextFit(previewRef, value, autoFit && !showEditor, fitText);
 
   useEffect(() => {
     if (editing) {
@@ -48,6 +54,7 @@ export function EditableMarkdownValue({ value, accessibleName, input }: Editable
         </div>
       ) : null}
       <div
+        ref={previewRef}
         className="markdown-preview"
         data-part="input"
         data-markdown-preview="true"

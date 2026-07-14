@@ -11,12 +11,14 @@
 | `隐藏标签` | boolean | 否 | `false`；为 `true` 时只隐藏视觉标签；`标签: ""` 也会隐藏 |
 | `占位文本` | string | 否 | 输入框 placeholder；不写入 Character Data |
 
-Player value 作为原始文本写 Character Data，并按[Restricted Markdown](restricted-markdown.md)展示。空或聚焦时显示单行原始输入；非空失焦时显示渲染结果。列表语法不会把 freeText 改成多行控件。
+Player value 作为原始文本写 Character Data，并按[Restricted Markdown](restricted-markdown.md)展示。空或聚焦时显示单行原始输入；非空失焦时显示渲染结果。预览默认在自然字号与 `9px` 之间自动选择能够保持单行且完整容纳内容的最大字号；若 `9px` 仍超宽，继续单行裁切，并由 Framework Check 产生 `TEXT_CONTENT_OVERFLOW` warning。编辑态保持正常字号并可横向滚动。拟合状态不写 Character Data，也不提供 System Package 配置开关。列表语法不会把 freeText 改成多行控件。
 隐藏视觉标签时，输入框依次使用非空 `标签`、`占位文本`、Module `ID` 作为无障碍名称。
 
 ## longText
 
-同 freeText（包括 Restricted Markdown、`隐藏标签`、`占位文本`），另有 `行数?: integer`，范围 2–20；省略时由组件默认高度决定。longText 编辑时仍是 textarea。
+同 freeText（包括 Restricted Markdown、`隐藏标签`、`占位文本`），另有 `行数?: integer`，范围 2–20，省略时为 4。`行数`是编辑态 textarea 与失焦 Markdown 预览共同使用的固定视觉高度，不只是初始高度；两种状态超出时都在内部滚动。
+
+非空 Markdown 预览默认在自然字号与 `9px` 之间自动选择能够完整容纳内容的最大字号。内容、容器尺寸或字体加载完成时重新拟合；拟合状态不写 Character Data。若 `9px` 仍无法容纳，内容保留滚动访问，并由 Base Framework 的 Framework Check 产生 `TEXT_CONTENT_OVERFLOW` warning。该行为是 Base Framework 固有策略，不提供 System Package 配置开关；Author CSS 仍可覆盖 Module 尺寸，但不能向 Validation Script 暴露 DOM。
 
 ## checkboxResource
 

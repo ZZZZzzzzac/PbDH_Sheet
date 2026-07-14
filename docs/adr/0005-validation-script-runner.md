@@ -44,3 +44,9 @@
 - Validation Scripts 经常卡死或消耗大量资源。
 - Author 强烈需要受控依赖库。
 - 需要更强隔离，如 QuickJS/WASM。
+
+## 追加说明（2026-07-14）
+
+Base Framework 可运行不暴露给 Author 的 Framework Checks，用于检查必须依赖框架运行时或渲染后 DOM 的常见问题。第一条 Framework Check 在文本完成字体拟合后检查 Free Text、Long Text 与 Card description 是否仍溢出固定显示区域，并产生 `TEXT_CONTENT_OVERFLOW` warning。
+
+Framework Checks 不在 Validation Worker 内执行，不属于 System Package schema，也不向 Validation Script 提供 DOM。手动“检查”和导出前检查都会先渲染目标页面、等待拟合稳定，再运行 Framework Checks 与 Author Validation Scripts；两类结果使用同一个 `ValidationIssue` 结构和 Validation Report，通过 `source: "framework"` 与 Validation Check ID 区分来源。

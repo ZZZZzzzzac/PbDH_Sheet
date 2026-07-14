@@ -2,6 +2,7 @@ import type { FreeTextModule } from "../domain/systemPackage";
 import type { RefObject } from "react";
 import { useTextModuleState } from "./moduleState";
 import { EditableMarkdownValue } from "./EditableMarkdownValue";
+import { fitSingleLineTextContent } from "./textFit";
 
 interface FreeTextModuleProps {
   module: FreeTextModule;
@@ -23,6 +24,8 @@ export function FreeTextModule({ module }: FreeTextModuleProps) {
       <EditableMarkdownValue
         value={value}
         accessibleName={accessibleName}
+        autoFit
+        fitText={fitSingleLineTextContent}
         input={(props) => (
           <input
             ref={props.ref as RefObject<HTMLInputElement>}

@@ -12,10 +12,11 @@ import type { PackageIssue } from "./domain/systemPackage";
 import type { PackageDirectoryHandle } from "./loaders/packageVfs";
 import type { ValidationIssue } from "./domain/validationRunner";
 import { buildReadonlyHtmlSnapshot, waitForVisibleImages } from "./export/output";
-import { waitForCardDescriptionFits } from "./rendering/cardDescriptionFit";
+import { collectFrameworkValidationIssues } from "./rendering/frameworkChecks";
 import { waitForMarkerPresentationFits } from "./rendering/markerPresentationFit";
 import { SheetRenderer, type CountablePrintStrategy } from "./rendering/SheetRenderer";
 import { printablePages } from "./rendering/pagePresentation";
+import { waitForTextFits } from "./rendering/textFit";
 import { GuideSpotlight } from "./rendering/GuideSpotlight";
 import { useRuntimeStore } from "./store/runtimeStore";
 
@@ -180,7 +181,7 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [printMode]);
 
-  const performOutput = async (kind: OutputKind) => {
+  const performOutput = async (kind: OutputKind, printableContentPrepared = false) => {
     if (!characterData) {
       return;
     }
@@ -193,14 +194,14 @@ export default function App() {
     }
 
     if (kind === "html") {
-      if (!(await preparePrintableContent())) return;
+      if (!printableContentPrepared && !(await preparePrintableContent())) return;
       const printableRoot = document.querySelector(".sheet-tool");
       await waitForVisibleImages(printableRoot ?? document);
       downloadText(buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined, activeCharacterSaveName), `${baseName}.html`, "text/html");
       return;
     }
 
-    if (!(await preparePrintableContent())) return;
+    if (!printableContentPrepared && !(await preparePrintableContent())) return;
     const printableRoot = document.querySelector(".sheet-tool");
     if (!printableRoot) return;
 
@@ -225,17 +226,26 @@ export default function App() {
   };
 
   const beginOutput = async (kind: OutputKind) => {
-    const issues = await runPreOutputValidation();
+    let frameworkIssues: ValidationIssue[] = [];
+    let printableContentPrepared = false;
+    if (kind !== "json") {
+      printableContentPrepared = await preparePrintableContent();
+      if (!printableContentPrepared) return;
+      frameworkIssues = collectFrameworkValidationIssues(document.querySelector(".sheet-tool") ?? document);
+    }
+    const scriptIssues = await runPreOutputValidation();
+    const issues = [...frameworkIssues, ...scriptIssues];
+    useRuntimeStore.setState({ validationIssues: issues });
     if (issues.length > 0) {
       setPendingOutput(kind);
       setValidationDialogOpen(true);
       return;
     }
 
-    await performOutput(kind);
+    await performOutput(kind, printableContentPrepared);
   };
 
-  const preparePrintableContent = async () => {
+  const preparePrintableContent = async (tidyCardsForOutput = true) => {
     if (!currentPackage) {
       return false;
     }
@@ -245,12 +255,16 @@ export default function App() {
       return false;
     }
 
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setPrintMode(true);
     await nextFrame();
     await nextFrame();
 
-    for (const module of packageSnapshot.modules) {
-      if (module.类型 === "cardTable") {
+    if (tidyCardsForOutput) {
+      for (const module of packageSnapshot.modules) {
+        if (module.类型 !== "cardTable") continue;
         const cardCount = characterData?.cards.instances.filter((instance) => instance.tableModuleId === module.ID).length ?? 0;
         tidyCardTable(
           module.ID,
@@ -263,13 +277,22 @@ export default function App() {
       }
     }
     await nextFrame();
-    await waitForCardDescriptionFits(document.querySelector(".sheet-tool") ?? document);
-    await waitForMarkerPresentationFits(document.querySelector(".sheet-tool") ?? document);
+    const root = document.querySelector(".sheet-tool") ?? document;
+    await waitForTextFits(root);
+    await waitForMarkerPresentationFits(root);
     return true;
   };
 
   const handleValidation = async () => {
+    let frameworkIssues: ValidationIssue[] = [];
+    if (await preparePrintableContent(false)) {
+      frameworkIssues = collectFrameworkValidationIssues(document.querySelector(".sheet-tool") ?? document);
+      setPrintMode(false);
+    }
     await runValidationChecks();
+    useRuntimeStore.setState({
+      validationIssues: [...frameworkIssues, ...useRuntimeStore.getState().validationIssues],
+    });
     setValidationDialogOpen(true);
   };
 
@@ -600,16 +623,17 @@ export default function App() {
         issues={validationIssues}
         open={validationDialogOpen}
         onClose={() => {
+          if (pendingOutput) setPrintMode(false);
           setPendingOutput(null);
           setValidationDialogOpen(false);
         }}
         onContinue={
           pendingOutput
-            ? () => {
+              ? () => {
                 const output = pendingOutput;
                 setPendingOutput(null);
                 setValidationDialogOpen(false);
-                void performOutput(output);
+                void performOutput(output, output !== "json");
               }
             : undefined
         }

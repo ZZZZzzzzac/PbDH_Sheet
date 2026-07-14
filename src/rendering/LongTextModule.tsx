@@ -1,5 +1,5 @@
 import type { LongTextModule as LongTextModuleConfig } from "../domain/systemPackage";
-import type { RefObject } from "react";
+import type { CSSProperties, RefObject } from "react";
 import { useTextModuleState } from "./moduleState";
 import { EditableMarkdownValue } from "./EditableMarkdownValue";
 
@@ -12,9 +12,14 @@ export function LongTextModule({ module }: LongTextModuleProps) {
   const inputId = `module-${module.ID}`;
   const labelHidden = module.隐藏标签 === true || module.标签 === "";
   const accessibleName = module.标签 || module.占位文本 || module.ID;
+  const rows = module.行数 ?? 4;
+  const style = {
+    "--long-text-rows": rows,
+    "--long-text-height": `calc(${rows * 1.2}rem + 6px)`,
+  } as CSSProperties;
 
   return (
-    <div className="container container-stack" data-module-id={module.ID} data-module-type={module.类型} data-part="container" data-label-hidden={labelHidden ? "true" : undefined}>
+    <div className="container container-stack" data-module-id={module.ID} data-module-type={module.类型} data-part="container" data-label-hidden={labelHidden ? "true" : undefined} style={style}>
       {!labelHidden ? (
         <label className="label" data-part="label" htmlFor={inputId}>
           {module.标签}
@@ -23,6 +28,7 @@ export function LongTextModule({ module }: LongTextModuleProps) {
       <EditableMarkdownValue
         value={value}
         accessibleName={accessibleName}
+        autoFit
         input={(props) => (
           <textarea
             ref={props.ref as RefObject<HTMLTextAreaElement>}
@@ -31,7 +37,7 @@ export function LongTextModule({ module }: LongTextModuleProps) {
             data-part="input"
             aria-label={labelHidden ? accessibleName : undefined}
             placeholder={module.占位文本}
-            rows={module.行数 ?? 4}
+            rows={rows}
             value={props.value}
             onFocus={props.onFocus}
             onBlur={props.onBlur}

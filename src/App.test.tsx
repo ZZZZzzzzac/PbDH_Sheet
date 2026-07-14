@@ -204,6 +204,54 @@ describe("App Validation Checks", () => {
     expect(screen.queryByRole("dialog", { name: "Validation Report" })).not.toBeInTheDocument();
   });
 
+  it("merges Framework Check overflow warnings with Author Validation Script issues", async () => {
+    const overflowPackage: SystemPackage = {
+      ...minimalSystemPackage,
+      modules: [
+        ...minimalSystemPackage.modules,
+        { ID: "overflow-notes", 类型: "longText", 标签: "长文本", 默认值: "无法放入固定区域的长文本。", 行数: 2 },
+      ],
+      pages: minimalSystemPackage.pages.map((page) => ({
+        ...page,
+        layout: {
+          ...page.layout,
+          htmlContent: `${page.layout.htmlContent}<pb-module id="overflow-notes"></pb-module>`,
+        },
+      })),
+      validationChecks: [{ ID: "manual-check", 脚本: "checks/manual.js", scriptContent: "module.exports = () => [];" }],
+    };
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: overflowPackage, issues: [] }),
+      storage: createEmptyStorage(),
+      runValidationChecks: async () => [{ level: "error", text: "系统规则错误", code: "SYSTEM_RULE", source: "manual-check" }],
+    });
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.matches('[data-module-id="overflow-notes"] [data-markdown-preview]') ? 100 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.matches('[data-module-id="overflow-notes"] [data-markdown-preview]') ? 200 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.matches('[data-module-id="overflow-notes"] [data-markdown-preview]') ? 200 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.matches('[data-module-id="overflow-notes"] [data-markdown-preview]') ? 200 : 0;
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+    await user.click(screen.getByRole("button", { name: "运行 Validation Checks" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "Validation Report" });
+    expect(dialog).toHaveTextContent("TEXT_CONTENT_OVERFLOW");
+    expect(dialog).toHaveTextContent("framework");
+    expect(dialog).toHaveTextContent("SYSTEM_RULE");
+    expect(dialog).toHaveTextContent("manual-check");
+  });
+
   it("keeps the manual check button clickable when a package has no Validation Checks", async () => {
     configureRuntimeDependencies({
       loadSystemPackageFromFile: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),

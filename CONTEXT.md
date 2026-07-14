@@ -164,6 +164,10 @@ _Avoid_: Auto-calculation when the result is not written back
 An Author-provided read-only script used only inside a Validation Check to produce text reports, expected values, warnings, or errors from exported sheet data.
 _Avoid_: Custom sheet logic, state mutation script
 
+**Framework Check**:
+A Base Framework-owned read-only check for common runtime, rendering, or output defects that Author-provided Validation Scripts cannot inspect, such as fitted text still overflowing its fixed display area. Framework Checks are not configurable by Authors and report through the same Validation Report as Validation Checks with a distinct framework source.
+_Avoid_: Validation Script, System Package Validator
+
 **Declarative System Package**:
 A System Package expressed through data, resources, layouts, styles, guide steps, dependencies, and validation rules rather than arbitrary executable scripts.
 _Avoid_: Script plugin
@@ -233,6 +237,8 @@ _Avoid_: Script plugin
 - **Dependency Logic** may consume a Resource Picker selection event and fill existing Sheet Modules with selected Resource Values.
 - A **Validation Check** may read many **Sheet Modules**, but it does not write values back to them.
 - A **Validation Script** may express unusual rule-specific calculations, but it only reads exported sheet data and only outputs a report.
+- A **Framework Check** may inspect framework-owned rendered state after layout and font fitting, but it does not expose DOM access to Authors, mutate Character Data, or replace the System Package Validator.
+- Manual checking and pre-output checking merge **Framework Check** issues with Author-defined **Validation Check** issues into one report while preserving their distinct sources.
 - A **Declarative System Package** should be enough for first-version sheet behavior; arbitrary scripts that mutate sheet state are outside the first-version requirement.
 - First-version **System Packages** use **HTML Layout Templates** as the only Author-facing layout model; **Flow Layout** is superseded and should not be expanded.
 
