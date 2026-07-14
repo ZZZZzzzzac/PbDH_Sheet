@@ -568,26 +568,6 @@
       },
       {
         "类型": "module",
-        "模块ID": "primary-weapon-stat"
-      },
-      {
-        "类型": "module",
-        "模块ID": "primary-weapon-range"
-      },
-      {
-        "类型": "module",
-        "模块ID": "primary-weapon-damage"
-      },
-      {
-        "类型": "module",
-        "模块ID": "primary-weapon-damage-type"
-      },
-      {
-        "类型": "module",
-        "模块ID": "primary-weapon-hands"
-      },
-      {
-        "类型": "module",
         "模块ID": "primary-weapon-description"
       }
     ],
@@ -603,48 +583,8 @@
         "类型": "fillText",
         "目标模块ID": "primary-weapon-name",
         "内容": {
-          "类型": "selectedResourceField",
-          "字段": "名称"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "primary-weapon-stat",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "属性"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "primary-weapon-range",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "距离"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "primary-weapon-damage",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "伤害"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "primary-weapon-damage-type",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "伤害类型"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "primary-weapon-hands",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "负荷"
+          "类型": "selectedResourceTemplate",
+          "格式": "**{{名称}}**｜{{属性}}｜{{距离}}｜{{伤害}} {{伤害类型}}｜{{负荷}}"
         }
       },
       {
@@ -672,26 +612,6 @@
       },
       {
         "类型": "module",
-        "模块ID": "secondary-weapon-stat"
-      },
-      {
-        "类型": "module",
-        "模块ID": "secondary-weapon-range"
-      },
-      {
-        "类型": "module",
-        "模块ID": "secondary-weapon-damage"
-      },
-      {
-        "类型": "module",
-        "模块ID": "secondary-weapon-damage-type"
-      },
-      {
-        "类型": "module",
-        "模块ID": "secondary-weapon-hands"
-      },
-      {
-        "类型": "module",
         "模块ID": "secondary-weapon-description"
       }
     ],
@@ -707,48 +627,8 @@
         "类型": "fillText",
         "目标模块ID": "secondary-weapon-name",
         "内容": {
-          "类型": "selectedResourceField",
-          "字段": "名称"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "secondary-weapon-stat",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "属性"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "secondary-weapon-range",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "距离"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "secondary-weapon-damage",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "伤害"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "secondary-weapon-damage-type",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "伤害类型"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "secondary-weapon-hands",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "负荷"
+          "类型": "selectedResourceTemplate",
+          "格式": "**{{名称}}**｜{{属性}}｜{{距离}}｜{{伤害}} {{伤害类型}}｜{{负荷}}"
         }
       },
       {
@@ -776,26 +656,6 @@
       },
       {
         "类型": "module",
-        "模块ID": "backup-weapon-1-stat"
-      },
-      {
-        "类型": "module",
-        "模块ID": "backup-weapon-1-range"
-      },
-      {
-        "类型": "module",
-        "模块ID": "backup-weapon-1-damage"
-      },
-      {
-        "类型": "module",
-        "模块ID": "backup-weapon-1-damage-type"
-      },
-      {
-        "类型": "module",
-        "模块ID": "backup-weapon-1-hands"
-      },
-      {
-        "类型": "module",
         "模块ID": "backup-weapon-1-description"
       }
     ],
@@ -811,48 +671,8 @@
         "类型": "fillText",
         "目标模块ID": "backup-weapon-1-name",
         "内容": {
-          "类型": "selectedResourceField",
-          "字段": "名称"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "backup-weapon-1-stat",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "属性"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "backup-weapon-1-range",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "距离"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "backup-weapon-1-damage",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "伤害"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "backup-weapon-1-damage-type",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "伤害类型"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "backup-weapon-1-hands",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "负荷"
+          "类型": "selectedResourceTemplate",
+          "格式": "**{{名称}}**｜{{属性}}｜{{距离}}｜{{伤害}} {{伤害类型}}｜{{负荷}}"
         }
       },
       {
@@ -880,26 +700,6 @@
       },
       {
         "类型": "module",
-        "模块ID": "backup-weapon-2-stat"
-      },
-      {
-        "类型": "module",
-        "模块ID": "backup-weapon-2-range"
-      },
-      {
-        "类型": "module",
-        "模块ID": "backup-weapon-2-damage"
-      },
-      {
-        "类型": "module",
-        "模块ID": "backup-weapon-2-damage-type"
-      },
-      {
-        "类型": "module",
-        "模块ID": "backup-weapon-2-hands"
-      },
-      {
-        "类型": "module",
         "模块ID": "backup-weapon-2-description"
       }
     ],
@@ -915,48 +715,8 @@
         "类型": "fillText",
         "目标模块ID": "backup-weapon-2-name",
         "内容": {
-          "类型": "selectedResourceField",
-          "字段": "名称"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "backup-weapon-2-stat",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "属性"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "backup-weapon-2-range",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "距离"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "backup-weapon-2-damage",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "伤害"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "backup-weapon-2-damage-type",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "伤害类型"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "backup-weapon-2-hands",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "负荷"
+          "类型": "selectedResourceTemplate",
+          "格式": "**{{名称}}**｜{{属性}}｜{{距离}}｜{{伤害}} {{伤害类型}}｜{{负荷}}"
         }
       },
       {
@@ -1062,22 +822,22 @@
     ]
   },
   {
-    "ID": "fill-item-1",
+    "ID": "append-inventory-items",
     "sources": [
       {
         "类型": "resourcePicker",
-        "模块ID": "pick-item-1"
+        "模块ID": "pick-inventory-item"
       }
     ],
     "targets": [
       {
         "类型": "module",
-        "模块ID": "item-1"
+        "模块ID": "inventory"
       }
     ],
     "触发": {
       "类型": "resourceSelected",
-      "来源模块ID": "pick-item-1"
+      "来源模块ID": "pick-inventory-item"
     },
     "条件": {
       "类型": "always"
@@ -1085,138 +845,13 @@
     "动作": [
       {
         "类型": "fillText",
-        "目标模块ID": "item-1",
+        "目标模块ID": "inventory",
+        "写入方式": "追加",
+        "追加分隔符": "\n\n",
         "内容": {
-          "类型": "selectedResourceField",
-          "字段": "名称"
-        }
-      }
-    ]
-  },
-  {
-    "ID": "fill-item-2",
-    "sources": [
-      {
-        "类型": "resourcePicker",
-        "模块ID": "pick-item-2"
-      }
-    ],
-    "targets": [
-      {
-        "类型": "module",
-        "模块ID": "item-2"
-      }
-    ],
-    "触发": {
-      "类型": "resourceSelected",
-      "来源模块ID": "pick-item-2"
-    },
-    "条件": {
-      "类型": "always"
-    },
-    "动作": [
-      {
-        "类型": "fillText",
-        "目标模块ID": "item-2",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "名称"
-        }
-      }
-    ]
-  },
-  {
-    "ID": "fill-item-3",
-    "sources": [
-      {
-        "类型": "resourcePicker",
-        "模块ID": "pick-item-3"
-      }
-    ],
-    "targets": [
-      {
-        "类型": "module",
-        "模块ID": "item-3"
-      }
-    ],
-    "触发": {
-      "类型": "resourceSelected",
-      "来源模块ID": "pick-item-3"
-    },
-    "条件": {
-      "类型": "always"
-    },
-    "动作": [
-      {
-        "类型": "fillText",
-        "目标模块ID": "item-3",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "名称"
-        }
-      }
-    ]
-  },
-  {
-    "ID": "fill-item-4",
-    "sources": [
-      {
-        "类型": "resourcePicker",
-        "模块ID": "pick-item-4"
-      }
-    ],
-    "targets": [
-      {
-        "类型": "module",
-        "模块ID": "item-4"
-      }
-    ],
-    "触发": {
-      "类型": "resourceSelected",
-      "来源模块ID": "pick-item-4"
-    },
-    "条件": {
-      "类型": "always"
-    },
-    "动作": [
-      {
-        "类型": "fillText",
-        "目标模块ID": "item-4",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "名称"
-        }
-      }
-    ]
-  },
-  {
-    "ID": "fill-item-5",
-    "sources": [
-      {
-        "类型": "resourcePicker",
-        "模块ID": "pick-item-5"
-      }
-    ],
-    "targets": [
-      {
-        "类型": "module",
-        "模块ID": "item-5"
-      }
-    ],
-    "触发": {
-      "类型": "resourceSelected",
-      "来源模块ID": "pick-item-5"
-    },
-    "条件": {
-      "类型": "always"
-    },
-    "动作": [
-      {
-        "类型": "fillText",
-        "目标模块ID": "item-5",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "名称"
+          "类型": "selectedResourceTemplate",
+          "格式": "**{{名称}}**\n{{描述}}",
+          "分隔符": "\n\n"
         }
       }
     ]

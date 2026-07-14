@@ -86,7 +86,7 @@ Dependency Rule：
 - checkboxOptionUnchecked
 
 允许 action：
-- fillText：目标只能 freeText/longText/readOnlyDisplay；内容是字符串或 selectedResourceField
+- fillText：目标只能 freeText/longText/readOnlyDisplay；内容是字符串、selectedResourceField 或带 `{{字段}}` 占位符的 selectedResourceTemplate；写入方式可为替换或追加，追加只用于 freeText/longText
 - fillCountable：目标只能 countableResource；当前值?/最大值? 是整数或 selectedResourceField，最大值还可为 null
 - setVisibility：目标 page|module
 - setResourceDefaultFilter：目标 Resource Picker，值是非空 string[]

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { parse as parseJavaScript } from "acorn";
+import { getResourceTextTemplateFields } from "./resourceTextTemplate";
 import {
   normalizeResourceLibraries,
   resourceLibraryFieldTemplateSchema,
@@ -220,6 +221,12 @@ const fillTextContentSchema = z.union([
     选择索引: z.number().int().min(0).optional(),
     分隔符: z.string().optional(),
   }),
+  z.object({
+    类型: z.literal("selectedResourceTemplate"),
+    格式: z.string().min(1),
+    选择索引: z.number().int().min(0).optional(),
+    分隔符: z.string().optional(),
+  }),
 ]);
 
 const fillCountableContentSchema = z.union([
@@ -245,6 +252,8 @@ const dependencyActionSchema = z.discriminatedUnion("类型", [
     类型: z.literal("fillText"),
     目标模块ID: z.string().min(1),
     内容: fillTextContentSchema,
+    写入方式: z.enum(["替换", "追加"]).optional(),
+    追加分隔符: z.string().optional(),
   }),
   fillCountableActionSchema,
   z.object({
@@ -833,6 +842,15 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
           });
         }
 
+        if (action.写入方式 === "追加" && targetModule.类型 === "readOnlyDisplay") {
+          issues.push({
+            level: "error",
+            code: "UNSUPPORTED_APPEND_TARGET_MODULE",
+            text: `fillText 追加目标必须是 Free Text 或 Long Text：${action.目标模块ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
+          });
+        }
+
         if (typeof action.内容 !== "string" && dependency.触发.类型 !== "resourceSelected") {
           issues.push({
             level: "error",
@@ -842,7 +860,18 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
           });
         }
         if (typeof action.内容 !== "string") {
-          validateSelectedResourceField(systemPackage, sourceModule, action.内容.字段, `dependencies.${dependency.ID}.动作.${actionIndex}.内容.字段`, dependency.ID, issues);
+          const content = action.内容;
+          const fields = content.类型 === "selectedResourceField"
+            ? [content.字段]
+            : getResourceTextTemplateFields(content.格式);
+          fields.forEach((field) => validateSelectedResourceField(
+            systemPackage,
+            sourceModule,
+            field,
+            `dependencies.${dependency.ID}.动作.${actionIndex}.内容.${content.类型 === "selectedResourceField" ? "字段" : "格式"}`,
+            dependency.ID,
+            issues,
+          ));
         }
       }
 

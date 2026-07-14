@@ -21,6 +21,23 @@ Dependency Logic 是唯一允许跨模块联动的声明式规则。每条规则
 
 触发只有 Resource Picker 的 `resourceSelected` 和 Checkbox Resource 的 `checkboxChanged`。条件支持 `always`、选中资源字段相等/不等/包含，以及 checkbox option 已选/未选。动作支持填充文本、填充 Countable State、设置 Page/Module 可见性，以及给 Resource Picker 设置默认精确筛选。
 
+需要把多个资源字段写进一个文本框时，使用格式模板；需要保留 Player 已有文本时再选择追加：
+
+```json
+{
+  "类型": "fillText",
+  "目标模块ID": "inventory",
+  "写入方式": "追加",
+  "追加分隔符": "\n\n",
+  "内容": {
+    "类型": "selectedResourceTemplate",
+    "格式": "**{{名称}}**\n{{描述}}"
+  }
+}
+```
+
+`{{字段}}`必须是来源 Resource Library 的字段。多选 Picker 会逐条套用格式；可用`内容.分隔符`控制本次多条结果之间的连接。追加只支持 freeText/longText；它生成普通可编辑文本，不保存资源引用，也不会在 Player 修改后自动同步。
+
 `fillCountable` 可从整数常量或选中 Resource 的文本字段写入 `countableResource` 的当前值、上限值或两者：
 
 ```json

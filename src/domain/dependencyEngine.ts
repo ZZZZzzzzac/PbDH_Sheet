@@ -1,6 +1,7 @@
 import { updateCharacterValue, type CharacterData, type CheckboxState, type CountableState, type SheetValue } from "./characterData";
 import type { ResourceLibraryEntry, ResourceLibraryQuery } from "./resourceLibrary";
 import { findModule, type DependencyAction, type DependencyCondition, type SystemPackage } from "./systemPackage";
+import { formatResourceTextTemplate } from "./resourceTextTemplate";
 import { clampInt } from "../utils";
 
 export interface ResourceSelectedEvent {
@@ -132,12 +133,23 @@ function applyAction({
       recordWrite(result, writtenTargets, targetKey, `text target ${action.目标模块ID}`, ruleId);
 
       if (targetModule?.类型 === "readOnlyDisplay") {
-        result.readOnlyDisplayContent[action.目标模块ID] = value;
+        if (action.写入方式 !== "追加") {
+          result.readOnlyDisplayContent[action.目标模块ID] = value;
+        }
         return;
       }
 
       if (targetModule?.类型 === "freeText" || targetModule?.类型 === "longText") {
-        result.dataPatches[action.目标模块ID] = value;
+        if (action.写入方式 === "追加") {
+          const pendingValue = result.dataPatches[action.目标模块ID];
+          const storedValue = data.character.values[action.目标模块ID];
+          const existingValue = typeof pendingValue === "string"
+            ? pendingValue
+            : typeof storedValue === "string" ? storedValue : "";
+          result.dataPatches[action.目标模块ID] = appendText(existingValue, value, action.追加分隔符 ?? "\n\n");
+        } else {
+          result.dataPatches[action.目标模块ID] = value;
+        }
       }
       return;
     }
@@ -264,7 +276,20 @@ function fillTextValue(content: Extract<DependencyAction, { 类型: "fillText" }
     return "";
   }
 
-  return selectedFieldText(event.selectedEntries, content.字段, content.选择索引, content.分隔符);
+  if (content.类型 === "selectedResourceField") {
+    return selectedFieldText(event.selectedEntries, content.字段, content.选择索引, content.分隔符);
+  }
+
+  const entries = content.选择索引 === undefined
+    ? event.selectedEntries
+    : event.selectedEntries.slice(content.选择索引, content.选择索引 + 1);
+  return entries.map((entry) => formatResourceTextTemplate(content.格式, entry.fields)).join(content.分隔符 ?? "\n\n");
+}
+
+function appendText(existingValue: string, addedValue: string, separator: string): string {
+  if (!existingValue) return addedValue;
+  if (!addedValue) return existingValue;
+  return `${existingValue}${separator}${addedValue}`;
 }
 
 function selectedFieldValues(event: ResourceSelectedEvent, field: string): string[] {

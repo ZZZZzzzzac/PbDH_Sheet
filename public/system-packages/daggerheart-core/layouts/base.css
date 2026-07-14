@@ -275,19 +275,15 @@
 }
 
 .weapon-fields {
-  grid-template-columns: minmax(7rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .backup-weapon-fields {
-  grid-template-columns: minmax(6.5rem, 1fr) auto 2.3em 3.3em 4em 2.3em 2.3em;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .armor-fields {
   grid-template-columns: minmax(8rem, 2fr) auto repeat(2, minmax(4rem, 1fr));
-}
-
-.equipment-fields [data-module-type="freeText"]:not([data-module-id$="-name"]) [data-part="input"] {
-  font-size: 0.8rem;
 }
 
 [data-module-id$="-description"] [data-part="input"] {
@@ -301,17 +297,16 @@
 
 .item-list {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.25rem;
   margin-top: 0;
 }
 
-.item-list article {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0;
-  margin: 0;
-  padding: 0;
+.item-list [data-module-id="inventory"] [data-part="input"] {
+  min-height: 10rem;
+  font-size: 0.72rem;
+  line-height: 1.15;
 }
 
 .backup-weapons {

@@ -72,6 +72,55 @@ describe("Dependency Engine v1", () => {
     expect(next.character.values["domain-card-list"]).toBe("卷土重来、灵巧机动");
   });
 
+  it("formats selected resources and appends them to existing text", () => {
+    const systemPackage = createDependencyPackage({
+      dependencies: [{
+        ID: "append-items",
+        sources: [{ 类型: "resourcePicker", 模块ID: "pick-domain-cards" }],
+        targets: [{ 类型: "module", 模块ID: "domain-card-list" }],
+        触发: { 类型: "resourceSelected", 来源模块ID: "pick-domain-cards" },
+        条件: { 类型: "always" },
+        动作: [{
+          类型: "fillText",
+          目标模块ID: "domain-card-list",
+          写入方式: "追加",
+          追加分隔符: "\n---\n",
+          内容: {
+            类型: "selectedResourceTemplate",
+            格式: "**{{名称}}**：{{描述}}（{{缺失字段}}）",
+            分隔符: "\n",
+          },
+        }],
+      }],
+    });
+    const data = createEmptyCharacterData(systemPackage);
+    data.character.values["domain-card-list"] = "已有条目";
+
+    const result = evaluateDependencies(data, systemPackage, {
+      type: "resourceSelected",
+      sourceModuleId: "pick-domain-cards",
+      libraryId: "domain-cards",
+      selectedEntries: [
+        { ID: "item-1", fields: { 名称: "治疗药水", 描述: "恢复生命。" } },
+        { ID: "item-2", fields: { 名称: "绳索", 描述: "长十米。" } },
+      ],
+    });
+    const next = applyDependencyResultToCharacterData(data, result);
+
+    expect(next.character.values["domain-card-list"]).toBe(
+      "已有条目\n---\n**治疗药水**：恢复生命。（）\n**绳索**：长十米。（）",
+    );
+
+    data.character.values["domain-card-list"] = "";
+    const emptySelectionResult = evaluateDependencies(data, systemPackage, {
+      type: "resourceSelected",
+      sourceModuleId: "pick-domain-cards",
+      libraryId: "domain-cards",
+      selectedEntries: [],
+    });
+    expect(applyDependencyResultToCharacterData(data, emptySelectionResult).character.values["domain-card-list"]).toBe("");
+  });
+
   it("uses later active writes and reports conflicts", () => {
     const systemPackage = createDependencyPackage({
       dependencies: [

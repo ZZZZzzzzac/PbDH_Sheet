@@ -68,12 +68,12 @@
   {
     "ID": "major-threshold",
     "类型": "freeText",
-    "标签": "重度阈值"
+    "标签": "重度"
   },
   {
     "ID": "severe-threshold",
     "类型": "freeText",
-    "标签": "严重阈值"
+    "标签": "严重"
   },
   {
     "ID": "hp",
@@ -374,44 +374,9 @@
   {
     "ID": "primary-weapon-name",
     "类型": "freeText",
-    "标签": "主武器名称",
+    "标签": "主武器",
     "隐藏标签": true,
-    "占位文本": "主武器"
-  },
-  {
-    "ID": "primary-weapon-stat",
-    "类型": "freeText",
-    "标签": "属性",
-    "隐藏标签": true,
-    "占位文本": "属性"
-  },
-  {
-    "ID": "primary-weapon-range",
-    "类型": "freeText",
-    "标签": "距离",
-    "隐藏标签": true,
-    "占位文本": "距离"
-  },
-  {
-    "ID": "primary-weapon-damage",
-    "类型": "freeText",
-    "标签": "伤害",
-    "隐藏标签": true,
-    "占位文本": "伤害"
-  },
-  {
-    "ID": "primary-weapon-damage-type",
-    "类型": "freeText",
-    "标签": "类型",
-    "隐藏标签": true,
-    "占位文本": "类型"
-  },
-  {
-    "ID": "primary-weapon-hands",
-    "类型": "freeText",
-    "标签": "负荷",
-    "隐藏标签": true,
-    "占位文本": "负荷"
+    "占位文本": "名称｜属性｜距离｜伤害｜负荷"
   },
   {
     "ID": "primary-weapon-description",
@@ -436,44 +401,9 @@
   {
     "ID": "secondary-weapon-name",
     "类型": "freeText",
-    "标签": "副武器名称",
+    "标签": "副武器",
     "隐藏标签": true,
-    "占位文本": "副武器"
-  },
-  {
-    "ID": "secondary-weapon-stat",
-    "类型": "freeText",
-    "标签": "属性",
-    "隐藏标签": true,
-    "占位文本": "属性"
-  },
-  {
-    "ID": "secondary-weapon-range",
-    "类型": "freeText",
-    "标签": "距离",
-    "隐藏标签": true,
-    "占位文本": "距离"
-  },
-  {
-    "ID": "secondary-weapon-damage",
-    "类型": "freeText",
-    "标签": "伤害",
-    "隐藏标签": true,
-    "占位文本": "伤害"
-  },
-  {
-    "ID": "secondary-weapon-damage-type",
-    "类型": "freeText",
-    "标签": "类型",
-    "隐藏标签": true,
-    "占位文本": "类型"
-  },
-  {
-    "ID": "secondary-weapon-hands",
-    "类型": "freeText",
-    "标签": "负荷",
-    "隐藏标签": true,
-    "占位文本": "负荷"
+    "占位文本": "名称｜属性｜距离｜伤害｜负荷"
   },
   {
     "ID": "secondary-weapon-description",
@@ -491,44 +421,9 @@
   {
     "ID": "backup-weapon-1-name",
     "类型": "freeText",
-    "标签": "备用武器一名称",
+    "标签": "备用武器一",
     "隐藏标签": true,
-    "占位文本": "备用武器一"
-  },
-  {
-    "ID": "backup-weapon-1-stat",
-    "类型": "freeText",
-    "标签": "属性",
-    "隐藏标签": true,
-    "占位文本": "属性"
-  },
-  {
-    "ID": "backup-weapon-1-range",
-    "类型": "freeText",
-    "标签": "距离",
-    "隐藏标签": true,
-    "占位文本": "距离"
-  },
-  {
-    "ID": "backup-weapon-1-damage",
-    "类型": "freeText",
-    "标签": "伤害",
-    "隐藏标签": true,
-    "占位文本": "伤害"
-  },
-  {
-    "ID": "backup-weapon-1-damage-type",
-    "类型": "freeText",
-    "标签": "类型",
-    "隐藏标签": true,
-    "占位文本": "类型"
-  },
-  {
-    "ID": "backup-weapon-1-hands",
-    "类型": "freeText",
-    "标签": "负荷",
-    "隐藏标签": true,
-    "占位文本": "负荷"
+    "占位文本": "名称｜属性｜距离｜伤害｜负荷"
   },
   {
     "ID": "backup-weapon-1-description",
@@ -546,44 +441,9 @@
   {
     "ID": "backup-weapon-2-name",
     "类型": "freeText",
-    "标签": "备用武器二名称",
+    "标签": "备用武器二",
     "隐藏标签": true,
-    "占位文本": "备用武器二"
-  },
-  {
-    "ID": "backup-weapon-2-stat",
-    "类型": "freeText",
-    "标签": "属性",
-    "隐藏标签": true,
-    "占位文本": "属性"
-  },
-  {
-    "ID": "backup-weapon-2-range",
-    "类型": "freeText",
-    "标签": "距离",
-    "隐藏标签": true,
-    "占位文本": "距离"
-  },
-  {
-    "ID": "backup-weapon-2-damage",
-    "类型": "freeText",
-    "标签": "伤害",
-    "隐藏标签": true,
-    "占位文本": "伤害"
-  },
-  {
-    "ID": "backup-weapon-2-damage-type",
-    "类型": "freeText",
-    "标签": "类型",
-    "隐藏标签": true,
-    "占位文本": "类型"
-  },
-  {
-    "ID": "backup-weapon-2-hands",
-    "类型": "freeText",
-    "标签": "负荷",
-    "隐藏标签": true,
-    "占位文本": "负荷"
+    "占位文本": "名称｜属性｜距离｜伤害｜负荷"
   },
   {
     "ID": "backup-weapon-2-description",
@@ -632,64 +492,18 @@
     "隐藏标签": true
   },
   {
-    "ID": "pick-item-1",
+    "ID": "pick-inventory-item",
     "类型": "resourcePicker",
-    "按钮文本": "选择物品 1",
-    "资源库ID": "loot"    
+    "按钮文本": "添加物品",
+    "资源库ID": "loot",
+    "多选": true
   },
   {
-    "ID": "item-1",
-    "类型": "freeText",
+    "ID": "inventory",
+    "类型": "longText",
     "标签": "",
-    "占位文本": "物品栏 1"
-  },
-  {
-    "ID": "pick-item-2",
-    "类型": "resourcePicker",
-    "按钮文本": "选择物品 2",
-    "资源库ID": "loot"
-  },
-  {
-    "ID": "item-2",
-    "类型": "freeText",
-    "标签": "",
-    "占位文本": "物品栏 2"
-  },
-  {
-    "ID": "pick-item-3",
-    "类型": "resourcePicker",
-    "按钮文本": "选择物品 3",
-    "资源库ID": "loot"
-  },
-  {
-    "ID": "item-3",
-    "类型": "freeText",
-    "标签": "",
-    "占位文本": "物品栏 3"
-  },
-  {
-    "ID": "pick-item-4",
-    "类型": "resourcePicker",
-    "按钮文本": "选择物品 4",
-    "资源库ID": "loot"
-  },
-  {
-    "ID": "item-4",
-    "类型": "freeText",
-    "标签": "",
-    "占位文本": "物品栏 4"
-  },
-  {
-    "ID": "pick-item-5",
-    "类型": "resourcePicker",
-    "按钮文本": "选择物品 5",
-    "资源库ID": "loot"
-  },
-  {
-    "ID": "item-5",
-    "类型": "freeText",
-    "标签": "",
-    "占位文本": "物品栏 5"
+    "占位文本": "记录携带物品",
+    "行数": 8
   },
   {
     "ID": "pick-domain-card",

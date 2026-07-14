@@ -458,7 +458,7 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
 
 补充形态：
 
-- `fillText.内容` 可是常量字符串或 `selectedResourceField`；多选时可加 `选择索引` 或 `分隔符`。
+- `fillText.内容` 可是常量字符串、`selectedResourceField`，或用 `{{字段}}` 组合多个字段的 `selectedResourceTemplate`；多选时可加 `选择索引` 或 `分隔符`。`写入方式`省略时替换，设为`追加`时保留 freeText/longText 旧值，并可用`追加分隔符`控制新旧内容间隔。
 - `fillCountable.当前值/最大值` 可是整数常量或 `selectedResourceField`；`最大值: null` 移除动态上限；两项至少声明一个。
 - `setVisibility.目标类型` 可为 `page | module`。
 - `checkboxOptionChecked/Unchecked` 只用于 checkboxChanged。

@@ -490,6 +490,37 @@ describe("validateSystemPackage", () => {
     expect(result.issues.filter((issue) => issue.code === "MISSING_RESOURCE_FIELD_REFERENCE")).toHaveLength(2);
   });
 
+  it("validates formatted resource text fields and append targets", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      resourceLibraries: [{ ID: "items", 名称: "物品", 路径: "items.json", entries: [{ ID: "rope", 名称: "绳索", 描述: "长十米。" }] }],
+      modules: [
+        { ID: "picker", 类型: "resourcePicker", 按钮文本: "选择", 资源库ID: "items" },
+        { ID: "display", 类型: "readOnlyDisplay", 标签: "结果", 内容: "初始内容" },
+      ],
+      pages: [{ ...minimalSystemPackage.pages[0], layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<pb-module id="picker"></pb-module><pb-module id="display"></pb-module>' } }],
+      dependencies: [{
+        ID: "append",
+        sources: [{ 类型: "resourcePicker", 模块ID: "picker" }],
+        targets: [{ 类型: "module", 模块ID: "display" }],
+        触发: { 类型: "resourceSelected", 来源模块ID: "picker" },
+        条件: { 类型: "always" },
+        动作: [{
+          类型: "fillText",
+          目标模块ID: "display",
+          写入方式: "追加",
+          内容: { 类型: "selectedResourceTemplate", 格式: "{{名称}}：{{不存在}}" },
+        }],
+      }],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "MISSING_RESOURCE_FIELD_REFERENCE" }),
+      expect.objectContaining({ code: "UNSUPPORTED_APPEND_TARGET_MODULE" }),
+    ]));
+  });
+
   it("checks Checkbox Resource option IDs and Dependency references", () => {
     const result = validateSystemPackage({
       ...minimalSystemPackage,
