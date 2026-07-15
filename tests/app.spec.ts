@@ -393,6 +393,70 @@ test("Daggerheart story editors fill their outer frames", async ({ page }, testI
   }
 });
 
+test("Daggerheart beast-form references fit equal-height cards when printed", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await uploadPackage(page, await createDaggerheartCorePackage(testInfo));
+
+  const classPicker = page.locator('[data-module-id="pick-class"]');
+  await classPicker.getByRole("button").click();
+  await page.getByLabel("选择 德鲁伊").click();
+
+  const overflowingForms: Array<{ pageName: string; title: string; overflowPx: number }> = [];
+  const bodyFontSizes: number[] = [];
+  for (const pageName of ["野兽形态 T1-T2", "野兽形态 T3-T4"]) {
+    await page.getByRole("button", { name: pageName, exact: true }).click();
+    const referencePage = page.locator(".beast-reference-page");
+    const screenGapPx = await page.locator(".beast-tier").first().evaluate((element) => Number.parseFloat(getComputedStyle(element).rowGap));
+    expect(screenGapPx).toBeGreaterThanOrEqual(3);
+    await page.emulateMedia({ media: "print" });
+    const metrics = await page.locator(".beast-form").evaluateAll((forms) =>
+      forms.map((form) => {
+        const element = form as HTMLElement;
+        const box = element.getBoundingClientRect();
+        return {
+          title: element.querySelector("h3")?.textContent ?? "",
+          fontSizePx: Number.parseFloat(getComputedStyle(element).fontSize),
+          heightPx: box.height,
+          overflowPx: element.scrollHeight - element.clientHeight,
+        };
+      }),
+    );
+    const pageOverflows = await referencePage.evaluate((element) => element.scrollHeight > element.clientHeight + 1);
+    const summariesStartOnSeparateLines = await referencePage.evaluate((element) =>
+      [...element.querySelectorAll<HTMLElement>(".beast-form")].every((form) => {
+        const summaries = [...form.querySelectorAll<HTMLElement>(".beast-summary")];
+        return summaries.length < 2 || summaries[1].getBoundingClientRect().top > summaries[0].getBoundingClientRect().top + 1;
+      }),
+    );
+    const emphasisColors = await referencePage.evaluate((element) => {
+      const featureNames = [...element.querySelectorAll<HTMLElement>(
+        ".beast-form .beast-feature-name",
+      )];
+      const inlineEmphasis = [...element.querySelectorAll<HTMLElement>(
+        ".beast-form > p:not(.beast-summary) > strong:not(.beast-feature-name)",
+      )];
+      return {
+        featureNames: featureNames.map((strong) => getComputedStyle(strong).color),
+        inlineEmphasis: inlineEmphasis.map((strong) => getComputedStyle(strong).color),
+      };
+    });
+
+    expect(metrics.every(({ fontSizePx }) => fontSizePx >= 11)).toBe(true);
+    bodyFontSizes.push(...metrics.map(({ fontSizePx }) => fontSizePx));
+    expect(new Set(metrics.map(({ heightPx }) => Math.round(heightPx))).size).toBe(1);
+    overflowingForms.push(...metrics.filter(({ overflowPx }) => overflowPx > 1).map(({ title, overflowPx }) => ({ pageName, title, overflowPx })));
+    expect(pageOverflows).toBe(false);
+    expect(summariesStartOnSeparateLines).toBe(true);
+    expect(emphasisColors.featureNames.length).toBeGreaterThan(0);
+    expect(new Set(emphasisColors.featureNames)).toEqual(new Set(["rgb(138, 31, 31)"]));
+    expect(emphasisColors.inlineEmphasis.length).toBeGreaterThan(0);
+    expect(emphasisColors.inlineEmphasis).not.toContain("rgb(138, 31, 31)");
+    await page.emulateMedia({ media: "screen" });
+  }
+  expect(new Set(bodyFontSizes)).toEqual(new Set([11]));
+  expect(overflowingForms).toEqual([]);
+});
+
 test("Daggerheart story Long Text previews auto-fit without growing their frames", async ({ page }, testInfo) => {
   await page.goto("/");
   await uploadPackage(page, await createDaggerheartCorePackage(testInfo));

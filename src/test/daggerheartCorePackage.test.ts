@@ -59,10 +59,12 @@ describe("Daggerheart core System Package", () => {
     expect(referencePages.every((page) => page.默认隐藏 === true && page.打印 === undefined)).toBe(true);
     for (const page of referencePages) {
       expect(page.layout.htmlContent.match(/<article class="beast-form/g)).toHaveLength(12);
+      expect(page.layout.htmlContent).not.toContain("beast-form-upgrade");
       expect(page.layout.htmlContent).not.toContain("<pb-module");
       expect(page.layout.htmlContent).not.toContain("<button");
       expect(page.layout.htmlContent).not.toContain("<input");
     }
+    expect(readFileSync(join(packageRoot, "layouts", "beast-forms.css"), "utf8")).not.toContain(".beast-form-upgrade");
 
     expect(result.package.resourceLibraries?.some((library) => library.ID === "beast-forms")).toBe(false);
     expect(result.package.modules.some((module) => module.ID === "pick-beast-form")).toBe(false);
