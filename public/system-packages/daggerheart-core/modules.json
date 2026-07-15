@@ -533,7 +533,7 @@
     "资源库ID": "domain-cards",
     "默认查询": {
       "sort": {
-        "field": "名称",
+        "field": "等级",
         "direction": "asc"
       }
     },

@@ -182,6 +182,20 @@ describe("Resource Library query", () => {
     ]);
   });
 
+  it("sorts numeric text naturally while preserving display labels", () => {
+    const levelEntries = [
+      { ID: "level-10", fields: { 等级: "10级" } },
+      { ID: "level-1", fields: { 等级: "1级" } },
+      { ID: "level-2", fields: { 等级: "2级" } },
+    ];
+
+    expect(sortResourceLibraryEntries(levelEntries, { field: "等级", direction: "asc" }).map((entry) => entry.fields.等级)).toEqual([
+      "1级",
+      "2级",
+      "10级",
+    ]);
+  });
+
   it("queries with filters and sorting together", () => {
     const library = {
       ID: "domains",

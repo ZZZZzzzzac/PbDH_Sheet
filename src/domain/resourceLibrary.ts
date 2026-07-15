@@ -302,13 +302,17 @@ export function sortResourceLibraryEntries(
   }
 
   const direction = sort.direction === "desc" ? -1 : 1;
-  return [...entries].sort((left, right) => direction * (left.fields[sort.field] ?? "").localeCompare(right.fields[sort.field] ?? "", "zh-Hans"));
+  return [...entries].sort((left, right) => direction * compareResourceText(left.fields[sort.field] ?? "", right.fields[sort.field] ?? ""));
 }
 
 export function uniqueResourceFieldValues(library: ResourceLibrary, fieldKey: string): string[] {
   return [...new Set(library.entries.map((entry) => entry.fields[fieldKey] ?? "").filter((value) => value !== ""))].sort((left, right) =>
-    left.localeCompare(right, "zh-Hans"),
+    compareResourceText(left, right),
   );
+}
+
+function compareResourceText(left: string, right: string): number {
+  return left.localeCompare(right, "zh-Hans", { numeric: true });
 }
 
 export function summarizeResourceEntry(entry: ResourceLibraryEntry): string {
