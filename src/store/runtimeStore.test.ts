@@ -296,7 +296,28 @@ describe("runtime store", () => {
     expect(useRuntimeStore.getState().characterData?.systemPackage.id).toBe("demo-minimal");
   });
 
-  it("persists Resource Picker provenance and rebuilds only derived state after reload", async () => {
+  it("does not persist Resource Picker provenance without pure derived consumers", async () => {
+    const packageWithoutDerivedConsumers = {
+      ...minimalSystemPackage,
+      modules: [
+        ...minimalSystemPackage.modules,
+        { ID: "pick-class", 类型: "resourcePicker", 按钮文本: "职业", 资源库ID: "classes" },
+      ],
+    } as unknown as SystemPackage;
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: packageWithoutDerivedConsumers, issues: [] }),
+      storage: memoryStorage,
+    });
+    await act(async () => useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob()));
+
+    act(() => useRuntimeStore.getState().commitResourceSelection("pick-class", "classes", [
+      { ID: "class:druid", fields: { 名称: "德鲁伊" } },
+    ]));
+
+    expect(useRuntimeStore.getState().characterData?.resourceSelections).toEqual({});
+  });
+
+  it("persists Resource Picker provenance and rebuilds only derived state after reload and Character Save switching", async () => {
     const derivedPackage = {
       ...minimalSystemPackage,
       pages: [
@@ -361,6 +382,19 @@ describe("runtime store", () => {
     });
     await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
 
+    expect(useRuntimeStore.getState().characterData?.resourceSelections).toEqual({
+      "pick-class": { libraryId: "classes", entryIds: ["class:druid"] },
+    });
+    expect(useRuntimeStore.getState().pageVisibility["druid-page"]).toBe(true);
+    expect(useRuntimeStore.getState().resourcePickerDefaultQueries["pick-subclass"].filters).toEqual({ 主职: ["德鲁伊"] });
+    expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("玩家改写");
+
+    const druidSaveId = useRuntimeStore.getState().activeCharacterSaveId!;
+    await act(async () => useRuntimeStore.getState().createCharacterSave("非德鲁伊角色"));
+    expect(useRuntimeStore.getState().pageVisibility["druid-page"]).toBeUndefined();
+    expect(useRuntimeStore.getState().resourcePickerDefaultQueries["pick-subclass"]).toBeUndefined();
+
+    await act(async () => useRuntimeStore.getState().switchCharacterSave(druidSaveId));
     expect(useRuntimeStore.getState().characterData?.resourceSelections).toEqual({
       "pick-class": { libraryId: "classes", entryIds: ["class:druid"] },
     });
