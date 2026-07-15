@@ -13,6 +13,7 @@ import { RestrictedMarkdown } from "./RestrictedMarkdown";
 
 interface ResourceLibraryBrowserProps {
   library: ResourceLibrary;
+  title?: string;
   fields?: ResourceLibraryField[];
   multiSelect: boolean;
   selectedIds: string[];
@@ -23,6 +24,7 @@ interface ResourceLibraryBrowserProps {
 
 export function ResourceLibraryBrowser({
   library,
+  title,
   fields,
   multiSelect,
   selectedIds,
@@ -30,6 +32,8 @@ export function ResourceLibraryBrowser({
   onCommit,
   onClose,
 }: ResourceLibraryBrowserProps) {
+  const dialogTitle = title ?? library.名称;
+  const dialogLabel = title ?? `${library.名称}资源库`;
   const [filters, setFilters] = useState<Record<string, string[]>>(defaultQuery?.filters ?? {});
   const [sort, setSort] = useState<ResourceLibraryQuery["sort"]>(normalizeSort(defaultQuery?.sort));
   const [keywords, setKeywords] = useState("");
@@ -85,9 +89,9 @@ export function ResourceLibraryBrowser({
 
   return (
     <div className="resource-dialog-backdrop">
-      <section className="resource-dialog" role="dialog" aria-modal="true" aria-label={`${library.名称}资源库`}>
+      <section className="resource-dialog" role="dialog" aria-modal="true" aria-label={dialogLabel}>
         <header className="resource-dialog-header">
-          <h2>{library.名称}</h2>
+          <h2>{dialogTitle}</h2>
           <div className="resource-header-search">
             <input id={`search-${library.ID}`} className="input compact-input" type="search" value={keywords} onChange={(event) => setKeywords(event.target.value)} placeholder="搜索" aria-label="搜索资源库" />
             <span role="status">{rows.length} 条结果</span>

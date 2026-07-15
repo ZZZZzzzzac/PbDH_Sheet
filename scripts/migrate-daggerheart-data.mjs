@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const legacyRoot = path.resolve(repoRoot, "..", "DaggerHeart_Character");
 const outputRoot = path.join(repoRoot, "public", "system-packages", "daggerheart-core", "resources");
+const requestedOutput = process.argv[2];
 
 const sources = [
   ["ancestries.json", "data/Daggerheart_Core_Rulebook_种族.js", "RACES_DATA", "ancestry"],
@@ -23,18 +24,20 @@ const sources = [
 await mkdir(outputRoot, { recursive: true });
 
 const generated = new Map();
-for (const [outputName, sourceName, variableName, prefix] of sources) {
+for (const [outputName, sourceName, variableName, prefix] of sources.filter(([outputName]) => !requestedOutput || outputName === requestedOutput)) {
   const entries = await readLegacyArray(sourceName, variableName);
   const normalized = entries.map((entry) => normalizeEntry(entry, prefix));
   generated.set(outputName, normalized);
   await writeJson(outputName, normalized);
 }
 
-const backupWeapons = [
-  ...generated.get("primary-weapons.json").map((entry) => ({ ...entry, 武器类别: "主武器" })),
-  ...generated.get("secondary-weapons.json").map((entry) => ({ ...entry, 武器类别: "副武器" })),
-].map((entry) => ({ ...entry, ID: stableId("backup-weapon", `${entry.武器类别}:${entry.名称}`) }));
-await writeJson("backup-weapons.json", backupWeapons);
+if (!requestedOutput) {
+  const backupWeapons = [
+    ...generated.get("primary-weapons.json").map((entry) => ({ ...entry, 武器类别: "主武器" })),
+    ...generated.get("secondary-weapons.json").map((entry) => ({ ...entry, 武器类别: "副武器" })),
+  ].map((entry) => ({ ...entry, ID: stableId("backup-weapon", `${entry.武器类别}:${entry.名称}`) }));
+  await writeJson("backup-weapons.json", backupWeapons);
+}
 
 async function readLegacyArray(relativePath, variableName) {
   const source = await readFile(path.join(legacyRoot, relativePath), "utf8");
@@ -55,6 +58,14 @@ function normalizeEntry(rawEntry, prefix) {
 
   if (prefix === "subclass" && !entry.描述) {
     entry.描述 = [entry.基础特性, entry.进阶特性, entry.精通特性].filter(Boolean).join("\n\n");
+  }
+
+  if (prefix === "ancestry") {
+    const match = /^(.+?):\s*([\s\S]*?)\r?\n(.+?):\s*([\s\S]*)$/.exec(String(entry.描述 ?? ""));
+    if (!match) throw new Error(`ancestry ${name} description does not contain exactly two features`);
+    entry.特性A = `:red[**${match[1]}**]：${match[2]}`;
+    entry.特性B = `:red[**${match[3]}**]：${match[4]}`;
+    delete entry.描述;
   }
 
   return {

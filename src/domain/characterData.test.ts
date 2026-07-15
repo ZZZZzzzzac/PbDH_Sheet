@@ -70,12 +70,27 @@ describe("Character Data import/export", () => {
       expect(result.data.cards.instances).toEqual([
         expect.objectContaining({
           instanceId: "card-instance-1",
-          definitionId: "domain-card:符文护符",
+          definitionRef: { type: "resourceLibrary", libraryId: "domain-cards", entryId: "domain-card:符文护符" },
           state: "default",
           tableModuleId: "domain-card-table",
         }),
       ]);
     }
+  });
+
+  it("normalizes legacy libraryId and definitionId Card references on import", () => {
+    const data = createCardInstance(createEmptyCharacterData(minimalSystemPackage), {
+      instanceId: "legacy-card", tableModuleId: "table", libraryId: "domain-cards", definitionId: "card-1",
+    });
+    const json = JSON.parse(exportCharacterData(data));
+    const reference = json.cards.instances[0].definitionRef;
+    delete json.cards.instances[0].definitionRef;
+    json.cards.instances[0].libraryId = reference.libraryId;
+    json.cards.instances[0].definitionId = reference.entryId;
+
+    const result = parseCharacterDataJson(JSON.stringify(json), minimalSystemPackage);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.cards.instances[0].definitionRef).toEqual({ type: "resourceLibrary", libraryId: "domain-cards", entryId: "card-1" });
   });
 
   it("imports older Character Data without card state as an empty Card State", () => {

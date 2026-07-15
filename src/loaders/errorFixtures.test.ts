@@ -11,7 +11,7 @@ const cases: Array<[string, string[]]> = [
     "DUPLICATE_CHECKBOX_OPTION_ID",
     "MISSING_CHECKBOX_OPTION_REFERENCE",
   ]],
-  ["invalid-card-definition", ["CARD_DEFINITION_FIELD_MISSING"]],
+  ["invalid-card-definition", ["MISSING_RESOURCE_FIELD_REFERENCE"]],
   ["invalid-dependency-field", ["MISSING_RESOURCE_FIELD_REFERENCE"]],
   ["invalid-validation-script", ["VALIDATION_SCRIPT_SYNTAX_INVALID"]],
 ];

@@ -8,6 +8,7 @@ import { ImageFieldModule } from "./ImageFieldModule";
 import { LongTextModule } from "./LongTextModule";
 import { ReadOnlyDisplayModule } from "./ReadOnlyDisplayModule";
 import { ResourcePickerModule } from "./ResourcePickerModule";
+import { ResourceComposerModule } from "./ResourceComposerModule";
 
 interface ModuleRendererProps<TModule extends SheetModule> {
   module: TModule;
@@ -29,6 +30,7 @@ export const moduleRegistry: ModuleRegistry = {
   imageField: ImageFieldModule,
   cardTable: CardTableModule,
   resourcePicker: ResourcePickerModule,
+  resourceComposer: ResourceComposerModule,
 };
 
 export function RenderSheetModule({ module, systemPackage }: { module: SheetModule; systemPackage: SystemPackage }) {

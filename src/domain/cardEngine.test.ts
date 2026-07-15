@@ -34,8 +34,8 @@ describe("cardEngine", () => {
     });
 
     expect(withSecond.cards.instances).toEqual([
-      expect.objectContaining({ instanceId: "instance-1", definitionId: "domain-card:符文护符", xPct: 4, yPct: 6, zIndex: 1 }),
-      expect.objectContaining({ instanceId: "instance-2", definitionId: "domain-card:符文护符", xPct: 22, yPct: 6, zIndex: 2 }),
+      expect.objectContaining({ instanceId: "instance-1", definitionRef: { type: "resourceLibrary", libraryId: "domain-cards", entryId: "domain-card:符文护符" }, xPct: 4, yPct: 6, zIndex: 1 }),
+      expect.objectContaining({ instanceId: "instance-2", definitionRef: { type: "resourceLibrary", libraryId: "domain-cards", entryId: "domain-card:符文护符" }, xPct: 22, yPct: 6, zIndex: 2 }),
     ]);
   });
 
@@ -82,7 +82,7 @@ describe("cardEngine", () => {
     const changed = rotateCardInstance(flipCardInstance(data, "instance-1"), "instance-1", -1);
     const restored = setCardInstanceUpright(changed, "instance-1");
 
-    expect(changed.cards.instances[0]).toEqual(expect.objectContaining({ face: "back", rotation: 270, definitionId: "domain-card:符文护符" }));
+    expect(changed.cards.instances[0]).toEqual(expect.objectContaining({ face: "back", rotation: 270, definitionRef: { type: "resourceLibrary", libraryId: "domain-cards", entryId: "domain-card:符文护符" } }));
     expect(restored.cards.instances[0]).toEqual(expect.objectContaining({ face: "back", rotation: 0 }));
     expect(rotateCardInstance(data, "instance-1", 5).cards.instances[0].rotation).toBe(90);
   });

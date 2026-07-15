@@ -96,6 +96,18 @@ _Avoid_: New Sheet Module, text value
 An Author-defined collection of selectable system resources such as classes, weapons, abilities, traits, or cards.
 _Avoid_: Card deck when referring to the source data
 
+**Composite Resource**:
+A Player-owned resource created for one character by selecting fields from multiple Resource Library entries according to an Author-defined composition.
+_Avoid_: Runtime Resource Library entry, temporary card override
+
+**Resource Composer**:
+A Sheet Module with fixed Author-defined single-selection source slots, each independently bound to a Resource Library, that routes source fields one-to-one into one stable Composite Resource for each character.
+_Avoid_: Resource Picker, Player-defined field mapper, arbitrary transformation script, variable-length resource aggregator
+
+**Resource Output**:
+The normalized resource-entry payload emitted by a resource-producing Sheet Module without exposing how that resource was selected or composed.
+_Avoid_: Resource Picker event, Composite Resource storage
+
 **Resource Picker**:
 A button-like Sheet Module that opens a Resource Library for Player selection and emits a transient selection event for Dependency Logic.
 _Avoid_: Selection Text when the module is only a trigger and should not display or store a selected value
@@ -105,7 +117,7 @@ A PbDH resource presented as a player-usable card, either as text-only content o
 _Avoid_: Generic option when the player is meant to handle it like a card
 
 **Card Presentation**:
-The way a Resource Library entry is displayed and manipulated as a Card in the Sheet Tool.
+The Author-defined templates that derive a Card's name and description presentation from Resource Entry fields, with framework defaults for conventional entries.
 _Avoid_: Resource data
 
 **Configured Cards**:
@@ -125,7 +137,7 @@ Human-editable system data written with Chinese field names so Authors can inspe
 _Avoid_: English-only internal schema as the author-facing format
 
 **Character Data**:
-Player-owned saved data for one character, containing filled values and card state but not the full System Package.
+Player-owned saved data for one character, containing filled values, Composite Resources, and card state but not the full System Package.
 _Avoid_: System Package export
 
 **Character Save**:
@@ -220,7 +232,15 @@ _Avoid_: Script plugin
 - Normal reading renders only the Current Page. Export Preview temporarily renders every printable page in declaration order, hides page navigation, and restores the unchanged Current Page on exit. Browser printing and HTML snapshots share this printable-page set; an empty set produces a clear message instead of invoking output.
 - The Base Framework presents every printable page as a fixed A4 portrait page box (210mm × 297mm) with framework-owned inner print margins. It does not scale System Package layouts to fit; an Author is responsible for making each HTML Layout Template fit the available A4 content box. A Sheet Shell surface that must print as an additional page may opt into the same box with `data-print-page="true"`.
 - A **Resource Library** stores source entries; **Card Presentation** controls how selected entries appear to Players.
+- Each Card Table source has one **Card Presentation**. When omitted it renders `名称` as the Card name, `描述` as the description, and other eligible fields as tags; an Author may instead compose both name and description from source fields through declarative text templates.
 - A **Resource Picker** is an interaction trigger over a **Resource Library**. It does not persist selected resource references into **Character Data** by default.
+- A **Resource Composer** lets a **Player** choose source entries but never lets the Player define or alter the Author-owned field composition.
+- A **Resource Composer** emits its completed **Composite Resource** through the same transient resource-selection contract as a **Resource Picker**, so downstream **Dependency Logic** does not distinguish how the selected entry was produced.
+- A **Resource Composer** is stateless: all Resource Library inputs are declared as slots on that Composer, selected source references are not persisted, and only its output Composite Resource belongs to Character Data.
+- Each **Resource Composer** owns exactly one stable **Composite Resource** per character; recomposing updates that output instead of appending another.
+- **Resource Picker** and **Resource Composer** emit the same **Resource Output** contract; **Dependency Logic** consumes the normalized payload without branching on its origin.
+- A **Composite Resource** is derived from one or more **Resource Library** entries, belongs to exactly one character, and is persisted in that character's **Character Data**.
+- A **Card Instance** may reference a **Composite Resource** so the generated card survives saving, export, import, and reload without modifying Author-owned **Resource Libraries**.
 - A **Card** is a core PbDH concept and may represent many kinds of resources, not only Daggerheart domain cards.
 - PbDH Cards are ability/resource references, not a card-game rules engine.
 - Player-side Cards are grouped into **Configured Cards**, **Vault Cards**, and **Library Cards**.

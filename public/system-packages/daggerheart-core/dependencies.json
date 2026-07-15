@@ -3,7 +3,7 @@
     "ID": "fill-ancestry",
     "sources": [
       {
-        "类型": "resourcePicker",
+        "类型": "resourceComposer",
         "模块ID": "pick-ancestry"
       }
     ],
@@ -25,8 +25,8 @@
         "类型": "fillText",
         "目标模块ID": "ancestry-name",
         "内容": {
-          "类型": "selectedResourceField",
-          "字段": "名称"
+          "类型": "selectedResourceTemplate",
+          "格式": "{{种族A名称}} / {{种族B名称}}"
         }
       }
     ]

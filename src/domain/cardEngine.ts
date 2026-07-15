@@ -2,6 +2,9 @@ import type { CharacterData } from "./characterData";
 import { transitionCountableState, type CountableDirection } from "./countableState";
 
 export type CardFace = "front" | "back";
+export type ResourceDefinitionRef =
+  | { type: "resourceLibrary"; libraryId: string; entryId: string }
+  | { type: "compositeResource"; compositeResourceId: string };
 export const maxCardIndicators = 10;
 
 export interface CardIndicator {
@@ -15,8 +18,7 @@ export type CardIndicatorState = CardIndicator[] | Record<string, number>;
 export interface CardInstance {
   instanceId: string;
   tableModuleId: string;
-  libraryId: string;
-  definitionId: string;
+  definitionRef: ResourceDefinitionRef;
   state: string;
   xPct: number;
   yPct: number;
@@ -33,8 +35,9 @@ export interface CardInstance {
 export interface CreateCardInstanceInput {
   instanceId: string;
   tableModuleId: string;
-  libraryId: string;
-  definitionId: string;
+  definitionRef?: ResourceDefinitionRef;
+  libraryId?: string;
+  definitionId?: string;
   state?: string;
 }
 
@@ -79,12 +82,19 @@ export function defaultCardPosition(index: number): { xPct: number; yPct: number
 }
 
 export function createCardInstance(data: CharacterData, input: CreateCardInstanceInput): CharacterData {
+  if (!input.definitionRef && (!input.libraryId || !input.definitionId)) {
+    throw new Error("Card Instance requires a Resource Definition Reference.");
+  }
+  const definitionRef = input.definitionRef ?? {
+    type: "resourceLibrary" as const,
+    libraryId: input.libraryId ?? "",
+    entryId: input.definitionId ?? "",
+  };
   const siblingCount = data.cards.instances.filter((instance) => instance.tableModuleId === input.tableModuleId).length;
   const instance: CardInstance = {
     instanceId: input.instanceId,
     tableModuleId: input.tableModuleId,
-    libraryId: input.libraryId,
-    definitionId: input.definitionId,
+    definitionRef,
     state: input.state ?? "default",
     ...defaultCardPosition(siblingCount),
     zIndex: nextZIndex(data.cards.instances),

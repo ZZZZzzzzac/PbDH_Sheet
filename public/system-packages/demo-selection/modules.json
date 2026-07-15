@@ -345,7 +345,10 @@
     "ID": "domain-card-table",
     "类型": "cardTable",
     "标签": "领域卡牌桌面",
-    "资源库IDs": ["domain-cards", "bonus-cards"],
+    "资源来源": [
+      { "类型": "resourceLibrary", "ID": "domain-cards" },
+      { "类型": "resourceLibrary", "ID": "bonus-cards" }
+    ],
     "状态选项": [
       "当前",
       "宝库"

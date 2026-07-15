@@ -744,7 +744,7 @@ async function createCardFitPackage(testInfo: TestInfo): Promise<string> {
         ID: "fit-card-table",
         类型: "cardTable",
         标签: "测试卡牌桌面",
-        资源库IDs: ["fit-cards"],
+        资源来源: [{ 类型: "resourceLibrary", ID: "fit-cards" }],
         显示方式: "text",
       },
     ]),

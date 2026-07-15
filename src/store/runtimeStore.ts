@@ -26,6 +26,7 @@ import {
 } from "../domain/characterData";
 import { applyDependencyResultToCharacterData, evaluateDependencies } from "../domain/dependencyEngine";
 import type { ResourceLibraryEntry, ResourceLibraryQuery } from "../domain/resourceLibrary";
+import { composeResource, type ResourceComposerSelections } from "../domain/resourceComposer";
 import { validateCachedSystemPackage, type PackageIssue, type SystemPackage } from "../domain/systemPackage";
 import { runValidationChecks as runValidationChecksDomain, type ValidationIssue } from "../domain/validationRunner";
 import { parseCharacterDataText } from "../export/output";
@@ -36,6 +37,7 @@ import { loadAuthorPreviewDirectoryHandle, saveAuthorPreviewDirectoryHandle, sto
 import { generateId } from "../utils";
 import {
   createCardInstancesFromSelection,
+  createCardInstanceFromComposite,
   ensureCardState,
   fileToDataUrl,
   hasCardCreationTarget,
@@ -82,6 +84,7 @@ interface RuntimeState {
   deleteCharacterSave: (saveId: string) => Promise<void>;
   updateModuleValue: (moduleId: string, value: SheetValue) => void;
   commitResourceSelection: (moduleId: string, libraryId: string, entries: ResourceLibraryEntry[]) => void;
+  commitResourceComposition: (moduleId: string, selections: ResourceComposerSelections) => void;
   commitCheckboxChange: (moduleId: string, optionId: string, checked: boolean, checkboxState: CheckboxState) => void;
   updateCardInstancePosition: (instanceId: string, xPct: number, yPct: number) => void;
   bringCardInstanceToFront: (instanceId: string) => void;
@@ -549,6 +552,33 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
         (status) => set({ storageStatus: status }),
       );
     }
+  },
+
+  commitResourceComposition(moduleId, selections) {
+    const currentPackage = get().currentPackage;
+    const characterData = get().characterData;
+    const module = currentPackage?.modules.find((candidate) => candidate.ID === moduleId);
+    if (!currentPackage || !characterData || module?.类型 !== "resourceComposer") return;
+    const composite = composeResource(module, selections);
+    if (!composite) return;
+    const withComposite: CharacterData = {
+      ...characterData,
+      compositeResources: { ...characterData.compositeResources, [moduleId]: composite },
+      updatedAt: new Date().toISOString(),
+    };
+    const result = evaluateDependencies(withComposite, currentPackage, {
+      type: "resourceSelected",
+      sourceModuleId: moduleId,
+      selectedEntries: [composite],
+    });
+    warnDependencyIssues(result);
+    set((state) => ({
+      characterData: createCardInstanceFromComposite(applyDependencyResultToCharacterData(withComposite, result), currentPackage, moduleId, composite),
+      ...mergeDependencyRuntimeState(state, result),
+      importError: null,
+      importNotice: null,
+    }));
+    scheduleAutosave(() => get().characterData, (status) => set({ storageStatus: status }));
   },
 
   commitCheckboxChange(moduleId, optionId, checked, checkboxState) {

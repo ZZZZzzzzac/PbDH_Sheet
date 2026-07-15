@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { type CardInstance } from "./cardEngine";
+import type { CompositeResource } from "./resourceComposer";
 import type { SystemPackage } from "./systemPackage";
 import { clampInt, generateId } from "../utils";
 
@@ -31,6 +32,7 @@ export interface CharacterData {
   cards: {
     instances: CardInstance[];
   };
+  compositeResources: Record<string, CompositeResource>;
   playerImages: Record<string, PlayerImageData>;
   updatedAt: string;
 }
@@ -42,7 +44,7 @@ const sheetValueSchema = z.union([
   z.object({ kind: z.literal("player-image"), imageId: z.string().min(1) }),
 ]);
 
-const characterDataSchema: z.ZodType<CharacterData> = z.object({
+const characterDataSchema = z.object({
   kind: z.literal("pbdh-character-data"),
   schemaVersion: z.literal(characterDataSchemaVersion),
   systemPackage: z.object({
@@ -59,8 +61,12 @@ const characterDataSchema: z.ZodType<CharacterData> = z.object({
         z.object({
           instanceId: z.string().min(1),
           tableModuleId: z.string().min(1),
-          libraryId: z.string().min(1),
-          definitionId: z.string().min(1),
+          definitionRef: z.discriminatedUnion("type", [
+            z.object({ type: z.literal("resourceLibrary"), libraryId: z.string().min(1), entryId: z.string().min(1) }),
+            z.object({ type: z.literal("compositeResource"), compositeResourceId: z.string().min(1) }),
+          ]).optional(),
+          libraryId: z.string().min(1).optional(),
+          definitionId: z.string().min(1).optional(),
           state: z.string().min(1),
           xPct: z.number(),
           yPct: z.number(),
@@ -77,10 +83,17 @@ const characterDataSchema: z.ZodType<CharacterData> = z.object({
             z.record(z.string().min(1), z.number().int().min(0)),
           ]).default([]),
           tokenCount: z.number().int().min(0),
+        }).refine((instance) => Boolean(instance.definitionRef || (instance.libraryId && instance.definitionId)), {
+          message: "Card Instance 必须提供 Definition Reference。",
         }),
       ),
     })
     .default({ instances: [] }),
+  compositeResources: z.record(z.string().min(1), z.object({
+    ID: z.string().min(1),
+    composerModuleId: z.string().min(1),
+    fields: z.record(z.string(), z.string()),
+  })).default({}),
   playerImages: z
     .record(
       z.string().min(1),
@@ -114,6 +127,7 @@ export function createEmptyCharacterData(systemPackage: SystemPackage, character
     cards: {
       instances: [],
     },
+    compositeResources: {},
     playerImages: {},
     updatedAt: new Date().toISOString(),
   };
@@ -237,5 +251,21 @@ export function parseCharacterDataJson(text: string, currentPackage: SystemPacka
     };
   }
 
-  return { ok: true, data: parsed.data };
+  return { ok: true, data: normalizeCharacterData(parsed.data) };
+}
+
+export function normalizeCharacterData(data: z.infer<typeof characterDataSchema>): CharacterData {
+  return {
+    ...data,
+    cards: {
+      instances: data.cards.instances.map((instance) => {
+        const definitionRef = instance.definitionRef ?? (instance.libraryId && instance.definitionId
+          ? { type: "resourceLibrary" as const, libraryId: instance.libraryId, entryId: instance.definitionId }
+          : undefined);
+        if (!definitionRef) throw new Error(`Card Instance ${instance.instanceId} 缺少 Definition Reference。`);
+        const { libraryId: _libraryId, definitionId: _definitionId, ...current } = instance;
+        return { ...current, definitionRef };
+      }),
+    },
+  };
 }

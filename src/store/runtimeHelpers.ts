@@ -6,6 +6,7 @@ import {
 } from "../domain/characterData";
 import { type DependencyEvaluationResult } from "../domain/dependencyEngine";
 import type { ResourceLibraryEntry, ResourceLibraryQuery } from "../domain/resourceLibrary";
+import type { CompositeResource } from "../domain/resourceComposer";
 import type { SystemPackage } from "../domain/systemPackage";
 import type { CharacterSaveSummary, StorageService } from "../storage/storageService";
 import { generateId } from "../utils";
@@ -71,7 +72,15 @@ export function ensureCardState(data: CharacterData | null): CharacterData | nul
 
   return {
     ...data,
-    cards: data.cards ?? { instances: [] },
+    cards: {
+      instances: (data.cards?.instances ?? []).map((instance) => {
+        const legacy = instance as typeof instance & { libraryId?: string; definitionId?: string };
+        if (instance.definitionRef || !legacy.libraryId || !legacy.definitionId) return instance;
+        const { libraryId, definitionId, ...current } = legacy;
+        return { ...current, definitionRef: { type: "resourceLibrary" as const, libraryId, entryId: definitionId } };
+      }),
+    },
+    compositeResources: data.compositeResources ?? {},
   };
 }
 
@@ -133,7 +142,7 @@ export function createCardInstancesFromSelection(
   }
   const cardCreation = sourceModule.创建卡牌;
   const targetTable = systemPackage.modules.find((module) => module.ID === cardCreation.卡牌桌面模块ID);
-  if (targetTable?.类型 !== "cardTable" || !targetTable.资源库IDs.includes(libraryId)) {
+  if (targetTable?.类型 !== "cardTable" || !targetTable.资源来源.some((source) => source.类型 === "resourceLibrary" && source.ID === libraryId)) {
     return data;
   }
 
@@ -152,7 +161,30 @@ export function createCardInstancesFromSelection(
 
 export function hasCardCreationTarget(systemPackage: SystemPackage, moduleId: string): boolean {
   const sourceModule = systemPackage.modules.find((module) => module.ID === moduleId);
-  return sourceModule?.类型 === "resourcePicker" && Boolean(sourceModule.创建卡牌);
+  return (sourceModule?.类型 === "resourcePicker" || sourceModule?.类型 === "resourceComposer") && Boolean(sourceModule.创建卡牌);
+}
+
+export function createCardInstanceFromComposite(
+  data: CharacterData,
+  systemPackage: SystemPackage,
+  moduleId: string,
+  composite: CompositeResource,
+): CharacterData {
+  const sourceModule = systemPackage.modules.find((module) => module.ID === moduleId);
+  if (sourceModule?.类型 !== "resourceComposer" || !sourceModule.创建卡牌) return data;
+  const targetTable = systemPackage.modules.find((module) => module.ID === sourceModule.创建卡牌?.卡牌桌面模块ID);
+  if (targetTable?.类型 !== "cardTable" || !targetTable.资源来源.some((source) => source.类型 === "resourceComposer" && source.ID === moduleId)) return data;
+  const reference = { type: "compositeResource" as const, compositeResourceId: composite.ID };
+  const exists = data.cards.instances.some((instance) => instance.tableModuleId === targetTable.ID
+    && instance.definitionRef.type === "compositeResource"
+    && instance.definitionRef.compositeResourceId === composite.ID);
+  if (exists) return data;
+  return createCardInstance(data, {
+    instanceId: generateId(`${composite.ID}:`),
+    tableModuleId: targetTable.ID,
+    definitionRef: reference,
+    state: sourceModule.创建卡牌.默认状态 ?? targetTable.状态选项?.[0],
+  });
 }
 
 export function fileToDataUrl(file: File): Promise<string> {

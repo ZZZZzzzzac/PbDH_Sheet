@@ -53,7 +53,7 @@ Page 形态：
   layout: { 类型: "htmlTemplate", html: path, css?: path }
 }
 
-只使用以下八种 Sheet Module，并按需展示这些可选键：
+只使用以下九种 Sheet Module，并按需展示这些可选键：
 1. freeText: ID, 类型, 标签, 默认值?, 隐藏标签?, 占位文本?, 默认隐藏?
 2. longText: ID, 类型, 标签, 默认值?, 行数?(2-20), 隐藏标签?, 占位文本?, 默认隐藏?
 3. checkboxResource: ID, 类型, 标签, 选项:[{ID,标签,默认选中?}], 默认隐藏?
@@ -61,7 +61,8 @@ Page 形态：
 5. readOnlyDisplay: ID, 类型, 标签, 内容?, 资源ID?, 替代文本?, 默认隐藏?；内容/资源至少一个
 6. imageField: ID, 类型, 标签, 替代文本?, 默认隐藏?
 7. resourcePicker: ID, 类型, 按钮文本, 资源库ID, 字段模板?, 多选?, 默认查询?, 创建卡牌?, 默认隐藏?
-8. cardTable: ID, 类型, 标签, 资源库IDs, 状态选项?, 状态背景色?(Record<state,#RRGGBB>), 显示方式?, 卡名字段?, 描述字段?, 卡图字段?, 显示方式字段?, 背面卡牌ID字段?, 默认隐藏?
+8. resourceComposer: ID, 类型, 按钮文本, 来源槽位, 输出字段, 创建卡牌?, 默认隐藏?
+9. cardTable: ID, 类型, 标签, 资源来源, 状态选项?, 状态背景色?(Record<state,#RRGGBB>), 显示方式?, 卡图字段?, 显示方式字段?, 背面卡牌ID字段?, 默认隐藏?
 
 Resource Picker 字段模板每项：
 { 键, 标签?, 默认显示?, 可筛选?, 可排序?, 可搜索?, 列宽? }
@@ -106,7 +107,7 @@ HTML/CSS 要求：
 严格要求：
 - 所有 ID 唯一且稳定，所有引用存在，所有路径安全相对。
 - 普通 Sheet Value/Resource Value 保持显示文本语义。
-- Card Table 使用资源库IDs；每个 Card Definition 有配置后的非空名称和描述。
+- Card Table 使用类型化资源来源；每个来源可选声明 Card Presentation。
 - Dependency 单轮执行，不生成链式规则或任意脚本写状态。
 - Guide 不读取 Character Data，不分支、不自动推进。
 - Validator 规则不能由包关闭、降级或声明例外。

@@ -464,7 +464,10 @@ describe("runtime store", () => {
           ID: "domain-card-table",
           类型: "cardTable",
           标签: "领域卡牌桌面",
-          资源库IDs: ["domain-cards", "bonus-cards"],
+          资源来源: [
+            { 类型: "resourceLibrary", ID: "domain-cards" },
+            { 类型: "resourceLibrary", ID: "bonus-cards" },
+          ],
         },
         {
           ID: "pick-bonus-card",
@@ -496,14 +499,12 @@ describe("runtime store", () => {
     expect(useRuntimeStore.getState().characterData?.cards.instances).toEqual([
       expect.objectContaining({
         tableModuleId: "domain-card-table",
-        libraryId: "domain-cards",
-        definitionId: "domain-card:符文护符",
+        definitionRef: { type: "resourceLibrary", libraryId: "domain-cards", entryId: "domain-card:符文护符" },
         state: "configured",
       }),
       expect.objectContaining({
         tableModuleId: "domain-card-table",
-        libraryId: "bonus-cards",
-        definitionId: "bonus-card:补给",
+        definitionRef: { type: "resourceLibrary", libraryId: "bonus-cards", entryId: "bonus-card:补给" },
         state: "vault",
       }),
     ]);
@@ -511,5 +512,64 @@ describe("runtime store", () => {
     await waitFor(() => {
       expect(useRuntimeStore.getState().storageStatus).toBe("saved");
     });
+  });
+
+  it("replaces one Composite Resource, drives dependencies, and preserves its Card Instance", async () => {
+    const composerPackage = {
+      ...minimalSystemPackage,
+      resourceLibraries: [{
+        ID: "ancestries", 名称: "种族", 路径: "ancestries.json",
+        fields: [
+          { key: "ID", label: "ID", visible: false, filterable: false, sortable: false },
+          { key: "名称", label: "名称", visible: true, filterable: true, sortable: true },
+          { key: "特性A", label: "特性A", visible: true, filterable: true, sortable: true },
+          { key: "特性B", label: "特性B", visible: true, filterable: true, sortable: true },
+        ],
+        entries: [],
+      }],
+      modules: [
+        ...minimalSystemPackage.modules,
+        {
+          ID: "compose-ancestry", 类型: "resourceComposer", 按钮文本: "组合种族",
+          来源槽位: [
+            { ID: "a", 标签: "A", 资源库ID: "ancestries" },
+            { ID: "b", 标签: "B", 资源库ID: "ancestries" },
+          ],
+          输出字段: [
+            { 字段: "名称", 来源槽位ID: "a", 来源字段: "名称" },
+            { 字段: "特性A", 来源槽位ID: "a", 来源字段: "特性A" },
+            { 字段: "特性B", 来源槽位ID: "b", 来源字段: "特性B" },
+          ],
+          创建卡牌: { 卡牌桌面模块ID: "cards", 默认状态: "配置" },
+        },
+        { ID: "cards", 类型: "cardTable", 标签: "卡牌", 资源来源: [{ 类型: "resourceComposer", ID: "compose-ancestry" }] },
+      ],
+      dependencies: [{
+        ID: "fill-ancestry", sources: [{ 类型: "resourceComposer", 模块ID: "compose-ancestry" }],
+        targets: [{ 类型: "module", 模块ID: "character-name" }],
+        触发: { 类型: "resourceSelected", 来源模块ID: "compose-ancestry" },
+        条件: { 类型: "always" },
+        动作: [{ 类型: "fillText", 目标模块ID: "character-name", 内容: { 类型: "selectedResourceField", 字段: "特性B" } }],
+      }],
+    } as typeof minimalSystemPackage;
+    configureRuntimeDependencies({ loadSystemPackageFromFile: async () => ({ ok: true, package: composerPackage, issues: [] }), storage: memoryStorage });
+    await act(async () => { await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob()); });
+    const elf = { ID: "elf", fields: { ID: "elf", 名称: "精灵", 特性A: "敏锐", 特性B: "冥想" } };
+    const human = { ID: "human", fields: { ID: "human", 名称: "人类", 特性A: "活力", 特性B: "应变" } };
+
+    act(() => useRuntimeStore.getState().commitResourceComposition("compose-ancestry", { a: elf, b: human }));
+    const firstCard = useRuntimeStore.getState().characterData?.cards.instances[0];
+    expect(useRuntimeStore.getState().characterData?.compositeResources["compose-ancestry"].fields).toMatchObject({ 名称: "精灵", 特性A: "敏锐", 特性B: "应变" });
+    expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("应变");
+    expect(firstCard?.definitionRef).toEqual({ type: "compositeResource", compositeResourceId: "composite:compose-ancestry" });
+
+    act(() => {
+      if (firstCard) useRuntimeStore.getState().updateCardInstancePosition(firstCard.instanceId, 41, 29);
+      useRuntimeStore.getState().commitResourceComposition("compose-ancestry", { a: elf, b: elf });
+    });
+    const cards = useRuntimeStore.getState().characterData?.cards.instances ?? [];
+    expect(cards).toHaveLength(1);
+    expect(cards[0]).toEqual(expect.objectContaining({ instanceId: firstCard?.instanceId, xPct: 41, yPct: 29 }));
+    expect(useRuntimeStore.getState().characterData?.compositeResources["compose-ancestry"].fields.特性B).toBe("冥想");
   });
 });

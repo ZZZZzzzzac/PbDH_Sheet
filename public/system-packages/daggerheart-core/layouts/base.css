@@ -79,7 +79,7 @@
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
-[data-module-type="resourcePicker"] {
+:is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) {
   display: flex;
   align-self: center;
   min-height: 0;
@@ -89,7 +89,7 @@
   background: transparent;
 }
 
-[data-module-type="resourcePicker"] [data-part="button"] {
+:is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
   width: 2.375rem;
   min-width: 2.375rem;
   height: 1.65rem;
@@ -98,7 +98,7 @@
   font-size: 0;
 }
 
-.class-field [data-module-type="resourcePicker"] [data-part="button"] {
+.class-field :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
   width: auto;
   min-width: 0;
   padding-inline: 0.5rem;

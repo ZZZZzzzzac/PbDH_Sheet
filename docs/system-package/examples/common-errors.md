@@ -169,7 +169,7 @@ Normalizer 后得到文本 `"6"`，可完整解析。
 [{ "ID": "card-a", "名称": "完整卡牌", "描述": "卡牌效果。" }]
 ```
 
-Card Picker 的 Library 未包含在目标 Table `资源库IDs` 中，产生 `CARD_TABLE_LIBRARY_MISMATCH`。
+Card Picker 的 Library 未包含在目标 Table `资源来源` 中，产生 `CARD_TABLE_LIBRARY_MISMATCH`。
 
 ## 10. Card art Asset 不存在
 

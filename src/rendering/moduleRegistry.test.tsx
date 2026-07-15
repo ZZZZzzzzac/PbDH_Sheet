@@ -1048,7 +1048,10 @@ function createCardTablePackage(): SystemPackage {
         ID: "domain-card-table",
         类型: "cardTable",
         标签: "领域卡牌桌面",
-        资源库IDs: ["domain-cards", "ancestry-cards"],
+        资源来源: [
+          { 类型: "resourceLibrary", ID: "domain-cards" },
+          { 类型: "resourceLibrary", ID: "ancestry-cards" },
+        ],
         状态选项: ["configured", "vault"],
         状态背景色: { vault: "#abcdef" },
       },

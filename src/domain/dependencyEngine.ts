@@ -7,7 +7,7 @@ import { clampInt } from "../utils";
 export interface ResourceSelectedEvent {
   type: "resourceSelected";
   sourceModuleId: string;
-  libraryId: string;
+  libraryId?: string;
   selectedEntries: ResourceLibraryEntry[];
 }
 

@@ -34,7 +34,7 @@ function buildFallbackSnapshotBody(data: CharacterData, title?: string): string 
     .map(([key, value]) => `<tr><th>${htmlEscape(key)}</th><td>${htmlEscape(formatSnapshotValue(value))}</td></tr>`)
     .join("");
   const cards = data.cards.instances
-    .map((card) => `<li>${htmlEscape(card.definitionId)} <span>${htmlEscape(card.state)}</span></li>`)
+    .map((card) => `<li>${htmlEscape(card.definitionRef.type === "resourceLibrary" ? card.definitionRef.entryId : card.definitionRef.compositeResourceId)} <span>${htmlEscape(card.state)}</span></li>`)
     .join("");
 
   return `

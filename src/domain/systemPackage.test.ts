@@ -8,7 +8,7 @@ describe("validateSystemPackage", () => {
       ID: "cards",
       类型: "cardTable",
       标签: "卡牌",
-      资源库IDs: ["cards"],
+      资源来源: [{ 类型: "resourceLibrary", ID: "cards" }],
     } as const;
     const library = {
       ID: "cards",
@@ -36,7 +36,7 @@ describe("validateSystemPackage", () => {
 
   it("accepts Card state background colors and rejects invalid colors or unknown states", () => {
     const cardModule = {
-      ID: "cards", 类型: "cardTable", 标签: "卡牌", 资源库IDs: ["cards"],
+      ID: "cards", 类型: "cardTable", 标签: "卡牌", 资源来源: [{ 类型: "resourceLibrary", ID: "cards" }],
       状态选项: ["current", "vault"], 状态背景色: { vault: "#123456" },
     } as const;
     const base = {
@@ -105,8 +105,8 @@ describe("validateSystemPackage", () => {
 
   it.each([
     ["removed singular field", { 资源库ID: "cards" }],
-    ["empty plural field", { 资源库IDs: [] }],
-    ["duplicate plural field", { 资源库IDs: ["cards", "cards"] }],
+    ["empty plural field", { 资源来源: [] }],
+    ["duplicate plural field", { 资源来源: [{ 类型: "resourceLibrary", ID: "cards" }, { 类型: "resourceLibrary", ID: "cards" }] }],
   ])("rejects Card Table %s", (_case, libraryConfig) => {
     const result = validateSystemPackage({
       ...minimalSystemPackage,
@@ -155,7 +155,7 @@ describe("validateSystemPackage", () => {
     const cardResult = validateSystemPackage({
       ...minimalSystemPackage,
       resourceLibraries,
-      modules: [{ ID: "table", 类型: "cardTable", 标签: "卡牌", 资源库IDs: ["cards"], 卡名字段: "标题", 描述字段: "正文" }],
+      modules: [{ ID: "table", 类型: "cardTable", 标签: "卡牌", 资源来源: [{ 类型: "resourceLibrary", ID: "cards", 卡牌展示: { 名称模板: "{{标题}}", 描述模板: "{{正文}}" } }] }],
       pages: [{
         ...minimalSystemPackage.pages[0],
         layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<pb-module id="table"></pb-module>' },
@@ -163,7 +163,7 @@ describe("validateSystemPackage", () => {
     });
     expect(cardResult.ok).toBe(false);
     expect(cardResult.issues).toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: "CARD_DEFINITION_FIELD_MISSING", path: "resourceLibraries.cards.entries.0.正文" }),
+      expect.objectContaining({ code: "MISSING_RESOURCE_FIELD_REFERENCE", path: "modules.table.资源来源" }),
     ]));
   });
   it("accepts a Sheet Shell with one Page Outlet and persistent module references", () => {
@@ -624,7 +624,7 @@ describe("validateSystemPackage", () => {
           ID: "domain-card-table",
           类型: "cardTable",
           标签: "领域卡牌桌面",
-          资源库IDs: ["domain-cards"],
+          资源来源: [{ 类型: "resourceLibrary", ID: "domain-cards" }],
         },
       ],
       pages: [
@@ -656,7 +656,7 @@ it("reports missing Card artwork asset references", () => {
       ...minimalSystemPackage,
       modules: [
         ...minimalSystemPackage.modules,
-        { ID: "domain-card-table", 类型: "cardTable", 标签: "领域卡牌桌面", 资源库IDs: ["domain-cards"] },
+        { ID: "domain-card-table", 类型: "cardTable", 标签: "领域卡牌桌面", 资源来源: [{ 类型: "resourceLibrary", ID: "domain-cards" }] },
       ],
       resourceLibraries: [
         {

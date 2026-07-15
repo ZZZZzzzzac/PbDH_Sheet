@@ -59,6 +59,7 @@
 }
 
 .resource-dialog-header h2 { margin: 0; white-space: nowrap; }
+.resource-dialog-header p { margin: 4px 0 0; color: #607075; }
 .resource-header-search { display: flex; flex: 1 1 520px; align-items: center; justify-content: flex-end; gap: 10px; }
 .resource-header-search .input { width: min(520px, 100%); }
 .resource-header-search [role="status"] { white-space: nowrap; color: #607075; }

@@ -167,9 +167,18 @@
   },
   {
     "ID": "pick-ancestry",
-    "类型": "resourcePicker",
+    "类型": "resourceComposer",
     "按钮文本": "选择种族",
-    "资源库ID": "ancestries",
+    "来源槽位": [
+      { "ID": "ancestry-a", "标签": "特性 A 来源", "资源库ID": "ancestries" },
+      { "ID": "ancestry-b", "标签": "特性 B 来源", "资源库ID": "ancestries" }
+    ],
+    "输出字段": [
+      { "字段": "种族A名称", "来源槽位ID": "ancestry-a", "来源字段": "名称" },
+      { "字段": "种族B名称", "来源槽位ID": "ancestry-b", "来源字段": "名称" },
+      { "字段": "特性A", "来源槽位ID": "ancestry-a", "来源字段": "特性A" },
+      { "字段": "特性B", "来源槽位ID": "ancestry-b", "来源字段": "特性B" }
+    ],
     "创建卡牌": {
       "卡牌桌面模块ID": "character-card-table",
       "默认状态": "配置"
@@ -189,12 +198,20 @@
     "ID": "character-card-table",
     "类型": "cardTable",
     "标签": "角色卡牌",
-    "资源库IDs": [
-      "ancestries",
-      "communities",
-      "subclasses",
-      "domain-cards",
-      "beast-forms"
+    "资源来源": [
+      {
+        "类型": "resourceComposer",
+        "ID": "pick-ancestry",
+        "卡牌展示": {
+          "名称模板": "{{种族A名称}} / {{种族B名称}}",
+          "描述模板": "{{特性A}}\n{{特性B}}",
+          "标签字段": []
+        }
+      },
+      { "类型": "resourceLibrary", "ID": "communities" },
+      { "类型": "resourceLibrary", "ID": "subclasses" },
+      { "类型": "resourceLibrary", "ID": "domain-cards" },
+      { "类型": "resourceLibrary", "ID": "beast-forms" }
     ],
     "状态选项": [
       "配置",

@@ -12,6 +12,8 @@ import {
   type CardInstance,
   type CardTableLayout,
 } from "../domain/cardEngine";
+import { resolveCardPresentation, type CardPresentation } from "../domain/cardPresentation";
+import { resolveResourceDefinition } from "../domain/resourceDefinition";
 import { type ResourceLibraryEntry } from "../domain/resourceLibrary";
 import { findResourceLibrary, type CardTableModule as CardTableModuleConfig, type SystemPackage } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
@@ -43,7 +45,8 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [cardMenu, setCardMenu] = useState<CardMenuState | null>(null);
   const [detailInstanceId, setDetailInstanceId] = useState<string | null>(null);
-  const instances = useRuntimeStore((state) => state.characterData?.cards.instances ?? []);
+  const characterData = useRuntimeStore((state) => state.characterData);
+  const instances = characterData?.cards.instances ?? [];
   const updateCardInstancePosition = useRuntimeStore((state) => state.updateCardInstancePosition);
   const bringCardInstanceToFront = useRuntimeStore((state) => state.bringCardInstanceToFront);
   const tidyCardTable = useRuntimeStore((state) => state.tidyCardTable);
@@ -201,8 +204,9 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
         {visibleInstances.map((instance) => (
           <CardView
             instance={instance}
-            definition={resolveVisibleCardDefinition(systemPackage, module, instance)}
+            definition={resolveVisibleCardDefinition(systemPackage, characterData, module, instance)}
             module={module}
+            presentation={findCardPresentation(module, instance)}
             onPointerDown={beginDrag}
             onPointerMove={continueDrag}
             onPointerUp={endDrag}
@@ -213,7 +217,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
         {cardMenu ? createPortal(
           <CardContextMenu
             instance={visibleInstances.find((instance) => instance.instanceId === cardMenu.instanceId)}
-            canFlip={hasReverseCardDefinition(systemPackage, module, visibleInstances.find((instance) => instance.instanceId === cardMenu.instanceId))}
+            canFlip={hasReverseCardDefinition(systemPackage, characterData, module, visibleInstances.find((instance) => instance.instanceId === cardMenu.instanceId))}
             stateOptions={module.状态选项 ?? []}
             x={cardMenu.x}
             y={cardMenu.y}
@@ -226,8 +230,9 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
       {detailInstanceId ? (
         <CardDetailOverlay
           instance={visibleInstances.find((instance) => instance.instanceId === detailInstanceId)}
-          definition={resolveVisibleCardDefinition(systemPackage, module, visibleInstances.find((instance) => instance.instanceId === detailInstanceId))}
+          definition={resolveVisibleCardDefinition(systemPackage, characterData, module, visibleInstances.find((instance) => instance.instanceId === detailInstanceId))}
           module={module}
+          presentation={findCardPresentation(module, visibleInstances.find((instance) => instance.instanceId === detailInstanceId))}
           onClose={() => setDetailInstanceId(null)}
         />
       ) : null}
@@ -239,6 +244,7 @@ function CardView({
   instance,
   definition,
   module: moduleConfig,
+  presentation,
   onPointerDown,
   onPointerMove,
   onPointerUp,
@@ -247,14 +253,15 @@ function CardView({
   instance: CardInstance;
   definition?: ResourceLibraryEntry;
   module: CardTableModuleConfig;
+  presentation?: CardPresentation;
   onPointerDown: (event: PointerEvent<HTMLElement>, instance: CardInstance) => void;
   onPointerMove: (event: PointerEvent<HTMLElement>) => void;
   onPointerUp: (event: PointerEvent<HTMLElement>) => void;
   onContextMenu: (event: MouseEvent<HTMLElement>, instance: CardInstance) => void;
 }) {
   const deleteCardInstance = useRuntimeStore((state) => state.deleteCardInstance);
-  const nameField = moduleConfig.卡名字段 ?? "名称";
-  const name = definition?.fields[nameField] || instance.definitionId;
+  const resolvedPresentation = resolvePresentation(definition, moduleConfig, presentation);
+  const name = resolvedPresentation.name || definitionReferenceId(instance);
 
   return (
     <article
@@ -288,7 +295,7 @@ function CardView({
         <X aria-hidden="true" size={14} />
       </button>
       <CardIndicatorColumn instance={instance} />
-      <CardFace definition={definition} module={moduleConfig} fallbackName={name} />
+      <CardFace definition={definition} module={moduleConfig} presentation={presentation} fallbackName={name} />
     </article>
   );
 }
@@ -370,21 +377,23 @@ function CardContextMenu({
   );
 }
 
-function resolveFrontCardDefinition(systemPackage: SystemPackage, instance: CardInstance | undefined): ResourceLibraryEntry | undefined {
+function resolveFrontCardDefinition(systemPackage: SystemPackage, characterData: ReturnType<typeof useRuntimeStore.getState>["characterData"], instance: CardInstance | undefined): ResourceLibraryEntry | undefined {
   if (!instance) {
     return undefined;
   }
-  return findResourceLibrary(systemPackage, instance.libraryId)?.entries.find((entry) => entry.ID === instance.definitionId);
+  return resolveResourceDefinition(systemPackage, characterData, instance.definitionRef);
 }
 
 function CardFace({
   definition,
   module: moduleConfig,
+  presentation,
   fallbackName,
   autoFitDescription = true,
 }: {
   definition?: ResourceLibraryEntry;
   module: CardTableModuleConfig;
+  presentation?: CardPresentation;
   fallbackName: string;
   autoFitDescription?: boolean;
 }) {
@@ -395,17 +404,17 @@ function CardFace({
   const cardArtUrl = cardArtRef ? assetUrls[cardArtRef] : undefined;
   const showImage = resolveCardDisplayMode(definition, moduleConfig) === "image" && cardArtUrl && !imageFailed;
   useEffect(() => setImageFailed(false), [cardArtRef]);
-  return showImage ? <img className="play-card-image" src={cardArtUrl} alt={fallbackName} draggable={false} onError={() => setImageFailed(true)} /> : <TextCard definition={definition} module={moduleConfig} fallbackName={fallbackName} autoFitDescription={autoFitDescription} />;
+  return showImage ? <img className="play-card-image" src={cardArtUrl} alt={fallbackName} draggable={false} onError={() => setImageFailed(true)} /> : <TextCard definition={definition} module={moduleConfig} presentation={presentation} fallbackName={fallbackName} autoFitDescription={autoFitDescription} />;
 }
 
-function CardDetailOverlay({ instance, definition, module, onClose }: { instance?: CardInstance; definition?: ResourceLibraryEntry; module: CardTableModuleConfig; onClose: () => void }) {
+function CardDetailOverlay({ instance, definition, module, presentation, onClose }: { instance?: CardInstance; definition?: ResourceLibraryEntry; module: CardTableModuleConfig; presentation?: CardPresentation; onClose: () => void }) {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
   if (!instance) return null;
-  const name = definition?.fields[module.卡名字段 ?? "名称"] || instance.definitionId;
+  const name = resolvePresentation(definition, module, presentation).name || definitionReferenceId(instance);
   return (
     <div className="card-detail-backdrop" data-output-exclude="true" onClick={onClose}>
       <section className="card-detail-dialog" role="dialog" aria-modal="true" aria-label={`${name}详情`} onClick={(event) => event.stopPropagation()}>
@@ -414,7 +423,7 @@ function CardDetailOverlay({ instance, definition, module, onClose }: { instance
           className="card-detail-face"
           style={{ "--play-card-state-background": module.状态背景色?.[instance.state] } as CSSProperties}
         >
-          <CardFace definition={definition} module={module} fallbackName={name} autoFitDescription={false} />
+          <CardFace definition={definition} module={module} presentation={presentation} fallbackName={name} autoFitDescription={false} />
         </div>
       </section>
     </div>
@@ -424,56 +433,58 @@ function CardDetailOverlay({ instance, definition, module, onClose }: { instance
 function TextCard({
   definition,
   module: moduleConfig,
+  presentation,
   fallbackName,
   autoFitDescription,
 }: {
   definition?: ResourceLibraryEntry;
   module: CardTableModuleConfig;
+  presentation?: CardPresentation;
   fallbackName: string;
   autoFitDescription: boolean;
 }) {
-  const nameField = moduleConfig.卡名字段 ?? "名称";
-  const descField = moduleConfig.描述字段 ?? "描述";
-  const tags = inferCardTags(definition, moduleConfig, nameField, descField);
-  const description = definition?.fields[descField] ?? "Card Definition 不存在。";
+  const resolvedPresentation = resolvePresentation(definition, moduleConfig, presentation);
 
   return (
     <div className="play-card-text">
       <header>
-        <RestrictedMarkdown className="play-card-name" value={definition?.fields[nameField] ?? fallbackName} />
-        {tags.length > 0 ? (
+        <RestrictedMarkdown className="play-card-name" value={resolvedPresentation.name || fallbackName} />
+        {resolvedPresentation.tags.length > 0 ? (
           <div className="play-card-tags" aria-label="卡牌标签">
-            {tags.map((tag, index) => (
+            {resolvedPresentation.tags.map((tag, index) => (
               <RestrictedMarkdown className="play-card-tag" value={tag} key={`${tag}:${index}`} />
             ))}
           </div>
         ) : null}
       </header>
-      <CardDescription value={description} autoFit={autoFitDescription} />
+      <CardDescription value={resolvedPresentation.description} autoFit={autoFitDescription} />
     </div>
   );
 }
 
 function resolveVisibleCardDefinition(
   systemPackage: SystemPackage,
+  characterData: ReturnType<typeof useRuntimeStore.getState>["characterData"],
   module: CardTableModuleConfig,
   instance: CardInstance | undefined,
 ): ResourceLibraryEntry | undefined {
-  const front = resolveFrontCardDefinition(systemPackage, instance);
+  const front = resolveFrontCardDefinition(systemPackage, characterData, instance);
   if (!front || !instance || instance.face === "front") {
     return front;
   }
   const reverseId = front.fields[module.背面卡牌ID字段 ?? "背面卡牌ID"]?.trim();
+  const libraryId = instance.definitionRef.type === "resourceLibrary" ? instance.definitionRef.libraryId : undefined;
   return reverseId
-    ? findResourceLibrary(systemPackage, instance.libraryId)?.entries.find((entry) => entry.ID === reverseId) ?? front
+    ? findResourceLibrary(systemPackage, libraryId ?? "")?.entries.find((entry) => entry.ID === reverseId) ?? front
     : front;
 }
 
-function hasReverseCardDefinition(systemPackage: SystemPackage, module: CardTableModuleConfig, instance: CardInstance | undefined): boolean {
-  const front = resolveFrontCardDefinition(systemPackage, instance);
+function hasReverseCardDefinition(systemPackage: SystemPackage, characterData: ReturnType<typeof useRuntimeStore.getState>["characterData"], module: CardTableModuleConfig, instance: CardInstance | undefined): boolean {
+  const front = resolveFrontCardDefinition(systemPackage, characterData, instance);
   const reverseId = front?.fields[module.背面卡牌ID字段 ?? "背面卡牌ID"]?.trim();
+  const libraryId = instance?.definitionRef.type === "resourceLibrary" ? instance.definitionRef.libraryId : undefined;
   return Boolean(reverseId && reverseId !== front?.ID
-    && findResourceLibrary(systemPackage, instance?.libraryId ?? "")?.entries.some((entry) => entry.ID === reverseId));
+    && findResourceLibrary(systemPackage, libraryId ?? "")?.entries.some((entry) => entry.ID === reverseId));
 }
 
 const cardIndicatorColorNames = ["青色", "红色", "金色", "绿色", "蓝色", "紫色", "粉色", "灰色", "橙色", "湖蓝色"] as const;
@@ -573,25 +584,25 @@ function resolveCardDisplayMode(definition: ResourceLibraryEntry | undefined, mo
   return moduleConfig.显示方式 ?? "image";
 }
 
-function inferCardTags(
+function resolvePresentation(
   definition: ResourceLibraryEntry | undefined,
   moduleConfig: CardTableModuleConfig,
-  nameField: string,
-  descField: string,
-): string[] {
-  if (!definition) {
-    return [];
-  }
-  const excludeFields = new Set<string>(["ID", nameField, descField]);
+  presentation?: CardPresentation,
+) {
   const artField = moduleConfig.卡图字段 ?? "卡图";
   const displayModeField = moduleConfig.显示方式字段 ?? "卡牌显示方式";
   const reverseIdField = moduleConfig.背面卡牌ID字段 ?? "背面卡牌ID";
-  excludeFields.add(artField);
-  excludeFields.add(displayModeField);
-  excludeFields.add(reverseIdField);
-  return Object.entries(definition.fields)
-    .filter(([key, value]) => !excludeFields.has(key) && value)
-    .map(([, value]) => value);
+  return resolveCardPresentation(definition, presentation, [artField, displayModeField, reverseIdField]);
+}
+
+function findCardPresentation(module: CardTableModuleConfig, instance: CardInstance | undefined): CardPresentation | undefined {
+  if (!instance) return undefined;
+  const sourceId = instance.definitionRef.type === "resourceLibrary" ? instance.definitionRef.libraryId : instance.definitionRef.compositeResourceId.replace(/^composite:/, "");
+  return module.资源来源.find((source) => source.ID === sourceId)?.卡牌展示;
+}
+
+function definitionReferenceId(instance: CardInstance): string {
+  return instance.definitionRef.type === "resourceLibrary" ? instance.definitionRef.entryId : instance.definitionRef.compositeResourceId;
 }
 
 function cardTableSurfaceStyle(layout: CardTableLayout): CSSProperties {

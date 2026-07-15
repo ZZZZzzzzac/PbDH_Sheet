@@ -6,6 +6,7 @@
 - [HTML Layout Template](html-layout-template.md)
 - [Sheet Modules](sheet-modules.md)
 - [Resource Libraries](resource-libraries.md)
+- [Resource Composer](resource-composer.md)
 - [Dependency Rules](dependency-rules.md)
 - [Cards](cards.md)
 - [Character Creation Guide](character-creation-guide.md)

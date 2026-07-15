@@ -574,7 +574,7 @@ function createCardTablePackage(): SystemPackage {
         ID: "print-card-table",
         类型: "cardTable",
         标签: "打印卡牌桌面",
-        资源库IDs: ["print-cards"],
+        资源来源: [{ 类型: "resourceLibrary", ID: "print-cards" }],
       },
     ],
     resourceLibraries: [
