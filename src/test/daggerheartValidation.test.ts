@@ -9,6 +9,7 @@ const packageRoot = resolve(process.cwd(), "public/system-packages/daggerheart-c
 const scriptContent = readFileSync(resolve(packageRoot, "checks/character-consistency.js"), "utf8");
 const libraryFiles = {
   ancestries: "ancestries.json",
+  communities: "communities.json",
   classes: "classes.json",
   subclasses: "subclasses.json",
   weapons: "weapons.json",
@@ -25,6 +26,25 @@ describe("daggerheart-core character consistency validation", () => {
   it("accepts a valid level-one character", async () => {
     const issues = await validate();
     expect(issues).toEqual([]);
+  });
+
+  it("requires exactly one ancestry and community card, plus at least one subclass card", async () => {
+    const domainCards = baseDomainCards();
+    const missing = await validate({}, domainCards, {});
+    expect(issueCodes(missing)).toEqual(expect.arrayContaining([
+      "ANCESTRY_CARD_COUNT_MISMATCH",
+      "COMMUNITY_CARD_COUNT_MISMATCH",
+      "SUBCLASS_CARD_COUNT_MISMATCH",
+    ]));
+
+    const duplicateCommunity = resourceCard("communities", entryByLibrary("communities").fields["名称"]);
+    const duplicated = await validate({}, [...baseCharacterCards(), duplicateCommunity]);
+    expect(issueCodes(duplicated)).toContain("COMMUNITY_CARD_COUNT_MISMATCH");
+  });
+
+  it("requires the armor text value to equal the countable armor maximum", async () => {
+    const issues = await validate({ "armor-value": "2" });
+    expect(issueCodes(issues)).toContain("ARMOR_VALUE_MAX_MISMATCH");
   });
 
   it("reports advancement totals, paired options, subclass conflicts, and derived progression", async () => {
@@ -108,6 +128,7 @@ describe("daggerheart-core character consistency validation", () => {
       "secondary-weapon-name": "**塔盾**｜力量｜近战｜d4 物理｜单手",
       "secondary-weapon-description": "",
       "armor-slots": { current: 0, max: 5 },
+      "armor-value": "5",
     }, cards, ancestryCompositeResources());
 
     const codes = issueCodes(issues);
@@ -159,8 +180,8 @@ describe("daggerheart-core character consistency validation", () => {
 
 async function validate(
   overrides: Record<string, unknown> = {},
-  cards = baseDomainCards(),
-  compositeResources: Record<string, unknown> = {},
+  cards = baseCharacterCards(),
+  compositeResources: Record<string, unknown> = ancestryCompositeResources("龙人", "矮人"),
 ) {
   const characterData = {
     kind: "pbdh-character-data",
@@ -198,6 +219,7 @@ function baseValues(): Record<string, unknown> {
     hp: { current: 0, max: numberField(fighter, "生命点") },
     stress: { current: 0, max: 6 },
     "armor-slots": { current: 0, max: numberField(padded, "护甲值") },
+    "armor-value": padded.fields["护甲值"],
     "major-threshold": String(numberField(padded, "重度阈值") + 1),
     "severe-threshold": String(numberField(padded, "严重阈值") + 1),
     evasion: String(numberField(fighter, "闪避值") + 1),
@@ -222,6 +244,15 @@ function baseValues(): Record<string, unknown> {
 
 function baseDomainCards() {
   return [domainEntry("利刃", 1), domainEntry("骸骨", 1)].map((entry) => resourceCardByEntry("domain-cards", entry));
+}
+
+function baseCharacterCards() {
+  return [
+    ...baseDomainCards(),
+    compositeAncestryCard("龙人", "矮人"),
+    resourceCard("communities", entryByLibrary("communities").fields["名称"]),
+    resourceCard("subclasses", "屠戮呼唤", "配置", "基础"),
+  ];
 }
 
 function domainCardsAtLevel(level: number, count: number) {

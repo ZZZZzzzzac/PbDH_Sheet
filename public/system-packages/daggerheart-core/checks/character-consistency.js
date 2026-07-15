@@ -3,6 +3,7 @@ module.exports = ({ characterData, resourceLibraries }) => {
   const issues = [];
 
   checkLevel(issues, context);
+  checkRequiredCardCounts(issues, context);
   checkAdvancement(issues, context);
   checkDomainCards(issues, context);
   checkDerivedValues(issues, context);
@@ -38,6 +39,22 @@ function createContext(characterData, resourceLibraries) {
     weapons: [primaryWeapon, secondaryWeapon].filter(Boolean),
     inventoryEntries,
   };
+}
+
+function checkRequiredCardCounts(issues, context) {
+  const ancestryCount = context.cards.filter((card) => card.libraryId === "composite" && field(card.entry, "种族A名称") && field(card.entry, "种族B名称")).length;
+  const communityCount = context.cards.filter((card) => card.libraryId === "communities").length;
+  const subclassCount = context.cards.filter((card) => card.libraryId === "subclasses").length;
+
+  if (ancestryCount !== 1) {
+    warn(issues, "ANCESTRY_CARD_COUNT_MISMATCH", "cards.instances", `种族卡应有且只有 1 张，当前为 ${ancestryCount} 张。`);
+  }
+  if (communityCount !== 1) {
+    warn(issues, "COMMUNITY_CARD_COUNT_MISMATCH", "cards.instances", `社群卡应有且只有 1 张，当前为 ${communityCount} 张。`);
+  }
+  if (subclassCount < 1) {
+    warn(issues, "SUBCLASS_CARD_COUNT_MISMATCH", "cards.instances", "子职卡至少应有 1 张。" );
+  }
 }
 
 function checkLevel(issues, context) {
@@ -216,6 +233,17 @@ function checkDerivedValues(issues, context) {
 }
 
 function checkArmor(issues, context) {
+  const displayedArmor = integer(context.values["armor-value"]);
+  const armorMaximum = countableMax(context.values["armor-slots"]);
+  if (displayedArmor === undefined || displayedArmor !== armorMaximum) {
+    warn(
+      issues,
+      "ARMOR_VALUE_MAX_MISMATCH",
+      "character.values.armor-value",
+      `护甲值应与护甲槽上限相同；当前护甲值为 ${displayedArmor ?? "未填写或不是整数"}，护甲槽上限为 ${armorMaximum ?? "无上限"}。`,
+    );
+  }
+
   let expected;
   if (context.armorEntry) {
     expected = integer(field(context.armorEntry, "护甲值"));
