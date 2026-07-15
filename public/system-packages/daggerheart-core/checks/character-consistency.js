@@ -505,7 +505,8 @@ function resolveCard(instance, libraries, compositeResources) {
   const ref = instance.definitionRef ?? (instance.libraryId && instance.definitionId ? { type: "resourceLibrary", libraryId: instance.libraryId, entryId: instance.definitionId } : undefined);
   if (!ref) return undefined;
   if (ref.type === "compositeResource") {
-    const composite = compositeResources[ref.compositeResourceId];
+    const composite = compositeResources[ref.compositeResourceId]
+      ?? Object.values(compositeResources).find((candidate) => candidate.ID === ref.compositeResourceId);
     return composite ? { instance, libraryId: "composite", entry: { ID: composite.ID, fields: composite.fields } } : undefined;
   }
   const library = libraries.get(ref.libraryId);

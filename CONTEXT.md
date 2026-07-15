@@ -172,6 +172,10 @@ _Avoid_: First-version layout
 Author-defined relationships that reduce lookup work by controlling visibility, filtering choices, or filling text from selected resources.
 _Avoid_: Full rules automation
 
+**Derived Source Snapshot**:
+The minimal persisted Resource Reference needed to rebuild pure Dependency Logic presentation after loading Character Data.
+_Avoid_: Persisted Dependency Event, persisted visibility, Resource Picker value
+
 **Validation Check**:
 A read-only rule check that reports warnings or errors based on filled sheet data without changing that data.
 _Avoid_: Auto-calculation when the result is not written back
@@ -262,6 +266,9 @@ _Avoid_: Script plugin
 - An **HTML Layout Template** must not define interactive form controls or custom behavior; all Player interaction that reads or writes state must use Base Framework **Sheet Modules** or other framework-provided interactive surfaces.
 - **Dependency Logic** helps Players avoid table lookup and text copying, but should not imply full automation of game rules.
 - **Dependency Logic** may consume a Resource Picker selection event and fill existing Sheet Modules with selected Resource Values.
+- A **Derived Source Snapshot** is saved only for a Resource Picker that feeds a pure derived action; it records stable Resource References, not copied Resource Values or the final derived presentation.
+- Loading or switching **Character Data** rebuilds `setVisibility`, Resource Picker default filters, and derived `readOnlyDisplay` content from **Derived Source Snapshots** and current Composite Resources.
+- Rebuilding derived presentation never replays Character Data writes, text append, Countable Resource patches, Card creation, or other one-time effects.
 - A **Validation Check** may read many **Sheet Modules**, but it does not write values back to them.
 - A **Validation Script** may express unusual rule-specific calculations, but it only reads exported sheet data and only outputs a report.
 - A **Framework Check** may inspect framework-owned rendered state after layout and font fitting, but it does not expose DOM access to Authors, mutate Character Data, or replace the System Package Validator.

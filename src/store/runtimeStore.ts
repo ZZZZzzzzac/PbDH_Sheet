@@ -18,13 +18,14 @@ import {
   createEmptyCharacterData,
   updateCharacterValue,
   updatePlayerImage,
+  updateResourceSelectionSnapshot,
   removePlayerImage as removePlayerImageData,
   type CharacterData,
   type PlayerImageData,
   type PlayerImageValue,
   type SheetValue,
 } from "../domain/characterData";
-import { applyDependencyResultToCharacterData, evaluateDependencies } from "../domain/dependencyEngine";
+import { applyDependencyResultToCharacterData, evaluateDependencies, hasRebuildableDependencies, rebuildDerivedDependencies } from "../domain/dependencyEngine";
 import type { ResourceLibraryEntry, ResourceLibraryQuery } from "../domain/resourceLibrary";
 import { composeResource, type ResourceComposerSelections } from "../domain/resourceComposer";
 import { validateCachedSystemPackage, type PackageIssue, type SystemPackage } from "../domain/systemPackage";
@@ -38,11 +39,11 @@ import { generateId } from "../utils";
 import {
   createCardInstancesFromSelection,
   createCardInstanceFromComposite,
+  dependencyRuntimeStateFromResult,
   ensureCardState,
   fileToDataUrl,
   hasCardCreationTarget,
   loadActiveCharacterForPackage,
-  mergeDependencyRuntimeState,
   saveImportedPlayerImages,
   warnDependencyIssues,
 } from "./runtimeHelpers";
@@ -171,6 +172,12 @@ function emptyDerivedState() {
   };
 }
 
+function rebuildDependencyRuntimeState(data: CharacterData, systemPackage: SystemPackage) {
+  const result = rebuildDerivedDependencies(data, systemPackage);
+  warnDependencyIssues(result);
+  return dependencyRuntimeStateFromResult(result);
+}
+
 async function loadPackageIntoState(
   systemPackage: SystemPackage,
   issues: PackageIssue[],
@@ -191,6 +198,7 @@ async function loadPackageIntoState(
       characterSaves: loaded.characterSaves,
       activeCharacterSaveId: loaded.activeCharacterSaveId,
       ...emptyDerivedState(),
+      ...rebuildDependencyRuntimeState(loaded.characterData, systemPackage),
       packageIssues: issues,
       bootStatus: "ready",
       storageStatus,
@@ -391,6 +399,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       characterData,
       characterSaves: await runtimeDependencies.storage.listCharacterSaves(characterData.systemPackage.id),
       activeCharacterSaveId: characterData.character.id,
+      ...emptyDerivedState(),
+      ...rebuildDependencyRuntimeState(characterData, currentPackage),
       importError: null,
       importNotice: null,
       validationIssues: [],
@@ -411,10 +421,12 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     }
 
     await runtimeDependencies.storage.setActiveCharacterSaveId(currentPackage.manifest.ID, saveId);
+    const normalizedData = ensureCardState(characterData)!;
     set({
-      characterData: ensureCardState(characterData),
+      characterData: normalizedData,
       activeCharacterSaveId: saveId,
       ...emptyDerivedState(),
+      ...rebuildDependencyRuntimeState(normalizedData, currentPackage),
       importError: null,
       importNotice: null,
       storageStatus: "idle",
@@ -465,6 +477,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     set({
       characterData: data,
       activeCharacterSaveId: duplicateId,
+      ...emptyDerivedState(),
+      ...rebuildDependencyRuntimeState(data, currentPackage),
       characterSaves: await runtimeDependencies.storage.listCharacterSaves(currentPackage.manifest.ID),
       validationIssues: [],
       validationStatus: "idle",
@@ -490,10 +504,13 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
 
     const nextData = await runtimeDependencies.storage.loadCharacterSave(currentPackage.manifest.ID, nextSave.id);
     await runtimeDependencies.storage.setActiveCharacterSaveId(currentPackage.manifest.ID, nextSave.id);
+    const normalizedData = ensureCardState(nextData)!;
     set({
-      characterData: ensureCardState(nextData),
+      characterData: normalizedData,
       characterSaves: remaining,
       activeCharacterSaveId: nextSave.id,
+      ...emptyDerivedState(),
+      ...rebuildDependencyRuntimeState(normalizedData, currentPackage),
       validationIssues: [],
       validationStatus: "idle",
       importError: null,
@@ -525,7 +542,11 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       return;
     }
 
-    const result = evaluateDependencies(characterData, currentPackage, {
+    const shouldPersistSelection = hasRebuildableDependencies(currentPackage, moduleId);
+    const dataWithSnapshot = shouldPersistSelection
+      ? updateResourceSelectionSnapshot(characterData, moduleId, libraryId, entries.map((entry) => entry.ID))
+      : characterData;
+    const result = evaluateDependencies(dataWithSnapshot, currentPackage, {
         type: "resourceSelected",
         sourceModuleId: moduleId,
         libraryId,
@@ -533,20 +554,24 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     });
     warnDependencyIssues(result);
 
-    set((state) => ({
-      characterData: createCardInstancesFromSelection(
-        applyDependencyResultToCharacterData(characterData, result),
-        currentPackage,
-        moduleId,
-        libraryId,
-        entries,
-      ),
-      ...mergeDependencyRuntimeState(state, result),
+    const nextData = createCardInstancesFromSelection(
+      applyDependencyResultToCharacterData(dataWithSnapshot, result),
+      currentPackage,
+      moduleId,
+      libraryId,
+      entries,
+    );
+    const derivedResult = rebuildDerivedDependencies(nextData, currentPackage);
+    warnDependencyIssues(derivedResult);
+
+    set(() => ({
+      characterData: nextData,
+      ...dependencyRuntimeStateFromResult(derivedResult),
       importError: null,
       importNotice: null,
     }));
 
-    if (Object.keys(result.dataPatches).length > 0 || hasCardCreationTarget(currentPackage, moduleId)) {
+    if (shouldPersistSelection || Object.keys(result.dataPatches).length > 0 || hasCardCreationTarget(currentPackage, moduleId)) {
       scheduleAutosave(
         () => get().characterData,
         (status) => set({ storageStatus: status }),
@@ -572,9 +597,12 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       selectedEntries: [composite],
     });
     warnDependencyIssues(result);
-    set((state) => ({
-      characterData: createCardInstanceFromComposite(applyDependencyResultToCharacterData(withComposite, result), currentPackage, moduleId, composite),
-      ...mergeDependencyRuntimeState(state, result),
+    const nextData = createCardInstanceFromComposite(applyDependencyResultToCharacterData(withComposite, result), currentPackage, moduleId, composite);
+    const derivedResult = rebuildDerivedDependencies(nextData, currentPackage);
+    warnDependencyIssues(derivedResult);
+    set(() => ({
+      characterData: nextData,
+      ...dependencyRuntimeStateFromResult(derivedResult),
       importError: null,
       importNotice: null,
     }));
@@ -598,9 +626,13 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     });
     warnDependencyIssues(result);
 
-    set((state) => ({
-      characterData: applyDependencyResultToCharacterData(dataWithCheckboxState, result),
-      ...mergeDependencyRuntimeState(state, result),
+    const nextData = applyDependencyResultToCharacterData(dataWithCheckboxState, result);
+    const derivedResult = rebuildDerivedDependencies(nextData, currentPackage);
+    warnDependencyIssues(derivedResult);
+
+    set(() => ({
+      characterData: nextData,
+      ...dependencyRuntimeStateFromResult(derivedResult),
       importError: null,
       importNotice: null,
     }));
@@ -868,6 +900,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       characterData: result.data,
       activeCharacterSaveId: result.data.character.id,
       ...emptyDerivedState(),
+      ...rebuildDependencyRuntimeState(result.data, currentPackage),
       importError: null,
       importNotice: "Character Data 已导入为 Character Save。",
     });

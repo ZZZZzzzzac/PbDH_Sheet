@@ -18,6 +18,11 @@ export interface PlayerImageData {
   dataUrl: string;
 }
 
+export interface ResourceSelectionSnapshot {
+  libraryId: string;
+  entryIds: string[];
+}
+
 export interface CharacterData {
   kind: "pbdh-character-data";
   schemaVersion: typeof characterDataSchemaVersion;
@@ -33,6 +38,7 @@ export interface CharacterData {
     instances: CardInstance[];
   };
   compositeResources: Record<string, CompositeResource>;
+  resourceSelections?: Record<string, ResourceSelectionSnapshot>;
   playerImages: Record<string, PlayerImageData>;
   updatedAt: string;
 }
@@ -94,6 +100,10 @@ const characterDataSchema = z.object({
     composerModuleId: z.string().min(1),
     fields: z.record(z.string(), z.string()),
   })).default({}),
+  resourceSelections: z.record(z.string().min(1), z.object({
+    libraryId: z.string().min(1),
+    entryIds: z.array(z.string().min(1)).min(1),
+  })).default({}),
   playerImages: z
     .record(
       z.string().min(1),
@@ -128,6 +138,7 @@ export function createEmptyCharacterData(systemPackage: SystemPackage, character
       instances: [],
     },
     compositeResources: {},
+    resourceSelections: {},
     playerImages: {},
     updatedAt: new Date().toISOString(),
   };
@@ -252,6 +263,23 @@ export function parseCharacterDataJson(text: string, currentPackage: SystemPacka
   }
 
   return { ok: true, data: normalizeCharacterData(parsed.data) };
+}
+
+export function updateResourceSelectionSnapshot(
+  data: CharacterData,
+  moduleId: string,
+  libraryId: string,
+  entryIds: string[],
+): CharacterData {
+  if (entryIds.length === 0) return data;
+  return {
+    ...data,
+    resourceSelections: {
+      ...(data.resourceSelections ?? {}),
+      [moduleId]: { libraryId, entryIds },
+    },
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 export function normalizeCharacterData(data: z.infer<typeof characterDataSchema>): CharacterData {

@@ -1170,5 +1170,37 @@
         ]
       }
     ]
+  },
+  {
+    "ID": "show-beast-forms-from-druid-class",
+    "sources": [
+      { "类型": "resourcePicker", "模块ID": "pick-class" }
+    ],
+    "targets": [
+      { "类型": "page", "页面ID": "beast-forms-t1-t2" },
+      { "类型": "page", "页面ID": "beast-forms-t3-t4" }
+    ],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-class" },
+    "条件": { "类型": "selectedResourceFieldEquals", "字段": "名称", "值": "德鲁伊" },
+    "动作": [
+      { "类型": "setVisibility", "目标类型": "page", "目标ID": "beast-forms-t1-t2", "显示": true },
+      { "类型": "setVisibility", "目标类型": "page", "目标ID": "beast-forms-t3-t4", "显示": true }
+    ]
+  },
+  {
+    "ID": "show-beast-forms-from-druid-subclass",
+    "sources": [
+      { "类型": "resourcePicker", "模块ID": "pick-subclass" }
+    ],
+    "targets": [
+      { "类型": "page", "页面ID": "beast-forms-t1-t2" },
+      { "类型": "page", "页面ID": "beast-forms-t3-t4" }
+    ],
+    "触发": { "类型": "resourceSelected", "来源模块ID": "pick-subclass" },
+    "条件": { "类型": "selectedResourceFieldEquals", "字段": "主职", "值": "德鲁伊" },
+    "动作": [
+      { "类型": "setVisibility", "目标类型": "page", "目标ID": "beast-forms-t1-t2", "显示": true },
+      { "类型": "setVisibility", "目标类型": "page", "目标ID": "beast-forms-t3-t4", "显示": true }
+    ]
   }
 ]

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createEmptyCharacterData } from "./characterData";
-import { applyDependencyResultToCharacterData, evaluateDependencies } from "./dependencyEngine";
+import { applyDependencyResultToCharacterData, evaluateDependencies, hasRebuildableDependencies, rebuildDerivedDependencies } from "./dependencyEngine";
 import type { SystemPackage } from "./systemPackage";
 
 describe("Dependency Engine v1", () => {
@@ -70,6 +70,86 @@ describe("Dependency Engine v1", () => {
     const next = applyDependencyResultToCharacterData(data, result);
 
     expect(next.character.values["domain-card-list"]).toBe("卷土重来、灵巧机动");
+  });
+
+  it("rebuilds only pure derived actions from a persisted Resource Picker snapshot", () => {
+    const systemPackage = createDependencyPackage();
+    const druid = {
+      ID: "class:德鲁伊",
+      fields: { ID: "class:德鲁伊", 名称: "德鲁伊", 领域: "贤者+奥术", 背景问题: "荒野如何呼唤你？" },
+    };
+    systemPackage.resourceLibraries?.find((library) => library.ID === "classes")?.entries.push(druid);
+    const data = createEmptyCharacterData(systemPackage);
+    data.resourceSelections = { "pick-class": { libraryId: "classes", entryIds: [druid.ID] } };
+
+    const result = rebuildDerivedDependencies(data, systemPackage);
+
+    expect(hasRebuildableDependencies(systemPackage, "pick-class")).toBe(true);
+    expect(hasRebuildableDependencies(systemPackage, "pick-domain-cards")).toBe(false);
+    expect(result.pageVisibility["druid-page"]).toBe(true);
+    expect(result.moduleVisibility["druid-note"]).toBe(true);
+    expect(result.resourcePickerDefaultQueries["pick-subclass"].filters).toEqual({ 主职: ["德鲁伊"] });
+    expect(result.readOnlyDisplayContent["class-background"]).toBe("荒野如何呼唤你？");
+    expect(result.dataPatches).toEqual({});
+  });
+
+  it("rebuilds pure Composer output without replaying its Character Data writes", () => {
+    const base = createDependencyPackage();
+    const systemPackage = {
+      ...base,
+      modules: [
+        ...base.modules,
+        {
+          ID: "compose-helper", 类型: "resourceComposer", 按钮文本: "组合",
+          来源槽位: [{ ID: "source", 标签: "来源", 资源库ID: "classes" }],
+          输出字段: [{ 字段: "提示", 来源槽位ID: "source", 来源字段: "背景问题" }],
+        },
+      ],
+      dependencies: [{
+        ID: "composer-derived",
+        sources: [{ 类型: "resourceComposer", 模块ID: "compose-helper" }],
+        targets: [{ 类型: "module", 模块ID: "class-background" }, { 类型: "page", 页面ID: "druid-page" }],
+        触发: { 类型: "resourceSelected", 来源模块ID: "compose-helper" },
+        条件: { 类型: "always" },
+        动作: [
+          { 类型: "fillText", 目标模块ID: "class-background", 内容: { 类型: "selectedResourceField", 字段: "提示" } },
+          { 类型: "fillText", 目标模块ID: "class-name", 内容: "不应重放" },
+          { 类型: "setVisibility", 目标类型: "page", 目标ID: "druid-page", 显示: true },
+        ],
+      }],
+    } as unknown as SystemPackage;
+    const data = createEmptyCharacterData(systemPackage);
+    data.compositeResources["compose-helper"] = {
+      ID: "composite:compose-helper", composerModuleId: "compose-helper", fields: { ID: "composite:compose-helper", 提示: "组合提示" },
+    };
+
+    const result = rebuildDerivedDependencies(data, systemPackage);
+
+    expect(result.readOnlyDisplayContent["class-background"]).toBe("组合提示");
+    expect(result.pageVisibility["druid-page"]).toBe(true);
+    expect(result.dataPatches).toEqual({});
+  });
+
+  it("warns and skips an invalid derived Resource Reference", () => {
+    const systemPackage = createDependencyPackage();
+    const data = createEmptyCharacterData(systemPackage);
+    data.resourceSelections = { "pick-class": { libraryId: "classes", entryIds: ["missing"] } };
+
+    const result = rebuildDerivedDependencies(data, systemPackage);
+
+    expect(result.pageVisibility).toEqual({});
+    expect(result.warnings).toEqual([expect.stringContaining("missing Resource Entry classes/missing")]);
+  });
+
+  it("rebuilds pure checkbox effects from persisted Checkbox State", () => {
+    const systemPackage = createDependencyPackage();
+    const data = createEmptyCharacterData(systemPackage);
+    data.character.values["creation-toggles"] = { "show-helper": true };
+
+    const result = rebuildDerivedDependencies(data, systemPackage);
+
+    expect(result.moduleVisibility["helper-text"]).toBe(true);
+    expect(result.dataPatches).toEqual({});
   });
 
   it("formats selected resources and appends them to existing text", () => {

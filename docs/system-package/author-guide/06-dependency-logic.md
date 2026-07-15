@@ -52,3 +52,5 @@ Dependency Logic 是唯一允许跨模块联动的声明式规则。每条规则
 资源文本必须是完整整数，例如 `"6"`；`"6点"` 不会被猜测或部分解析。只更新一项时另一项保持不变，`最大值: null` 表示移除上限。多选 Picker 必须用 `选择索引` 指定一个条目。
 
 规则单轮计算：本轮产生的填充值不会继续触发另一条规则。规则不读 DOM、Guide 或 Validation 结果，不能执行任意代码。`fillText` 写 freeText/longText 时修改 Character Data；写 readOnlyDisplay 时只改变派生展示。`fillCountable` 写入 Character Data，并按目标最小值和最终上限约束当前值。详细 union 见[Dependency Reference](../reference/dependency-rules.md)。
+
+刷新或切换 Character Save 时，框架只恢复纯派生动作：页面/模块可见性、Resource Picker 默认筛选、readOnlyDisplay 内容。参与这些动作的 Resource Picker 会自动保存最小 Resource Reference；Author 不需要也不能声明重放开关。写 freeText/longText、追加内容、fillCountable 与创建 Card 仍只在 Player 当次操作时执行一次。

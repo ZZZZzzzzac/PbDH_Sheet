@@ -18,7 +18,6 @@ const sources = [
   ["armor.json", "data/Daggerheart_Core_Rulebook_护甲表.js", "ARMOR", "armor"],
   ["loot.json", "data/Daggerheart_Core_Rulebook_战利品与消耗品表.js", "LOOT_DATA", "loot"],
   ["domain-cards.json", "data/Daggerheart_Core_Rulebook_领域卡.js", "DOMAIN_CARDS", "domain-card"],
-  ["beast-forms.json", "data/Daggerheart_Core_Rulebook_野兽形态.js", "BEAST_FORM", "beast-form"],
 ];
 
 await mkdir(outputRoot, { recursive: true });

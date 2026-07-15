@@ -69,7 +69,6 @@ for (let index = 1; index <= 5; index += 1) {
 
 additions.push(
   cardPicker("pick-domain-card", "选择领域卡", "domain-cards"),
-  cardPicker("pick-beast-form", "选择野兽形态", "beast-forms"),
   { ID: "character-avatar", 类型: "imageField", 标签: "角色头像", 替代文本: "角色头像" },
   longText("character-appearance", "角色形象", 6),
   longText("event-log", "事件记录", 10),

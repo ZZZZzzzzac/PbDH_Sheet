@@ -16,7 +16,6 @@ const libraryFiles = {
   armor: "armor.json",
   loot: "loot.json",
   "domain-cards": "domain-cards.json",
-  "beast-forms": "beast-forms.json",
 } as const;
 
 const resourceLibraries = Object.entries(libraryFiles).map(([id, file]) => normalizeLibrary(id, file));
@@ -110,7 +109,6 @@ describe("daggerheart-core character consistency validation", () => {
       resourceCard("subclasses", "黑夜行者", "配置", "精通"),
       resourceCard("subclasses", "翔翼哨兵", "配置", "精通"),
       resourceCard("subclasses", "战争学派", "配置", "进阶"),
-      resourceCard("beast-forms", entryByLibrary("beast-forms").fields["名称"]),
       compositeAncestryCard(),
     ];
     const bothBonus = 1 + 2 + 1;
@@ -186,7 +184,7 @@ async function validate(
   const characterData = {
     kind: "pbdh-character-data",
     schemaVersion: "0.1.0",
-    systemPackage: { id: "daggerheart-core", version: "0.1.0" },
+    systemPackage: { id: "daggerheart-core", version: "0.2.0" },
     character: { id: "test-character", values: { ...baseValues(), ...overrides } },
     cards: { instances: cards },
     compositeResources,
@@ -197,7 +195,7 @@ async function validate(
   return runValidationChecksInProcess({
     characterData,
     resourceLibraries,
-    packageMetadata: { id: "daggerheart-core", version: "0.1.0" },
+    packageMetadata: { id: "daggerheart-core", version: "0.2.0" },
     checks: [{ ID: "character-consistency", 脚本: "checks/character-consistency.js", scriptContent }],
   });
 }
@@ -300,15 +298,15 @@ function compositeAncestryCard(ancestryA = "龟人", ancestryB = "猿族") {
   return {
     instanceId: `instance-composite-${ancestryA}-${ancestryB}`,
     tableModuleId: "character-card-table",
-    definitionRef: { type: "compositeResource", compositeResourceId: "ancestry-composite" },
+    definitionRef: { type: "compositeResource", compositeResourceId: "composite:pick-ancestry" },
     state: "配置",
   };
 }
 
 function ancestryCompositeResources(ancestryA = "龟人", ancestryB = "猿族") {
   return {
-    "ancestry-composite": {
-      ID: "ancestry-composite",
+    "pick-ancestry": {
+      ID: "composite:pick-ancestry",
       composerModuleId: "pick-ancestry",
       fields: { 种族A名称: ancestryA, 种族B名称: ancestryB, 特性A: "", 特性B: "" },
     },

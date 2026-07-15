@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { StorageService } from "../storage/storageService";
 import { minimalSystemPackage } from "../test/fixtures";
 import type { PackageDirectoryHandle } from "../loaders/packageVfs";
+import type { SystemPackage } from "../domain/systemPackage";
 import { configureRuntimeDependencies, resetRuntimeDependencies, useRuntimeStore } from "./runtimeStore";
 
 function createMemoryStorage(cachedPackage: unknown = null): StorageService & {
@@ -293,6 +294,79 @@ describe("runtime store", () => {
 
     expect(useRuntimeStore.getState().currentPackage?.manifest.ID).toBe("demo-minimal");
     expect(useRuntimeStore.getState().characterData?.systemPackage.id).toBe("demo-minimal");
+  });
+
+  it("persists Resource Picker provenance and rebuilds only derived state after reload", async () => {
+    const derivedPackage = {
+      ...minimalSystemPackage,
+      pages: [
+        ...minimalSystemPackage.pages,
+        { ID: "druid-page", 名称: "德鲁伊", 默认隐藏: true, layout: { 类型: "htmlTemplate", html: "druid.html", htmlContent: "<main>德鲁伊</main>" } },
+      ],
+      modules: [
+        ...minimalSystemPackage.modules,
+        { ID: "pick-class", 类型: "resourcePicker", 按钮文本: "职业", 资源库ID: "classes" },
+        { ID: "pick-subclass", 类型: "resourcePicker", 按钮文本: "子职", 资源库ID: "subclasses" },
+      ],
+      resourceLibraries: [
+        {
+          ID: "classes", 名称: "职业", 路径: "classes.json",
+          fields: [{ key: "名称", label: "名称", visible: true, filterable: true, sortable: true, searchable: true }],
+          entries: [{ ID: "class:druid", fields: { 名称: "德鲁伊" } }],
+        },
+        {
+          ID: "subclasses", 名称: "子职", 路径: "subclasses.json",
+          fields: [{ key: "主职", label: "主职", visible: true, filterable: true, sortable: true, searchable: true }],
+          entries: [],
+        },
+      ],
+      dependencies: [
+        {
+          ID: "fill-class", sources: [{ 类型: "resourcePicker", 模块ID: "pick-class" }], targets: [{ 类型: "module", 模块ID: "character-name" }],
+          触发: { 类型: "resourceSelected", 来源模块ID: "pick-class" }, 条件: { 类型: "always" },
+          动作: [{ 类型: "fillText", 目标模块ID: "character-name", 内容: { 类型: "selectedResourceField", 字段: "名称" } }],
+        },
+        {
+          ID: "show-druid", sources: [{ 类型: "resourcePicker", 模块ID: "pick-class" }],
+          targets: [{ 类型: "page", 页面ID: "druid-page" }, { 类型: "module", 模块ID: "pick-subclass" }],
+          触发: { 类型: "resourceSelected", 来源模块ID: "pick-class" },
+          条件: { 类型: "selectedResourceFieldEquals", 字段: "名称", 值: "德鲁伊" },
+          动作: [
+            { 类型: "setVisibility", 目标类型: "page", 目标ID: "druid-page", 显示: true },
+            { 类型: "setResourceDefaultFilter", 目标模块ID: "pick-subclass", 字段: "主职", 值: ["德鲁伊"] },
+          ],
+        },
+      ],
+    } as unknown as SystemPackage;
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: derivedPackage, issues: [] }),
+      storage: memoryStorage,
+    });
+    await act(async () => useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob()));
+
+    act(() => useRuntimeStore.getState().commitResourceSelection("pick-class", "classes", [
+      { ID: "class:druid", fields: { 名称: "德鲁伊" } },
+    ]));
+    expect(useRuntimeStore.getState().pageVisibility["druid-page"]).toBe(true);
+    expect(useRuntimeStore.getState().resourcePickerDefaultQueries["pick-subclass"].filters).toEqual({ 主职: ["德鲁伊"] });
+    expect(useRuntimeStore.getState().characterData?.resourceSelections).toEqual({
+      "pick-class": { libraryId: "classes", entryIds: ["class:druid"] },
+    });
+
+    act(() => useRuntimeStore.getState().updateModuleValue("character-name", "玩家改写"));
+    await waitFor(() => expect(useRuntimeStore.getState().storageStatus).toBe("saved"));
+    useRuntimeStore.setState({
+      currentPackage: null, characterData: null, pageVisibility: {}, moduleVisibility: {},
+      derivedReadOnlyDisplayContent: {}, resourcePickerDefaultQueries: {}, bootStatus: "idle",
+    });
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+
+    expect(useRuntimeStore.getState().characterData?.resourceSelections).toEqual({
+      "pick-class": { libraryId: "classes", entryIds: ["class:druid"] },
+    });
+    expect(useRuntimeStore.getState().pageVisibility["druid-page"]).toBe(true);
+    expect(useRuntimeStore.getState().resourcePickerDefaultQueries["pick-subclass"].filters).toEqual({ 主职: ["德鲁伊"] });
+    expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("玩家改写");
   });
 
   it("clears an invalid cached System Package and starts blank", async () => {

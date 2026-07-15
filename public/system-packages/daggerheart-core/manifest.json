@@ -1,7 +1,7 @@
 {
   "ID": "daggerheart-core",
   "名称": "Daggerheart 核心人物卡",
-  "版本": "0.1.0",
+  "版本": "0.2.0",
   "schemaVersion": "0.1.0",
   "pages": "pages.json",
   "shell": {
@@ -56,11 +56,6 @@
       "ID": "domain-cards",
       "名称": "领域卡",
       "路径": "resources/domain-cards.json"
-    },
-    {
-      "ID": "beast-forms",
-      "名称": "野兽形态",
-      "路径": "resources/beast-forms.json"
     }
   ]
 }

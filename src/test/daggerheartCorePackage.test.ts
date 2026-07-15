@@ -4,6 +4,8 @@ import { zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 import { composeResource } from "../domain/resourceComposer";
+import { createEmptyCharacterData, updateResourceSelectionSnapshot } from "../domain/characterData";
+import { rebuildDerivedDependencies } from "../domain/dependencyEngine";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "daggerheart-core");
 
@@ -43,6 +45,56 @@ describe("Daggerheart core System Package", () => {
     expect(css).toContain(':is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"])');
     expect(css).toMatch(/:is\(\[data-module-type="resourcePicker"\], \[data-module-type="resourceComposer"\]\)[\s\S]*?border:\s*0;/);
     expect(css).toMatch(/:is\(\[data-module-type="resourcePicker"\], \[data-module-type="resourceComposer"\]\) \[data-part="button"\][\s\S]*?font-size:\s*0;/);
+  });
+
+  it("provides two read-only Druid beast-form reference pages instead of beast-form Cards", async () => {
+    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const pageNames = result.package.pages.map((page) => page.名称);
+    expect(pageNames).toEqual(expect.arrayContaining(["野兽形态 T1-T2", "野兽形态 T3-T4"]));
+    const referencePages = result.package.pages.filter((page) => page.ID.startsWith("beast-forms-"));
+    expect(referencePages).toHaveLength(2);
+    expect(referencePages.every((page) => page.默认隐藏 === true && page.打印 === undefined)).toBe(true);
+    for (const page of referencePages) {
+      expect(page.layout.htmlContent.match(/<article class="beast-form/g)).toHaveLength(12);
+      expect(page.layout.htmlContent).not.toContain("<pb-module");
+      expect(page.layout.htmlContent).not.toContain("<button");
+      expect(page.layout.htmlContent).not.toContain("<input");
+    }
+
+    expect(result.package.resourceLibraries?.some((library) => library.ID === "beast-forms")).toBe(false);
+    expect(result.package.modules.some((module) => module.ID === "pick-beast-form")).toBe(false);
+    const cardTable = result.package.modules.find((module) => module.ID === "character-card-table");
+    expect(cardTable?.类型).toBe("cardTable");
+    if (cardTable?.类型 === "cardTable") {
+      expect(cardTable.资源来源.some((source) => source.类型 === "resourceLibrary" && source.ID === "beast-forms")).toBe(false);
+    }
+
+    const druid = result.package.resourceLibraries?.find((library) => library.ID === "classes")?.entries.find((entry) => entry.fields.名称 === "德鲁伊");
+    expect(druid).toBeTruthy();
+    if (!druid) return;
+    const data = updateResourceSelectionSnapshot(createEmptyCharacterData(result.package), "pick-class", "classes", [druid.ID]);
+    expect(rebuildDerivedDependencies(data, result.package).pageVisibility).toMatchObject({
+      "beast-forms-t1-t2": true,
+      "beast-forms-t3-t4": true,
+    });
+
+    const druidSubclass = result.package.resourceLibraries?.find((library) => library.ID === "subclasses")?.entries.find((entry) => entry.fields.主职 === "德鲁伊");
+    expect(druidSubclass).toBeTruthy();
+    if (!druidSubclass) return;
+    const subclassData = updateResourceSelectionSnapshot(createEmptyCharacterData(result.package), "pick-subclass", "subclasses", [druidSubclass.ID]);
+    expect(rebuildDerivedDependencies(subclassData, result.package).pageVisibility).toMatchObject({
+      "beast-forms-t1-t2": true,
+      "beast-forms-t3-t4": true,
+    });
+
+    const fighter = result.package.resourceLibraries?.find((library) => library.ID === "classes")?.entries.find((entry) => entry.fields.名称 === "战士");
+    expect(fighter).toBeTruthy();
+    if (!fighter) return;
+    const fighterData = updateResourceSelectionSnapshot(createEmptyCharacterData(result.package), "pick-class", "classes", [fighter.ID]);
+    expect(rebuildDerivedDependencies(fighterData, result.package).pageVisibility).toEqual({});
   });
 });
 

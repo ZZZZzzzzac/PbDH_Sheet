@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures";
 import { createCardInstance } from "./cardEngine";
-import { createEmptyCharacterData, exportCharacterData, parseCharacterDataJson, removePlayerImage, updateCharacterValue, updatePlayerImage } from "./characterData";
+import { createEmptyCharacterData, exportCharacterData, parseCharacterDataJson, removePlayerImage, updateCharacterValue, updatePlayerImage, updateResourceSelectionSnapshot } from "./characterData";
 
 describe("Character Data import/export", () => {
   it("exports values plus System Package identity, not the full System Package", () => {
@@ -103,6 +103,17 @@ describe("Character Data import/export", () => {
     if (result.ok) {
       expect(result.data.cards).toEqual({ instances: [] });
     }
+  });
+
+  it("exports Resource Selection snapshots and defaults older data to an empty record", () => {
+    const data = updateResourceSelectionSnapshot(createEmptyCharacterData(minimalSystemPackage), "pick-class", "classes", ["class:druid"]);
+    const exported = JSON.parse(exportCharacterData(data));
+    expect(exported.resourceSelections).toEqual({ "pick-class": { libraryId: "classes", entryIds: ["class:druid"] } });
+
+    delete exported.resourceSelections;
+    const result = parseCharacterDataJson(JSON.stringify(exported), minimalSystemPackage);
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.data.resourceSelections).toEqual({});
   });
 
   it("stores player image fields as value references plus portable player image data", () => {

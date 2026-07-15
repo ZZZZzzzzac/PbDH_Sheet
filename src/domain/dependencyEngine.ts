@@ -47,7 +47,7 @@ export function evaluateDependencies(
   event: DependencyEvent,
 ): DependencyEvaluationResult {
   const result = createEmptyDependencyEvaluationResult();
-  const writtenTargets = new Map<string, string>();
+  const writtenTargets = new Map<string, { ruleId: string; value: string }>();
 
   for (const rule of systemPackage.dependencies ?? []) {
     if (!eventMatchesTrigger(event, rule.触发.类型, rule.触发.来源模块ID)) {
@@ -67,6 +67,39 @@ export function evaluateDependencies(
         ruleId: rule.ID,
         writtenTargets,
       });
+    }
+  }
+
+  return result;
+}
+
+export function hasRebuildableDependencies(systemPackage: SystemPackage, sourceModuleId: string): boolean {
+  return (systemPackage.dependencies ?? []).some((rule) =>
+    rule.触发.类型 === "resourceSelected"
+    && rule.触发.来源模块ID === sourceModuleId
+    && rule.动作.some((action) => isRebuildableAction(action, systemPackage)),
+  );
+}
+
+export function rebuildDerivedDependencies(
+  data: CharacterData,
+  systemPackage: SystemPackage,
+): DependencyEvaluationResult {
+  const result = createEmptyDependencyEvaluationResult();
+  const writtenTargets = new Map<string, { ruleId: string; value: string }>();
+  const events = new Map<string, DependencyEvent | null>();
+
+  for (const rule of systemPackage.dependencies ?? []) {
+    const sourceModuleId = rule.触发.来源模块ID;
+    if (!events.has(sourceModuleId)) {
+      events.set(sourceModuleId, resolveDerivedSourceEvent(data, systemPackage, sourceModuleId, result));
+    }
+    const event = events.get(sourceModuleId);
+    if (!event || !eventMatchesTrigger(event, rule.触发.类型, sourceModuleId) || !conditionMatches(rule.条件, event)) continue;
+
+    for (const action of rule.动作) {
+      if (!isRebuildableAction(action, systemPackage)) continue;
+      applyAction({ action, data, systemPackage, event, result, ruleId: rule.ID, writtenTargets });
     }
   }
 
@@ -123,14 +156,14 @@ function applyAction({
   event: DependencyEvent;
   result: DependencyEvaluationResult;
   ruleId: string;
-  writtenTargets: Map<string, string>;
+  writtenTargets: Map<string, { ruleId: string; value: string }>;
 }) {
   switch (action.类型) {
     case "fillText": {
       const targetModule = findModule(systemPackage, action.目标模块ID);
       const value = fillTextValue(action.内容, event);
       const targetKey = `text:${action.目标模块ID}`;
-      recordWrite(result, writtenTargets, targetKey, `text target ${action.目标模块ID}`, ruleId);
+      recordWrite(result, writtenTargets, targetKey, `text target ${action.目标模块ID}`, ruleId, value);
 
       if (targetModule?.类型 === "readOnlyDisplay") {
         if (action.写入方式 !== "追加") {
@@ -171,10 +204,10 @@ function applyAction({
         : resolveCountableValue(action.最大值, event, result, ruleId, "maximum");
 
       if (action.当前值 !== undefined && current !== undefined) {
-        recordWrite(result, writtenTargets, `countable:${action.目标模块ID}:current`, `countable current ${action.目标模块ID}`, ruleId);
+        recordWrite(result, writtenTargets, `countable:${action.目标模块ID}:current`, `countable current ${action.目标模块ID}`, ruleId, String(current));
       }
       if (action.最大值 !== undefined && (action.最大值 === null || maximum !== undefined)) {
-        recordWrite(result, writtenTargets, `countable:${action.目标模块ID}:maximum`, `countable maximum ${action.目标模块ID}`, ruleId);
+        recordWrite(result, writtenTargets, `countable:${action.目标模块ID}:maximum`, `countable maximum ${action.目标模块ID}`, ruleId, String(action.最大值 === null ? null : maximum));
       }
 
       let nextMax: number | null = initial.max;
@@ -193,7 +226,7 @@ function applyAction({
 
     case "setVisibility": {
       const targetKey = `visibility:${action.目标类型}:${action.目标ID}`;
-      recordWrite(result, writtenTargets, targetKey, `${action.目标类型} visibility ${action.目标ID}`, ruleId);
+      recordWrite(result, writtenTargets, targetKey, `${action.目标类型} visibility ${action.目标ID}`, ruleId, String(action.显示));
 
       if (action.目标类型 === "page") {
         result.pageVisibility[action.目标ID] = action.显示;
@@ -206,7 +239,7 @@ function applyAction({
 
     case "setResourceDefaultFilter": {
       const targetKey = `resourceDefaultFilter:${action.目标模块ID}:${action.字段}`;
-      recordWrite(result, writtenTargets, targetKey, `resource picker default filter ${action.目标模块ID}.${action.字段}`, ruleId);
+      recordWrite(result, writtenTargets, targetKey, `resource picker default filter ${action.目标模块ID}.${action.字段}`, ruleId, JSON.stringify(action.值));
 
       const currentQuery = result.resourcePickerDefaultQueries[action.目标模块ID] ?? {};
       result.resourcePickerDefaultQueries[action.目标模块ID] = {
@@ -255,16 +288,72 @@ function isCountableState(value: SheetValue | undefined): value is CountableStat
 
 function recordWrite(
   result: DependencyEvaluationResult,
-  writtenTargets: Map<string, string>,
+  writtenTargets: Map<string, { ruleId: string; value: string }>,
   key: string,
   label: string,
   ruleId: string,
+  value: string,
 ) {
-  const previousRuleId = writtenTargets.get(key);
-  if (previousRuleId) {
-    result.warnings.push(`Dependency conflict on ${label}: ${previousRuleId} overwritten by ${ruleId}.`);
+  const previous = writtenTargets.get(key);
+  if (previous && previous.value !== value) {
+    result.warnings.push(`Dependency conflict on ${label}: ${previous.ruleId} overwritten by ${ruleId}.`);
   }
-  writtenTargets.set(key, ruleId);
+  writtenTargets.set(key, { ruleId, value });
+}
+
+function isRebuildableAction(action: DependencyAction, systemPackage: SystemPackage): boolean {
+  if (action.类型 === "setVisibility" || action.类型 === "setResourceDefaultFilter") return true;
+  if (action.类型 !== "fillText" || action.写入方式 === "追加") return false;
+  return findModule(systemPackage, action.目标模块ID)?.类型 === "readOnlyDisplay";
+}
+
+function resolveDerivedSourceEvent(
+  data: CharacterData,
+  systemPackage: SystemPackage,
+  sourceModuleId: string,
+  result: DependencyEvaluationResult,
+): DependencyEvent | null {
+  const sourceModule = findModule(systemPackage, sourceModuleId);
+  if (sourceModule?.类型 === "checkboxResource") {
+    const checkboxState = data.character.values[sourceModuleId];
+    if (!isCheckboxState(checkboxState)) return null;
+    return { type: "checkboxChanged", sourceModuleId, optionId: "", checked: false, checkboxState };
+  }
+  if (sourceModule?.类型 === "resourceComposer") {
+    const composite = data.compositeResources[sourceModuleId];
+    return composite
+      ? { type: "resourceSelected", sourceModuleId, selectedEntries: [composite] }
+      : null;
+  }
+  if (sourceModule?.类型 !== "resourcePicker") return null;
+
+  const snapshot = data.resourceSelections?.[sourceModuleId];
+  if (!snapshot) return null;
+  if (snapshot.libraryId !== sourceModule.资源库ID) {
+    result.warnings.push(`Derived source ${sourceModuleId} skipped mismatched Resource Library ${snapshot.libraryId}.`);
+    return null;
+  }
+  const library = (systemPackage.resourceLibraries ?? []).find((candidate) => candidate.ID === snapshot.libraryId);
+  if (!library) {
+    result.warnings.push(`Derived source ${sourceModuleId} skipped missing Resource Library ${snapshot.libraryId}.`);
+    return null;
+  }
+  const entries = snapshot.entryIds.map((entryId) => library.entries.find((entry) => entry.ID === entryId));
+  const missingEntryId = snapshot.entryIds.find((_, index) => !entries[index]);
+  if (missingEntryId) {
+    result.warnings.push(`Derived source ${sourceModuleId} skipped missing Resource Entry ${snapshot.libraryId}/${missingEntryId}.`);
+    return null;
+  }
+  return {
+    type: "resourceSelected",
+    sourceModuleId,
+    libraryId: snapshot.libraryId,
+    selectedEntries: entries as ResourceLibraryEntry[],
+  };
+}
+
+function isCheckboxState(value: SheetValue | undefined): value is CheckboxState {
+  return typeof value === "object" && value !== null && !Array.isArray(value) && !("current" in value) && !("kind" in value);
 }
 
 function fillTextValue(content: Extract<DependencyAction, { 类型: "fillText" }>["内容"], event: DependencyEvent): string {

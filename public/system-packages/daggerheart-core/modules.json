@@ -210,8 +210,7 @@
       },
       { "类型": "resourceLibrary", "ID": "communities" },
       { "类型": "resourceLibrary", "ID": "subclasses" },
-      { "类型": "resourceLibrary", "ID": "domain-cards" },
-      { "类型": "resourceLibrary", "ID": "beast-forms" }
+      { "类型": "resourceLibrary", "ID": "domain-cards" }
     ],
     "状态选项": [
       "配置",
@@ -534,22 +533,6 @@
     "默认查询": {
       "sort": {
         "field": "等级",
-        "direction": "asc"
-      }
-    },
-    "创建卡牌": {
-      "卡牌桌面模块ID": "character-card-table",
-      "默认状态": "配置"
-    }
-  },
-  {
-    "ID": "pick-beast-form",
-    "类型": "resourcePicker",
-    "按钮文本": "选择野兽形态",
-    "资源库ID": "beast-forms",
-    "默认查询": {
-      "sort": {
-        "field": "名称",
         "direction": "asc"
       }
     },

@@ -81,6 +81,16 @@ export function ensureCardState(data: CharacterData | null): CharacterData | nul
       }),
     },
     compositeResources: data.compositeResources ?? {},
+    resourceSelections: data.resourceSelections ?? {},
+  };
+}
+
+export function dependencyRuntimeStateFromResult(result: DependencyEvaluationResult): DependencyMergeState {
+  return {
+    derivedReadOnlyDisplayContent: result.readOnlyDisplayContent,
+    moduleVisibility: result.moduleVisibility,
+    pageVisibility: result.pageVisibility,
+    resourcePickerDefaultQueries: result.resourcePickerDefaultQueries,
   };
 }
 

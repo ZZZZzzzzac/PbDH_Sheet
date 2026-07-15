@@ -8,7 +8,7 @@
 4. 使用 HTML Layout Template、`pb-module` 和可选单一 `pb-page-outlet`；不要生成 Flow Layout。
 5. Resource Picker 是 transient trigger；不要生成 `selectionText` 或隐藏选择字段。
 6. 普通 Resource Value 保持显示文本语义，不自行收紧为游戏数值类型。
-7. Dependency 只用已定义 trigger/condition/action，声明 sources/targets，假设单轮且无链式。
+7. Dependency 只用已定义 trigger/condition/action，声明 sources/targets，假设单轮且无链式；不要生成手动重放开关，框架只自动重建纯派生动作。
 8. Guide 只生成线性说明和单目标，不生成完成条件、动作或 Character Data 访问。
 9. Validation Script 只读输入并返回 issues；不访问 DOM、网络或框架状态。
 10. 所有路径安全相对，所有 ID 唯一，所有引用存在。
