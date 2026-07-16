@@ -238,15 +238,22 @@ function applyAction({
     }
 
     case "setResourceDefaultFilter": {
+      const values = Array.isArray(action.值)
+        ? action.值
+        : event.type === "resourceSelected"
+          ? action.值.选择索引 === undefined
+            ? selectedFieldValues(event, action.值.字段)
+            : [event.selectedEntries[action.值.选择索引]?.fields[action.值.字段] ?? ""]
+          : [];
       const targetKey = `resourceDefaultFilter:${action.目标模块ID}:${action.字段}`;
-      recordWrite(result, writtenTargets, targetKey, `resource picker default filter ${action.目标模块ID}.${action.字段}`, ruleId, JSON.stringify(action.值));
+      recordWrite(result, writtenTargets, targetKey, `resource picker default filter ${action.目标模块ID}.${action.字段}`, ruleId, JSON.stringify(values));
 
       const currentQuery = result.resourcePickerDefaultQueries[action.目标模块ID] ?? {};
       result.resourcePickerDefaultQueries[action.目标模块ID] = {
         ...currentQuery,
         filters: {
           ...(currentQuery.filters ?? {}),
-          [action.字段]: action.值,
+          [action.字段]: values,
         },
       };
       return;

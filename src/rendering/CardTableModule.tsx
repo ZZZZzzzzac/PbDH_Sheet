@@ -17,7 +17,7 @@ import { resolveResourceDefinition } from "../domain/resourceDefinition";
 import { findResourceEntryProvenance } from "../domain/effectiveResourceCatalog";
 import { resourceAssetUrlKey } from "../loaders/assetResolver";
 import { type ResourceLibraryEntry } from "../domain/resourceLibrary";
-import { findResourceLibrary, type CardTableModule as CardTableModuleConfig, type SystemPackage } from "../domain/systemPackage";
+import { findCardTableResourceLibrarySource, findResourceLibrary, type CardTableModule as CardTableModuleConfig, type SystemPackage } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
 import { RestrictedMarkdown } from "./RestrictedMarkdown";
 import { useCardDescriptionFit } from "./cardDescriptionFit";
@@ -208,7 +208,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
             instance={instance}
             definition={resolveVisibleCardDefinition(systemPackage, characterData, module, instance)}
             module={module}
-            presentation={findCardPresentation(module, instance)}
+            presentation={findCardPresentation(systemPackage, module, instance)}
             onPointerDown={beginDrag}
             onPointerMove={continueDrag}
             onPointerUp={endDrag}
@@ -234,7 +234,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
           instance={visibleInstances.find((instance) => instance.instanceId === detailInstanceId)}
           definition={resolveVisibleCardDefinition(systemPackage, characterData, module, visibleInstances.find((instance) => instance.instanceId === detailInstanceId))}
           module={module}
-          presentation={findCardPresentation(module, visibleInstances.find((instance) => instance.instanceId === detailInstanceId))}
+          presentation={findCardPresentation(systemPackage, module, visibleInstances.find((instance) => instance.instanceId === detailInstanceId))}
           onClose={() => setDetailInstanceId(null)}
         />
       ) : null}
@@ -602,10 +602,13 @@ function resolvePresentation(
   return resolveCardPresentation(definition, presentation, [artField, displayModeField, reverseIdField]);
 }
 
-function findCardPresentation(module: CardTableModuleConfig, instance: CardInstance | undefined): CardPresentation | undefined {
+function findCardPresentation(systemPackage: SystemPackage, module: CardTableModuleConfig, instance: CardInstance | undefined): CardPresentation | undefined {
   if (!instance) return undefined;
-  const sourceId = instance.definitionRef.type === "resourceLibrary" ? instance.definitionRef.libraryId : instance.definitionRef.compositeResourceId.replace(/^composite:/, "");
-  return module.资源来源.find((source) => source.ID === sourceId)?.卡牌展示;
+  if (instance.definitionRef.type === "resourceLibrary") {
+    return findCardTableResourceLibrarySource(systemPackage, module, instance.definitionRef.libraryId)?.卡牌展示;
+  }
+  const sourceId = instance.definitionRef.compositeResourceId.replace(/^composite:/, "");
+  return module.资源来源.find((source) => source.类型 === "resourceComposer" && source.ID === sourceId)?.卡牌展示;
 }
 
 function definitionReferenceId(instance: CardInstance): string {

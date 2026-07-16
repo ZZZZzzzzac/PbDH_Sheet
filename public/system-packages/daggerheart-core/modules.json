@@ -170,8 +170,22 @@
     "类型": "resourceComposer",
     "按钮文本": "选择种族",
     "来源槽位": [
-      { "ID": "ancestry-a", "标签": "特性 A 来源", "资源库ID": "ancestries" },
-      { "ID": "ancestry-b", "标签": "特性 B 来源", "资源库ID": "ancestries" }
+      {
+        "ID": "ancestry-a",
+        "标签": "特性 A 来源",
+        "资源库ID": "ancestries",
+        "字段模板": [
+          { "键": "类型", "默认显示": false, "可筛选": false, "可排序": false, "可搜索": false }
+        ]
+      },
+      {
+        "ID": "ancestry-b",
+        "标签": "特性 B 来源",
+        "资源库ID": "ancestries",
+        "字段模板": [
+          { "键": "类型", "默认显示": false, "可筛选": false, "可排序": false, "可搜索": false }
+        ]
+      }
     ],
     "输出字段": [
       { "字段": "种族A名称", "来源槽位ID": "ancestry-a", "来源字段": "名称" },
@@ -190,7 +204,10 @@
     "按钮文本": "选择社群",
     "资源库": [
       {
-        "ID": "communities"
+        "ID": "communities",
+        "字段模板": [
+          { "键": "类型", "默认显示": false, "可筛选": false, "可排序": false, "可搜索": false }
+        ]
       }
     ],
     "创建卡牌": {
@@ -214,7 +231,8 @@
       },
       { "类型": "resourceLibrary", "ID": "communities" },
       { "类型": "resourceLibrary", "ID": "subclasses" },
-      { "类型": "resourceLibrary", "ID": "domain-cards" }
+      { "类型": "resourceLibrary", "ID": "domain-cards" },
+      { "类型": "otherResourceLibraries", "ID": "其他" }
     ],
     "状态选项": [
       "配置",
@@ -257,6 +275,41 @@
           {
             "键": "背景问题3",
             "默认显示": false
+          },
+          {
+            "键": "推荐初始属性",
+            "默认显示": false,
+            "可筛选": false,
+            "可排序": false,
+            "可搜索": false
+          },
+          {
+            "键": "推荐初始武器",
+            "默认显示": false,
+            "可筛选": false,
+            "可排序": false,
+            "可搜索": false
+          },
+          {
+            "键": "推荐初始护甲",
+            "默认显示": false,
+            "可筛选": false,
+            "可排序": false,
+            "可搜索": false
+          },
+          {
+            "键": "职业物品",
+            "默认显示": false,
+            "可筛选": false,
+            "可排序": false,
+            "可搜索": false
+          },
+          {
+            "键": "类型",
+            "默认显示": false,
+            "可筛选": false,
+            "可排序": false,
+            "可搜索": false
           }
         ]
       }
@@ -269,6 +322,9 @@
     "资源库": [
       {
         "ID": "subclasses",
+        "字段模板": [
+          { "键": "类型", "默认显示": false, "可筛选": false, "可排序": false, "可搜索": false }
+        ],
         "默认查询": {
           "sort": {
             "field": "等级",
@@ -568,6 +624,29 @@
     "资源库": [
       {
         "ID": "domain-cards",
+        "字段模板": [
+          {
+            "键": "背面卡牌ID",
+            "默认显示": false,
+            "可筛选": false,
+            "可排序": false,
+            "可搜索": false
+          },
+          {
+            "键": "原名",
+            "默认显示": false,
+            "可筛选": false,
+            "可排序": false,
+            "可搜索": false
+          },
+          {
+            "键": "类型",
+            "默认显示": false,
+            "可筛选": false,
+            "可排序": false,
+            "可搜索": false
+          }
+        ],
         "默认查询": {
           "sort": {
             "field": "等级",
@@ -1057,6 +1136,10 @@
     "ID": "pick-other-resources",
     "类型": "resourcePicker",
     "按钮文本": "选择其他资源",
-    "资源库": "其他"
+    "资源库": "其他",
+    "创建卡牌": {
+      "卡牌桌面模块ID": "character-card-table",
+      "默认状态": "配置"
+    }
   }
 ]

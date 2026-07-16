@@ -584,18 +584,32 @@ describe("Module Registry rendering", () => {
     expect(screen.getByRole("searchbox", { name: "搜索资源库" })).toHaveValue("");
   });
 
-  it("lets an Author-defined Other Resources Picker expose only unlinked Libraries", () => {
+  it("lets an Author-defined Other Resources Picker expose only standalone unlinked Extension Libraries", () => {
     const systemPackage = createMultiResourcePickerPackage();
     systemPackage.resourceLibraries?.push({
-      ID: "transformations", 名称: "转变", 路径: "resources/transformations.json",
+      ID: "transformations", 名称: "转变", 路径: "resource-extension:test/transformations",
       fields: [
         { key: "ID", label: "ID", visible: false, filterable: false, sortable: false, searchable: false },
         { key: "名称", label: "名称", visible: true, filterable: true, sortable: true, searchable: true },
       ],
       entries: [{ ID: "void-form", fields: { ID: "void-form", 名称: "虚空化" } }],
     });
-    systemPackage.modules.push({ ID: "pick-other", 类型: "resourcePicker", 按钮文本: "选择其他资源", 资源库: "其他" });
-    systemPackage.pages[0].layout.htmlContent += '<pb-module id="pick-other"></pb-module>';
+    systemPackage.modules.push({
+      ID: "pick-other",
+      类型: "resourcePicker",
+      按钮文本: "选择其他资源",
+      资源库: "其他",
+      创建卡牌: { 卡牌桌面模块ID: "other-card-table", 默认状态: "配置" },
+    });
+    systemPackage.modules.push({
+      ID: "other-card-table",
+      类型: "cardTable",
+      标签: "其他资源卡牌",
+      资源来源: [{ 类型: "otherResourceLibraries", ID: "其他" }],
+      状态选项: ["配置"],
+      显示方式: "text",
+    });
+    systemPackage.pages[0].layout.htmlContent += '<pb-module id="pick-other"></pb-module><pb-module id="other-card-table"></pb-module>';
     renderModuleDemo(systemPackage);
 
     fireEvent.click(screen.getByRole("button", { name: "选择其他资源" }));
@@ -604,6 +618,12 @@ describe("Module Registry rendering", () => {
     expect(screen.queryByRole("combobox", { name: "选择资源库" })).not.toBeInTheDocument();
     expect(screen.queryByText("烈焰")).not.toBeInTheDocument();
     expect(screen.queryByText("长弓")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("选择 虚空化"));
+    expect(screen.getByRole("article", { name: "虚空化" })).toBeVisible();
+    expect(useRuntimeStore.getState().characterData?.cards.instances[0]).toMatchObject({
+      tableModuleId: "other-card-table",
+      definitionRef: { type: "resourceLibrary", libraryId: "transformations", entryId: "void-form" },
+    });
   });
 
   it("renders text cards with recall in the tag row above the description", () => {

@@ -1,6 +1,6 @@
 import { Search } from "lucide-react";
 import { useState } from "react";
-import type { ResourceLibraryEntry } from "../domain/resourceLibrary";
+import { getResourceLibraryFields, type ResourceLibraryEntry } from "../domain/resourceLibrary";
 import type { ResourceComposerSelections } from "../domain/resourceComposer";
 import { findResourceLibrary, type ResourceComposerModule as ResourceComposerModuleConfig, type SystemPackage } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
@@ -42,6 +42,7 @@ export function ResourceComposerModule({ module, systemPackage }: { module: Reso
       {activeSlot && activeLibrary ? (
         <ResourceLibraryBrowser
           library={activeLibrary}
+          fields={getResourceLibraryFields(activeLibrary, activeSlot.字段模板)}
           title={`请选择${activeSlot.标签}`}
           multiSelect={false}
           selectedIds={[]}

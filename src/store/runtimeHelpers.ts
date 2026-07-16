@@ -7,7 +7,7 @@ import {
 import { type DependencyEvaluationResult } from "../domain/dependencyEngine";
 import type { ResourceLibraryEntry, ResourceLibraryQuery } from "../domain/resourceLibrary";
 import type { CompositeResource } from "../domain/resourceComposer";
-import type { SystemPackage } from "../domain/systemPackage";
+import { findCardTableResourceLibrarySource, type SystemPackage } from "../domain/systemPackage";
 import type { CharacterSaveSummary, StorageService } from "../storage/storageService";
 import { generateId } from "../utils";
 
@@ -152,7 +152,7 @@ export function createCardInstancesFromSelection(
   }
   const cardCreation = sourceModule.创建卡牌;
   const targetTable = systemPackage.modules.find((module) => module.ID === cardCreation.卡牌桌面模块ID);
-  if (targetTable?.类型 !== "cardTable" || !targetTable.资源来源.some((source) => source.类型 === "resourceLibrary" && source.ID === libraryId)) {
+  if (targetTable?.类型 !== "cardTable" || !findCardTableResourceLibrarySource(systemPackage, targetTable, libraryId)) {
     return data;
   }
 

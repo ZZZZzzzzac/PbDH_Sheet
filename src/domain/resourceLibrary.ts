@@ -198,14 +198,14 @@ function normalizeResourceLibrary(
 }
 
 function buildFieldMetadata(key: string, isComplex: boolean, values: string[]): ResourceLibraryField {
-  const isFrameworkId = key === "ID";
+  const hiddenAuthorField = key === "ID" || key === "原名";
   return {
     key,
     label: key,
-    visible: !isFrameworkId,
-    filterable: !isFrameworkId && !isComplex,
-    sortable: !isFrameworkId && !isComplex,
-    searchable: !isFrameworkId && !isComplex,
+    visible: !hiddenAuthorField,
+    filterable: !hiddenAuthorField && !isComplex,
+    sortable: !hiddenAuthorField && !isComplex,
+    searchable: !hiddenAuthorField && !isComplex,
     width: inferResourceFieldWidth(values),
   };
 }

@@ -31,7 +31,7 @@ Resource Extension 独立于 System Package 保存，只贡献 Resource Library 
 
 - `名称`、`版本`、`目标系统包ID` 与非空 `resourceLibraries` 必填。
 - `目标系统包ID` 必须等于 Current System Package ID；版本只展示，不参与兼容判断。
-- contribution 的 `ID` 命中有效 Library 时合并；未知 ID 形成独立 Library。System Package 的 Library 名称优先。
+- contribution 的 `ID` 命中有效 Library 时合并；未知 ID 形成独立 Library。System Package 的 Library 名称优先。Other Resources Picker 只接收这些未命中包内 Library、且未被普通 Picker 或 Composer 链接的独立 Library；合并到包内既有 Library 的 Entry 不会形成 Other 选项。
 - Extension、contribution 或 Entry 缺少 `ID` 时，导入器生成不冲突 ID，并提供规范化产物下载。显式 ID 原样保留。
 - 同一目标 Library 内的 Entry ID 与 System Package、其他 Extension 或候选内部冲突时，整包拒绝。不同 Library 可复用 Entry ID。
 - 同 Extension ID 重导入进入整包替换确认，不追加旧 Entries。

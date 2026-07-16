@@ -76,17 +76,17 @@ Player 点击图片区域或在其聚焦时按 Enter/Space 打开本地文件选
 | `资源库[].默认查询.sort.field` | string | 条件 | sort 存在时非空 |
 | `资源库[].默认查询.sort.direction` | `asc|desc` | 否 | `asc` |
 | `多选` | boolean | 否 | `false` |
-| `创建卡牌.卡牌桌面模块ID` | string | 条件 | 目标必须 cardTable，且其 `资源来源` 必须包含普通 Picker 的全部 Library |
+| `创建卡牌.卡牌桌面模块ID` | string | 条件 | 目标必须 cardTable；普通 Picker 的全部 Library 必须是显式来源，Other Picker 需要一个 `otherResourceLibraries` 来源 |
 | `创建卡牌.默认状态` | string | 否 | 目标 Card Table 的第一个 `状态选项`，再回退内部 `default` |
 
 普通 Picker 可链接多个 Library。Browser 同时只显示一个表；多库时左上角名称变为单选下拉。每个链接独立使用自己的字段模板和默认查询，打开期间也独立保留搜索、筛选、排序；关闭 Browser 后全部清空。选择、多选、Dependency 与创建 Card 行为不因库数量改变，事件携带实际选择所在 Library ID。
 
-`资源库: "其他"` 声明 Other Resources Picker：运行时显示未被任何普通 Picker 链接的有效 Library。该链接集合由框架计算，Author 不为它声明字段模板或默认查询，Player 不能配置链接。选择是临时事件，不存隐藏资源引用。
+`资源库: "其他"` 声明 Other Resources Picker：运行时只显示 Resource Extension 新建、且未被普通 Picker 或 Resource Composer 使用的独立 Library。合并进 System Package 既有 Library 的 contribution 不会出现在这里。该集合由框架计算，Author 不为它声明字段模板或默认查询，Player 不能配置链接。选择是临时事件，不存隐藏资源引用。若配置 `创建卡牌`，目标 Card Table 必须声明 `{ "类型":"otherResourceLibraries", "ID":"其他" }`；Card Instance 保存选择时的实际 Library ID，而不是字面值 `"其他"`。
 
 ## resourceComposer
 
-`按钮文本`、非空 `来源槽位` 和非空 `输出字段` 必填。每槽从自己的 `资源库ID` 单选；每条输出映射包含 `字段`、`来源槽位ID`、`来源字段`。只保存一个稳定 Composite Resource，不保存来源选择。可选 `创建卡牌` 与 Resource Picker 相同。详见 [Resource Composer](resource-composer.md)。
+`按钮文本`、非空 `来源槽位` 和非空 `输出字段` 必填。每槽从自己的 `资源库ID` 单选，并可用 `字段模板` 对该槽 Browser 的推断字段做局部覆盖；每条输出映射包含 `字段`、`来源槽位ID`、`来源字段`。只保存一个稳定 Composite Resource，不保存来源选择。可选 `创建卡牌` 与 Resource Picker 相同。详见 [Resource Composer](resource-composer.md)。
 
 ## cardTable
 
-`标签`、非空且不重复的 `资源来源` 必填。来源是 `{类型:"resourceLibrary"|"resourceComposer", ID, 卡牌展示?}`。每个来源可选配置名称模板、描述模板和标签字段；省略时默认 `{{名称}}`、`{{描述}}` 与其他普通字段标签。多个来源共用状态、坐标系和层级。`状态选项?: non-empty unique string[]`；`状态背景色?: Record<string,"#RRGGBB">`；`显示方式?: image|text`；`卡图字段`、`显示方式字段`、`背面卡牌ID字段` 仍是 Table 级配置。详见[Cards](cards.md)。
+`标签`、非空且不重复的 `资源来源` 必填。来源是 `{类型:"resourceLibrary"|"resourceComposer", ID, 卡牌展示?}`，或至多一个 `{类型:"otherResourceLibraries", ID:"其他", 卡牌展示?}` 动态来源。每个来源可选配置名称模板、描述模板和标签字段；省略时默认 `{{名称}}`、`{{描述}}` 与其他普通字段标签。动态来源适用于当前 Other Resources Picker 集合，不把具体 Extension Library ID 写入 System Package。多个来源共用状态、坐标系和层级。`状态选项?: non-empty unique string[]`；`状态背景色?: Record<string,"#RRGGBB">`；`显示方式?: image|text`；`卡图字段`、`显示方式字段`、`背面卡牌ID字段` 仍是 Table 级配置。详见[Cards](cards.md)。

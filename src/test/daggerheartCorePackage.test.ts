@@ -6,6 +6,8 @@ import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 import { composeResource } from "../domain/resourceComposer";
 import { createEmptyCharacterData, updateResourceSelectionSnapshot } from "../domain/characterData";
 import { rebuildDerivedDependencies } from "../domain/dependencyEngine";
+import { getResourceLibraryFields } from "../domain/resourceLibrary";
+import { getResourcePickerLinks } from "../domain/systemPackage";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "daggerheart-core");
 
@@ -45,6 +47,73 @@ describe("Daggerheart core System Package", () => {
     expect(css).toContain(':is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"])');
     expect(css).toMatch(/:is\(\[data-module-type="resourcePicker"\], \[data-module-type="resourceComposer"\]\)[\s\S]*?border:\s*0;/);
     expect(css).toMatch(/:is\(\[data-module-type="resourcePicker"\], \[data-module-type="resourceComposer"\]\) \[data-part="button"\][\s\S]*?font-size:\s*0;/);
+  });
+
+  it("places the domain-card and Other Resources buttons side by side", () => {
+    const css = readFileSync(join(packageRoot, "layouts", "shell.css"), "utf8");
+    expect(css).toMatch(/\.card-picker-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
+  });
+
+  it("keeps every core class on the complete shared class field contract", async () => {
+    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const classes = result.package.resourceLibraries?.find((library) => library.ID === "classes");
+    expect(classes).toBeTruthy();
+    const sharedFields = ["原名", "描述", "推荐初始属性", "推荐初始武器", "推荐初始护甲", "职业物品"];
+    for (const entry of classes?.entries ?? []) {
+      for (const field of sharedFields) {
+        expect(entry.fields[field], `${entry.fields.名称}.${field}`).toEqual(expect.any(String));
+        expect(entry.fields[field].trim(), `${entry.fields.名称}.${field}`).not.toBe("");
+      }
+    }
+  });
+
+  it("hides authoring-only class and domain-card fields from their Pickers", async () => {
+    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const cases = [
+      { moduleId: "pick-class", libraryId: "classes", hidden: ["推荐初始属性", "推荐初始武器", "推荐初始护甲", "职业物品", "原名", "类型"] },
+      { moduleId: "pick-subclass", libraryId: "subclasses", hidden: ["类型"] },
+      { moduleId: "pick-community", libraryId: "communities", hidden: ["类型"] },
+      { moduleId: "pick-domain-card", libraryId: "domain-cards", hidden: ["背面卡牌ID", "原名", "类型"] },
+    ];
+    for (const item of cases) {
+      const module = result.package.modules.find((candidate) => candidate.ID === item.moduleId);
+      const library = result.package.resourceLibraries?.find((candidate) => candidate.ID === item.libraryId);
+      expect(module?.类型).toBe("resourcePicker");
+      expect(library).toBeTruthy();
+      if (module?.类型 !== "resourcePicker" || !library) continue;
+      const link = getResourcePickerLinks(module).find((candidate) => candidate.ID === item.libraryId);
+      const fields = getResourceLibraryFields(library, link?.字段模板);
+      for (const field of item.hidden) {
+        expect(fields.find((candidate) => candidate.key === field), `${item.moduleId}.${field}`).toMatchObject({
+          visible: false,
+          filterable: false,
+          sortable: false,
+          searchable: false,
+        });
+      }
+    }
+
+    const composer = result.package.modules.find((module) => module.ID === "pick-ancestry");
+    const ancestries = result.package.resourceLibraries?.find((library) => library.ID === "ancestries");
+    expect(composer?.类型).toBe("resourceComposer");
+    expect(ancestries).toBeTruthy();
+    if (composer?.类型 === "resourceComposer" && ancestries) {
+      for (const slot of composer.来源槽位) {
+        const fields = getResourceLibraryFields(ancestries, slot.字段模板);
+        for (const key of ["类型"]) {
+          expect(fields.find((field) => field.key === key), `${slot.ID}.${key}`).toMatchObject({
+            visible: false,
+            filterable: false,
+            sortable: false,
+            searchable: false,
+          });
+        }
+      }
+    }
   });
 
   it("provides two read-only Druid beast-form reference pages instead of beast-form Cards", async () => {

@@ -124,6 +124,7 @@ const cardPresentationSchema = z.object({
 const cardTableResourceSourceSchema = z.discriminatedUnion("类型", [
   z.object({ 类型: z.literal("resourceLibrary"), ID: z.string().min(1), 卡牌展示: cardPresentationSchema.optional() }),
   z.object({ 类型: z.literal("resourceComposer"), ID: z.string().min(1), 卡牌展示: cardPresentationSchema.optional() }),
+  z.object({ 类型: z.literal("otherResourceLibraries"), ID: z.literal("其他"), 卡牌展示: cardPresentationSchema.optional() }),
 ]);
 
 const cardTableModuleSchema = sheetModuleBaseSchema.extend({
@@ -178,7 +179,12 @@ const resourcePickerModuleSchema = sheetModuleBaseSchema.extend({
 const resourceComposerModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("resourceComposer"),
   按钮文本: z.string().min(1),
-  来源槽位: z.array(z.object({ ID: z.string().min(1), 标签: z.string().min(1), 资源库ID: z.string().min(1) }))
+  来源槽位: z.array(z.object({
+    ID: z.string().min(1),
+    标签: z.string().min(1),
+    资源库ID: z.string().min(1),
+    字段模板: z.array(resourceLibraryFieldTemplateSchema).optional(),
+  }))
     .min(1).refine((slots) => new Set(slots.map((slot) => slot.ID)).size === slots.length, { message: "Resource Composer 的来源槽位 ID 不能重复。" }),
   输出字段: z.array(z.object({
     字段: z.string().min(1).refine((field) => field !== "ID", { message: "Composite Resource ID 由框架生成。" }),
@@ -307,7 +313,14 @@ const dependencyActionSchema = z.discriminatedUnion("类型", [
     类型: z.literal("setResourceDefaultFilter"),
     目标模块ID: z.string().min(1),
     字段: z.string().min(1),
-    值: z.array(z.string()).min(1),
+    值: z.union([
+      z.array(z.string()).min(1),
+      z.object({
+        类型: z.literal("selectedResourceField"),
+        字段: z.string().min(1),
+        选择索引: z.number().int().min(0).optional(),
+      }),
+    ]),
   }),
 ]);
 
@@ -716,11 +729,13 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
       module.资源来源.forEach((source, sourceIndex) => {
         const exists = source.类型 === "resourceLibrary"
           ? Boolean(findResourceLibrary(systemPackage, source.ID))
-          : systemPackage.modules.some((candidate) => candidate.类型 === "resourceComposer" && candidate.ID === source.ID);
+          : source.类型 === "resourceComposer"
+            ? systemPackage.modules.some((candidate) => candidate.类型 === "resourceComposer" && candidate.ID === source.ID)
+            : systemPackage.modules.some((candidate) => candidate.类型 === "resourcePicker" && candidate.资源库 === "其他");
         if (!exists) {
           issues.push({
             level: "error",
-            code: source.类型 === "resourceLibrary" ? "MISSING_RESOURCE_LIBRARY_REFERENCE" : "MISSING_RESOURCE_COMPOSER_REFERENCE",
+            code: source.类型 === "resourceLibrary" ? "MISSING_RESOURCE_LIBRARY_REFERENCE" : source.类型 === "resourceComposer" ? "MISSING_RESOURCE_COMPOSER_REFERENCE" : "MISSING_OTHER_RESOURCES_PICKER_REFERENCE",
             text: `Card Table 引用了不存在的 ${source.类型}：${source.ID}`,
             path: `modules.${module.ID}.资源来源.${sourceIndex}.ID`,
           });
@@ -1076,6 +1091,17 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
             validateResourceLibraryField(findResourceLibrary(systemPackage, link.ID), action.字段, `dependencies.${dependency.ID}.动作.${actionIndex}.字段`, dependency.ID, targetModule.ID, issues);
           }
         }
+        if (!Array.isArray(action.值)) {
+          if (dependency.触发.类型 !== "resourceSelected") {
+            issues.push({
+              level: "error",
+              code: "UNSUPPORTED_DEPENDENCY_ACTION_CONTENT",
+              text: `setResourceDefaultFilter selectedResourceField 只能用于 resourceSelected 触发：${dependency.ID}`,
+              path: `dependencies.${dependency.ID}.动作.${actionIndex}.值.类型`,
+            });
+          }
+          validateSelectedResourceField(systemPackage, sourceModule, action.值.字段, `dependencies.${dependency.ID}.动作.${actionIndex}.值.字段`, dependency.ID, issues);
+        }
       }
     });
   }
@@ -1106,7 +1132,10 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
       continue;
     }
 
-    if (getResourcePickerLinks(module).some((link) => !targetModule.资源来源.some((source) => source.类型 === "resourceLibrary" && source.ID === link.ID))) {
+    const hasSourceMismatch = module.资源库 === "其他"
+      ? !targetModule.资源来源.some((source) => source.类型 === "otherResourceLibraries")
+      : getResourcePickerLinks(module).some((link) => !targetModule.资源来源.some((source) => source.类型 === "resourceLibrary" && source.ID === link.ID));
+    if (hasSourceMismatch) {
       issues.push({
         level: "error",
         code: "CARD_TABLE_LIBRARY_MISMATCH",
@@ -1177,7 +1206,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     }
 
     for (const module of systemPackage.modules) {
-      if (module.类型 !== "cardTable" || !module.资源来源.some((source) => source.类型 === "resourceLibrary" && source.ID === library.ID)) {
+      if (module.类型 !== "cardTable" || !findCardTableResourceLibrarySource(systemPackage, module, library.ID)) {
         continue;
       }
       const reverseIdField = module.背面卡牌ID字段 ?? "背面卡牌ID";
@@ -1465,8 +1494,27 @@ export function getResourcePickerLinks(module: ResourcePickerModule) {
 }
 
 export function getOtherResourceLibraries(systemPackage: SystemPackage): ResourceLibrary[] {
-  const explicitlyLinked = new Set(systemPackage.modules.flatMap((module) => module.类型 === "resourcePicker" ? getResourcePickerLinks(module).map((link) => link.ID) : []));
-  return (systemPackage.resourceLibraries ?? []).filter((library) => !explicitlyLinked.has(library.ID));
+  const linked = new Set<string>();
+  for (const module of systemPackage.modules) {
+    if (module.类型 === "resourcePicker") {
+      for (const link of getResourcePickerLinks(module)) linked.add(link.ID);
+    } else if (module.类型 === "resourceComposer") {
+      for (const slot of module.来源槽位) linked.add(slot.资源库ID);
+    }
+  }
+  return (systemPackage.resourceLibraries ?? []).filter((library) =>
+    library.路径.startsWith("resource-extension:") && !linked.has(library.ID));
+}
+
+export function findCardTableResourceLibrarySource(
+  systemPackage: SystemPackage,
+  module: CardTableModule,
+  libraryId: string,
+): CardTableResourceSource | undefined {
+  const explicit = module.资源来源.find((source) => source.类型 === "resourceLibrary" && source.ID === libraryId);
+  if (explicit) return explicit;
+  if (!getOtherResourceLibraries(systemPackage).some((library) => library.ID === libraryId)) return undefined;
+  return module.资源来源.find((source) => source.类型 === "otherResourceLibraries");
 }
 
 function isResourceCondition(

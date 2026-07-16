@@ -3,6 +3,8 @@ import { join, relative } from "node:path";
 import { zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { applyEffectiveResourceCatalog, createEffectiveResourceCatalog } from "../domain/effectiveResourceCatalog";
+import { createEmptyCharacterData } from "../domain/characterData";
+import { evaluateDependencies } from "../domain/dependencyEngine";
 import { getOtherResourceLibraries, getResourcePickerLinks } from "../domain/systemPackage";
 import { loadResourceExtensionFromJsonText } from "../loaders/resourceExtensionLoader";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
@@ -61,12 +63,50 @@ describe("The Void Resource Extension", () => {
 
     expect(catalog.extensions[0].status).toBe("active");
     expect(catalog.libraries.filter((library) => library.contributors.some((item) => item.source.type === "resourceExtension"))).toHaveLength(6);
-    expect(getOtherResourceLibraries(effectivePackage).map((library) => library.ID)).toContain("void-transformations");
+    expect(getOtherResourceLibraries(effectivePackage).map((library) => library.ID)).toEqual(["void-transformations"]);
     const otherPicker = effectivePackage.modules.find((module) => module.类型 === "resourcePicker" && module.资源库 === "其他");
-    expect(otherPicker).toMatchObject({ ID: "pick-other-resources", 按钮文本: "选择其他资源" });
+    expect(otherPicker).toMatchObject({
+      ID: "pick-other-resources",
+      按钮文本: "选择其他资源",
+      创建卡牌: { 卡牌桌面模块ID: "character-card-table", 默认状态: "配置" },
+    });
+    const cardTable = effectivePackage.modules.find((module) => module.ID === "character-card-table");
+    expect(cardTable?.类型).toBe("cardTable");
+    if (cardTable?.类型 === "cardTable") {
+      expect(cardTable.资源来源).toContainEqual({ 类型: "otherResourceLibraries", ID: "其他" });
+    }
     for (const libraryId of ["classes", "subclasses", "communities", "domain-cards"]) {
       expect(effectivePackage.modules.some((module) => module.类型 === "resourcePicker" && getResourcePickerLinks(module).some((link) => link.ID === libraryId))).toBe(true);
     }
+
+    const assassin = effectivePackage.resourceLibraries?.find((library) => library.ID === "classes")?.entries.find((entry) => entry.fields.名称 === "刺客");
+    expect(assassin).toBeTruthy();
+    if (!assassin) return;
+    expect(evaluateDependencies(createEmptyCharacterData(effectivePackage), effectivePackage, {
+      type: "resourceSelected",
+      sourceModuleId: "pick-class",
+      libraryId: "classes",
+      selectedEntries: [assassin],
+    }).resourcePickerDefaultQueries["pick-subclass"]).toMatchObject({ filters: { 主职: ["刺客"] } });
+  });
+
+  it("uses Chinese display names, separate original names, and core-style Markdown", () => {
+    const result = loadResourceExtensionFromJsonText(readFileSync(extensionPath, "utf8"), "daggerheart-core");
+    if (!result.ok) throw new Error(JSON.stringify(result.issues));
+    const entries = result.extension.resourceLibraries.flatMap((library) => library.library.entries);
+    expect(entries.every((entry) => !/[A-Za-z]/u.test(entry.fields.名称))).toBe(true);
+    expect(entries.every((entry) => !Object.hasOwn(entry.fields, "类型"))).toBe(true);
+    for (const contribution of result.extension.resourceLibraries) {
+      const originalNameField = contribution.library.fields.find((field) => field.key === "原名");
+      if (originalNameField) {
+        expect(originalNameField).toMatchObject({ visible: false, filterable: false, sortable: false, searchable: false });
+      }
+    }
+    expect(entries.find((entry) => entry.fields.名称 === "土裔")?.fields.原名).toBe("EARTHKIN");
+    expect(entries.find((entry) => entry.fields.名称 === "凋零打击")?.fields.原名).toBe("BLIGHTING STRIKE");
+    expect(entries.find((entry) => entry.fields.名称 === "吸血鬼")?.fields.原名).toBe("Vampire");
+    expect(entries.find((entry) => entry.fields.名称 === "刺客")?.fields.希望特性).toMatch(/^:red\[\*\*冷酷决心 Grim Resolve\*\*\]：/u);
+    expect(entries.find((entry) => entry.fields.名称 === "执刑公会-基础")?.fields.描述).toMatch(/^:red\[\*\*先攻必胜 First Strike\*\*\]：/u);
   });
 });
 

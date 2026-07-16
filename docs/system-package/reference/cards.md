@@ -51,4 +51,4 @@ Card 大小或响应式容器尺寸改变、description 内容改变、实际字
 
 Card Instance 属于 Character Data/runtime state，至少通过稳定 instance ID 关联 Definition ID，并保存桌面坐标、z-order、状态、当前面、旋转和指示物。具体持久字段是框架内部契约，不允许 Author 在 Resource Entry 中伪造实例状态。
 
-Resource Picker 或 Resource Composer 的 `创建卡牌` 发出创建动作；生产者不在目标 Table 的 `资源来源` 中为 error。每个来源拥有自己的 Card Presentation，但共享桌面坐标、z-order 与状态选项。Composer 重复确认更新 Composite Resource，不重建已有 Card Instance；删除 Card 不删除 Composite Resource。Cards 可拖动、整理、删除、切换状态、翻面、四分之一圈旋转、操作指示物和打开只读详情；输出模式排除临时详情 Overlay。规则合法性、数量限制和支付不属于 Card Engine。
+Resource Picker 或 Resource Composer 的 `创建卡牌` 发出创建动作；生产者不在目标 Table 的 `资源来源` 中为 error。普通 Picker 使用显式 `resourceLibrary` 来源；Other Resources Picker 使用 `{类型:"otherResourceLibraries", ID:"其他"}` 动态来源，但创建出的 Card Instance 仍保存实际 Library ID 和 Entry ID。每个来源拥有自己的 Card Presentation，但共享桌面坐标、z-order 与状态选项。Composer 重复确认更新 Composite Resource，不重建已有 Card Instance；删除 Card 不删除 Composite Resource。Cards 可拖动、整理、删除、切换状态、翻面、四分之一圈旋转、操作指示物和打开只读详情；输出模式排除临时详情 Overlay。规则合法性、数量限制和支付不属于 Card Engine。
