@@ -1,4 +1,5 @@
 import { updateCharacterValue, type CharacterData, type CheckboxState, type CountableState, type SheetValue } from "./characterData";
+import { findResourceLibraryEntry } from "./resourceLibrary";
 import type { ResourceLibraryEntry, ResourceLibraryQuery } from "./resourceLibrary";
 import { findModule, getResourcePickerLinks, type DependencyAction, type DependencyCondition, type SystemPackage } from "./systemPackage";
 import { formatResourceTextTemplate } from "./resourceTextTemplate";
@@ -345,7 +346,7 @@ function resolveDerivedSourceEvent(
     result.warnings.push(`Derived source ${sourceModuleId} skipped missing Resource Library ${snapshot.libraryId}.`);
     return null;
   }
-  const entries = snapshot.entryIds.map((entryId) => library.entries.find((entry) => entry.ID === entryId));
+  const entries = snapshot.entryIds.map((entryId) => findResourceLibraryEntry(library, entryId));
   const missingEntryId = snapshot.entryIds.find((_, index) => !entries[index]);
   if (missingEntryId) {
     result.warnings.push(`Derived source ${sourceModuleId} skipped missing Resource Entry ${snapshot.libraryId}/${missingEntryId}.`);

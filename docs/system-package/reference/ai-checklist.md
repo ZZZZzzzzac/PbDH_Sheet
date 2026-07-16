@@ -17,7 +17,8 @@
 13. 运行 Validator 后按 `location/entities/evidence` 修复；不要要求或虚构 suggestion，不要尝试关闭规则。
 14. 只在 freeText/longText value 与 Card name/description/tags 中生成 Restricted Markdown；只用批准语法和七个命名颜色，不格式化框架 UI 文本。
 15. Countable Resource 标记展示仍用 `countableResource`；生成 `显示方式:"标记"` 时同时提供两个不同的单一可见 Unicode 字素 `当前值标记` / `剩余值标记`，并保证 `最小值 >= 0`。不要创建新的 counter Module 或 Character Data shape。
-16. Resource Composer 只声明固定单选槽位和一对一字段路由；不保存来源，不生成模板、条件或脚本。
+16. Resource Composer 只声明固定单选槽位和一对一字段路由；需要区分全部同源与异源组合时，可额外声明受限的 `选择关系输出`。不保存来源，不生成其他模板、条件或脚本。
 17. Card Table 只用 `资源来源`；每个来源可选声明 `卡牌展示.名称模板`、`描述模板` 与 `标签字段`。
+18. Resource Entry ID 可以使用中文；优先生成可读的稳定命名空间，不生成无必要的随机哈希。迁移已发布 ID 时显式写 `旧ID`，不得按名称猜测引用。
 
 生成顺序建议：manifest → resources/assets 图片树 → modules → pages/layouts/shell → dependencies → guide → checks → Validator → Preview。

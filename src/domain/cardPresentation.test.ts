@@ -3,7 +3,7 @@ import { resolveCardPresentation } from "./cardPresentation";
 
 const entry = {
   ID: "card-1",
-  fields: { ID: "card-1", 名称: "原名", 描述: "原描述", 特性名: "飞行", 特性描述: "可以飞行", 类型: "种族", 隐藏: "内部" },
+  fields: { ID: "card-1", 名称: "原名", 原名: "Original", 旧ID: "card-old", 描述: "原描述", 特性名: "飞行", 特性描述: "可以飞行", 类型: "种族", 隐藏: "内部" },
 };
 
 describe("Card Presentation", () => {

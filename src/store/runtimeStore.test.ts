@@ -760,7 +760,7 @@ describe("runtime store", () => {
     });
   });
 
-  it("replaces one Composite Resource, drives dependencies, and preserves its Card Instance", async () => {
+  it("persists a replaced Composite Resource immediately and preserves its Card Instance", async () => {
     const composerPackage = {
       ...minimalSystemPackage,
       resourceLibraries: [{
@@ -786,6 +786,7 @@ describe("runtime store", () => {
             { 字段: "特性A", 来源槽位ID: "a", 来源字段: "特性A" },
             { 字段: "特性B", 来源槽位ID: "b", 来源字段: "特性B" },
           ],
+          选择关系输出: { 字段: "卡牌显示方式", 全部相同时: "image", 不全相同时: "text" },
           创建卡牌: { 卡牌桌面模块ID: "cards", 默认状态: "配置" },
         },
         { ID: "cards", 类型: "cardTable", 标签: "卡牌", 资源来源: [{ 类型: "resourceComposer", ID: "compose-ancestry" }] },
@@ -806,8 +807,10 @@ describe("runtime store", () => {
     act(() => useRuntimeStore.getState().commitResourceComposition("compose-ancestry", { a: elf, b: human }));
     const firstCard = useRuntimeStore.getState().characterData?.cards.instances[0];
     expect(useRuntimeStore.getState().characterData?.compositeResources["compose-ancestry"].fields).toMatchObject({ 名称: "精灵", 特性A: "敏锐", 特性B: "应变" });
+    expect(useRuntimeStore.getState().characterData?.compositeResources["compose-ancestry"].fields.卡牌显示方式).toBe("text");
     expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("应变");
     expect(firstCard?.definitionRef).toEqual({ type: "compositeResource", compositeResourceId: "composite:compose-ancestry" });
+    await waitFor(() => expect(useRuntimeStore.getState().storageStatus).toBe("saved"));
 
     act(() => {
       if (firstCard) useRuntimeStore.getState().updateCardInstancePosition(firstCard.instanceId, 41, 29);
@@ -817,5 +820,11 @@ describe("runtime store", () => {
     expect(cards).toHaveLength(1);
     expect(cards[0]).toEqual(expect.objectContaining({ instanceId: firstCard?.instanceId, xPct: 41, yPct: 29 }));
     expect(useRuntimeStore.getState().characterData?.compositeResources["compose-ancestry"].fields.特性B).toBe("冥想");
+    expect(useRuntimeStore.getState().characterData?.compositeResources["compose-ancestry"].fields.卡牌显示方式).toBe("image");
+
+    const saveId = useRuntimeStore.getState().activeCharacterSaveId;
+    expect(saveId).toBeTruthy();
+    await act(async () => { if (saveId) await useRuntimeStore.getState().switchCharacterSave(saveId); });
+    expect(useRuntimeStore.getState().characterData?.compositeResources["compose-ancestry"].fields.卡牌显示方式).toBe("image");
   });
 });

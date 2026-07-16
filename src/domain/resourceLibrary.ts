@@ -35,6 +35,7 @@ export const resourceLibraryFieldSchema = z.object({
 
 export const resourceLibraryEntrySchema = z.object({
   ID: z.string().min(1),
+  aliases: z.array(z.string().min(1)).optional(),
   fields: z.record(z.string(), z.string()),
 });
 
@@ -179,8 +180,40 @@ function normalizeResourceLibrary(
     return { ok: false, issues };
   }
 
-  const entries = rawEntries.map((entry) => ({
+  const claimedIds = new Set(entryIds);
+  const aliasesByEntry = rawEntries.map((entry, entryIndex) => {
+    const aliases = normalizeResourceEntryAliases(entry.旧ID);
+    if (!aliases.ok) {
+      issues.push({
+        level: "error",
+        code: "RESOURCE_ENTRY_LEGACY_ID_INVALID",
+        text: `Resource Library 条目的旧ID必须是非空字符串或非空字符串数组：${input.ID}`,
+        path: `resourceLibraries.${libraryIndex}.entries.${entryIndex}.旧ID`,
+      });
+      return [];
+    }
+    for (const alias of aliases.values) {
+      if (claimedIds.has(alias)) {
+        issues.push({
+          level: "error",
+          code: "RESOURCE_ENTRY_ID_ALIAS_CONFLICT",
+          text: `Resource Library 条目的当前 ID 或旧 ID 冲突：${alias}`,
+          path: `resourceLibraries.${libraryIndex}.entries.${entryIndex}.旧ID`,
+        });
+        continue;
+      }
+      claimedIds.add(alias);
+    }
+    return aliases.values;
+  });
+
+  if (issues.length > 0) {
+    return { ok: false, issues };
+  }
+
+  const entries = rawEntries.map((entry, entryIndex) => ({
     ID: String(entry.ID),
+    ...(aliasesByEntry[entryIndex]?.length ? { aliases: aliasesByEntry[entryIndex] } : {}),
     fields: Object.fromEntries(fieldKeys.map((key) => [key, resourceValueToString(entry[key])])),
   }));
   const fields = fieldKeys.map((key) => buildFieldMetadata(key, complexFieldKeys.has(key), entries.map((entry) => entry.fields[key] ?? "")));
@@ -198,7 +231,7 @@ function normalizeResourceLibrary(
 }
 
 function buildFieldMetadata(key: string, isComplex: boolean, values: string[]): ResourceLibraryField {
-  const hiddenAuthorField = key === "ID" || key === "原名";
+  const hiddenAuthorField = key === "ID" || key === "原名" || key === "旧ID";
   return {
     key,
     label: key,
@@ -319,6 +352,18 @@ export function summarizeResourceEntry(entry: ResourceLibraryEntry): string {
   return entry.fields.名称 || entry.ID;
 }
 
+export function resourceEntryMatchesId(entry: ResourceLibraryEntry, id: string): boolean {
+  return entry.ID === id || Boolean(entry.aliases?.includes(id));
+}
+
+export function findResourceLibraryEntry(library: ResourceLibrary | undefined, id: string): ResourceLibraryEntry | undefined {
+  return library?.entries.find((entry) => resourceEntryMatchesId(entry, id));
+}
+
+export function resourceEntryIdentityIds(entry: ResourceLibraryEntry): string[] {
+  return [entry.ID, ...(entry.aliases ?? [])];
+}
+
 function resourceValueToString(value: unknown): string {
   if (value === null || value === undefined) {
     return "";
@@ -330,6 +375,14 @@ function resourceValueToString(value: unknown): string {
     return String(value);
   }
   return JSON.stringify(value);
+}
+
+function normalizeResourceEntryAliases(value: unknown): { ok: true; values: string[] } | { ok: false } {
+  if (value === undefined || value === null || value === "") return { ok: true, values: [] };
+  const values = typeof value === "string" ? [value] : Array.isArray(value) ? value : null;
+  if (!values || values.some((item) => typeof item !== "string" || item.trim() === "")) return { ok: false };
+  if (new Set(values).size !== values.length) return { ok: false };
+  return { ok: true, values };
 }
 
 function isComplexResourceValue(value: unknown): boolean {

@@ -85,8 +85,8 @@ Player 点击图片区域或在其聚焦时按 Enter/Space 打开本地文件选
 
 ## resourceComposer
 
-`按钮文本`、非空 `来源槽位` 和非空 `输出字段` 必填。每槽从自己的 `资源库ID` 单选，并可用 `字段模板` 对该槽 Browser 的推断字段做局部覆盖；每条输出映射包含 `字段`、`来源槽位ID`、`来源字段`。只保存一个稳定 Composite Resource，不保存来源选择。可选 `创建卡牌` 与 Resource Picker 相同。详见 [Resource Composer](resource-composer.md)。
+`按钮文本`、非空 `来源槽位` 和非空 `输出字段` 必填。每槽从自己的 `资源库ID` 单选，并可用 `字段模板` 对该槽 Browser 的推断字段做局部覆盖；每条输出映射包含 `字段`、`来源槽位ID`、`来源字段`。只保存一个稳定 Composite Resource，不保存来源选择。可选 `选择关系输出: {字段, 全部相同时, 不全相同时}` 根据各槽 Entry ID 是否全部相同写入一个派生字段；它不解释游戏规则，常用于通过 Card Table 的 `显示方式字段` 在同源组合显示卡图、异源组合显示文字。可选 `创建卡牌` 与 Resource Picker 相同。详见 [Resource Composer](resource-composer.md)。
 
 ## cardTable
 
-`标签`、非空且不重复的 `资源来源` 必填。来源是 `{类型:"resourceLibrary"|"resourceComposer", ID, 卡牌展示?}`，或至多一个 `{类型:"otherResourceLibraries", ID:"其他", 卡牌展示?}` 动态来源。每个来源可选配置名称模板、描述模板和标签字段；省略时默认 `{{名称}}`、`{{描述}}` 与其他普通字段标签。动态来源适用于当前 Other Resources Picker 集合，不把具体 Extension Library ID 写入 System Package。多个来源共用状态、坐标系和层级。`状态选项?: non-empty unique string[]`；`状态背景色?: Record<string,"#RRGGBB">`；`显示方式?: image|text`；`卡图字段`、`显示方式字段`、`背面卡牌ID字段` 仍是 Table 级配置。详见[Cards](cards.md)。
+`标签`、非空且不重复的 `资源来源` 必填。来源是 `{类型:"resourceLibrary"|"resourceComposer", ID, 卡牌展示?}`，或至多一个 `{类型:"otherResourceLibraries", ID:"其他", 卡牌展示?}` 动态来源。每个来源可选配置名称模板、描述模板和标签字段；省略时默认 `{{名称}}`、`{{描述}}` 与其他普通字段标签。动态来源适用于当前 Other Resources Picker 集合，不把具体 Extension Library ID 写入 System Package。多个来源共用状态、坐标系和层级。`状态选项?: non-empty unique string[]`；`状态背景色?: Record<string,"#RRGGBB">`；`显示方式?: image|text`；`卡图字段`、`卡背字段`、`显示方式字段`、`背面卡牌ID字段` 均是 Table 级配置。详见[Cards](cards.md)。

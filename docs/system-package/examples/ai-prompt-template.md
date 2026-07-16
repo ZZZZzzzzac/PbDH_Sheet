@@ -60,15 +60,15 @@ Page 形态：
 5. readOnlyDisplay: ID, 类型, 标签, 内容?, 资源路径?, 替代文本?, 默认隐藏?；内容/资源至少一个
 6. imageField: ID, 类型, 标签, 替代文本?, 默认隐藏?
 7. resourcePicker: ID, 类型, 按钮文本, 资源库（非空 `{ID, 字段模板?, 默认查询?}[]` 或 `"其他"`）, 多选?, 创建卡牌?, 默认隐藏?
-8. resourceComposer: ID, 类型, 按钮文本, 来源槽位, 输出字段, 创建卡牌?, 默认隐藏?
-9. cardTable: ID, 类型, 标签, 资源来源, 状态选项?, 状态背景色?(Record<state,#RRGGBB>), 显示方式?, 卡图字段?, 显示方式字段?, 背面卡牌ID字段?, 默认隐藏?
+8. resourceComposer: ID, 类型, 按钮文本, 来源槽位, 输出字段, 选择关系输出?({字段,全部相同时,不全相同时}), 创建卡牌?, 默认隐藏?
+9. cardTable: ID, 类型, 标签, 资源来源, 状态选项?, 状态背景色?(Record<state,#RRGGBB>), 显示方式?, 卡图字段?, 卡背字段?, 显示方式字段?, 背面卡牌ID字段?, 默认隐藏?
 
 Resource Picker 字段模板每项：
 { 键, 标签?, 默认显示?, 可筛选?, 可排序?, 可搜索?, 列宽? }
 列宽只能是 compact|normal|wide|fill。
 默认查询：{ filters?: Record<string,string[]>, sort?: { field, direction?: asc|desc } }
 创建卡牌：{ 卡牌桌面模块ID, 默认状态? }
-Resource Entry 的 ID 必填但 Picker 默认不显示；只有需要展示时才显式配置 ID 字段模板。
+Resource Entry 的 ID 必填但 Picker 默认不显示；可以使用 `职业:德鲁伊` 等中文稳定命名空间，不生成无必要的随机哈希。迁移已发布 ID 时可写 `旧ID: string|string[]`，框架会迁移旧引用；`旧ID` 与 `原名` 同样默认隐藏。只有需要展示时才显式配置这些字段模板。
 
 Dependency Rule：
 { ID, sources:[Source...], targets:[Target...], 触发, 条件?, 动作:[Action...] }
@@ -107,6 +107,7 @@ HTML/CSS 要求：
 - 所有 ID 唯一且稳定，所有引用存在，所有路径安全相对。
 - 普通 Sheet Value/Resource Value 保持显示文本语义。
 - Card Table 使用类型化资源来源；每个来源可选声明 Card Presentation。
+- Resource Composer 的 `选择关系输出` 只比较各槽所选 Entry ID 是否全部相同；可配合 Card Table 的 `显示方式字段` 让同源组合显示图片、异源组合显示文字，不生成具体游戏规则判断。
 - Dependency 单轮执行，不生成链式规则或任意脚本写状态。
 - Guide 不读取 Character Data，不分支、不自动推进。
 - Validator 规则不能由包关闭、降级或声明例外。

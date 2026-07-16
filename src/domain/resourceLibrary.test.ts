@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   filterResourceLibraryEntries,
+  findResourceLibraryEntry,
   getResourceLibraryFields,
   inferResourceFieldWidth,
   normalizeResourceLibraries,
@@ -10,6 +11,42 @@ import {
 } from "./resourceLibrary";
 
 describe("Resource Library normalization", () => {
+  it("normalizes hidden legacy IDs and resolves an Entry through them", () => {
+    const result = normalizeResourceLibraries([{
+      ID: "classes", 名称: "职业", 路径: "classes.json",
+      entries: [{ ID: "职业:德鲁伊", 旧ID: "class-old", 名称: "德鲁伊" }],
+    }]);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const library = result.resourceLibraries[0];
+    expect(library.entries[0].aliases).toEqual(["class-old"]);
+    expect(library.fields.find((field) => field.key === "旧ID")).toMatchObject({
+      visible: false, filterable: false, sortable: false, searchable: false,
+    });
+    expect(findResourceLibraryEntry(library, "class-old")?.ID).toBe("职业:德鲁伊");
+  });
+
+  it("rejects legacy IDs that collide with a current or legacy Entry ID", () => {
+    const currentCollision = normalizeResourceLibraries([{
+      ID: "classes", 名称: "职业", 路径: "classes.json",
+      entries: [{ ID: "职业:德鲁伊", 旧ID: "职业:战士" }, { ID: "职业:战士" }],
+    }]);
+    const aliasCollision = normalizeResourceLibraries([{
+      ID: "classes", 名称: "职业", 路径: "classes.json",
+      entries: [{ ID: "职业:德鲁伊", 旧ID: "class-old" }, { ID: "职业:战士", 旧ID: "class-old" }],
+    }]);
+
+    expect(currentCollision.ok).toBe(false);
+    expect(currentCollision.ok ? [] : currentCollision.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "RESOURCE_ENTRY_ID_ALIAS_CONFLICT" }),
+    ]));
+    expect(aliasCollision.ok).toBe(false);
+    expect(aliasCollision.ok ? [] : aliasCollision.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "RESOURCE_ENTRY_ID_ALIAS_CONFLICT" }),
+    ]));
+  });
+
   it("normalizes object-array entries with max field set and missing fields as empty strings", () => {
     const result = normalizeResourceLibraries([
       {

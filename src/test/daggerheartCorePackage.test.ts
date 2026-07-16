@@ -35,11 +35,16 @@ describe("Daggerheart core System Package", () => {
     expect(composeResource(composer, { "ancestry-a": elf, "ancestry-b": elf })?.fields).toMatchObject({
       特性A: elf.fields.特性A,
       特性B: elf.fields.特性B,
+      卡牌显示方式: "image",
     });
     expect(composeResource(composer, { "ancestry-a": elf, "ancestry-b": human })?.fields).toMatchObject({
       特性A: elf.fields.特性A,
       特性B: human.fields.特性B,
+      卡牌显示方式: "text",
     });
+    const cardTable = result.package.modules.find((module) => module.ID === "character-card-table");
+    expect(cardTable?.类型).toBe("cardTable");
+    if (cardTable?.类型 === "cardTable") expect(cardTable.显示方式字段).toBe("卡牌显示方式");
   });
 
   it("styles the ancestry Composer like the compact Resource Picker buttons", () => {
@@ -113,6 +118,63 @@ describe("Daggerheart core System Package", () => {
           });
         }
       }
+    }
+  });
+
+  it("maps every core Card resource to a front image and the correct back image", async () => {
+    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const assetPaths = new Set(result.package.assets?.map((asset) => asset.路径));
+    const expectedCounts: Record<string, number> = {
+      "domain-cards": 189,
+      subclasses: 54,
+      communities: 9,
+      ancestries: 18,
+    };
+    const frontPaths = new Set<string>();
+    for (const [libraryId, expectedCount] of Object.entries(expectedCounts)) {
+      const library = result.package.resourceLibraries?.find((candidate) => candidate.ID === libraryId);
+      expect(library?.entries, libraryId).toHaveLength(expectedCount);
+      for (const entry of library?.entries ?? []) {
+        expect(entry.ID, `${libraryId}/${entry.fields.名称}.ID`).toBe(expectedReadableCoreId(libraryId, entry.fields));
+        expect(entry.aliases, `${entry.ID}.旧ID`).toHaveLength(1);
+        expect(entry.aliases?.[0], `${entry.ID}.旧ID`).toMatch(/^[a-z-]+-[0-9a-f]{12}$/u);
+        expect(entry.fields.卡图, `${libraryId}/${entry.fields.名称}.卡图`).toMatch(/^assets\/cards\/.+\.webp$/u);
+        expect(entry.fields.卡图, `${libraryId}/${entry.fields.名称}.卡图`).not.toMatch(/[0-9a-f]{12}/u);
+        expect(assetPaths.has(entry.fields.卡图), entry.fields.卡图).toBe(true);
+        expect(assetPaths.has(entry.fields.卡背), entry.fields.卡背).toBe(true);
+        expect(frontPaths.has(entry.fields.卡图), entry.fields.卡图).toBe(false);
+        frontPaths.add(entry.fields.卡图);
+        if (libraryId === "domain-cards") {
+          expect(entry.fields.卡背).toBe(`assets/cards/backs/${entry.fields.领域}.webp`);
+        } else {
+          expect(entry.fields.卡背).toBe("assets/cards/backs/通用.webp");
+        }
+      }
+    }
+    expect(frontPaths.size).toBe(270);
+    expect(assetPaths.size).toBe(280);
+  });
+
+  it("uses readable Chinese IDs for every core Resource Entry", async () => {
+    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const expectedCounts: Record<string, number> = {
+      classes: 9, subclasses: 54, ancestries: 18, communities: 9,
+      "domain-cards": 189, weapons: 192, armor: 34, loot: 120,
+    };
+    for (const [libraryId, expectedCount] of Object.entries(expectedCounts)) {
+      const library = result.package.resourceLibraries?.find((candidate) => candidate.ID === libraryId);
+      expect(library?.entries, libraryId).toHaveLength(expectedCount);
+      for (const entry of library?.entries ?? []) {
+        expect(entry.ID, `${libraryId}/${entry.fields.名称}`).toBe(expectedReadableCoreId(libraryId, entry.fields));
+        expect(entry.aliases).toHaveLength(1);
+      }
+      expect(library?.fields.find((field) => field.key === "旧ID")).toMatchObject({
+        visible: false, filterable: false, sortable: false, searchable: false,
+      });
     }
   });
 
@@ -233,6 +295,20 @@ describe("Daggerheart core System Package", () => {
     expect(rebuildDerivedDependencies(otherData, result.package).pageVisibility).toEqual({});
   });
 });
+
+function expectedReadableCoreId(libraryId: string, fields: Record<string, string>): string {
+  switch (libraryId) {
+    case "classes": return `职业:${fields.名称}`;
+    case "subclasses": return `子职:${fields.主职}:${fields.名称}:${fields.等级}`;
+    case "ancestries": return `种族:${fields.名称}`;
+    case "communities": return `社群:${fields.名称}`;
+    case "domain-cards": return `领域卡:${fields.领域}:${fields.名称}`;
+    case "weapons": return `${fields.类型}:${fields.名称}`;
+    case "armor": return `护甲:${fields.名称}`;
+    case "loot": return `战利品:${fields.名称}`;
+    default: throw new Error(`Unknown core Resource Library: ${libraryId}`);
+  }
+}
 
 function createPackageZip(): Blob {
   const files = Object.fromEntries(

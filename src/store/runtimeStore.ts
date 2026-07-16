@@ -341,6 +341,31 @@ function scheduleAutosave(
   }, autosaveDelayMs);
 }
 
+function saveCharacterDataImmediately(
+  snapshot: CharacterData,
+  activeSaveId: string | null,
+  characterSaves: CharacterSaveSummary[],
+  setStatus: (status: StorageStatus) => void,
+) {
+  if (autosaveTimer) {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = undefined;
+  }
+
+  const saveId = activeSaveId ?? snapshot.character.id;
+  const saveName = characterSaves.find((save) => save.id === saveId)?.name ?? "未命名角色";
+  setStatus("saving");
+  void runtimeDependencies.storage.saveCharacterSave({
+    id: saveId,
+    packageId: snapshot.systemPackage.id,
+    name: saveName,
+    updatedAt: snapshot.updatedAt,
+    data: { ...snapshot, character: { ...snapshot.character, id: saveId } },
+  })
+    .then(() => setStatus("saved"))
+    .catch(() => setStatus("error"));
+}
+
 async function reloadRuntimeAssets(packageId: string): Promise<RuntimeAssetResolver> {
   activePackageAssetResolver?.revokeAll();
   activePackageAssetResolver = createRuntimeAssetResolver([
@@ -723,7 +748,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     }
 
     await runtimeDependencies.storage.setActiveCharacterSaveId(currentPackage.manifest.ID, saveId);
-    const normalizedData = ensureCardState(characterData)!;
+    const normalizedData = ensureCardState(characterData, currentPackage)!;
     set({
       characterData: normalizedData,
       activeCharacterSaveId: saveId,
@@ -909,7 +934,12 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       importError: null,
       importNotice: null,
     }));
-    scheduleAutosave(() => get().characterData, (status) => set({ storageStatus: status }));
+    saveCharacterDataImmediately(
+      nextData,
+      get().activeCharacterSaveId,
+      get().characterSaves,
+      (status) => set({ storageStatus: status }),
+    );
   },
 
   commitCheckboxChange(moduleId, optionId, checked, checkboxState) {

@@ -12,7 +12,7 @@ const packageWithClasses: SystemPackage = {
       { key: "ID", label: "ID", visible: false, filterable: false, sortable: false, searchable: false },
       { key: "名称", label: "名称", visible: true, filterable: true, sortable: true, searchable: true },
     ],
-    entries: [{ ID: "class:guardian", fields: { ID: "class:guardian", 名称: "守护者" } }],
+    entries: [{ ID: "class:guardian", aliases: ["class-old-guardian"], fields: { ID: "class:guardian", 旧ID: "class-old-guardian", 名称: "守护者" } }],
   }],
 };
 
@@ -56,6 +56,20 @@ describe("Effective Resource Catalog", () => {
     expect(catalog.extensions[0].issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "RESOURCE_ENTRY_ID_CONFLICT" })]));
     expect(catalog.resourceLibraries).toHaveLength(1);
     expect(catalog.resourceLibraries[0].entries).toHaveLength(1);
+  });
+
+  it("reserves legacy Entry IDs against Extension conflicts", () => {
+    const candidate = extension({
+      ID: "legacy-conflict", 名称: "旧 ID 冲突", 版本: "1", 目标系统包ID: packageWithClasses.manifest.ID,
+      resourceLibraries: [{ ID: "classes", 名称: "职业", entries: [{ ID: "class-old-guardian", 名称: "冲突职业" }] }],
+    });
+
+    const catalog = createEffectiveResourceCatalog(packageWithClasses, [candidate]);
+
+    expect(catalog.extensions[0].status).toBe("disabled");
+    expect(catalog.extensions[0].issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "RESOURCE_ENTRY_ID_CONFLICT", text: expect.stringContaining("class-old-guardian") }),
+    ]));
   });
 
   it("allows the same Entry ID in different Libraries", () => {

@@ -2,7 +2,9 @@
 
 manifest reference：`{ ID: string, 名称: string, 路径: path }`，三者必填。Library 文件必须是 JSON object array。
 
-Resource Entry 的 `ID` 必填、非空且在本 Library 唯一。其余键允许任意 JSON value。Normalizer 转换规则：null/undefined → `""`；string 原样；number/boolean/bigint → `String(value)`；array/object → `JSON.stringify(value)`。因此 runtime `entry.fields` 是 `Record<string,string>`。
+Resource Entry 的 `ID` 必填、非空且在本 Library 唯一。ID 是稳定身份而不是显示值，可以使用中文；推荐用可读命名空间消除重名，例如 `职业:德鲁伊`、`子职:德鲁伊:元素结社:基础`、`领域卡:奥术:符文护符`。发布后不要因显示名称润色而修改 ID。
+
+迁移已发布 ID 时，可选 `旧ID` 声明一个非空字符串或不重复的非空字符串数组。当前 ID 与同 Library 内所有旧 ID 共同占用身份命名空间，任何当前/旧 ID 冲突都是 error。框架在载入 Character Data 时把旧 Card Definition Reference 和 Derived Source Snapshot 改写为当前 ID；`旧ID` 只用于显式迁移，框架不会按名称猜测。其余键允许任意 JSON value。Normalizer 转换规则：null/undefined → `""`；string 原样；number/boolean/bigint → `String(value)`；array/object → `JSON.stringify(value)`。因此 runtime `entry.fields` 是 `Record<string,string>`。
 
 Resource Library Browser 的可见表格值按[Restricted Markdown](restricted-markdown.md)展示；列标题、筛选控件、搜索框和无障碍名称保持纯文本。查询、筛选和排序仍使用原始字符串。
 
@@ -12,7 +14,7 @@ Resource Library Browser 的可见表格值按[Restricted Markdown](restricted-m
 { key, label, visible, filterable, sortable, searchable, width? }
 ```
 
-框架标识字段 `ID` 始终保留在 normalized Entry 中供引用和验证使用；Author-only 的 `原名` 可保留资源的原文名称。两者的推断 metadata 默认都设置为不可见、不可筛选、不可排序、不可搜索，因此 Resource Picker、Resource Composer 和 Other Resources Picker 默认不向 Player 展示它们。Author 如确有诊断或展示需要，可在普通 Picker 链接或 Composer 来源槽位的 `字段模板` 中显式启用。
+框架标识字段 `ID` 始终保留在 normalized Entry 中供引用和验证使用；Author-only 的 `原名` 可保留资源的原文名称，`旧ID` 可保留迁移别名。三者的推断 metadata 默认都设置为不可见、不可筛选、不可排序、不可搜索，因此 Resource Picker、Resource Composer 和 Other Resources Picker 默认不向 Player 展示它们。Author 如确有诊断或展示需要，可在普通 Picker 链接或 Composer 来源槽位的 `字段模板` 中显式启用。
 
 Author `资源库[].字段模板` 与 `resourceComposer.来源槽位[].字段模板`：
 

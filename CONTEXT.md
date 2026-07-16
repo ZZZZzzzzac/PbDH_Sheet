@@ -96,6 +96,14 @@ _Avoid_: New Sheet Module, text value
 An Author-defined collection of selectable system resources such as classes, weapons, abilities, traits, or cards.
 _Avoid_: Card deck when referring to the source data
 
+**Stable Resource ID**:
+An Author-defined, unique identity for one Resource Entry within its Resource Library. It may use Chinese and should prefer a readable namespace whose meaning remains stable across display-name edits.
+_Avoid_: Random hash when a readable stable identity exists, display label treated as disposable identity
+
+**Legacy Resource ID**:
+An explicit Author-only alias declared on a Resource Entry solely to migrate previously persisted Resource References to its current Stable Resource ID.
+_Avoid_: Name-based lookup, second current ID, Player-visible resource field
+
 **Resource Extension**:
 An independently distributed JSON or image-bearing ZIP bundle that targets one System Package and contributes entries to one or more existing or new Resource Libraries without modifying that System Package.
 _Avoid_: Updated System Package, resource patch
@@ -248,6 +256,7 @@ _Avoid_: Script plugin
 - Normal reading renders only the Current Page. Export Preview temporarily renders every printable page in declaration order, hides page navigation, and restores the unchanged Current Page on exit. Browser printing and HTML snapshots share this printable-page set; an empty set produces a clear message instead of invoking output.
 - The Base Framework presents every printable page as a fixed A4 portrait page box (210mm × 297mm) with framework-owned inner print margins. It does not scale System Package layouts to fit; an Author is responsible for making each HTML Layout Template fit the available A4 content box. A Sheet Shell surface that must print as an additional page may opt into the same box with `data-print-page="true"`.
 - A **Resource Library** stores source entries; **Card Presentation** controls how selected entries appear to Players.
+- A **Stable Resource ID** may use Chinese. Current IDs and all declared **Legacy Resource IDs** share one uniqueness namespace within a Resource Library; loading Character Data rewrites matching legacy Card and Derived Source references to the current ID.
 - A **Resource Extension** identifies its target by System Package ID and contains one or more explicit Resource Library contributions; each existing target produces a merged runtime view, while each new target creates a separate Resource Library.
 - A **Resource Extension** must declare its target System Package ID because the Base Framework cannot infer package compatibility; a contribution with a missing target Resource Library ID means “create a new library” and receives a generated ID.
 - A **Resource Extension** targeting an existing Resource Library cannot rename it; the System Package remains authoritative for that library's display name.
@@ -295,6 +304,7 @@ _Avoid_: Script plugin
 - **Resource Keyword Search** is transient Browser UI state. Field templates may declare `可搜索`; when omitted it follows `默认显示`. With no field template, all normalized text fields are searchable. Search is case-insensitive, trimmed, and never stored in Character Data or Dependency Logic defaults.
 - A **Card Detail View** only enlarges the card's existing presentation. It is entered through the Card Table right-click or long-press context menu and does not edit Card Instance state or introduce another Resource Library Browser detail flow.
 - A Card Definition may reference another Card Definition in the same Resource Library as its reverse face. A Card Instance retains its front identity while face, quarter-turn rotation, and Card Indicator values remain Player-owned Character Data.
+- A Card Definition or Composite Resource may instead carry a direct card-back image path when its reverse has no separate rules definition. Direct card-back art keeps the front Definition identity and only changes the rendered artwork while the Card Instance is showing its back.
 - Card Instance state values are Author-defined through the Card Table. An Author may map selected states to Card Face background colors; unmapped states retain the framework default, and only the state string belongs to Character Data.
 - Every Card Instance can add up to ten **Card Indicators** without Author configuration. Each receives a stable color from the framework palette; badges stay outside Card Face text fitting and are not Countable Resource Sheet Modules or Dependency Logic targets.
 - First-version **Character Data** stores text and state. System images should be referenced rather than copied, but Player-provided portraits or character art may be stored with the Character Data.

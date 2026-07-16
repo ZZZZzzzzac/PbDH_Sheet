@@ -1,4 +1,4 @@
-import { normalizeResourceLibraries, type ResourceLibrary, type ResourceLibraryEntry } from "./resourceLibrary";
+import { normalizeResourceLibraries, resourceEntryIdentityIds, type ResourceLibrary, type ResourceLibraryEntry } from "./resourceLibrary";
 import type { ResourceExtension, ResourceExtensionIssue } from "./resourceExtension";
 import type { SystemPackage } from "./systemPackage";
 
@@ -73,16 +73,18 @@ export function createEffectiveResourceCatalog(systemPackage: SystemPackage, ext
     }
 
     for (const contribution of extension.resourceLibraries) {
-      const existingIds = new Set(libraries.get(contribution.ID)?.entries.map((entry) => entry.ID) ?? []);
+      const existingIds = new Set(libraries.get(contribution.ID)?.entries.flatMap(resourceEntryIdentityIds) ?? []);
       for (const entry of contribution.library.entries) {
-        if (existingIds.has(entry.ID)) {
+        const conflictingId = resourceEntryIdentityIds(entry).find((id) => existingIds.has(id));
+        if (conflictingId) {
           extensionIssues.push({
             level: "error",
             code: "RESOURCE_ENTRY_ID_CONFLICT",
-            text: `Resource Library ${contribution.ID} 的 Entry ID 冲突：${entry.ID}`,
+            text: `Resource Library ${contribution.ID} 的 Entry 当前 ID 或旧 ID 冲突：${conflictingId}`,
             path: `resourceLibraries.${contribution.ID}.entries.${entry.ID}`,
           });
         }
+        for (const id of resourceEntryIdentityIds(entry)) existingIds.add(id);
       }
     }
 
@@ -119,7 +121,11 @@ export function createEffectiveResourceCatalog(systemPackage: SystemPackage, ext
       ID: source.ID,
       名称: source.名称,
       路径: source.路径,
-      entries: source.entries.map((entry) => ({ ...entry.fields, ID: entry.ID })),
+      entries: source.entries.map((entry) => ({
+        ...entry.fields,
+        ID: entry.ID,
+        ...(entry.aliases?.length ? { 旧ID: entry.aliases.length === 1 ? entry.aliases[0] : entry.aliases } : {}),
+      })),
     }]);
     if (!normalized.ok) throw new Error(`Effective Resource Catalog normalization failed: ${libraryId}`);
     return {

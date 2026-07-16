@@ -3,6 +3,41 @@ import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures"
 import { findAsset, findModule, findResourceLibrary, getHtmlTemplateModuleReferences, validateCachedSystemPackage, validateSystemPackage } from "./systemPackage";
 
 describe("validateSystemPackage", () => {
+  it("accepts a Composer selection-relation field and rejects collision with a copied output field", () => {
+    const composer = {
+      ID: "composer",
+      类型: "resourceComposer",
+      按钮文本: "组合",
+      来源槽位: [
+        { ID: "a", 标签: "A", 资源库ID: "cards" },
+        { ID: "b", 标签: "B", 资源库ID: "cards" },
+      ],
+      输出字段: [{ 字段: "名称", 来源槽位ID: "a", 来源字段: "名称" }],
+      选择关系输出: { 字段: "展示", 全部相同时: "image", 不全相同时: "text" },
+    } as const;
+    const base = {
+      ...minimalSystemPackage,
+      modules: [composer],
+      pages: [{
+        ...minimalSystemPackage.pages[0],
+        layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<pb-module id="composer"></pb-module>' },
+      }],
+      resourceLibraries: [{ ID: "cards", 名称: "卡牌", 路径: "resources/cards.json", entries: [{ ID: "one", 名称: "一" }] }],
+    };
+
+    expect(validateSystemPackage(base).ok).toBe(true);
+    const collision = validateSystemPackage({
+      ...base,
+      modules: [{ ...composer, 选择关系输出: { ...composer.选择关系输出, 字段: "名称" } }],
+    });
+    expect(collision.ok).toBe(false);
+    if (!collision.ok) {
+      expect(collision.issues).toEqual(expect.arrayContaining([
+        expect.objectContaining({ code: "DUPLICATE_RESOURCE_COMPOSER_OUTPUT_FIELD" }),
+      ]));
+    }
+  });
+
   it("validates reverse Card Definition references", () => {
     const cardModule = {
       ID: "cards",

@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { type CardInstance } from "./cardEngine";
 import type { CompositeResource } from "./resourceComposer";
-import type { SystemPackage } from "./systemPackage";
+import { findResourceLibrary, type SystemPackage } from "./systemPackage";
+import { findResourceLibraryEntry } from "./resourceLibrary";
 import { clampInt, generateId } from "../utils";
 
 export const characterDataSchemaVersion = "0.1.0";
@@ -262,7 +263,7 @@ export function parseCharacterDataJson(text: string, currentPackage: SystemPacka
     };
   }
 
-  return { ok: true, data: normalizeCharacterData(parsed.data) };
+  return { ok: true, data: migrateCharacterResourceReferences(normalizeCharacterData(parsed.data), currentPackage) };
 }
 
 export function updateResourceSelectionSnapshot(
@@ -295,5 +296,26 @@ export function normalizeCharacterData(data: z.infer<typeof characterDataSchema>
         return { ...current, definitionRef };
       }),
     },
+  };
+}
+
+export function migrateCharacterResourceReferences(data: CharacterData, systemPackage: SystemPackage): CharacterData {
+  return {
+    ...data,
+    cards: {
+      instances: data.cards.instances.map((instance) => {
+        if (instance.definitionRef.type !== "resourceLibrary") return instance;
+        const entry = findResourceLibraryEntry(findResourceLibrary(systemPackage, instance.definitionRef.libraryId), instance.definitionRef.entryId);
+        if (!entry || entry.ID === instance.definitionRef.entryId) return instance;
+        return { ...instance, definitionRef: { ...instance.definitionRef, entryId: entry.ID } };
+      }),
+    },
+    resourceSelections: Object.fromEntries(Object.entries(data.resourceSelections ?? {}).map(([moduleId, snapshot]) => {
+      const library = findResourceLibrary(systemPackage, snapshot.libraryId);
+      return [moduleId, {
+        ...snapshot,
+        entryIds: snapshot.entryIds.map((entryId) => findResourceLibraryEntry(library, entryId)?.ID ?? entryId),
+      }];
+    })),
   };
 }

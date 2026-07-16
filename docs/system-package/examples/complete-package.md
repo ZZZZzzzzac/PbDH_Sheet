@@ -256,8 +256,10 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
     ],
     "输出字段": [
       { "字段": "名称", "来源槽位ID": "name", "来源字段": "名称" },
-      { "字段": "描述", "来源槽位ID": "description", "来源字段": "描述" }
+      { "字段": "描述", "来源槽位ID": "description", "来源字段": "描述" },
+      { "字段": "卡图", "来源槽位ID": "name", "来源字段": "卡图" }
     ],
+    "选择关系输出": { "字段": "展示", "全部相同时": "image", "不全相同时": "text" },
     "创建卡牌": { "卡牌桌面模块ID": "card-table", "默认状态": "当前" }
   },
   {
@@ -279,6 +281,7 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
     },
     "显示方式": "text",
     "卡图字段": "卡图",
+    "卡背字段": "卡背",
     "显示方式字段": "展示",
     "背面卡牌ID字段": "背面卡牌ID",
     "默认隐藏": false
@@ -298,7 +301,7 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
 | readOnlyDisplay | `内容`、`资源路径`、`替代文本`；内容/资源至少一个 |
 | imageField | `替代文本` |
 | resourcePicker | `字段模板`、`多选`、`默认查询`、`创建卡牌` |
-| resourceComposer | `来源槽位`、`输出字段`、`创建卡牌` |
+| resourceComposer | `来源槽位`、`输出字段`、`选择关系输出`、`创建卡牌` |
 | cardTable | `状态选项`、`状态背景色`、`显示方式`、五个字段名配置（含 `背面卡牌ID字段`）；通用指示物不需要 Author 配置 |
 
 列宽的全部值是 `compact | normal | wide | fill`。sort direction 是 `asc | desc`。Resource Entry 的 `ID` 默认不在 Picker 显示/筛选/排序/搜索；需要时在 `字段模板` 中显式配置。

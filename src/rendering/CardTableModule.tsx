@@ -402,15 +402,15 @@ function CardFace({
   autoFitDescription?: boolean;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
-  const assetUrls = useRuntimeStore((state) => state.packageAssetUrls);
   const resourceCatalog = useRuntimeStore((state) => state.resourceCatalog);
   const artField = moduleConfig.卡图字段 ?? "卡图";
   const cardArtRef = definition?.fields[artField] ?? "";
   const libraryId = definitionRef?.type === "resourceLibrary" ? definitionRef.libraryId : undefined;
   const provenance = findResourceEntryProvenance(resourceCatalog, libraryId, definition?.ID);
-  const cardArtUrl = cardArtRef ? assetUrls[resourceAssetUrlKey(provenance?.type, provenance?.id, cardArtRef)] : undefined;
+  const cardArtUrlKey = resourceAssetUrlKey(provenance?.type, provenance?.id, cardArtRef);
+  const cardArtUrl = useRuntimeStore((state) => cardArtRef ? state.packageAssetUrls[cardArtUrlKey] : undefined);
   const showImage = resolveCardDisplayMode(definition, moduleConfig) === "image" && cardArtUrl && !imageFailed;
-  useEffect(() => setImageFailed(false), [cardArtRef]);
+  useEffect(() => setImageFailed(false), [cardArtRef, cardArtUrl]);
   return showImage ? <img className="play-card-image" src={cardArtUrl} alt={fallbackName} draggable={false} onError={() => setImageFailed(true)} /> : <TextCard definition={definition} module={moduleConfig} presentation={presentation} fallbackName={fallbackName} autoFitDescription={autoFitDescription} />;
 }
 
@@ -479,6 +479,10 @@ function resolveVisibleCardDefinition(
   if (!front || !instance || instance.face === "front") {
     return front;
   }
+  const backArt = front.fields[module.卡背字段 ?? "卡背"]?.trim();
+  if (backArt) {
+    return { ...front, fields: { ...front.fields, [module.卡图字段 ?? "卡图"]: backArt } };
+  }
   const reverseId = front.fields[module.背面卡牌ID字段 ?? "背面卡牌ID"]?.trim();
   const libraryId = instance.definitionRef.type === "resourceLibrary" ? instance.definitionRef.libraryId : undefined;
   return reverseId
@@ -488,6 +492,8 @@ function resolveVisibleCardDefinition(
 
 function hasReverseCardDefinition(systemPackage: SystemPackage, characterData: ReturnType<typeof useRuntimeStore.getState>["characterData"], module: CardTableModuleConfig, instance: CardInstance | undefined): boolean {
   const front = resolveFrontCardDefinition(systemPackage, characterData, instance);
+  const backArt = front?.fields[module.卡背字段 ?? "卡背"]?.trim();
+  if (backArt) return true;
   const reverseId = front?.fields[module.背面卡牌ID字段 ?? "背面卡牌ID"]?.trim();
   const libraryId = instance?.definitionRef.type === "resourceLibrary" ? instance.definitionRef.libraryId : undefined;
   return Boolean(reverseId && reverseId !== front?.ID
@@ -597,9 +603,10 @@ function resolvePresentation(
   presentation?: CardPresentation,
 ) {
   const artField = moduleConfig.卡图字段 ?? "卡图";
+  const backArtField = moduleConfig.卡背字段 ?? "卡背";
   const displayModeField = moduleConfig.显示方式字段 ?? "卡牌显示方式";
   const reverseIdField = moduleConfig.背面卡牌ID字段 ?? "背面卡牌ID";
-  return resolveCardPresentation(definition, presentation, [artField, displayModeField, reverseIdField]);
+  return resolveCardPresentation(definition, presentation, [artField, backArtField, displayModeField, reverseIdField]);
 }
 
 function findCardPresentation(systemPackage: SystemPackage, module: CardTableModuleConfig, instance: CardInstance | undefined): CardPresentation | undefined {

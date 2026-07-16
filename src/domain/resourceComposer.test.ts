@@ -13,6 +13,7 @@ const module = {
     { 字段: "特性A", 来源槽位ID: "a", 来源字段: "特性A" },
     { 字段: "特性B", 来源槽位ID: "b", 来源字段: "特性B" },
   ],
+  选择关系输出: { 字段: "卡牌显示方式", 全部相同时: "image", 不全相同时: "text" },
 } as const;
 
 const elf = { ID: "elf", fields: { ID: "elf", 特性A: "敏锐", 特性B: "冥想" } };
@@ -23,12 +24,12 @@ describe("Resource Composer", () => {
     expect(composeResource(module, { a: elf, b: human })).toEqual({
       ID: "composite:compose-ancestry",
       composerModuleId: "compose-ancestry",
-      fields: { ID: "composite:compose-ancestry", 特性A: "敏锐", 特性B: "应变" },
+      fields: { ID: "composite:compose-ancestry", 特性A: "敏锐", 特性B: "应变", 卡牌显示方式: "text" },
     });
   });
 
   it("allows the same entry in multiple slots", () => {
-    expect(composeResource(module, { a: elf, b: elf })?.fields).toMatchObject({ 特性A: "敏锐", 特性B: "冥想" });
+    expect(composeResource(module, { a: elf, b: elf })?.fields).toMatchObject({ 特性A: "敏锐", 特性B: "冥想", 卡牌显示方式: "image" });
   });
 
   it("does not produce partial output", () => {

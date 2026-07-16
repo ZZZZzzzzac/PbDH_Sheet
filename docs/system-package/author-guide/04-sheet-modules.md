@@ -11,7 +11,7 @@ Sheet Module 是框架提供的交互或展示部件。共同字段是唯一 `ID
 - `readOnlyDisplay`：只读文本或图片；需要 `标签`，`内容` 与 `资源路径` 至少一个，可写 `替代文本`。
 - `imageField`：Player 上传头像/立绘；需要 `标签`，可写 `替代文本`。
 - `resourcePicker`：`资源库` 使用非空链接数组或字面值 `"其他"`。普通 Picker 可链接多个 Library；Browser 用左上角下拉切换表，每个链接独立定义 `字段模板` 与 `默认查询`。Other Picker 自动显示 Extension 新建且未被普通 Picker 或 Composer 使用的独立 Library；合并到既有库的资源仍由原 Picker/Composer 接收。两者都只发出临时选择事件，不保存选择本身；Other Picker 若创建 Card，目标 Card Table 用 `otherResourceLibraries` 动态来源接收，无需枚举扩展库 ID。
-- `resourceComposer`：每个 `来源槽位` 可声明 `字段模板`，用来隐藏或重命名该槽 Resource Browser 的字段；`原名` 默认属于 Author-only 字段，不向 Player 展示。
+- `resourceComposer`：每个 `来源槽位` 可声明 `字段模板`，用来隐藏或重命名该槽 Resource Browser 的字段；`原名` 默认属于 Author-only 字段，不向 Player 展示。需要区分同一 Entry 的重复选择与不同 Entry 的组合时，可声明通用的 `选择关系输出`；例如把结果接到 Card Table 的 `显示方式字段`，让同源组合显示图片、异源组合显示文字。框架不会把这种关系解释成某个游戏的“混血”等规则。
 - `cardTable`：显示和操作由 Resource Library 定义的 Cards。
 
 普通 Sheet Value 默认按文本保存，不要因为看起来像数字就假设 Validator 会做数值校验。模块完整字段见[Sheet Module Reference](../reference/sheet-modules.md)。

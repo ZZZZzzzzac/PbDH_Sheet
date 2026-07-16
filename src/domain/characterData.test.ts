@@ -2,8 +2,35 @@ import { describe, expect, it } from "vitest";
 import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures";
 import { createCardInstance } from "./cardEngine";
 import { createEmptyCharacterData, exportCharacterData, parseCharacterDataJson, removePlayerImage, updateCharacterValue, updatePlayerImage, updateResourceSelectionSnapshot } from "./characterData";
+import { normalizeResourceLibraries } from "./resourceLibrary";
 
 describe("Character Data import/export", () => {
+  it("migrates legacy Card and Derived Source references to the current Resource Entry ID", () => {
+    const normalized = normalizeResourceLibraries([{
+      ID: "classes", 名称: "职业", 路径: "classes.json",
+      entries: [{ ID: "职业:德鲁伊", 旧ID: "class-old", 名称: "德鲁伊" }],
+    }]);
+    expect(normalized.ok).toBe(true);
+    if (!normalized.ok) return;
+    const systemPackage = { ...minimalSystemPackage, resourceLibraries: normalized.resourceLibraries };
+    let data = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "legacy-class-card",
+      tableModuleId: "domain-card-table",
+      libraryId: "classes",
+      definitionId: "class-old",
+    });
+    data = updateResourceSelectionSnapshot(data, "pick-class", "classes", ["class-old"]);
+
+    const result = parseCharacterDataJson(exportCharacterData(data), systemPackage);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.cards.instances[0].definitionRef).toEqual({
+      type: "resourceLibrary", libraryId: "classes", entryId: "职业:德鲁伊",
+    });
+    expect(result.data.resourceSelections?.["pick-class"].entryIds).toEqual(["职业:德鲁伊"]);
+  });
+
   it("exports values plus System Package identity, not the full System Package", () => {
     const data = updateCharacterValue(createEmptyCharacterData(minimalSystemPackage), "character-name", "阿青");
     const exported = JSON.parse(exportCharacterData(data));

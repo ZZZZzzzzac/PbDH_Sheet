@@ -30,6 +30,9 @@ describe("The Void Resource Extension", () => {
     });
     const ids = result.extension.resourceLibraries.flatMap((library) => library.library.entries.map((entry) => `${library.ID}:${entry.ID}`));
     expect(new Set(ids).size).toBe(105);
+    const entries = result.extension.resourceLibraries.flatMap((library) => library.library.entries);
+    expect(entries.every((entry) => entry.ID.startsWith("虚空:"))).toBe(true);
+    expect(entries.every((entry) => entry.aliases?.length === 1 && /^void-[a-z-]+-[0-9a-f]{12}$/u.test(entry.aliases[0]))).toBe(true);
   });
 
   it("maps class and ancestry fields without losing their rule text", () => {

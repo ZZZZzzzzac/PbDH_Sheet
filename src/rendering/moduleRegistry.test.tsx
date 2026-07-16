@@ -834,6 +834,96 @@ describe("Module Registry rendering", () => {
     expect(screen.getByRole("dialog", { name: "卡牌背面详情" })).toHaveTextContent("这是独立的背面 Card Definition。");
   });
 
+  it("flips an image Card to its direct back asset without a reverse Resource Entry", () => {
+    const systemPackage = createCardTablePackage();
+    const table = systemPackage.modules.find((module) => module.ID === "domain-card-table");
+    if (table?.类型 !== "cardTable") throw new Error("card table fixture missing");
+    table.显示方式 = "image";
+    const front = systemPackage.resourceLibraries?.find((library) => library.ID === "domain-cards")?.entries[0];
+    if (!front) throw new Error("front fixture missing");
+    front.fields.卡图 = "assets/cards/front.webp";
+    front.fields.卡背 = "assets/cards/back.webp";
+    delete front.fields.背面卡牌ID;
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "direct-back-card",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: front.ID,
+    });
+    useRuntimeStore.setState({
+      currentPackage: systemPackage,
+      characterData,
+      packageAssetUrls: {
+        "assets/cards/front.webp": "blob:front",
+        "assets/cards/back.webp": "blob:back",
+      },
+    });
+
+    render(<SheetRenderer systemPackage={systemPackage} />);
+    const card = screen.getByRole("article", { name: "回想测试" });
+    expect(within(card).getByRole("img", { name: "回想测试" })).toHaveAttribute("src", "blob:front");
+    fireEvent.contextMenu(card);
+    fireEvent.click(screen.getByRole("menuitem", { name: "翻至背面" }));
+    expect(within(card).getByRole("img", { name: "回想测试" })).toHaveAttribute("src", "blob:back");
+  });
+
+  it("lets a Card Definition override an image Table with text presentation", () => {
+    const systemPackage = createCardTablePackage();
+    const table = systemPackage.modules.find((module) => module.ID === "domain-card-table");
+    if (table?.类型 !== "cardTable") throw new Error("card table fixture missing");
+    table.显示方式 = "image";
+    table.显示方式字段 = "卡牌显示方式";
+    const definition = systemPackage.resourceLibraries?.find((library) => library.ID === "domain-cards")?.entries[0];
+    if (!definition) throw new Error("definition fixture missing");
+    definition.fields.卡图 = "assets/cards/front.webp";
+    definition.fields.卡牌显示方式 = "text";
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "text-override-card",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: definition.ID,
+    });
+    useRuntimeStore.setState({
+      currentPackage: systemPackage,
+      characterData,
+      packageAssetUrls: { "assets/cards/front.webp": "blob:front" },
+    });
+
+    render(<SheetRenderer systemPackage={systemPackage} />);
+    const card = screen.getByRole("article", { name: "回想测试" });
+    expect(within(card).queryByRole("img", { name: "回想测试" })).not.toBeInTheDocument();
+    expect(card).toHaveTextContent("描述应该独立显示。");
+  });
+
+  it("shows an image as soon as its URL becomes available without requiring a Card interaction", () => {
+    const systemPackage = createCardTablePackage();
+    const table = systemPackage.modules.find((module) => module.ID === "domain-card-table");
+    if (table?.类型 !== "cardTable") throw new Error("card table fixture missing");
+    table.显示方式 = "image";
+    const definition = systemPackage.resourceLibraries?.find((library) => library.ID === "domain-cards")?.entries[0];
+    if (!definition) throw new Error("definition fixture missing");
+    definition.fields.卡图 = "assets/cards/front.webp";
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "late-image-card",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: definition.ID,
+    });
+    const packageAssetUrls: Record<string, string> = {};
+    useRuntimeStore.setState({ currentPackage: systemPackage, characterData, packageAssetUrls });
+
+    render(<SheetRenderer systemPackage={systemPackage} />);
+    const card = screen.getByRole("article", { name: "回想测试" });
+    expect(within(card).queryByRole("img", { name: "回想测试" })).not.toBeInTheDocument();
+
+    act(() => {
+      packageAssetUrls["assets/cards/front.webp"] = "blob:front";
+      useRuntimeStore.setState({ storageStatus: "saved" });
+    });
+
+    expect(within(card).getByRole("img", { name: "回想测试" })).toHaveAttribute("src", "blob:front");
+  });
+
   it("uses the Card Table state background color after switching state", () => {
     const systemPackage = createCardTablePackage();
     const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {

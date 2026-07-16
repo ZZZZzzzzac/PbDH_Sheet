@@ -34,7 +34,11 @@ if (!requestedOutput) {
   const backupWeapons = [
     ...generated.get("primary-weapons.json").map((entry) => ({ ...entry, 武器类别: "主武器" })),
     ...generated.get("secondary-weapons.json").map((entry) => ({ ...entry, 武器类别: "副武器" })),
-  ].map((entry) => ({ ...entry, ID: stableId("backup-weapon", `${entry.武器类别}:${entry.名称}`) }));
+  ].map((entry) => ({
+    ...entry,
+    ID: `备用武器:${entry.武器类别}:${entry.名称}`,
+    旧ID: stableId("backup-weapon", `${entry.武器类别}:${entry.名称}`),
+  }));
   await writeJson("backup-weapons.json", backupWeapons);
 }
 
@@ -68,11 +72,29 @@ function normalizeEntry(rawEntry, prefix) {
   }
 
   return {
-    ID: stableId(prefix, name),
+    ID: readableId(prefix, entry, name),
+    旧ID: stableId(prefix, legacyIdentity(prefix, entry, name)),
     ...entry,
     名称: name,
     ...(entry.描述 ? { 描述: String(entry.描述) } : {}),
   };
+}
+
+function readableId(prefix, entry, name) {
+  if (prefix === "class") return `职业:${name}`;
+  if (prefix === "subclass") return `子职:${entry.主职 ?? entry.职业}:${name}:${entry.等级}`;
+  if (prefix === "ancestry") return `种族:${name}`;
+  if (prefix === "community") return `社群:${name}`;
+  if (prefix === "domain-card") return `领域卡:${entry.领域}:${name}`;
+  if (prefix === "primary-weapon") return `主武器:${name}`;
+  if (prefix === "secondary-weapon") return `副武器:${name}`;
+  if (prefix === "armor") return `护甲:${name}`;
+  if (prefix === "loot") return `战利品:${name}`;
+  throw new Error(`Unknown Resource ID prefix: ${prefix}`);
+}
+
+function legacyIdentity(prefix, entry, name) {
+  return prefix === "subclass" ? `${entry.主职 ?? entry.职业}:${name}:${entry.等级}` : name;
 }
 
 function flattenQuestions(entry, key) {

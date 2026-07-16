@@ -3,6 +3,7 @@ import {
   type CharacterData,
   type PlayerImageData,
   createEmptyCharacterData,
+  migrateCharacterResourceReferences,
 } from "../domain/characterData";
 import { type DependencyEvaluationResult } from "../domain/dependencyEngine";
 import type { ResourceLibraryEntry, ResourceLibraryQuery } from "../domain/resourceLibrary";
@@ -65,12 +66,12 @@ export function mergeResourcePickerDefaultQueries(
   return next;
 }
 
-export function ensureCardState(data: CharacterData | null): CharacterData | null {
+export function ensureCardState(data: CharacterData | null, systemPackage?: SystemPackage): CharacterData | null {
   if (!data) {
     return null;
   }
 
-  return {
+  const normalized = {
     ...data,
     cards: {
       instances: (data.cards?.instances ?? []).map((instance) => {
@@ -83,6 +84,7 @@ export function ensureCardState(data: CharacterData | null): CharacterData | nul
     compositeResources: data.compositeResources ?? {},
     resourceSelections: data.resourceSelections ?? {},
   };
+  return systemPackage ? migrateCharacterResourceReferences(normalized, systemPackage) : normalized;
 }
 
 export function dependencyRuntimeStateFromResult(result: DependencyEvaluationResult): DependencyMergeState {
@@ -111,7 +113,7 @@ export async function loadActiveCharacterForPackage(
   }
 
   if (activeCharacterSaveId) {
-    const saved = ensureCardState(await storage.loadCharacterSave(packageId, activeCharacterSaveId));
+    const saved = ensureCardState(await storage.loadCharacterSave(packageId, activeCharacterSaveId), systemPackage);
     if (saved) {
       await storage.setActiveCharacterSaveId(packageId, activeCharacterSaveId);
       return {

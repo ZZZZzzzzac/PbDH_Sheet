@@ -10,10 +10,15 @@ Card Table presentation field resolution：
 | description | 来源 `卡牌展示.描述模板` | `{{描述}}` |
 | tags | 来源 `卡牌展示.标签字段` | 未被模板消费的其他普通非空字段 |
 | artwork | `卡图字段` | `卡图` |
+| direct back artwork | `卡背字段` | `卡背` |
 | per-entry presentation | `显示方式字段` | 未启用 |
 | table fallback presentation | `显示方式` | 组件默认 |
 
+`显示方式字段` 的 Entry 值为 `image` 或 `text` 时覆盖 Table 的 `显示方式`。Resource Composer 可用 `选择关系输出` 生成这个字段：所有槽选择同一 Entry 时输出 `image`，选择中存在不同 Entry 时输出 `text`。框架只比较来源 Entry ID，不理解具体系统中的“混血”等业务语义；异源组合使用文字，是为了避免任一来源卡图错误代表整个 Composite Resource。
+
 Card Table 可用 `背面卡牌ID字段` 指定哪个 Resource Entry 字段保存背面 Definition ID，默认字段名是 `背面卡牌ID`。该值省略或为空表示单面卡；非空值必须引用同一 Resource Library 中另一张 Card Definition，不能引用自身。Card Instance 始终以原始 `libraryId + definitionId` 作为正面身份，只把当前 `face` 保存为实例状态。右键菜单仅在背面引用有效时显示翻面操作，紧凑 Card Face 与 Card Detail 都展示当前面。
+
+若卡背只是一张图片而不是另一条规则定义，Entry 可在 `卡背字段`（默认 `卡背`）直接填写 `assets/**` 路径。直接卡背优先于 `背面卡牌ID字段`，翻面时保持同一个 Card Definition 与 Card Presentation，只把 `卡图字段` 的展示来源替换为卡背图片。这也适用于 Resource Composer 产生的 Composite Resource；Composer 应把来源 Entry 的 `卡图`、`卡背`路由到同名输出字段。
 
 每个 Card Instance 都可使用框架内建指示物，不需要 Author 在 System Package 中声明类型。Player 从 Card 右键菜单选择 `添加指示物`，每次创建一个初始值为 0 的独立指示物；同一实例最多十个。框架按添加顺序从固定十色 palette 分配尚未使用的背景色，删除后新指示物优先复用空出的颜色。
 

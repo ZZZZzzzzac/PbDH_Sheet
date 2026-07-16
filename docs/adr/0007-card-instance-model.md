@@ -52,3 +52,7 @@ Card Engine 使用卡牌实例模型：
 ## 追加说明（2026-07-14）
 
 后续信号已经出现，Card Engine 扩展为支持：正面 Card Definition 通过可配置字段引用同一 Resource Library 中的背面 Card Definition；Player 通过 Card 右键菜单翻面和以 90° 步长旋转；每张 Card Instance 无需 Author 配置即可添加最多十个通用指示物，框架从固定十色 palette 分配背景色。Player 通过 36px 边缘徽章操作独立的非负计数；徽章只显示放大的数值。指示物在 0 时保留，在 0 上继续减少才移除。卡牌指示物与 Countable Resource 只共享纯计数转移，不共享 Sheet Value、Dependency Logic 或打印策略合同。
+
+## 追加说明（2026-07-16）
+
+当卡背只有图片、没有独立规则定义时，Card Definition 或 Composite Resource 可通过可配置 `卡背字段`（默认 `卡背`）直接引用来源内图片。直接卡背优先于背面 Definition 引用；翻面只替换渲染用卡图，不改变 Card Definition Reference。该路径让 Resource Composer 输出的角色专属复合卡也能使用通用卡背，而无需伪造可选择的背面 Resource Entry。

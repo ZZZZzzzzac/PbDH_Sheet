@@ -142,6 +142,7 @@ const cardTableModuleSchema = sheetModuleBaseSchema.extend({
   ).optional(),
   显示方式: z.enum(["image", "text"]).optional(),
   卡图字段: z.string().min(1).optional(),
+  卡背字段: z.string().min(1).optional(),
   显示方式字段: z.string().min(1).optional(),
   背面卡牌ID字段: z.string().min(1).optional(),
 });
@@ -191,6 +192,11 @@ const resourceComposerModuleSchema = sheetModuleBaseSchema.extend({
     来源槽位ID: z.string().min(1),
     来源字段: z.string().min(1),
   })).min(1).refine((mappings) => new Set(mappings.map((mapping) => mapping.字段)).size === mappings.length, { message: "Resource Composer 的输出字段不能重复。" }),
+  选择关系输出: z.object({
+    字段: z.string().min(1).refine((field) => field !== "ID", { message: "Composite Resource ID 由框架生成。" }),
+    全部相同时: z.string().min(1),
+    不全相同时: z.string().min(1),
+  }).optional(),
   创建卡牌: z.object({ 卡牌桌面模块ID: z.string().min(1), 默认状态: z.string().min(1).optional() }).optional(),
 });
 
@@ -723,6 +729,14 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
         }
         validateResourceLibraryField(findResourceLibrary(systemPackage, slot.资源库ID), mapping.来源字段, `modules.${module.ID}.输出字段.${mappingIndex}.来源字段`, module.ID, module.ID, issues);
       });
+      if (module.选择关系输出 && module.输出字段.some((mapping) => mapping.字段 === module.选择关系输出?.字段)) {
+        issues.push({
+          level: "error",
+          code: "DUPLICATE_RESOURCE_COMPOSER_OUTPUT_FIELD",
+          text: `Resource Composer 的选择关系输出字段与普通输出字段重复：${module.选择关系输出.字段}`,
+          path: `modules.${module.ID}.选择关系输出.字段`,
+        });
+      }
     }
 
     if (module.类型 === "cardTable") {
@@ -742,7 +756,11 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
         }
         if (source.类型 === "resourceComposer" && source.卡牌展示) {
           const composer = systemPackage.modules.find((candidate) => candidate.类型 === "resourceComposer" && candidate.ID === source.ID);
-          const knownFields = new Set(["ID", ...(composer?.类型 === "resourceComposer" ? composer.输出字段.map((mapping) => mapping.字段) : [])]);
+          const knownFields = new Set([
+            "ID",
+            ...(composer?.类型 === "resourceComposer" ? composer.输出字段.map((mapping) => mapping.字段) : []),
+            ...(composer?.类型 === "resourceComposer" && composer.选择关系输出 ? [composer.选择关系输出.字段] : []),
+          ]);
           for (const field of getCardPresentationFields(source.卡牌展示)) {
             if (knownFields.has(field)) continue;
             issues.push({
@@ -1183,11 +1201,24 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
       const artField = module.卡图字段 ?? "卡图";
       const artFields = cardArtFieldsByLibrary.get(libraryId) ?? new Set<string>();
       artFields.add(artField);
+      artFields.add(module.卡背字段 ?? "卡背");
       cardArtFieldsByLibrary.set(libraryId, artFields);
 
       const presentations = cardPresentationsByLibrary.get(libraryId) ?? [];
       presentations.push({ moduleId: module.ID, presentation: source.卡牌展示 });
       cardPresentationsByLibrary.set(libraryId, presentations);
+    }
+    for (const source of module.资源来源.filter((candidate) => candidate.类型 === "resourceComposer")) {
+      const composer = systemPackage.modules.find((candidate) => candidate.类型 === "resourceComposer" && candidate.ID === source.ID);
+      if (composer?.类型 !== "resourceComposer") continue;
+      for (const outputField of [module.卡图字段 ?? "卡图", module.卡背字段 ?? "卡背"]) {
+        const mapping = composer.输出字段.find((candidate) => candidate.字段 === outputField);
+        const slot = mapping ? composer.来源槽位.find((candidate) => candidate.ID === mapping.来源槽位ID) : undefined;
+        if (!mapping || !slot) continue;
+        const artFields = cardArtFieldsByLibrary.get(slot.资源库ID) ?? new Set<string>();
+        artFields.add(mapping.来源字段);
+        cardArtFieldsByLibrary.set(slot.资源库ID, artFields);
+      }
     }
   }
 
@@ -1369,13 +1400,21 @@ function validateSelectedResourceField(systemPackage: SystemPackage, sourceModul
     return;
   }
 
-  if (sourceModule?.类型 === "resourceComposer" && field !== "ID" && !sourceModule.输出字段.some((mapping) => mapping.字段 === field)) {
+  if (sourceModule?.类型 === "resourceComposer" && field !== "ID"
+    && !sourceModule.输出字段.some((mapping) => mapping.字段 === field)
+    && sourceModule.选择关系输出?.字段 !== field) {
     issues.push({
       level: "error",
       code: "MISSING_RESOURCE_FIELD_REFERENCE",
       text: `Dependency Rule ${dependencyId} 引用了 Resource Composer ${sourceModule.ID} 中不存在的输出字段 ${field}`,
       path,
-      evidence: [{ label: "referencedField", value: field }, { label: "knownFields", value: sourceModule.输出字段.map((mapping) => mapping.字段) }],
+      evidence: [{
+        label: "referencedField",
+        value: field,
+      }, {
+        label: "knownFields",
+        value: [...sourceModule.输出字段.map((mapping) => mapping.字段), ...(sourceModule.选择关系输出 ? [sourceModule.选择关系输出.字段] : [])],
+      }],
     });
   }
 }
