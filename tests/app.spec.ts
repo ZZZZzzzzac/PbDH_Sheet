@@ -457,6 +457,42 @@ test("Daggerheart beast-form references fit equal-height cards when printed", as
   expect(overflowingForms).toEqual([]);
 });
 
+test("Daggerheart Ranger companion stays within one A4 page when printed", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await uploadPackage(page, await createDaggerheartCorePackage(testInfo));
+
+  await expect(page.getByRole("button", { name: "游侠动物伙伴", exact: true })).toHaveCount(0);
+  const subclassPicker = page.locator('[data-module-id="pick-subclass"]');
+  await subclassPicker.getByRole("button").click();
+  await page.getByLabel("选择 驯兽大师").first().click();
+  await page.getByRole("button", { name: "游侠动物伙伴", exact: true }).click();
+
+  await expect(page.locator('[data-module-id="companion-name"]')).toBeVisible();
+  await expect(page.locator('[data-module-id="companion-evasion"]')).toContainText("10");
+  await expect(page.locator('[data-module-id="companion-attack-die"]').getByRole("checkbox", { name: "d6", exact: true })).toBeChecked();
+  await expect(page.locator('[data-module-id="companion-attack-range"]')).toContainText("近战");
+  await expect(page.locator('[data-module-id="companion-stress"] [data-part="marker"]')).toHaveCount(3);
+
+  await page.emulateMedia({ media: "print" });
+  const companionPage = page.locator(".companion-page");
+  const metrics = await companionPage.evaluate((element) => {
+    const pageElement = element.closest<HTMLElement>(".sheet-page")!;
+    const root = element as HTMLElement;
+    return {
+      pageWidth: pageElement.getBoundingClientRect().width,
+      pageHeight: pageElement.getBoundingClientRect().height,
+      horizontalOverflow: root.scrollWidth - root.clientWidth,
+      verticalOverflow: root.scrollHeight - root.clientHeight,
+    };
+  });
+  expect(metrics.pageWidth).toBeCloseTo(210 / 25.4 * 96, 0);
+  expect(metrics.pageHeight).toBeCloseTo(297 / 25.4 * 96, 0);
+  expect(metrics.horizontalOverflow).toBeLessThanOrEqual(1);
+  expect(metrics.verticalOverflow).toBeLessThanOrEqual(1);
+
+  await page.locator(".sheet-page").screenshot({ path: testInfo.outputPath("ranger-companion-print.png") });
+});
+
 test("Daggerheart story Long Text previews auto-fit without growing their frames", async ({ page }, testInfo) => {
   await page.goto("/");
   await uploadPackage(page, await createDaggerheartCorePackage(testInfo));

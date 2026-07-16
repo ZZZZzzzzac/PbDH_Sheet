@@ -38,5 +38,15 @@
       "html": "layouts/beast-forms-t3-t4.html",
       "css": "layouts/beast-forms.css"
     }
+  },
+  {
+    "ID": "ranger-companion",
+    "名称": "游侠动物伙伴",
+    "默认隐藏": true,
+    "layout": {
+      "类型": "htmlTemplate",
+      "html": "layouts/ranger-companion.html",
+      "css": "layouts/ranger-companion.css"
+    }
   }
 ]

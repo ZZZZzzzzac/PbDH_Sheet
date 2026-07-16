@@ -98,6 +98,71 @@ describe("Daggerheart core System Package", () => {
     const fighterData = updateResourceSelectionSnapshot(createEmptyCharacterData(result.package), "pick-class", "classes", [fighter.ID]);
     expect(rebuildDerivedDependencies(fighterData, result.package).pageVisibility).toEqual({});
   });
+
+  it("provides one editable Ranger companion page only for Beastbound subclasses", async () => {
+    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const page = result.package.pages.find((candidate) => candidate.ID === "ranger-companion");
+    expect(page).toBeTruthy();
+    expect(page?.默认隐藏).toBe(true);
+    expect(page?.打印).toBeUndefined();
+
+    const expectedModuleIds = [
+      "companion-name",
+      "companion-evasion",
+      "companion-portrait",
+      "companion-attack-die",
+      "companion-attack-range",
+      "companion-stress",
+      "companion-upgrades",
+      ...Array.from({ length: 5 }, (_, index) => `companion-experience-${index + 1}`),
+      ...Array.from({ length: 5 }, (_, index) => `companion-experience-modifier-${index + 1}`),
+    ];
+    for (const moduleId of expectedModuleIds) {
+      expect(result.package.modules.some((module) => module.ID === moduleId), moduleId).toBe(true);
+      expect(page?.layout.htmlContent).toContain(`<pb-module id="${moduleId}"></pb-module>`);
+    }
+
+    const evasion = result.package.modules.find((module) => module.ID === "companion-evasion");
+    expect(evasion?.类型).toBe("freeText");
+    if (evasion?.类型 === "freeText") expect(evasion.默认值).toBe("10");
+    const attackDie = result.package.modules.find((module) => module.ID === "companion-attack-die");
+    expect(attackDie?.类型).toBe("checkboxResource");
+    if (attackDie?.类型 === "checkboxResource") {
+      expect(attackDie.选项.find((option) => option.ID === "d6")?.默认选中).toBe(true);
+    }
+    const stress = result.package.modules.find((module) => module.ID === "companion-stress");
+    expect(stress?.类型).toBe("countableResource");
+    if (stress?.类型 === "countableResource") {
+      expect(stress.最大值).toBe(3);
+      expect(stress.最大值可改).toBe(true);
+    }
+
+    const companionDependencies = result.package.dependencies.filter((dependency) =>
+      dependency.targets.some((target) => target.类型 === "page" && target.页面ID === "ranger-companion"),
+    );
+    expect(companionDependencies).toHaveLength(1);
+    expect(companionDependencies[0]?.targets).toEqual([{ 类型: "page", 页面ID: "ranger-companion" }]);
+
+    const subclasses = result.package.resourceLibraries?.find((library) => library.ID === "subclasses");
+    expect(subclasses).toBeTruthy();
+    if (!subclasses) return;
+    for (const stage of ["基础", "进阶", "精通"]) {
+      const beastbound = subclasses.entries.find((entry) => entry.fields.名称 === "驯兽大师" && entry.fields.等级 === stage);
+      expect(beastbound, stage).toBeTruthy();
+      if (!beastbound) continue;
+      const data = updateResourceSelectionSnapshot(createEmptyCharacterData(result.package), "pick-subclass", "subclasses", [beastbound.ID]);
+      expect(rebuildDerivedDependencies(data, result.package).pageVisibility).toMatchObject({ "ranger-companion": true });
+    }
+
+    const pathfinder = subclasses.entries.find((entry) => entry.fields.名称 === "寻路斥候" && entry.fields.等级 === "基础");
+    expect(pathfinder).toBeTruthy();
+    if (!pathfinder) return;
+    const otherData = updateResourceSelectionSnapshot(createEmptyCharacterData(result.package), "pick-subclass", "subclasses", [pathfinder.ID]);
+    expect(rebuildDerivedDependencies(otherData, result.package).pageVisibility).toEqual({});
+  });
 });
 
 function createPackageZip(): Blob {
