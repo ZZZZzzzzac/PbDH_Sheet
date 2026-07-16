@@ -108,6 +108,17 @@ describe("The Void Resource Extension", () => {
     expect(entries.find((entry) => entry.fields.名称 === "刺客")?.fields.希望特性).toMatch(/^:red\[\*\*冷酷决心 Grim Resolve\*\*\]：/u);
     expect(entries.find((entry) => entry.fields.名称 === "执刑公会-基础")?.fields.描述).toMatch(/^:red\[\*\*先攻必胜 First Strike\*\*\]：/u);
   });
+
+  it("formats Void domain-card levels and recall costs like core domain cards", () => {
+    const result = loadResourceExtensionFromJsonText(readFileSync(extensionPath, "utf8"), "daggerheart-core");
+    if (!result.ok) throw new Error(JSON.stringify(result.issues));
+    const cards = result.extension.resourceLibraries.find((library) => library.ID === "domain-cards")!.library.entries;
+    expect(cards).toHaveLength(42);
+    for (const card of cards) {
+      expect(card.fields.等级, `${card.fields.名称}.等级`).toMatch(/^(?:[1-9]|10)级$/u);
+      expect(card.fields.回想, `${card.fields.名称}.回想`).toMatch(/^[0-4]⚡$/u);
+    }
+  });
 });
 
 function createPackageZip(): Blob {
