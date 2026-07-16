@@ -6,7 +6,6 @@ import { loadSystemPackageFromZipFile } from "./systemPackageLoader";
 const cases: Array<[string, string[]]> = [
   ["duplicate-stable-ids", [
     "DUPLICATE_PAGE_ID",
-    "DUPLICATE_ASSET_ID",
     "DUPLICATE_VALIDATION_CHECK_ID",
     "DUPLICATE_CHECKBOX_OPTION_ID",
     "MISSING_CHECKBOX_OPTION_REFERENCE",

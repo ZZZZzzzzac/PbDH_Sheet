@@ -28,12 +28,15 @@ import {
 import { applyDependencyResultToCharacterData, evaluateDependencies, hasRebuildableDependencies, rebuildDerivedDependencies } from "../domain/dependencyEngine";
 import type { ResourceLibraryEntry, ResourceLibraryQuery } from "../domain/resourceLibrary";
 import { composeResource, type ResourceComposerSelections } from "../domain/resourceComposer";
+import { applyEffectiveResourceCatalog, createEffectiveResourceCatalog, type EffectiveResourceCatalog } from "../domain/effectiveResourceCatalog";
+import type { GeneratedResourceId, ResourceExtension, ResourceExtensionIssue } from "../domain/resourceExtension";
 import { validateCachedSystemPackage, type PackageIssue, type SystemPackage } from "../domain/systemPackage";
 import { runValidationChecks as runValidationChecksDomain, type ValidationIssue } from "../domain/validationRunner";
 import { parseCharacterDataText } from "../export/output";
 import { createRuntimeAssetResolver, type RuntimeAssetResolver, type RuntimePackageAsset } from "../loaders/assetResolver";
 import type { PackageDirectoryHandle } from "../loaders/packageVfs";
 import { loadSystemPackageFromDirectoryFiles, loadSystemPackageFromDirectoryHandle, loadSystemPackageFromZipFile, type PackageLoadResult } from "../loaders/systemPackageLoader";
+import { loadResourceExtensionFromJsonText, loadResourceExtensionFromZipFile, type NormalizedResourceExtensionArtifact } from "../loaders/resourceExtensionLoader";
 import { loadAuthorPreviewDirectoryHandle, saveAuthorPreviewDirectoryHandle, storageService, type CharacterSaveSummary, type StorageService } from "../storage/storageService";
 import { generateId } from "../utils";
 import {
@@ -55,7 +58,14 @@ type StorageStatus = "idle" | "saving" | "saved" | "error";
 type ValidationStatus = "idle" | "running" | "complete";
 
 interface RuntimeState {
+  basePackage: SystemPackage | null;
   currentPackage: SystemPackage | null;
+  resourceCatalog: EffectiveResourceCatalog | null;
+  installedResourceExtensions: ResourceExtension[];
+  resourceExtensionImport: ResourceExtensionImportState | null;
+  pendingResourceExtensionReplacement: PendingResourceExtensionReplacement | null;
+  pendingResourceExtensionRemoval: PendingResourceExtensionRemoval | null;
+  resourceReferenceIssues: ResourceExtensionIssue[];
   packageAssetUrls: Record<string, string>;
   packageIssues: PackageIssue[];
   characterData: CharacterData | null;
@@ -76,6 +86,12 @@ interface RuntimeState {
   initialize: () => Promise<void>;
   uploadSystemPackageFromFile: (file: Blob) => Promise<void>;
   uploadSystemPackageFromDirectory: (files: Iterable<File>) => Promise<void>;
+  uploadResourceExtensionFromFile: (file: Blob) => Promise<void>;
+  confirmResourceExtensionReplacement: () => Promise<void>;
+  cancelResourceExtensionReplacement: () => void;
+  requestResourceExtensionRemoval: (extensionId: string) => void;
+  confirmResourceExtensionRemoval: () => Promise<void>;
+  cancelResourceExtensionRemoval: () => void;
   enterAuthorPreview: (handle: PackageDirectoryHandle) => Promise<void>;
   exitAuthorPreview: () => void;
   createCharacterSave: (name?: string) => Promise<void>;
@@ -172,6 +188,36 @@ function emptyDerivedState() {
   };
 }
 
+export type ResourceExtensionImportState =
+  | { status: "success"; extensionId: string; contributionCount: number; entryCount: number; generatedIds: GeneratedResourceId[]; normalizedArtifact: NormalizedResourceExtensionArtifact; issues: ResourceExtensionIssue[] }
+  | { status: "error"; issues: ResourceExtensionIssue[] };
+
+export interface ResourceExtensionDifference {
+  libraryId: string;
+  added: number;
+  removed: number;
+  retained: number;
+}
+
+export interface PendingResourceExtensionReplacement {
+  extension: ResourceExtension;
+  assets: RuntimePackageAsset[];
+  generatedIds: GeneratedResourceId[];
+  normalizedArtifact: NormalizedResourceExtensionArtifact;
+  issues: ResourceExtensionIssue[];
+  differences: ResourceExtensionDifference[];
+  previousImageCount: number;
+  nextImageCount: number;
+}
+
+export interface PendingResourceExtensionRemoval {
+  extensionId: string;
+  extensionName: string;
+  libraries: Array<{ libraryId: string; entryCount: number }>;
+  imageCount: number;
+  staleReferenceCount: number;
+}
+
 function rebuildDependencyRuntimeState(data: CharacterData, systemPackage: SystemPackage) {
   const result = rebuildDerivedDependencies(data, systemPackage);
   warnDependencyIssues(result);
@@ -186,26 +232,45 @@ async function loadPackageIntoState(
   packageAssets?: RuntimePackageAsset[],
 ) {
   activePackageAssetResolver?.revokeAll();
-  const assets = packageAssets ?? (await runtimeDependencies.storage.loadCurrentPackageAssets(systemPackage.manifest.ID));
-  activePackageAssetResolver = createRuntimeAssetResolver(assets);
 
   try {
-    const loaded = await loadActiveCharacterForPackage(systemPackage, runtimeDependencies.storage);
+    const assets = packageAssets ?? (await runtimeDependencies.storage.loadCurrentPackageAssets(systemPackage.manifest.ID));
+    const installedResourceExtensions = await runtimeDependencies.storage.listResourceExtensions(systemPackage.manifest.ID);
+    const extensionAssets = await runtimeDependencies.storage.loadResourceExtensionAssets(systemPackage.manifest.ID);
+    activePackageAssetResolver = createRuntimeAssetResolver([...assets, ...extensionAssets]);
+    const resourceCatalog = createEffectiveResourceCatalog(systemPackage, installedResourceExtensions);
+    const effectivePackage = applyEffectiveResourceCatalog(systemPackage, resourceCatalog);
+    const loaded = await loadActiveCharacterForPackage(effectivePackage, runtimeDependencies.storage);
     set({
-      currentPackage: systemPackage,
+      basePackage: systemPackage,
+      currentPackage: effectivePackage,
+      resourceCatalog,
+      installedResourceExtensions,
+      resourceExtensionImport: null,
+      pendingResourceExtensionReplacement: null,
+      pendingResourceExtensionRemoval: null,
+      resourceReferenceIssues: collectStaleResourceReferenceIssues(loaded.characterData, resourceCatalog),
       packageAssetUrls: activePackageAssetResolver.urls,
       characterData: loaded.characterData,
       characterSaves: loaded.characterSaves,
       activeCharacterSaveId: loaded.activeCharacterSaveId,
       ...emptyDerivedState(),
-      ...rebuildDependencyRuntimeState(loaded.characterData, systemPackage),
+      ...rebuildDependencyRuntimeState(loaded.characterData, effectivePackage),
       packageIssues: issues,
       bootStatus: "ready",
       storageStatus,
     });
   } catch {
+    activePackageAssetResolver = createRuntimeAssetResolver(packageAssets ?? []);
     set({
+      basePackage: systemPackage,
       currentPackage: systemPackage,
+      resourceCatalog: createEffectiveResourceCatalog(systemPackage, []),
+      installedResourceExtensions: [],
+      resourceExtensionImport: null,
+      pendingResourceExtensionReplacement: null,
+      pendingResourceExtensionRemoval: null,
+      resourceReferenceIssues: [],
       packageAssetUrls: activePackageAssetResolver.urls,
       characterData: createEmptyCharacterData(systemPackage),
       characterSaves: [],
@@ -230,7 +295,14 @@ async function clearCachedPackageAndResetState(set: (partial: Partial<RuntimeSta
   }
 
   set({
+    basePackage: null,
     currentPackage: null,
+    resourceCatalog: null,
+    installedResourceExtensions: [],
+    resourceExtensionImport: null,
+    pendingResourceExtensionReplacement: null,
+    pendingResourceExtensionRemoval: null,
+    resourceReferenceIssues: [],
     packageAssetUrls: {},
     characterData: null,
     characterSaves: [],
@@ -269,8 +341,55 @@ function scheduleAutosave(
   }, autosaveDelayMs);
 }
 
+async function reloadRuntimeAssets(packageId: string): Promise<RuntimeAssetResolver> {
+  activePackageAssetResolver?.revokeAll();
+  activePackageAssetResolver = createRuntimeAssetResolver([
+    ...await runtimeDependencies.storage.loadCurrentPackageAssets(packageId),
+    ...await runtimeDependencies.storage.loadResourceExtensionAssets(packageId),
+  ]);
+  return activePackageAssetResolver;
+}
+
+function resourceExtensionDifferences(previous: ResourceExtension, next: ResourceExtension): ResourceExtensionDifference[] {
+  const libraryIds = new Set([...previous.resourceLibraries.map((item) => item.ID), ...next.resourceLibraries.map((item) => item.ID)]);
+  return [...libraryIds].map((libraryId) => {
+    const before = new Set(previous.resourceLibraries.find((item) => item.ID === libraryId)?.library.entries.map((entry) => entry.ID) ?? []);
+    const after = new Set(next.resourceLibraries.find((item) => item.ID === libraryId)?.library.entries.map((entry) => entry.ID) ?? []);
+    return {
+      libraryId,
+      added: [...after].filter((id) => !before.has(id)).length,
+      removed: [...before].filter((id) => !after.has(id)).length,
+      retained: [...after].filter((id) => before.has(id)).length,
+    };
+  });
+}
+
+function collectStaleResourceReferenceIssues(characterData: CharacterData | null, catalog: EffectiveResourceCatalog): ResourceExtensionIssue[] {
+  if (!characterData) return [];
+  const issues: ResourceExtensionIssue[] = [];
+  const entryExists = (libraryId: string, entryId: string) => catalog.resourceLibraries.some((library) => library.ID === libraryId && library.entries.some((entry) => entry.ID === entryId));
+  for (const instance of characterData.cards.instances) {
+    if (instance.definitionRef.type === "resourceLibrary" && !entryExists(instance.definitionRef.libraryId, instance.definitionRef.entryId)) {
+      issues.push({ level: "warning", code: "STALE_RESOURCE_DEFINITION_REFERENCE", text: `Card Instance 引用已失效：${instance.definitionRef.libraryId}/${instance.definitionRef.entryId}`, path: `cards.${instance.instanceId}.definitionRef` });
+    }
+  }
+  for (const [moduleId, snapshot] of Object.entries(characterData.resourceSelections ?? {})) {
+    for (const entryId of snapshot.entryIds) {
+      if (!entryExists(snapshot.libraryId, entryId)) issues.push({ level: "warning", code: "STALE_RESOURCE_SELECTION_REFERENCE", text: `Derived Source Snapshot 引用已失效：${snapshot.libraryId}/${entryId}`, path: `resourceSelections.${moduleId}` });
+    }
+  }
+  return issues;
+}
+
 export const useRuntimeStore = create<RuntimeState>((set, get) => ({
+  basePackage: null,
   currentPackage: null,
+  resourceCatalog: null,
+  installedResourceExtensions: [],
+  resourceExtensionImport: null,
+  pendingResourceExtensionReplacement: null,
+  pendingResourceExtensionRemoval: null,
+  resourceReferenceIssues: [],
   packageAssetUrls: {},
   packageIssues: [],
   characterData: null,
@@ -306,7 +425,14 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
         activePackageAssetResolver?.revokeAll();
         activePackageAssetResolver = undefined;
         set({
+          basePackage: null,
           currentPackage: null,
+          resourceCatalog: null,
+          installedResourceExtensions: [],
+          resourceExtensionImport: null,
+          pendingResourceExtensionReplacement: null,
+          pendingResourceExtensionRemoval: null,
+          resourceReferenceIssues: [],
           packageAssetUrls: {},
           characterData: null,
           characterSaves: [],
@@ -369,6 +495,181 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     await loadPackageIntoState(validation.package, validation.issues, set, packageCacheStatus, validation.packageAssets ?? []);
   },
 
+  async uploadResourceExtensionFromFile(file) {
+    const basePackage = get().basePackage;
+    if (!basePackage) {
+      set({ resourceExtensionImport: { status: "error", issues: [{ level: "error", code: "RESOURCE_EXTENSION_NO_CURRENT_PACKAGE", text: "当前没有可用的 System Package。" }] } });
+      return;
+    }
+
+    const installed = get().installedResourceExtensions;
+    const currentCatalog = createEffectiveResourceCatalog(basePackage, installed);
+    const entryIdsByLibrary = new Map(currentCatalog.resourceLibraries.map((library) => [library.ID, new Set(library.entries.map((entry) => entry.ID))]));
+    const idContext = {
+      extensionIds: installed.map((extension) => extension.ID),
+      libraryIds: currentCatalog.resourceLibraries.map((library) => library.ID),
+      entryIdsByLibrary,
+    };
+    const fileName = "name" in file && typeof file.name === "string" ? file.name : "";
+    const isZip = fileName.toLocaleLowerCase().endsWith(".zip") || file.type === "application/zip";
+    let loaded;
+    try {
+      loaded = isZip
+        ? await loadResourceExtensionFromZipFile(file, basePackage.manifest.ID, idContext)
+        : loadResourceExtensionFromJsonText(await file.text(), basePackage.manifest.ID, idContext);
+    } catch {
+      set({ resourceExtensionImport: { status: "error", issues: [{ level: "error", code: "RESOURCE_EXTENSION_READ_FAILED", text: "无法读取 Resource Extension 文件。" }] } });
+      return;
+    }
+    if (!loaded.ok) {
+      set({ resourceExtensionImport: { status: "error", issues: loaded.issues } });
+      return;
+    }
+
+    const nextExtensions = [...installed.filter((extension) => extension.ID !== loaded.extension.ID), loaded.extension];
+    const nextCatalog = createEffectiveResourceCatalog(basePackage, nextExtensions);
+    const candidateStatus = nextCatalog.extensions.find((status) => status.extension.ID === loaded.extension.ID);
+    if (!candidateStatus || candidateStatus.status === "disabled") {
+      set({ resourceExtensionImport: { status: "error", issues: candidateStatus?.issues ?? [{ level: "error", code: "RESOURCE_EXTENSION_INSTALL_FAILED", text: "Resource Extension 无法加入有效资源目录。" }] } });
+      return;
+    }
+
+    const previous = installed.find((extension) => extension.ID === loaded.extension.ID);
+    if (previous) {
+      const storedAssets = await runtimeDependencies.storage.loadResourceExtensionAssets(basePackage.manifest.ID);
+      set({
+        pendingResourceExtensionReplacement: {
+          extension: loaded.extension,
+          assets: loaded.assets,
+          generatedIds: loaded.generatedIds,
+          normalizedArtifact: loaded.normalizedArtifact,
+          issues: loaded.issues,
+          differences: resourceExtensionDifferences(previous, loaded.extension),
+          previousImageCount: storedAssets.filter((asset) => asset.sourceId === previous.ID).length,
+          nextImageCount: loaded.assets.length,
+        },
+        resourceExtensionImport: null,
+      });
+      return;
+    }
+
+    try {
+      await runtimeDependencies.storage.saveResourceExtension(loaded.extension, loaded.assets);
+    } catch {
+      set({ resourceExtensionImport: { status: "error", issues: [{ level: "error", code: "RESOURCE_EXTENSION_STORAGE_FAILED", text: "Resource Extension 无法写入本地存储。" }] } });
+      return;
+    }
+
+    const effectivePackage = applyEffectiveResourceCatalog(basePackage, nextCatalog);
+    const characterData = get().characterData;
+    const assetResolver = await reloadRuntimeAssets(basePackage.manifest.ID);
+    set({
+      currentPackage: effectivePackage,
+      resourceCatalog: nextCatalog,
+      installedResourceExtensions: nextExtensions,
+      packageAssetUrls: assetResolver.urls,
+      ...(characterData ? rebuildDependencyRuntimeState(characterData, effectivePackage) : {}),
+      resourceReferenceIssues: collectStaleResourceReferenceIssues(characterData, nextCatalog),
+      resourceExtensionImport: {
+        status: "success",
+        extensionId: loaded.extension.ID,
+        contributionCount: loaded.extension.resourceLibraries.length,
+        entryCount: loaded.extension.resourceLibraries.reduce((count, library) => count + library.library.entries.length, 0),
+        generatedIds: loaded.generatedIds,
+        normalizedArtifact: loaded.normalizedArtifact,
+        issues: loaded.issues,
+      },
+    });
+  },
+
+  async confirmResourceExtensionReplacement() {
+    const pending = get().pendingResourceExtensionReplacement;
+    const basePackage = get().basePackage;
+    if (!pending || !basePackage) return;
+    const nextExtensions = get().installedResourceExtensions.map((extension) => extension.ID === pending.extension.ID ? pending.extension : extension);
+    const nextCatalog = createEffectiveResourceCatalog(basePackage, nextExtensions);
+    const status = nextCatalog.extensions.find((item) => item.extension.ID === pending.extension.ID);
+    if (!status || status.status === "disabled") {
+      set({ pendingResourceExtensionReplacement: null, resourceExtensionImport: { status: "error", issues: status?.issues ?? [] } });
+      return;
+    }
+    try {
+      await runtimeDependencies.storage.saveResourceExtension(pending.extension, pending.assets);
+      await reloadRuntimeAssets(basePackage.manifest.ID);
+    } catch {
+      set({ resourceExtensionImport: { status: "error", issues: [{ level: "error", code: "RESOURCE_EXTENSION_STORAGE_FAILED", text: "Resource Extension 替换失败；运行时保持原版本。" }] } });
+      return;
+    }
+    const effectivePackage = applyEffectiveResourceCatalog(basePackage, nextCatalog);
+    const characterData = get().characterData;
+    set({
+      currentPackage: effectivePackage,
+      resourceCatalog: nextCatalog,
+      installedResourceExtensions: nextExtensions,
+      packageAssetUrls: activePackageAssetResolver?.urls ?? {},
+      pendingResourceExtensionReplacement: null,
+      resourceReferenceIssues: collectStaleResourceReferenceIssues(characterData, nextCatalog),
+      ...(characterData ? rebuildDependencyRuntimeState(characterData, effectivePackage) : {}),
+      resourceExtensionImport: {
+        status: "success", extensionId: pending.extension.ID,
+        contributionCount: pending.extension.resourceLibraries.length,
+        entryCount: pending.extension.resourceLibraries.reduce((count, library) => count + library.library.entries.length, 0),
+        generatedIds: pending.generatedIds, normalizedArtifact: pending.normalizedArtifact, issues: pending.issues,
+      },
+    });
+  },
+
+  cancelResourceExtensionReplacement() {
+    set({ pendingResourceExtensionReplacement: null });
+  },
+
+  requestResourceExtensionRemoval(extensionId) {
+    const extension = get().installedResourceExtensions.find((item) => item.ID === extensionId);
+    const basePackage = get().basePackage;
+    if (!extension || !basePackage) return;
+    const nextCatalog = createEffectiveResourceCatalog(basePackage, get().installedResourceExtensions.filter((item) => item.ID !== extensionId));
+    const staleReferenceCount = collectStaleResourceReferenceIssues(get().characterData, nextCatalog).length;
+    const imageCount = Object.keys(get().packageAssetUrls).filter((key) => key.startsWith(`resource-extension:${encodeURIComponent(extensionId)}:`)).length;
+    set({ pendingResourceExtensionRemoval: {
+      extensionId,
+      extensionName: extension.名称,
+      libraries: extension.resourceLibraries.map((library) => ({ libraryId: library.ID, entryCount: library.library.entries.length })),
+      imageCount,
+      staleReferenceCount,
+    } });
+  },
+
+  async confirmResourceExtensionRemoval() {
+    const pending = get().pendingResourceExtensionRemoval;
+    const basePackage = get().basePackage;
+    if (!pending || !basePackage) return;
+    try {
+      await runtimeDependencies.storage.deleteResourceExtension(basePackage.manifest.ID, pending.extensionId);
+      await reloadRuntimeAssets(basePackage.manifest.ID);
+    } catch {
+      set({ resourceExtensionImport: { status: "error", issues: [{ level: "error", code: "RESOURCE_EXTENSION_UNINSTALL_FAILED", text: "Resource Extension 卸载失败。" }] } });
+      return;
+    }
+    const nextExtensions = get().installedResourceExtensions.filter((extension) => extension.ID !== pending.extensionId);
+    const nextCatalog = createEffectiveResourceCatalog(basePackage, nextExtensions);
+    const effectivePackage = applyEffectiveResourceCatalog(basePackage, nextCatalog);
+    const characterData = get().characterData;
+    set({
+      currentPackage: effectivePackage,
+      resourceCatalog: nextCatalog,
+      installedResourceExtensions: nextExtensions,
+      packageAssetUrls: activePackageAssetResolver?.urls ?? {},
+      pendingResourceExtensionRemoval: null,
+      resourceExtensionImport: null,
+      resourceReferenceIssues: collectStaleResourceReferenceIssues(characterData, nextCatalog),
+      ...(characterData ? rebuildDependencyRuntimeState(characterData, effectivePackage) : {}),
+    });
+  },
+
+  cancelResourceExtensionRemoval() {
+    set({ pendingResourceExtensionRemoval: null });
+  },
+
   async enterAuthorPreview(handle) {
     sessionStorage.setItem(authorPreviewSessionKey, "active");
     await runtimeDependencies.savePreviewDirectoryHandle(handle);
@@ -405,6 +706,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       importNotice: null,
       validationIssues: [],
       validationStatus: "idle",
+      resourceReferenceIssues: [],
     });
   },
 
@@ -430,6 +732,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       importError: null,
       importNotice: null,
       storageStatus: "idle",
+      resourceReferenceIssues: get().resourceCatalog ? collectStaleResourceReferenceIssues(normalizedData, get().resourceCatalog!) : [],
     });
   },
 
@@ -903,6 +1206,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       ...rebuildDependencyRuntimeState(result.data, currentPackage),
       importError: null,
       importNotice: "Character Data 已导入为 Character Save。",
+      resourceReferenceIssues: get().resourceCatalog ? collectStaleResourceReferenceIssues(result.data, get().resourceCatalog!) : [],
     });
 
     await saveImportedPlayerImages(result.data.playerImages, runtimeDependencies.storage);

@@ -33,6 +33,13 @@ export interface PackageDirectoryHandle {
   requestPermission?(descriptor?: { mode?: "read" }): Promise<PermissionState>;
 }
 
+export const packageArchiveLimits = {
+  maxCompressedBytes: 128 * 1024 * 1024,
+  maxExpandedBytes: 512 * 1024 * 1024,
+  maxFiles: 4096,
+  maxCompressionRatio: 250,
+} as const;
+
 export function normalizePackagePath(path: string): PackagePathResult {
   const rawPath = path.trim().replaceAll("\\", "/");
 
@@ -63,6 +70,9 @@ export function normalizePackagePath(path: string): PackagePathResult {
 }
 
 export function createVirtualFileSystemFromZipBytes(bytes: Uint8Array): PackageVirtualFileSystemResult {
+  if (bytes.byteLength > packageArchiveLimits.maxCompressedBytes) {
+    return packageLimitIssue("PACKAGE_ARCHIVE_COMPRESSED_SIZE_LIMIT", "System Package zip 超过允许的压缩体积。");
+  }
   let entries: Record<string, Uint8Array>;
 
   try {
@@ -78,6 +88,18 @@ export function createVirtualFileSystemFromZipBytes(bytes: Uint8Array): PackageV
         },
       ],
     };
+  }
+
+  const entryValues = Object.entries(entries).filter(([path]) => !path.endsWith("/"));
+  const expandedBytes = entryValues.reduce((sum, [, data]) => sum + data.byteLength, 0);
+  if (entryValues.length > packageArchiveLimits.maxFiles) {
+    return packageLimitIssue("PACKAGE_ARCHIVE_FILE_COUNT_LIMIT", "System Package 文件数量超过限制。");
+  }
+  if (expandedBytes > packageArchiveLimits.maxExpandedBytes) {
+    return packageLimitIssue("PACKAGE_ARCHIVE_EXPANDED_SIZE_LIMIT", "System Package 展开体积超过限制。");
+  }
+  if (bytes.byteLength > 0 && expandedBytes / bytes.byteLength > packageArchiveLimits.maxCompressionRatio) {
+    return packageLimitIssue("PACKAGE_ARCHIVE_COMPRESSION_RATIO_LIMIT", "System Package 压缩比异常，拒绝读取。");
   }
 
   const files = new Map<string, Uint8Array>();
@@ -132,6 +154,12 @@ export async function createVirtualFileSystemFromZipFile(file: Blob): Promise<Pa
 
 export async function createVirtualFileSystemFromDirectoryFiles(files: Iterable<File>): Promise<PackageVirtualFileSystemResult> {
   const selectedFiles = [...files];
+  if (selectedFiles.length > packageArchiveLimits.maxFiles) {
+    return packageLimitIssue("PACKAGE_ARCHIVE_FILE_COUNT_LIMIT", "System Package 文件数量超过限制。");
+  }
+  if (selectedFiles.reduce((sum, file) => sum + file.size, 0) > packageArchiveLimits.maxExpandedBytes) {
+    return packageLimitIssue("PACKAGE_ARCHIVE_EXPANDED_SIZE_LIMIT", "System Package 总文件体积超过限制。");
+  }
   const entries = new Map<string, Uint8Array>();
 
   for (const file of selectedFiles) {
@@ -149,6 +177,7 @@ export async function createVirtualFileSystemFromDirectoryFiles(files: Iterable<
 
 export async function createVirtualFileSystemFromDirectoryHandle(handle: PackageDirectoryHandle): Promise<PackageVirtualFileSystemResult> {
   const entries = new Map<string, Uint8Array>();
+  let totalBytes = 0;
   const visit = async (directory: PackageDirectoryHandle, prefix: string): Promise<PackageIssue | null> => {
     for await (const [name, entry] of directory.entries()) {
       const path = prefix ? `${prefix}/${name}` : name;
@@ -159,6 +188,9 @@ export async function createVirtualFileSystemFromDirectoryHandle(handle: Package
         const normalized = normalizePackagePath(path);
         if (!normalized.ok) return normalized.issue;
         const file = await entry.getFile();
+        totalBytes += file.size;
+        if (entries.size + 1 > packageArchiveLimits.maxFiles) return packageLimitIssueValue("PACKAGE_ARCHIVE_FILE_COUNT_LIMIT", "System Package 文件数量超过限制。");
+        if (totalBytes > packageArchiveLimits.maxExpandedBytes) return packageLimitIssueValue("PACKAGE_ARCHIVE_EXPANDED_SIZE_LIMIT", "System Package 总文件体积超过限制。");
         entries.set(normalized.path, new Uint8Array(await file.arrayBuffer()));
       }
     }
@@ -171,6 +203,14 @@ export async function createVirtualFileSystemFromDirectoryHandle(handle: Package
   } catch {
     return { ok: false, issues: [{ level: "fatal", code: "DIRECTORY_READ_FAILED", text: "无法读取 Author Preview 开发目录。" }] };
   }
+}
+
+function packageLimitIssue(code: string, text: string): PackageVirtualFileSystemResult {
+  return { ok: false, issues: [packageLimitIssueValue(code, text)] };
+}
+
+function packageLimitIssueValue(code: string, text: string): PackageIssue {
+  return { level: "fatal", code, text };
 }
 
 export function createVirtualFileSystem(files: Map<string, Uint8Array>): PackageVirtualFileSystem {

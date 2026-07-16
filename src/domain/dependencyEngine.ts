@@ -1,6 +1,6 @@
 import { updateCharacterValue, type CharacterData, type CheckboxState, type CountableState, type SheetValue } from "./characterData";
 import type { ResourceLibraryEntry, ResourceLibraryQuery } from "./resourceLibrary";
-import { findModule, type DependencyAction, type DependencyCondition, type SystemPackage } from "./systemPackage";
+import { findModule, getResourcePickerLinks, type DependencyAction, type DependencyCondition, type SystemPackage } from "./systemPackage";
 import { formatResourceTextTemplate } from "./resourceTextTemplate";
 import { clampInt } from "../utils";
 
@@ -329,7 +329,7 @@ function resolveDerivedSourceEvent(
 
   const snapshot = data.resourceSelections?.[sourceModuleId];
   if (!snapshot) return null;
-  if (snapshot.libraryId !== sourceModule.资源库ID) {
+  if (!getResourcePickerLinks(sourceModule).some((link) => link.ID === snapshot.libraryId)) {
     result.warnings.push(`Derived source ${sourceModuleId} skipped mismatched Resource Library ${snapshot.libraryId}.`);
     return null;
   }

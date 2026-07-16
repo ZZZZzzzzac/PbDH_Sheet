@@ -1,4 +1,13 @@
 [
-  { "ID": "picker", "类型": "resourcePicker", "按钮文本": "选择职业", "资源库ID": "classes" },
+  {
+    "ID": "picker",
+    "类型": "resourcePicker",
+    "按钮文本": "选择职业",
+    "资源库": [
+      {
+        "ID": "classes"
+      }
+    ]
+  },
   { "ID": "target", "类型": "freeText", "标签": "结果" }
 ]

@@ -4,6 +4,8 @@ import type { StorageService } from "../storage/storageService";
 import { minimalSystemPackage } from "../test/fixtures";
 import type { PackageDirectoryHandle } from "../loaders/packageVfs";
 import type { SystemPackage } from "../domain/systemPackage";
+import { loadResourceExtensionJson } from "../domain/resourceExtension";
+import { createCardInstance } from "../domain/cardEngine";
 import { configureRuntimeDependencies, resetRuntimeDependencies, useRuntimeStore } from "./runtimeStore";
 
 function createMemoryStorage(cachedPackage: unknown = null): StorageService & {
@@ -15,6 +17,8 @@ function createMemoryStorage(cachedPackage: unknown = null): StorageService & {
   let savedPackage = cachedPackage;
   let savedPackageAssets: Awaited<ReturnType<StorageService["loadCurrentPackageAssets"]>> = [];
   const playerImages = new Map<string, Awaited<ReturnType<StorageService["loadPlayerImageBlob"]>>>();
+  const resourceExtensions = new Map<string, Awaited<ReturnType<StorageService["listResourceExtensions"]>>[number]>();
+  const resourceExtensionAssets = new Map<string, Awaited<ReturnType<StorageService["loadResourceExtensionAssets"]>>>();
 
   return {
     async loadCurrentSystemPackage() {
@@ -91,6 +95,22 @@ function createMemoryStorage(cachedPackage: unknown = null): StorageService & {
     async deletePlayerImageBlob(imageId) {
       playerImages.delete(imageId);
     },
+    async listResourceExtensions(targetSystemPackageId) {
+      return [...resourceExtensions.values()].filter((extension) => extension.目标系统包ID === targetSystemPackageId);
+    },
+    async loadResourceExtensionAssets(targetSystemPackageId) {
+      return [...resourceExtensionAssets.entries()].filter(([key]) => key.startsWith(`${targetSystemPackageId}:`)).flatMap(([, assets]) => assets);
+    },
+    async saveResourceExtension(extension, assets = []) {
+      const key = `${extension.目标系统包ID}:${extension.ID}`;
+      resourceExtensions.set(key, extension);
+      resourceExtensionAssets.set(key, assets);
+    },
+    async deleteResourceExtension(targetSystemPackageId, extensionId) {
+      const key = `${targetSystemPackageId}:${extensionId}`;
+      resourceExtensions.delete(key);
+      resourceExtensionAssets.delete(key);
+    },
     getCachedPackage() {
       return savedPackage;
     },
@@ -108,7 +128,11 @@ describe("runtime store", () => {
       storage: memoryStorage,
     });
     useRuntimeStore.setState({
+      basePackage: null,
       currentPackage: null,
+      resourceCatalog: null,
+      installedResourceExtensions: [],
+      resourceExtensionImport: null,
       packageAssetUrls: {},
       characterData: null,
       packageIssues: [],
@@ -296,12 +320,126 @@ describe("runtime store", () => {
     expect(useRuntimeStore.getState().characterData?.systemPackage.id).toBe("demo-minimal");
   });
 
+  it("installs a multi-Library JSON Extension atomically without rewriting the cached System Package", async () => {
+    const basePackage: SystemPackage = {
+      ...minimalSystemPackage,
+      resourceLibraries: [
+        { ID: "classes", 名称: "职业", 路径: "classes.json", fields: [{ key: "ID", label: "ID", visible: false, filterable: false, sortable: false, searchable: false }], entries: [] },
+        { ID: "cards", 名称: "卡牌", 路径: "cards.json", fields: [{ key: "ID", label: "ID", visible: false, filterable: false, sortable: false, searchable: false }], entries: [] },
+      ],
+    };
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: basePackage, issues: [] }),
+      storage: memoryStorage,
+    });
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+
+    await useRuntimeStore.getState().uploadResourceExtensionFromFile(new Blob([JSON.stringify({
+      ID: "void", 名称: "虚空", 版本: "1", 目标系统包ID: basePackage.manifest.ID,
+      resourceLibraries: [
+        { ID: "classes", 名称: "职业", entries: [{ ID: "void-class", 名称: "刺客" }] },
+        { ID: "cards", 名称: "卡牌", entries: [{ ID: "void-card", 名称: "虚空之触" }] },
+      ],
+    })], { type: "application/json" }));
+
+    const state = useRuntimeStore.getState();
+    expect(state.resourceExtensionImport).toMatchObject({ status: "success", extensionId: "void", contributionCount: 2, entryCount: 2 });
+    expect(state.currentPackage?.resourceLibraries?.map((library) => [library.ID, library.entries.length])).toEqual([["classes", 1], ["cards", 1]]);
+    expect((memoryStorage.getCachedPackage() as SystemPackage).resourceLibraries?.every((library) => library.entries.length === 0)).toBe(true);
+    expect(await memoryStorage.listResourceExtensions(basePackage.manifest.ID)).toHaveLength(1);
+  });
+
+  it("restores persisted Extensions into the Effective Resource Catalog on initialize", async () => {
+    const basePackage: SystemPackage = { ...minimalSystemPackage, resourceLibraries: [] };
+    const loaded = loadResourceExtensionJson(JSON.stringify({
+      ID: "persisted", 名称: "持久扩展", 版本: "1", 目标系统包ID: basePackage.manifest.ID,
+      resourceLibraries: [{ ID: "new-library", 名称: "新库", entries: [{ ID: "entry-1", 名称: "新条目" }] }],
+    }), basePackage.manifest.ID);
+    if (!loaded.ok) throw new Error(JSON.stringify(loaded.issues));
+    memoryStorage = createMemoryStorage(basePackage);
+    await memoryStorage.saveResourceExtension(loaded.extension);
+    configureRuntimeDependencies({ storage: memoryStorage });
+
+    await useRuntimeStore.getState().initialize();
+
+    expect(useRuntimeStore.getState().currentPackage?.resourceLibraries?.[0].entries[0].ID).toBe("entry-1");
+    expect(useRuntimeStore.getState().resourceCatalog?.libraries[0].contributors[0].source).toMatchObject({ type: "resourceExtension", id: "persisted" });
+  });
+
+  it("leaves Catalog, repository, and Runtime unchanged when any Extension Entry conflicts", async () => {
+    const basePackage: SystemPackage = {
+      ...minimalSystemPackage,
+      resourceLibraries: [{
+        ID: "classes", 名称: "职业", 路径: "classes.json",
+        fields: [{ key: "ID", label: "ID", visible: false, filterable: false, sortable: false, searchable: false }],
+        entries: [{ ID: "existing", fields: { ID: "existing", 名称: "已有职业" } }],
+      }],
+    };
+    configureRuntimeDependencies({ loadSystemPackageFromFile: async () => ({ ok: true, package: basePackage, issues: [] }), storage: memoryStorage });
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    const packageBefore = useRuntimeStore.getState().currentPackage;
+
+    await useRuntimeStore.getState().uploadResourceExtensionFromFile(new Blob([JSON.stringify({
+      ID: "conflict", 名称: "冲突扩展", 版本: "1", 目标系统包ID: basePackage.manifest.ID,
+      resourceLibraries: [
+        { ID: "classes", 名称: "职业", entries: [{ ID: "existing", 名称: "冲突职业" }] },
+        { ID: "new-library", 名称: "新库", entries: [{ ID: "new-entry", 名称: "不能部分安装" }] },
+      ],
+    })]));
+
+    expect(useRuntimeStore.getState().resourceExtensionImport).toMatchObject({ status: "error" });
+    expect(useRuntimeStore.getState().currentPackage).toBe(packageBefore);
+    expect(useRuntimeStore.getState().currentPackage?.resourceLibraries).toHaveLength(1);
+    expect(await memoryStorage.listResourceExtensions(basePackage.manifest.ID)).toEqual([]);
+  });
+
+  it("previews and confirms whole-Extension replacement, then uninstalls without rewriting Character Data", async () => {
+    const basePackage: SystemPackage = {
+      ...minimalSystemPackage,
+      resourceLibraries: [{ ID: "cards", 名称: "卡牌", 路径: "cards.json", fields: [], entries: [] }],
+    };
+    configureRuntimeDependencies({ loadSystemPackageFromFile: async () => ({ ok: true, package: basePackage, issues: [] }), storage: memoryStorage });
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    const document = (version: string, entries: object[]) => new Blob([JSON.stringify({
+      ID: "replace-me", 名称: "可替换", 版本: version, 目标系统包ID: basePackage.manifest.ID,
+      resourceLibraries: [{ ID: "cards", 名称: "卡牌", entries }],
+    })]);
+    await useRuntimeStore.getState().uploadResourceExtensionFromFile(document("1", [{ ID: "a", 名称: "旧 A" }, { ID: "b", 名称: "旧 B" }]));
+    const installedPackage = useRuntimeStore.getState().currentPackage!;
+    const characterWithCard = createCardInstance(useRuntimeStore.getState().characterData!, {
+      instanceId: "stale-card", tableModuleId: "table", libraryId: "cards", definitionId: "a",
+    });
+    useRuntimeStore.setState({ characterData: characterWithCard });
+
+    await useRuntimeStore.getState().uploadResourceExtensionFromFile(document("2", [{ ID: "b", 名称: "新 B" }, { ID: "c", 名称: "新 C" }]));
+    expect(useRuntimeStore.getState().pendingResourceExtensionReplacement?.differences).toEqual([{ libraryId: "cards", added: 1, removed: 1, retained: 1 }]);
+    expect(useRuntimeStore.getState().currentPackage).toBe(installedPackage);
+    useRuntimeStore.getState().cancelResourceExtensionReplacement();
+    expect(useRuntimeStore.getState().currentPackage?.resourceLibraries?.[0].entries.map((entry) => entry.ID)).toEqual(["a", "b"]);
+
+    await useRuntimeStore.getState().uploadResourceExtensionFromFile(document("2", [{ ID: "b", 名称: "新 B" }, { ID: "c", 名称: "新 C" }]));
+    await useRuntimeStore.getState().confirmResourceExtensionReplacement();
+    expect(useRuntimeStore.getState().currentPackage?.resourceLibraries?.[0].entries.map((entry) => [entry.ID, entry.fields.名称])).toEqual([["b", "新 B"], ["c", "新 C"]]);
+    expect(useRuntimeStore.getState().characterData).toBe(characterWithCard);
+    expect(useRuntimeStore.getState().resourceReferenceIssues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "STALE_RESOURCE_DEFINITION_REFERENCE" })]));
+
+    useRuntimeStore.getState().requestResourceExtensionRemoval("replace-me");
+    expect(useRuntimeStore.getState().pendingResourceExtensionRemoval).toMatchObject({ extensionId: "replace-me", staleReferenceCount: 1 });
+    useRuntimeStore.getState().cancelResourceExtensionRemoval();
+    expect(useRuntimeStore.getState().installedResourceExtensions).toHaveLength(1);
+    useRuntimeStore.getState().requestResourceExtensionRemoval("replace-me");
+    await useRuntimeStore.getState().confirmResourceExtensionRemoval();
+    expect(useRuntimeStore.getState().installedResourceExtensions).toEqual([]);
+    expect(useRuntimeStore.getState().characterData).toBe(characterWithCard);
+    expect(await memoryStorage.listResourceExtensions(basePackage.manifest.ID)).toEqual([]);
+  });
+
   it("does not persist Resource Picker provenance without pure derived consumers", async () => {
     const packageWithoutDerivedConsumers = {
       ...minimalSystemPackage,
       modules: [
         ...minimalSystemPackage.modules,
-        { ID: "pick-class", 类型: "resourcePicker", 按钮文本: "职业", 资源库ID: "classes" },
+        { ID: "pick-class", 类型: "resourcePicker", 按钮文本: "职业", 资源库: [{ ID: "classes" }] },
       ],
     } as unknown as SystemPackage;
     configureRuntimeDependencies({
@@ -326,8 +464,8 @@ describe("runtime store", () => {
       ],
       modules: [
         ...minimalSystemPackage.modules,
-        { ID: "pick-class", 类型: "resourcePicker", 按钮文本: "职业", 资源库ID: "classes" },
-        { ID: "pick-subclass", 类型: "resourcePicker", 按钮文本: "子职", 资源库ID: "subclasses" },
+        { ID: "pick-class", 类型: "resourcePicker", 按钮文本: "职业", 资源库: [{ ID: "classes" }] },
+        { ID: "pick-subclass", 类型: "resourcePicker", 按钮文本: "子职", 资源库: [{ ID: "subclasses" }] },
       ],
       resourceLibraries: [
         {
@@ -565,7 +703,7 @@ describe("runtime store", () => {
           ID: "pick-domain-card",
           类型: "resourcePicker",
           按钮文本: "选择领域卡",
-          资源库ID: "domain-cards",
+          资源库: [{ ID: "domain-cards" }],
           创建卡牌: { 卡牌桌面模块ID: "domain-card-table", 默认状态: "configured" },
         },
         {
@@ -581,7 +719,7 @@ describe("runtime store", () => {
           ID: "pick-bonus-card",
           类型: "resourcePicker",
           按钮文本: "选择额外卡牌",
-          资源库ID: "bonus-cards",
+          资源库: [{ ID: "bonus-cards" }],
           创建卡牌: { 卡牌桌面模块ID: "domain-card-table", 默认状态: "vault" },
         },
       ],

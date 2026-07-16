@@ -1,6 +1,7 @@
 import Dexie, { type Table } from "dexie";
 import type { CharacterData } from "../domain/characterData";
 import type { SystemPackage } from "../domain/systemPackage";
+import type { ResourceExtension } from "../domain/resourceExtension";
 import type { RuntimePackageAsset } from "../loaders/assetResolver";
 import type { PackageDirectoryHandle } from "../loaders/packageVfs";
 
@@ -20,6 +21,14 @@ interface SystemPackageRecord {
 }
 
 interface AuthorPreviewHandleRecord { id: string; handle: PackageDirectoryHandle }
+
+interface ResourceExtensionRecord {
+  id: string;
+  extensionId: string;
+  targetSystemPackageId: string;
+  data: ResourceExtension;
+  assets?: RuntimePackageAsset[];
+}
 
 export interface StoredPlayerImageBlob {
   id: string;
@@ -56,6 +65,10 @@ export interface StorageService {
   savePlayerImageBlob(image: StoredPlayerImageBlob): Promise<void>;
   loadPlayerImageBlob(imageId: string): Promise<StoredPlayerImageBlob | null>;
   deletePlayerImageBlob(imageId: string): Promise<void>;
+  listResourceExtensions(targetSystemPackageId: string): Promise<ResourceExtension[]>;
+  loadResourceExtensionAssets(targetSystemPackageId: string): Promise<RuntimePackageAsset[]>;
+  saveResourceExtension(extension: ResourceExtension, assets?: RuntimePackageAsset[]): Promise<void>;
+  deleteResourceExtension(targetSystemPackageId: string, extensionId: string): Promise<void>;
 }
 
 export class PbDHDatabase extends Dexie {
@@ -63,6 +76,7 @@ export class PbDHDatabase extends Dexie {
   systemPackages!: Table<SystemPackageRecord, string>;
   playerImages!: Table<StoredPlayerImageBlob, string>;
   authorPreviewHandles!: Table<AuthorPreviewHandleRecord, string>;
+  resourceExtensions!: Table<ResourceExtensionRecord, string>;
 
   constructor(name = "pbdh-sheet") {
     super(name);
@@ -92,6 +106,13 @@ export class PbDHDatabase extends Dexie {
       systemPackages: "id, packageId",
       playerImages: "id",
       authorPreviewHandles: "id",
+    });
+    this.version(5).stores({
+      characterSaves: "id, packageId",
+      systemPackages: "id, packageId",
+      playerImages: "id",
+      authorPreviewHandles: "id",
+      resourceExtensions: "id, extensionId, targetSystemPackageId",
     });
   }
 }
@@ -232,6 +253,30 @@ export const storageService: StorageService = {
   async deletePlayerImageBlob(imageId: string): Promise<void> {
     await db.playerImages.delete(imageId);
   },
+
+  async listResourceExtensions(targetSystemPackageId: string): Promise<ResourceExtension[]> {
+    const records = await db.resourceExtensions.where("targetSystemPackageId").equals(targetSystemPackageId).sortBy("extensionId");
+    return records.map((record) => record.data);
+  },
+
+  async loadResourceExtensionAssets(targetSystemPackageId: string): Promise<RuntimePackageAsset[]> {
+    const records = await db.resourceExtensions.where("targetSystemPackageId").equals(targetSystemPackageId).toArray();
+    return records.flatMap((record) => record.assets ?? []);
+  },
+
+  async saveResourceExtension(extension: ResourceExtension, assets: RuntimePackageAsset[] = []): Promise<void> {
+    await db.resourceExtensions.put({
+      id: resourceExtensionRecordId(extension.目标系统包ID, extension.ID),
+      extensionId: extension.ID,
+      targetSystemPackageId: extension.目标系统包ID,
+      data: extension,
+      assets,
+    });
+  },
+
+  async deleteResourceExtension(targetSystemPackageId: string, extensionId: string): Promise<void> {
+    await db.resourceExtensions.delete(resourceExtensionRecordId(targetSystemPackageId, extensionId));
+  },
 };
 
 const authorPreviewHandleId = "current-author-preview-directory";
@@ -246,4 +291,8 @@ export async function loadAuthorPreviewDirectoryHandle(): Promise<PackageDirecto
 
 function defaultSaveName(): string {
   return "未命名角色";
+}
+
+function resourceExtensionRecordId(targetSystemPackageId: string, extensionId: string): string {
+  return `${encodeURIComponent(targetSystemPackageId)}::${encodeURIComponent(extensionId)}`;
 }

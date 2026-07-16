@@ -12,10 +12,8 @@ describe("loadSystemPackageFromZipFile", () => {
       expect(result.package.manifest).toEqual(minimalSystemPackage.manifest);
       expect(result.package.pages).toEqual(minimalSystemPackage.pages);
       expect(result.package.modules).toEqual(minimalSystemPackage.modules);
-      expect(result.package.assets?.[0]).toEqual({ ID: "readme", 路径: "assets/readme.txt", 类型: "text/plain" });
-      expect(result.packageAssets?.[0]).toEqual(
-        expect.objectContaining({ ID: "readme", 路径: "assets/readme.txt", 类型: "text/plain" }),
-      );
+      expect(result.package.assets).toBeUndefined();
+      expect(result.packageAssets).toEqual([]);
     }
   });
 
@@ -37,7 +35,7 @@ describe("loadSystemPackageFromZipFile", () => {
         ID: "domain-pick",
         类型: "resourcePicker",
         按钮文本: "选择领域",
-        资源库ID: "domains",
+        资源库: [{ ID: "domains" }],
       },
       {
         ID: "domain-name",
@@ -169,10 +167,9 @@ describe("loadSystemPackageFromZipFile", () => {
         "readOnlyDisplay",
         "imageField",
       ]);
-      expect(result.package.assets?.[0]).toEqual({ ID: "demo-emblem", 路径: "assets/demo-emblem.svg", 类型: "image/svg+xml" });
+      expect(result.package.assets?.[0]).toEqual({ 路径: "assets/demo-emblem.svg", 类型: "image/svg+xml" });
       expect(result.packageAssets?.[0]).toEqual(
         expect.objectContaining({
-          ID: "demo-emblem",
           路径: "assets/demo-emblem.svg",
           类型: "image/svg+xml",
         }),
@@ -243,6 +240,37 @@ describe("loadSystemPackageFromZipFile", () => {
         }),
       ]),
     );
+  });
+
+  it("rejects the removed manifest Asset list", async () => {
+    const result = await loadSystemPackageFromZipFile(createPackageZip({
+      manifest: { ...createManifest(), assets: [{ ID: "logo", 路径: "assets/logo.svg" }] },
+    }));
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "MANIFEST_SHAPE_INVALID" })]));
+  });
+
+  it("warns about automatically discovered images that are not referenced", async () => {
+    const result = await loadSystemPackageFromZipFile(zipBlob({
+      "manifest.json": JSON.stringify(createManifest()),
+      "pages.json": packagePagesJson(minimalSystemPackage.pages),
+      "modules.json": JSON.stringify(minimalSystemPackage.modules),
+      "layouts/main.html": minimalSystemPackage.pages[0].layout.htmlContent,
+      "layouts/main.css": minimalSystemPackage.pages[0].layout.cssContent ?? "",
+      "assets/unused.svg": '<svg xmlns="http://www.w3.org/2000/svg"/>',
+    }));
+    expect(result.ok).toBe(true);
+    expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "UNUSED_PACKAGE_IMAGE", level: "warning", path: "assets/unused.svg" })]));
+  });
+
+  it("reports a missing static HTML image path", async () => {
+    const pages = [{
+      ...minimalSystemPackage.pages[0],
+      layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<main><img src="assets/missing.png" alt="missing"><pb-module id="character-name"></pb-module></main>' },
+    }];
+    const result = await loadSystemPackageFromZipFile(createPackageZip({ pages }));
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "MISSING_TEMPLATE_IMAGE_REFERENCE" })]));
   });
 
   it("returns a fatal issue for a missing referenced file", async () => {
@@ -338,13 +366,6 @@ function createManifest() {
     ...minimalSystemPackage.manifest,
     pages: "pages.json",
     modules: "modules.json",
-    assets: [
-      {
-        ID: "readme",
-        路径: "assets/readme.txt",
-        类型: "text/plain",
-      },
-    ],
   };
 }
 
@@ -379,7 +400,6 @@ function createModuleDemoZip() {
       ...moduleDemoSystemPackage.manifest,
       pages: "pages.json",
       modules: "modules.json",
-      assets: moduleDemoSystemPackage.assets,
     }),
     "pages.json": packagePagesJson(moduleDemoSystemPackage.pages),
     "modules.json": JSON.stringify(moduleDemoSystemPackage.modules),

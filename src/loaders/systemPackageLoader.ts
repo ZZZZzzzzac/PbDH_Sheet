@@ -20,15 +20,7 @@ const packageManifestSchema = z.object({
   shell: z.object({ html: z.string().min(1), css: z.string().min(1).optional() }).optional(),
   dependencies: z.string().min(1).optional(),
   characterCreationGuide: z.string().min(1).optional(),
-  assets: z
-    .array(
-      z.object({
-        ID: z.string().min(1),
-        路径: z.string().min(1),
-        类型: z.string().optional(),
-      }),
-    )
-    .optional(),
+  assets: z.never().optional(),
   resourceLibraries: z.array(resourceLibraryReferenceSchema).optional(),
   validationChecks: z
     .array(
@@ -141,6 +133,7 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
     return { ok: false, issues: [validationChecks.issue] };
   }
 
+  const packageAssets = resolvePackageAssets(vfs);
   const normalized = normalizeManifestPackage(
     manifest.data,
     pagesWithLayouts.value,
@@ -150,6 +143,7 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
     validationChecks.value,
     guideJson?.value,
     shell?.value,
+    packageAssets,
     buildPackageSourceMap(manifest.data, pagesJson.value),
   );
   if (!normalized.ok) {
@@ -158,7 +152,7 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
 
   return {
     ...normalized,
-    packageAssets: resolvePackageAssets(manifest.data.assets ?? [], vfs),
+    packageAssets,
   };
 }
 
@@ -171,6 +165,7 @@ function normalizeManifestPackage(
   validationChecks?: Array<{ ID: string; 脚本: string; scriptContent: string }>,
   characterCreationGuide?: unknown,
   shell?: unknown,
+  packageAssets: RuntimePackageAsset[] = [],
   sourceMap: PackageSourceMap = {},
 ): PackageValidationResult {
   return validateSystemPackage({
@@ -183,7 +178,7 @@ function normalizeManifestPackage(
     pages,
     shell,
     modules,
-    assets: manifest.assets ?? [],
+    assets: packageAssets.map(({ 路径, 类型 }) => ({ 路径, 类型 })),
     resourceLibraries,
     dependencies,
     validationChecks,
@@ -196,7 +191,6 @@ function buildPackageSourceMap(manifest: z.infer<typeof packageManifestSchema>, 
     manifest: packageManifestPath,
     pages: manifest.pages,
     modules: manifest.modules,
-    assets: packageManifestPath,
     ...(manifest.dependencies ? { dependencies: manifest.dependencies } : {}),
     ...(manifest.characterCreationGuide ? { characterCreationGuide: manifest.characterCreationGuide } : {}),
     ...(manifest.shell ? { shell: manifest.shell.html } : {}),
@@ -331,22 +325,25 @@ function loadValidationScriptFilesFromVfs(
   return { ok: true as const, value: normalizedChecks };
 }
 
-function resolvePackageAssets(assets: NonNullable<z.infer<typeof packageManifestSchema>["assets"]>, vfs: PackageVirtualFileSystem): LoadedPackageAsset[] {
+function resolvePackageAssets(vfs: PackageVirtualFileSystem): LoadedPackageAsset[] {
   const resolvedAssets: LoadedPackageAsset[] = [];
 
-  for (const asset of assets) {
-    const read = vfs.readBytes(asset.路径);
+  for (const path of vfs.listFiles().filter(isSupportedPackageImagePath)) {
+    const read = vfs.readBytes(path);
     if (!read.ok) {
       continue;
     }
 
     resolvedAssets.push({
-      ID: asset.ID,
       路径: read.path,
-      类型: asset.类型 ?? inferMimeType(read.path),
+      类型: inferMimeType(read.path),
       bytes: read.value,
     });
   }
 
   return resolvedAssets;
+}
+
+function isSupportedPackageImagePath(path: string): boolean {
+  return path.startsWith("assets/") && /\.(?:png|jpe?g|webp|gif|avif|svg)$/iu.test(path);
 }

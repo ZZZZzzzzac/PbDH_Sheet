@@ -18,7 +18,7 @@
 - Dependencies：[选择/勾选后填文本、填 Counter、显隐、默认筛选]
 - Guide：[线性步骤和可选 Page/Module target]
 - Validation Checks：[只读报告规则]
-- Assets：[图片/字体以外的包内文件；ID、路径、MIME]
+- Images：[放入 `assets/**` 后自动发现的图片相对路径]
 
 先输出这个文件树，并按实际需求删除不用的可选文件：
 
@@ -43,7 +43,6 @@ manifest 可选键与形态：
 - characterCreationGuide: path
 - resourceLibraries: [{ ID, 名称, 路径 }]
 - validationChecks: [{ ID, 脚本 }]
-- assets: [{ ID, 路径, 类型? }]
 
 Page 形态：
 {
@@ -58,9 +57,9 @@ Page 形态：
 2. longText: ID, 类型, 标签, 默认值?, 行数?(2-20), 隐藏标签?, 占位文本?, 默认隐藏?
 3. checkboxResource: ID, 类型, 标签, 选项:[{ID,标签,默认选中?}], 默认隐藏?
 4. countableResource: ID, 类型, 标签, 最小值?, 最大值?, 默认值?, 步长?, 最大值可改?, 显示方式?(数值|标记), 当前值标记?, 剩余值标记?, 默认隐藏?；标记展示的两个标记各为一个不同的可见 Unicode 字素且最小值不得为负
-5. readOnlyDisplay: ID, 类型, 标签, 内容?, 资源ID?, 替代文本?, 默认隐藏?；内容/资源至少一个
+5. readOnlyDisplay: ID, 类型, 标签, 内容?, 资源路径?, 替代文本?, 默认隐藏?；内容/资源至少一个
 6. imageField: ID, 类型, 标签, 替代文本?, 默认隐藏?
-7. resourcePicker: ID, 类型, 按钮文本, 资源库ID, 字段模板?, 多选?, 默认查询?, 创建卡牌?, 默认隐藏?
+7. resourcePicker: ID, 类型, 按钮文本, 资源库（非空 `{ID, 字段模板?, 默认查询?}[]` 或 `"其他"`）, 多选?, 创建卡牌?, 默认隐藏?
 8. resourceComposer: ID, 类型, 按钮文本, 来源槽位, 输出字段, 创建卡牌?, 默认隐藏?
 9. cardTable: ID, 类型, 标签, 资源来源, 状态选项?, 状态背景色?(Record<state,#RRGGBB>), 显示方式?, 卡图字段?, 显示方式字段?, 背面卡牌ID字段?, 默认隐藏?
 

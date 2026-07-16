@@ -52,7 +52,7 @@
     "ID": "sect-emblem",
     "类型": "readOnlyDisplay",
     "标签": "徽记",
-    "资源ID": "demo-emblem",
+    "资源路径": "assets/demo-emblem.svg",
     "替代文本": "阶段5示例徽记"
   },
   {

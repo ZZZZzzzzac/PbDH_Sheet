@@ -94,7 +94,7 @@ body { color: red; }
 ## 6. Resource 引用或字段不存在
 
 ```json
-{ "ID": "pick-class", "类型": "resourcePicker", "按钮文本": "选职业", "资源库ID": "class" }
+{ "ID": "pick-class", "类型": "resourcePicker", "按钮文本": "选职业", "资源库": [{ "ID": "class" }] }
 ```
 
 manifest 实际声明 `classes` 时产生 `MISSING_RESOURCE_LIBRARY_REFERENCE`。ID 必须完全相同。
@@ -171,13 +171,13 @@ Normalizer 后得到文本 `"6"`，可完整解析。
 
 Card Picker 的 Library 未包含在目标 Table `资源来源` 中，产生 `CARD_TABLE_LIBRARY_MISMATCH`。
 
-## 10. Card art Asset 不存在
+## 10. Card art 图片不存在
 
 ```json
 [{ "ID": "card-a", "名称": "卡牌", "描述": "效果", "卡图": "missing-art" }]
 ```
 
-明确写出的无效引用产生 `MISSING_CARD_ART_ASSET_REFERENCE`。在 manifest 声明该 Asset，改成有效包内路径，或省略卡图使用文字 fallback。
+明确写出的无效引用产生 `MISSING_CARD_ART_ASSET_REFERENCE`。把图片放入 `assets/**` 并改成有效包内路径，或省略卡图使用文字 fallback。
 
 ## 11. Validation Script 语法或返回值错误
 

@@ -3,10 +3,11 @@ import type { PackageVirtualFileSystem } from "./packageVfs";
 import { inferMimeType } from "../utils";
 
 export interface RuntimePackageAsset {
-  ID: string;
   路径: string;
   类型: string;
   bytes: Uint8Array;
+  sourceType?: "systemPackage" | "resourceExtension";
+  sourceId?: string;
 }
 
 export type AssetResolveResult =
@@ -73,8 +74,7 @@ export function createRuntimeAssetResolver(assets: RuntimePackageAsset[]): Runti
     }
 
     objectUrls.add(objectUrl);
-    urls[asset.ID] = objectUrl;
-    urls[asset.路径] = objectUrl;
+    urls[resourceAssetUrlKey(asset.sourceType, asset.sourceId, asset.路径)] = objectUrl;
   }
 
   return {
@@ -86,6 +86,12 @@ export function createRuntimeAssetResolver(assets: RuntimePackageAsset[]): Runti
       objectUrls.clear();
     },
   };
+}
+
+export function resourceAssetUrlKey(sourceType: RuntimePackageAsset["sourceType"], sourceId: string | undefined, path: string): string {
+  return sourceType === "resourceExtension" && sourceId
+    ? `resource-extension:${encodeURIComponent(sourceId)}:${path}`
+    : path;
 }
 
 function createObjectUrl(bytes: Uint8Array, mimeType: string): string | null {

@@ -96,6 +96,14 @@ _Avoid_: New Sheet Module, text value
 An Author-defined collection of selectable system resources such as classes, weapons, abilities, traits, or cards.
 _Avoid_: Card deck when referring to the source data
 
+**Resource Extension**:
+An independently distributed JSON or image-bearing ZIP bundle that targets one System Package and contributes entries to one or more existing or new Resource Libraries without modifying that System Package.
+_Avoid_: Updated System Package, resource patch
+
+**Resource Manager**:
+A Base Framework surface that lists effective Resource Libraries and their contributors, installs Resource Extensions, and reports extension status for the Current System Package.
+_Avoid_: System Package editor, Player-configured Picker links
+
 **Composite Resource**:
 A Player-owned resource created for one character by selecting fields from multiple Resource Library entries according to an Author-defined composition.
 _Avoid_: Runtime Resource Library entry, temporary card override
@@ -111,6 +119,10 @@ _Avoid_: Resource Picker event, Composite Resource storage
 **Resource Picker**:
 A button-like Sheet Module that opens a Resource Library for Player selection and emits a transient selection event for Dependency Logic.
 _Avoid_: Selection Text when the module is only a trigger and should not display or store a selected value
+
+**Other Resources Picker**:
+An Author-defined Resource Picker that dynamically exposes Resource Libraries not referenced by another Resource Picker in the same System Package.
+_Avoid_: Player-configured library links, framework-injected module
 
 **Card**:
 A PbDH resource presented as a player-usable card, either as text-only content or with card artwork.
@@ -236,8 +248,34 @@ _Avoid_: Script plugin
 - Normal reading renders only the Current Page. Export Preview temporarily renders every printable page in declaration order, hides page navigation, and restores the unchanged Current Page on exit. Browser printing and HTML snapshots share this printable-page set; an empty set produces a clear message instead of invoking output.
 - The Base Framework presents every printable page as a fixed A4 portrait page box (210mm × 297mm) with framework-owned inner print margins. It does not scale System Package layouts to fit; an Author is responsible for making each HTML Layout Template fit the available A4 content box. A Sheet Shell surface that must print as an additional page may opt into the same box with `data-print-page="true"`.
 - A **Resource Library** stores source entries; **Card Presentation** controls how selected entries appear to Players.
+- A **Resource Extension** identifies its target by System Package ID and contains one or more explicit Resource Library contributions; each existing target produces a merged runtime view, while each new target creates a separate Resource Library.
+- A **Resource Extension** must declare its target System Package ID because the Base Framework cannot infer package compatibility; a contribution with a missing target Resource Library ID means “create a new library” and receives a generated ID.
+- A **Resource Extension** targeting an existing Resource Library cannot rename it; the System Package remains authoritative for that library's display name.
+- A **Resource Extension** whose target System Package ID differs from the Current System Package is rejected rather than stored for a future package.
+- Resource Extension compatibility is scoped only by System Package ID, never by System Package version; package upgrades re-evaluate installed extensions against the current effective libraries.
+- If a package upgrade removes or renames an extension's target Resource Library ID, that extension contributes a standalone Resource Library under its declared ID and may be reached through the **Other Resources Picker**.
+- An installed **Resource Extension** remains active until an actual validation error or Entry ID conflict occurs; an incompatible extension is disabled with diagnostics without blocking the Current System Package or being deleted automatically.
+- A text-only **Resource Extension** is distributed as JSON; an extension with new images is distributed as ZIP with a root `extension.json` and an `assets/**` image tree, while fonts and other binary asset types are not supported.
+- System Packages and ZIP **Resource Extensions** automatically discover images under `assets/**`; Author Data references images only by source-relative path, and explicit Asset manifest entries or Author-defined Asset IDs are not part of the contract.
+- Image identity is scoped by its owning System Package or Resource Extension plus normalized relative path, so separate sources may use the same `assets/**` path without collision.
+- A **Resource Extension** remains stored separately from its target **System Package**; installing one never rewrites the cached or distributed package.
+- The **Resource Manager** is opened from the top toolbar's System Package menu and presents effective Resource Libraries as its top-level units, with contributing System Package and Resource Extension details nested beneath each library.
+- The **Resource Manager** may uninstall a locally installed Resource Extension but never removes System Package-owned resources; uninstalling recomputes effective libraries without rewriting Character Data, and any resulting stale resource references are reported instead of silently repaired.
+- The **Resource Manager** installs a new valid extension immediately, but replacing or uninstalling an extension requires a summary and confirmation because either operation can remove definitions referenced by Character Data; failed validation leaves installed state unchanged.
+- Reimporting the same **Resource Extension** ID replaces that extension's complete stored contribution instead of appending duplicate entries.
+- When an imported **Resource Extension** or Resource Entry lacks its own stable ID, the Base Framework generates a non-conflicting ID for the installed copy and lets the importer download normalized JSON containing the generated IDs for future maintenance and reliable reimport.
+- Installing a **Resource Extension** is rejected as one atomic operation when any contributed Resource Entry ID conflicts with its target System Package or another installed extension; reimport replacement of that same extension is exempt from this conflict check.
 - Each Card Table source has one **Card Presentation**. When omitted it renders `名称` as the Card name, `描述` as the description, and other eligible fields as tags; an Author may instead compose both name and description from source fields through declarative text templates.
 - A **Resource Picker** is an interaction trigger over a **Resource Library**. It does not persist selected resource references into **Character Data** by default.
+- A **Resource Picker** may link one or more Resource Libraries; its Browser displays exactly one library table at a time and replaces the title with a single-choice library dropdown when multiple libraries are available.
+- Each explicitly linked Resource Library in a **Resource Picker** owns its own field template and default query; dynamically discovered libraries in an **Other Resources Picker** use inferred fields and no Author-defined default query.
+- Linking multiple Resource Libraries changes only which source table the **Resource Picker** displays; selection, multi-select, Dependency Logic emission, and card-creation behavior remain Picker-level and identical to a single-library Picker.
+- A multi-library **Resource Picker** keeps separate transient search, filter, and sort state for each library while its Browser is open, initializes each library from its own defaults, and discards all such query state when the Browser closes.
+- A System Package defines each **Resource Picker** through one unified multi-library contract or marks it as an **Other Resources Picker**; the superseded single-library authoring shape is not retained because no historical compatibility contract exists.
+- In Author Data, a **Resource Picker** declares `资源库` as either a non-empty array of per-library link objects or the literal `"其他"`; each explicit link identifies its library by `ID` and may own field templates and a default query.
+- An **Author** may declare and place one **Other Resources Picker** so independently added Resource Libraries remain reachable without Player configuration; the Base Framework does not inject one because only the Author owns package layout.
+- A Resource Library already referenced by another **Resource Picker** is excluded from the **Other Resources Picker**; entries contributed to an existing target library remain part of that target instead of appearing as a separate library.
+- The same Resource Library may be referenced by multiple ordinary **Resource Pickers**, each with its own default query and presentation; one ordinary reference is sufficient to exclude that library from the **Other Resources Picker**.
 - A **Resource Composer** lets a **Player** choose source entries but never lets the Player define or alter the Author-owned field composition.
 - A **Resource Composer** emits its completed **Composite Resource** through the same transient resource-selection contract as a **Resource Picker**, so downstream **Dependency Logic** does not distinguish how the selected entry was produced.
 - A **Resource Composer** is stateless: all Resource Library inputs are declared as slots on that Composer, selected source references are not persisted, and only its output Composite Resource belongs to Character Data.
@@ -245,6 +283,7 @@ _Avoid_: Script plugin
 - **Resource Picker** and **Resource Composer** emit the same **Resource Output** contract; **Dependency Logic** consumes the normalized payload without branching on its origin.
 - A **Composite Resource** is derived from one or more **Resource Library** entries, belongs to exactly one character, and is persisted in that character's **Character Data**.
 - A **Card Instance** may reference a **Composite Resource** so the generated card survives saving, export, import, and reload without modifying Author-owned **Resource Libraries**.
+- A Card Instance backed by a **Resource Extension** keeps a Resource Definition reference rather than copying the complete Resource Output; replacing an Extension updates same-ID definitions, while removed Entry IDs leave explicit stale references and diagnostics.
 - A **Card** is a core PbDH concept and may represent many kinds of resources, not only Daggerheart domain cards.
 - PbDH Cards are ability/resource references, not a card-game rules engine.
 - Player-side Cards are grouped into **Configured Cards**, **Vault Cards**, and **Library Cards**.

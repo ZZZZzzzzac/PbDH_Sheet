@@ -20,4 +20,4 @@
 16. Resource Composer 只声明固定单选槽位和一对一字段路由；不保存来源，不生成模板、条件或脚本。
 17. Card Table 只用 `资源来源`；每个来源可选声明 `卡牌展示.名称模板`、`描述模板` 与 `标签字段`。
 
-生成顺序建议：manifest → resources/assets → modules → pages/layouts/shell → dependencies → guide → checks → Validator → Preview。
+生成顺序建议：manifest → resources/assets 图片树 → modules → pages/layouts/shell → dependencies → guide → checks → Validator → Preview。

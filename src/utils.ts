@@ -27,6 +27,12 @@ export function inferMimeType(path: string): string {
   if (lowerPath.endsWith(".webp")) {
     return "image/webp";
   }
+  if (lowerPath.endsWith(".gif")) {
+    return "image/gif";
+  }
+  if (lowerPath.endsWith(".avif")) {
+    return "image/avif";
+  }
   if (lowerPath.endsWith(".svg")) {
     return "image/svg+xml";
   }

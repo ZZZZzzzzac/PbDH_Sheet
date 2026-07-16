@@ -15,7 +15,6 @@
 | `characterCreationGuide` | path string | 否 | — | Guide object |
 | `resourceLibraries` | array | 否 | `[]` | `{ID, 名称, 路径}` |
 | `validationChecks` | array | 否 | `[]` | `{ID, 脚本}` |
-| `assets` | array | 否 | `[]` | `{ID, 路径, 类型?}` |
 
 `shell.html/css`、所有 path、Library `路径` 和 Check `脚本` 都相对包根。未知 manifest 字段当前被 Zod object 丢弃，不应依赖透传。
 
@@ -29,7 +28,8 @@
   "modules": "modules.json",
   "dependencies": "dependencies.json",
   "resourceLibraries": [{ "ID": "classes", "名称": "职业", "路径": "resources/classes.json" }],
-  "validationChecks": [{ "ID": "rules", "脚本": "checks/rules.js" }],
-  "assets": [{ "ID": "logo", "路径": "assets/logo.svg", "类型": "image/svg+xml" }]
+  "validationChecks": [{ "ID": "rules", "脚本": "checks/rules.js" }]
 }
 ```
+
+图片无需 manifest 声明；Loader 自动发现 `assets/**` 下的支持格式，Author 直接引用相对路径。

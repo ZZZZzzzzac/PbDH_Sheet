@@ -1,5 +1,5 @@
-import { Archive, Copy, Download, Eye, FileText, Map, Plus, Printer, ShieldCheck, Trash2, Type, Upload, X } from "lucide-react";
-import { useEffect, useRef, useState, type ChangeEvent, type InputHTMLAttributes } from "react";
+import { Archive, Copy, Download, Eye, FileText, Library, Map, Plus, Printer, ShieldCheck, Trash2, Type, Upload, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type InputHTMLAttributes } from "react";
 import { exportCharacterData } from "./domain/characterData";
 import { createCardTableLayout } from "./domain/cardEngine";
 import {
@@ -18,6 +18,7 @@ import { SheetRenderer } from "./rendering/SheetRenderer";
 import { printablePages } from "./rendering/pagePresentation";
 import { waitForTextFits } from "./rendering/textFit";
 import { GuideSpotlight } from "./rendering/GuideSpotlight";
+import { ResourceManager } from "./rendering/ResourceManager";
 import { useRuntimeStore } from "./store/runtimeStore";
 
 type OutputKind = "json" | "html" | "print";
@@ -126,11 +127,19 @@ export default function App() {
   const packageFileInputRef = useRef<HTMLInputElement>(null);
   const packageDirectoryInputRef = useRef<HTMLInputElement>(null);
   const guideButtonRef = useRef<HTMLButtonElement>(null);
+  const resourceManagerButtonRef = useRef<HTMLButtonElement>(null);
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
   const [pendingOutput, setPendingOutput] = useState<OutputKind | null>(null);
   const [printMode, setPrintMode] = useState(false);
   const [guideSession, setGuideSession] = useState<GuideSession | null>(null);
+  const [resourceManagerOpen, setResourceManagerOpen] = useState(false);
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
+  const resourceCatalog = useRuntimeStore((state) => state.resourceCatalog);
+  const resourceExtensionImport = useRuntimeStore((state) => state.resourceExtensionImport);
+  const pendingResourceExtensionReplacement = useRuntimeStore((state) => state.pendingResourceExtensionReplacement);
+  const pendingResourceExtensionRemoval = useRuntimeStore((state) => state.pendingResourceExtensionRemoval);
+  const resourceReferenceIssues = useRuntimeStore((state) => state.resourceReferenceIssues);
+  const packageAssetUrls = useRuntimeStore((state) => state.packageAssetUrls);
   const characterData = useRuntimeStore((state) => state.characterData);
   const characterSaves = useRuntimeStore((state) => state.characterSaves);
   const activeCharacterSaveId = useRuntimeStore((state) => state.activeCharacterSaveId);
@@ -150,6 +159,12 @@ export default function App() {
   const importCharacterDataFromText = useRuntimeStore((state) => state.importCharacterDataFromText);
   const uploadSystemPackageFromFile = useRuntimeStore((state) => state.uploadSystemPackageFromFile);
   const uploadSystemPackageFromDirectory = useRuntimeStore((state) => state.uploadSystemPackageFromDirectory);
+  const uploadResourceExtensionFromFile = useRuntimeStore((state) => state.uploadResourceExtensionFromFile);
+  const confirmResourceExtensionReplacement = useRuntimeStore((state) => state.confirmResourceExtensionReplacement);
+  const cancelResourceExtensionReplacement = useRuntimeStore((state) => state.cancelResourceExtensionReplacement);
+  const requestResourceExtensionRemoval = useRuntimeStore((state) => state.requestResourceExtensionRemoval);
+  const confirmResourceExtensionRemoval = useRuntimeStore((state) => state.confirmResourceExtensionRemoval);
+  const cancelResourceExtensionRemoval = useRuntimeStore((state) => state.cancelResourceExtensionRemoval);
   const authorPreviewActive = useRuntimeStore((state) => state.authorPreviewActive);
   const enterAuthorPreview = useRuntimeStore((state) => state.enterAuthorPreview);
   const exitAuthorPreview = useRuntimeStore((state) => state.exitAuthorPreview);
@@ -350,6 +365,11 @@ export default function App() {
     window.requestAnimationFrame(() => guideButtonRef.current?.focus());
   };
 
+  const closeResourceManager = useCallback(() => {
+    setResourceManagerOpen(false);
+    window.requestAnimationFrame(() => resourceManagerButtonRef.current?.focus());
+  }, []);
+
   const activeCharacterSaveName = characterSaves.find((save) => save.id === activeCharacterSaveId)?.name ?? "无角色存档";
   const systemPackageLabel = currentPackage ? `${currentPackage.manifest.名称} · v${currentPackage.manifest.版本}` : bootStatus === "loading" ? "系统包加载中" : "未加载系统包";
 
@@ -399,6 +419,10 @@ export default function App() {
                   <Eye aria-hidden="true" size={16} /><span>进入预览</span>
                 </button>
               )}
+              <button ref={resourceManagerButtonRef} className="menu-item" type="button" onClick={() => setResourceManagerOpen(true)} disabled={!currentPackage || !resourceCatalog}>
+                <Library aria-hidden="true" size={16} />
+                <span>资源管理器</span>
+              </button>
               <button
                 className="menu-item"
                 type="button"
@@ -588,6 +612,24 @@ export default function App() {
           }
           onFinish={closeGuide}
           onExit={closeGuide}
+        />
+      ) : null}
+      {resourceManagerOpen && resourceCatalog && currentPackage ? (
+        <ResourceManager
+          catalog={resourceCatalog}
+          systemPackage={currentPackage}
+          assetUrls={packageAssetUrls}
+          importState={resourceExtensionImport}
+          pendingReplacement={pendingResourceExtensionReplacement}
+          pendingRemoval={pendingResourceExtensionRemoval}
+          referenceIssues={resourceReferenceIssues}
+          onUpload={uploadResourceExtensionFromFile}
+          onConfirmReplacement={confirmResourceExtensionReplacement}
+          onCancelReplacement={cancelResourceExtensionReplacement}
+          onRequestRemoval={requestResourceExtensionRemoval}
+          onConfirmRemoval={confirmResourceExtensionRemoval}
+          onCancelRemoval={cancelResourceExtensionRemoval}
+          onClose={closeResourceManager}
         />
       ) : null}
     </div>

@@ -68,6 +68,14 @@ function createEmptyStorage(): StorageService {
     async loadPlayerImageBlob() {
       return null;
     },
+    async listResourceExtensions() {
+      return [];
+    },
+    async loadResourceExtensionAssets() {
+      return [];
+    },
+    async saveResourceExtension() {},
+    async deleteResourceExtension() {},
   };
 }
 
@@ -540,6 +548,36 @@ describe("App Character Creation Guide", () => {
 
     expect(await screen.findByRole("status")).toHaveTextContent("当前目标不可见");
     expect(screen.queryByLabelText("姓名")).not.toBeInTheDocument();
+  });
+});
+
+describe("App Resource Manager", () => {
+  afterEach(() => resetRuntimeDependencies());
+
+  it("opens from the System Package toolbar menu", async () => {
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
+      storage: createEmptyStorage(),
+    });
+    useRuntimeStore.setState({
+      basePackage: null,
+      currentPackage: null,
+      resourceCatalog: null,
+      installedResourceExtensions: [],
+      resourceExtensionImport: null,
+    });
+    const user = userEvent.setup();
+    render(<App />);
+    await act(async () => useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob()));
+
+    const managerButton = screen.getByRole("button", { name: "资源管理器" });
+    await user.click(managerButton);
+    expect(screen.getByRole("dialog", { name: "Resource Manager" })).toBeVisible();
+    expect(screen.getByText("0 个有效资源库")).toBeVisible();
+    expect(screen.getByRole("button", { name: "关闭资源管理器" })).toHaveFocus();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "Resource Manager" })).not.toBeInTheDocument();
+    await waitFor(() => expect(managerButton).toHaveFocus());
   });
 });
 

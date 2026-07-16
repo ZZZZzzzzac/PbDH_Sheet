@@ -2,6 +2,9 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCardInstance } from "../domain/cardEngine";
+import { applyEffectiveResourceCatalog, createEffectiveResourceCatalog } from "../domain/effectiveResourceCatalog";
+import { loadResourceExtensionJson } from "../domain/resourceExtension";
+import { resourceAssetUrlKey } from "../loaders/assetResolver";
 import { createEmptyCharacterData, updatePlayerImage } from "../domain/characterData";
 import type { SystemPackage } from "../domain/systemPackage";
 import { moduleDemoSystemPackage } from "../test/fixtures";
@@ -48,7 +51,7 @@ describe("Module Registry rendering", () => {
   });
 
   it("renders the phase 5 simple module set through SheetRenderer", () => {
-    renderModuleDemo(moduleDemoSystemPackage, { "demo-emblem": "data:image/svg+xml;base64,PHN2Zy8+" });
+    renderModuleDemo(moduleDemoSystemPackage, { "assets/demo-emblem.svg": "data:image/svg+xml;base64,PHN2Zy8+" });
 
     expect(screen.getByLabelText("姓名")).toBeVisible();
     expect(screen.getByLabelText("背景")).toBeVisible();
@@ -75,6 +78,23 @@ describe("Module Registry rendering", () => {
     expect(result.container.querySelector(".identity")).not.toBeNull();
     expect(result.container.querySelector('[data-module-slot-id="background"]')).not.toBeNull();
     expect(result.container.querySelector("style")?.textContent).toContain('[data-template-page-id="main"] .identity');
+  });
+
+  it("resolves static HTML and CSS image paths through package asset URLs", () => {
+    const systemPackage = {
+      ...moduleDemoSystemPackage,
+      pages: [{
+        ...moduleDemoSystemPackage.pages[0],
+        layout: {
+          ...moduleDemoSystemPackage.pages[0].layout,
+          htmlContent: '<main class="art"><img src="assets/demo-emblem.svg" alt="静态徽记"><pb-module id="character-name"></pb-module></main>',
+          cssContent: '.art { background-image: url("assets/demo-emblem.svg"); }',
+        },
+      }],
+    };
+    renderModuleDemo(systemPackage, { "assets/demo-emblem.svg": "blob:demo-emblem" });
+    expect(screen.getByAltText("静态徽记")).toHaveAttribute("src", "blob:demo-emblem");
+    expect(document.querySelector("style")?.textContent).toContain('url("blob:demo-emblem")');
   });
 
   afterEach(() => {
@@ -527,6 +547,65 @@ describe("Module Registry rendering", () => {
     expect(screen.getByLabelText("选择 幽影")).toBeVisible();
   });
 
+  it("switches linked Resource Libraries with independent fields and transient queries", () => {
+    const systemPackage = createMultiResourcePickerPackage();
+    renderModuleDemo(systemPackage);
+
+    fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
+    const librarySelect = screen.getByRole("combobox", { name: "选择资源库" });
+    const search = screen.getByRole("searchbox", { name: "搜索资源库" });
+
+    expect(librarySelect).toHaveValue("domains");
+    expect(screen.getByRole("columnheader", { name: "卡名" })).toBeVisible();
+    expect(screen.getByLabelText("选择 烈焰")).toBeVisible();
+    expect(screen.queryByLabelText("选择 幽影")).not.toBeInTheDocument();
+    fireEvent.change(search, { target: { value: "烈" } });
+
+    fireEvent.change(librarySelect, { target: { value: "weapons" } });
+    expect(screen.getByRole("columnheader", { name: "武器名" })).toBeVisible();
+    expect(screen.getByRole("columnheader", { name: "类型" })).toBeVisible();
+    expect(screen.queryByRole("columnheader", { name: "等级" })).not.toBeInTheDocument();
+    expect(search).toHaveValue("");
+    expect(screen.getByLabelText("选择 长弓")).toBeVisible();
+    expect(screen.queryByLabelText("选择 长剑")).not.toBeInTheDocument();
+    fireEvent.change(search, { target: { value: "长" } });
+
+    fireEvent.change(librarySelect, { target: { value: "domains" } });
+    expect(search).toHaveValue("烈");
+    fireEvent.change(librarySelect, { target: { value: "weapons" } });
+    expect(search).toHaveValue("长");
+    fireEvent.click(screen.getByLabelText("选择 长弓"));
+
+    expect(useRuntimeStore.getState().characterData?.resourceSelections?.["domain-picker"]).toEqual({
+      libraryId: "weapons",
+      entryIds: ["bow-1"],
+    });
+    fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
+    expect(screen.getByRole("searchbox", { name: "搜索资源库" })).toHaveValue("");
+  });
+
+  it("lets an Author-defined Other Resources Picker expose only unlinked Libraries", () => {
+    const systemPackage = createMultiResourcePickerPackage();
+    systemPackage.resourceLibraries?.push({
+      ID: "transformations", 名称: "转变", 路径: "resources/transformations.json",
+      fields: [
+        { key: "ID", label: "ID", visible: false, filterable: false, sortable: false, searchable: false },
+        { key: "名称", label: "名称", visible: true, filterable: true, sortable: true, searchable: true },
+      ],
+      entries: [{ ID: "void-form", fields: { ID: "void-form", 名称: "虚空化" } }],
+    });
+    systemPackage.modules.push({ ID: "pick-other", 类型: "resourcePicker", 按钮文本: "选择其他资源", 资源库: "其他" });
+    systemPackage.pages[0].layout.htmlContent += '<pb-module id="pick-other"></pb-module>';
+    renderModuleDemo(systemPackage);
+
+    fireEvent.click(screen.getByRole("button", { name: "选择其他资源" }));
+    expect(screen.getByRole("dialog", { name: "转变资源库" })).toBeVisible();
+    expect(screen.getByLabelText("选择 虚空化")).toBeVisible();
+    expect(screen.queryByRole("combobox", { name: "选择资源库" })).not.toBeInTheDocument();
+    expect(screen.queryByText("烈焰")).not.toBeInTheDocument();
+    expect(screen.queryByText("长弓")).not.toBeInTheDocument();
+  });
+
   it("renders text cards with recall in the tag row above the description", () => {
     const systemPackage = createCardTablePackage();
     const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
@@ -614,6 +693,34 @@ describe("Module Registry rendering", () => {
     fireEvent.error(screen.getByRole("img", { name: "**故障回退**" }));
 
     expect(screen.getByText("故障回退").tagName).toBe("STRONG");
+  });
+
+  it("resolves Card artwork from the owning Resource Extension namespace", () => {
+    const basePackage = createCardTablePackage();
+    const loaded = loadResourceExtensionJson(JSON.stringify({
+      ID: "void", 名称: "虚空", 版本: "1", 目标系统包ID: basePackage.manifest.ID,
+      resourceLibraries: [{ ID: "domain-cards", 名称: "领域卡", entries: [{
+        ID: "extension-card", 名称: "扩展卡", 描述: "扩展描述", 卡图: "assets/cards/shared.png",
+      }] }],
+    }), basePackage.manifest.ID);
+    if (!loaded.ok) throw new Error(JSON.stringify(loaded.issues));
+    const catalog = createEffectiveResourceCatalog(basePackage, [loaded.extension]);
+    const systemPackage = applyEffectiveResourceCatalog(basePackage, catalog);
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "extension-instance",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: "extension-card",
+    });
+    useRuntimeStore.setState({
+      currentPackage: systemPackage,
+      resourceCatalog: catalog,
+      packageAssetUrls: { [resourceAssetUrlKey("resourceExtension", "void", "assets/cards/shared.png")]: "blob:void-card" },
+      characterData,
+    });
+
+    render(<SheetRenderer systemPackage={systemPackage} />);
+    expect(screen.getByRole("img", { name: "扩展卡" })).toHaveAttribute("src", "blob:void-card");
   });
 
   it("marks descriptions that still overflow at 9px without shrinking names, tags, or Card Detail", async () => {
@@ -904,14 +1011,16 @@ function createResourcePickerPackage(options: { multiSelect?: boolean; defaultFi
         ID: "domain-picker",
         类型: "resourcePicker",
         按钮文本: "选择领域",
-        资源库ID: "domains",
-        字段模板: [
-          { 键: "名称", 标签: "卡名", 默认显示: true, 可筛选: false, 可排序: true, 列宽: "fill" },
-          { 键: "领域", 标签: "领域", 默认显示: true, 可筛选: true, 可排序: true, 列宽: "compact" },
-          { 键: "等级", 标签: "等级", 默认显示: true, 可筛选: true, 可排序: true, 列宽: "compact" },
-        ],
+        资源库: [{
+          ID: "domains",
+          字段模板: [
+            { 键: "名称", 标签: "卡名", 默认显示: true, 可筛选: false, 可排序: true, 列宽: "fill" },
+            { 键: "领域", 标签: "领域", 默认显示: true, 可筛选: true, 可排序: true, 列宽: "compact" },
+            { 键: "等级", 标签: "等级", 默认显示: true, 可筛选: true, 可排序: true, 列宽: "compact" },
+          ],
+          默认查询: options.defaultFilters ? { filters: options.defaultFilters } : undefined,
+        }],
         多选: options.multiSelect,
-        默认查询: options.defaultFilters ? { filters: options.defaultFilters } : undefined,
       },
       {
         ID: "domain-name",
@@ -985,6 +1094,39 @@ function createResourcePickerPackage(options: { multiSelect?: boolean; defaultFi
       },
     ],
   };
+}
+
+function createMultiResourcePickerPackage(): SystemPackage {
+  const systemPackage = createResourcePickerPackage({ defaultFilters: { 领域: ["利刃"] } });
+  const picker = systemPackage.modules.find((module) => module.ID === "domain-picker");
+  if (picker?.类型 !== "resourcePicker") throw new Error("domain-picker fixture missing");
+
+  picker.资源库 = [
+    ...picker.资源库 === "其他" ? [] : picker.资源库,
+    {
+      ID: "weapons",
+      字段模板: [
+        { 键: "名称", 标签: "武器名", 默认显示: true, 可筛选: false, 可排序: true, 列宽: "fill" },
+        { 键: "类型", 标签: "类型", 默认显示: true, 可筛选: true, 可排序: true, 列宽: "compact" },
+      ],
+      默认查询: { filters: { 类型: ["远程"] } },
+    },
+  ];
+  systemPackage.resourceLibraries?.push({
+    ID: "weapons",
+    名称: "武器",
+    路径: "resources/weapons.json",
+    fields: [
+      { key: "ID", label: "ID", visible: false, filterable: false, sortable: false, searchable: false },
+      { key: "名称", label: "名称", visible: true, filterable: true, sortable: true, searchable: true },
+      { key: "类型", label: "类型", visible: true, filterable: true, sortable: true, searchable: true },
+    ],
+    entries: [
+      { ID: "sword-1", fields: { ID: "sword-1", 名称: "长剑", 类型: "近战" } },
+      { ID: "bow-1", fields: { ID: "bow-1", 名称: "长弓", 类型: "远程" } },
+    ],
+  });
+  return systemPackage;
 }
 
 function createCardTablePackage(): SystemPackage {

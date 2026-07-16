@@ -103,7 +103,7 @@ const readOnlyDisplayModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("readOnlyDisplay"),
   标签: z.string().min(1),
   内容: z.string().min(1).optional(),
-  资源ID: z.string().min(1).optional(),
+  资源路径: z.string().min(1).optional(),
   替代文本: z.string().optional(),
 });
 
@@ -158,10 +158,15 @@ const resourcePickerQuerySchema = z.object({
 const resourcePickerModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("resourcePicker"),
   按钮文本: z.string().min(1),
-  资源库ID: z.string().min(1),
-  字段模板: z.array(resourceLibraryFieldTemplateSchema).optional(),
+  资源库: z.union([
+    z.array(z.object({
+      ID: z.string().min(1),
+      字段模板: z.array(resourceLibraryFieldTemplateSchema).optional(),
+      默认查询: resourcePickerQuerySchema.optional(),
+    })).min(1).refine((links) => new Set(links.map((link) => link.ID)).size === links.length, { message: "Resource Picker 的 Resource Library 链接不能重复。" }),
+    z.literal("其他"),
+  ]),
   多选: z.boolean().optional(),
-  默认查询: resourcePickerQuerySchema.optional(),
   创建卡牌: z
     .object({
       卡牌桌面模块ID: z.string().min(1),
@@ -346,7 +351,6 @@ const pageSchema = z.object({
 });
 
 const assetSchema = z.object({
-  ID: z.string().min(1),
   路径: z.string().min(1),
   类型: z.string().optional(),
 });
@@ -612,6 +616,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
   }
 
   const {
+    assets: rawAssets,
     resourceLibraries: _rawResourceLibraries,
     dependencies: _rawDependencies,
     characterCreationGuide: _rawGuide,
@@ -620,6 +625,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
   const systemPackage: SystemPackage = {
     ...packageData,
     modules,
+    ...(rawAssets && rawAssets.length > 0 ? { assets: rawAssets } : {}),
     ...(parsedDependencies.dependencies.length > 0 ? { dependencies: parsedDependencies.dependencies } : {}),
     ...(normalizedResourceLibraries.resourceLibraries.length > 0 ? { resourceLibraries: normalizedResourceLibraries.resourceLibraries } : {}),
     ...(parsedGuide.guide ? { characterCreationGuide: parsedGuide.guide } : {}),
@@ -627,7 +633,6 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
   const issues: PackageIssue[] = [];
 
   collectDuplicateIdIssues(systemPackage.pages, "Page", "DUPLICATE_PAGE_ID", "pages", issues);
-  collectDuplicateIdIssues(systemPackage.assets ?? [], "Asset", "DUPLICATE_ASSET_ID", "assets", issues);
   collectDuplicateIdIssues(
     systemPackage.validationChecks ?? [],
     "Validation Check",
@@ -645,33 +650,40 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     });
   }
 
-  const assetRefs = new Set((systemPackage.assets ?? []).flatMap((asset) => [asset.ID, asset.路径]));
+  const assetRefs = new Set((systemPackage.assets ?? []).map((asset) => asset.路径));
+  const usedAssetRefs = new Set<string>();
   for (const module of systemPackage.modules) {
-    if (module.类型 === "readOnlyDisplay" && !module.内容 && !module.资源ID) {
+    if (module.类型 === "readOnlyDisplay" && !module.内容 && !module.资源路径) {
       issues.push({
         level: "error",
         code: "DISPLAY_CONTENT_MISSING",
-        text: "ReadOnly Display 需要 内容 或 资源ID。",
+        text: "ReadOnly Display 需要 内容 或 资源路径。",
         path: `modules.${module.ID}.内容`,
       });
     }
 
-    if (module.类型 === "readOnlyDisplay" && module.资源ID && !assetRefs.has(module.资源ID)) {
+    if (module.类型 === "readOnlyDisplay" && module.资源路径 && !assetRefs.has(module.资源路径)) {
       issues.push({
         level: "error",
         code: "MISSING_ASSET_REFERENCE",
-        text: `ReadOnly Display 引用了不存在的 Asset：${module.资源ID}`,
-        path: `modules.${module.ID}.资源ID`,
+        text: `ReadOnly Display 引用了不存在的图片：${module.资源路径}`,
+        path: `modules.${module.ID}.资源路径`,
       });
     }
 
-    if (module.类型 === "resourcePicker" && !findResourceLibrary(systemPackage, module.资源库ID)) {
-      issues.push({
-        level: "error",
-        code: "MISSING_RESOURCE_LIBRARY_REFERENCE",
-        text: `Resource Picker 引用了不存在的 Resource Library：${module.资源库ID}`,
-        path: `modules.${module.ID}.资源库ID`,
+    if (module.类型 === "resourcePicker" && module.资源库 !== "其他") {
+      module.资源库.forEach((link, linkIndex) => {
+        if (findResourceLibrary(systemPackage, link.ID)) return;
+        issues.push({
+          level: "error",
+          code: "MISSING_RESOURCE_LIBRARY_REFERENCE",
+          text: `Resource Picker 引用了不存在的 Resource Library：${link.ID}`,
+          path: `modules.${module.ID}.资源库.${linkIndex}.ID`,
+        });
       });
+    }
+    if (module.类型 === "readOnlyDisplay" && module.资源路径) {
+      usedAssetRefs.add(module.资源路径);
     }
 
     if (module.类型 === "resourceComposer") {
@@ -758,6 +770,14 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     }
     moduleIds.add(module.ID);
   }
+
+  const otherResourcePickers = systemPackage.modules.filter((module) => module.类型 === "resourcePicker" && module.资源库 === "其他");
+  otherResourcePickers.slice(1).forEach((module) => issues.push({
+    level: "error",
+    code: "DUPLICATE_OTHER_RESOURCE_PICKER",
+    text: "一个 System Package 最多声明一个 Other Resources Picker。",
+    path: `modules.${module.ID}.资源库`,
+  }));
 
   const moduleById = new Map(systemPackage.modules.map((module) => [module.ID, module]));
   const pageById = new Map(systemPackage.pages.map((page) => [page.ID, page]));
@@ -1052,7 +1072,9 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
             path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
           });
         } else {
-          validateResourceLibraryField(findResourceLibrary(systemPackage, targetModule.资源库ID), action.字段, `dependencies.${dependency.ID}.动作.${actionIndex}.字段`, dependency.ID, targetModule.ID, issues);
+          for (const link of getResourcePickerLinks(targetModule)) {
+            validateResourceLibraryField(findResourceLibrary(systemPackage, link.ID), action.字段, `dependencies.${dependency.ID}.动作.${actionIndex}.字段`, dependency.ID, targetModule.ID, issues);
+          }
         }
       }
     });
@@ -1084,7 +1106,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
       continue;
     }
 
-    if (!targetModule.资源来源.some((source) => source.类型 === "resourceLibrary" && source.ID === module.资源库ID)) {
+    if (getResourcePickerLinks(module).some((link) => !targetModule.资源来源.some((source) => source.类型 === "resourceLibrary" && source.ID === link.ID))) {
       issues.push({
         level: "error",
         code: "CARD_TABLE_LIBRARY_MISMATCH",
@@ -1191,6 +1213,9 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     library.entries.forEach((entry, entryIndex) => {
       for (const artField of artFields) {
         const cardArtRef = entry.fields[artField];
+        if (cardArtRef) {
+          usedAssetRefs.add(cardArtRef);
+        }
         if (!cardArtRef || assetRefs.has(cardArtRef)) {
           continue;
         }
@@ -1209,6 +1234,17 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     const htmlIssues = validateHtmlTemplate(page.layout.htmlContent, `pages.${page.ID}.layout.html`);
     issues.push(...htmlIssues);
     issues.push(...validateTemplateCss(page.layout.cssContent, `pages.${page.ID}.layout.css`));
+    collectTemplateImageReferences(page.layout.htmlContent, page.layout.cssContent).forEach((assetPath) => {
+      usedAssetRefs.add(assetPath);
+      if (!assetRefs.has(assetPath)) {
+        issues.push({
+          level: "error",
+          code: "MISSING_TEMPLATE_IMAGE_REFERENCE",
+          text: `HTML Layout Template 引用了不存在的图片：${assetPath}`,
+          path: `pages.${page.ID}.layout.html`,
+        });
+      }
+    });
 
     for (const moduleId of getHtmlTemplateModuleReferences(page.layout.htmlContent)) {
       if (!moduleIds.has(moduleId)) {
@@ -1225,11 +1261,28 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
   if (systemPackage.shell) {
     issues.push(...validateHtmlTemplate(systemPackage.shell.htmlContent, "shell.html"));
     issues.push(...validateTemplateCss(systemPackage.shell.cssContent, "shell.css"));
+    collectTemplateImageReferences(systemPackage.shell.htmlContent, systemPackage.shell.cssContent).forEach((assetPath) => {
+      usedAssetRefs.add(assetPath);
+      if (!assetRefs.has(assetPath)) {
+        issues.push({ level: "error", code: "MISSING_TEMPLATE_IMAGE_REFERENCE", text: `Sheet Shell 引用了不存在的图片：${assetPath}`, path: "shell.html" });
+      }
+    });
     for (const moduleId of getHtmlTemplateModuleReferences(systemPackage.shell.htmlContent)) {
       if (!moduleIds.has(moduleId)) issues.push({ level: "error", code: "MISSING_MODULE_REFERENCE", text: `Sheet Shell 引用了不存在的 Sheet Module：${moduleId}`, path: "shell.html" });
     }
     const outletCount = (systemPackage.shell.htmlContent.match(/<pb-page-outlet\b/gi) ?? []).length;
     if (outletCount !== 1) issues.push({ level: "error", code: "SHELL_PAGE_OUTLET_COUNT_INVALID", text: "Sheet Shell 必须且只能包含一个 pb-page-outlet。", path: "shell.html" });
+  }
+
+  for (const assetPath of assetRefs) {
+    if (!usedAssetRefs.has(assetPath)) {
+      issues.push({
+        level: "warning",
+        code: "UNUSED_PACKAGE_IMAGE",
+        text: `System Package 图片未被引用：${assetPath}`,
+        path: assetPath,
+      });
+    }
   }
 
   for (const [checkIndex, check] of (systemPackage.validationChecks ?? []).entries()) {
@@ -1281,9 +1334,12 @@ function collectDuplicateIdIssues<T extends { ID: string }>(
 
 function validateSelectedResourceField(systemPackage: SystemPackage, sourceModule: SheetModule | undefined, field: string, path: string, dependencyId: string, issues: PackageIssue[]) {
   if (sourceModule?.类型 === "resourcePicker") {
-    validateResourceLibraryField(findResourceLibrary(systemPackage, sourceModule.资源库ID), field, path, dependencyId, sourceModule.ID, issues);
+    for (const link of getResourcePickerLinks(sourceModule)) {
+      validateResourceLibraryField(findResourceLibrary(systemPackage, link.ID), field, path, dependencyId, sourceModule.ID, issues);
+    }
     return;
   }
+
   if (sourceModule?.类型 === "resourceComposer" && field !== "ID" && !sourceModule.输出字段.some((mapping) => mapping.字段 === field)) {
     issues.push({
       level: "error",
@@ -1293,6 +1349,21 @@ function validateSelectedResourceField(systemPackage: SystemPackage, sourceModul
       evidence: [{ label: "referencedField", value: field }, { label: "knownFields", value: sourceModule.输出字段.map((mapping) => mapping.字段) }],
     });
   }
+}
+
+function collectTemplateImageReferences(html: string, css: string | undefined): string[] {
+  const references = new Set<string>();
+  for (const match of html.matchAll(/<img\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/giu)) {
+    if (isPackageImageReference(match[1])) references.add(match[1]);
+  }
+  for (const match of (css ?? "").matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/giu)) {
+    if (isPackageImageReference(match[1])) references.add(match[1]);
+  }
+  return [...references];
+}
+
+function isPackageImageReference(value: string): boolean {
+  return !isExternalResourceReference(value) && /\.(?:png|jpe?g|webp|gif|avif|svg)$/iu.test(value);
 }
 
 function validateResourceLibraryField(library: ResourceLibrary | undefined, field: string, path: string, dependencyId: string, moduleId: string, issues: PackageIssue[]) {
@@ -1381,12 +1452,21 @@ export function findModule(systemPackage: SystemPackage, moduleId: string): Shee
   return systemPackage.modules.find((module) => module.ID === moduleId);
 }
 
-export function findAsset(systemPackage: SystemPackage, assetId: string): PackageAsset | undefined {
-  return systemPackage.assets?.find((asset) => asset.ID === assetId);
+export function findAsset(systemPackage: SystemPackage, assetPath: string): PackageAsset | undefined {
+  return systemPackage.assets?.find((asset) => asset.路径 === assetPath);
 }
 
 export function findResourceLibrary(systemPackage: SystemPackage, libraryId: string): ResourceLibrary | undefined {
   return systemPackage.resourceLibraries?.find((library) => library.ID === libraryId);
+}
+
+export function getResourcePickerLinks(module: ResourcePickerModule) {
+  return module.资源库 === "其他" ? [] : module.资源库;
+}
+
+export function getOtherResourceLibraries(systemPackage: SystemPackage): ResourceLibrary[] {
+  const explicitlyLinked = new Set(systemPackage.modules.flatMap((module) => module.类型 === "resourcePicker" ? getResourcePickerLinks(module).map((link) => link.ID) : []));
+  return (systemPackage.resourceLibraries ?? []).filter((library) => !explicitlyLinked.has(library.ID));
 }
 
 function isResourceCondition(

@@ -2,6 +2,7 @@ import { Blob as NodeBlob } from "node:buffer";
 import Dexie from "dexie";
 import { afterEach, describe, expect, it } from "vitest";
 import { PbDHDatabase, type StoredPlayerImageBlob } from "./storageService";
+import { loadResourceExtensionJson } from "../domain/resourceExtension";
 
 const databases = new Set<string>();
 
@@ -66,5 +67,33 @@ describe("PbDHDatabase migrations", () => {
       id: "current-system-package",
       packageId: "test-package",
     });
+  });
+});
+
+describe("Resource Extension repository", () => {
+  it("stores, replaces, lists, and removes Extensions without changing System Package records", async () => {
+    const databaseName = `pbdh-sheet-extension-${crypto.randomUUID()}`;
+    databases.add(databaseName);
+    const database = new PbDHDatabase(databaseName);
+    const first = loadResourceExtensionJson(JSON.stringify({
+      ID: "void", 名称: "虚空", 版本: "1", 目标系统包ID: "core",
+      resourceLibraries: [{ ID: "classes", 名称: "职业", entries: [{ ID: "void-class", 名称: "刺客" }] }],
+    }), "core");
+    if (!first.ok) throw new Error(JSON.stringify(first.issues));
+    const replacement = { ...first.extension, 版本: "2" };
+
+    await database.systemPackages.put({ id: "current-system-package", packageId: "core", data: { marker: "unchanged" } } as never);
+    await database.resourceExtensions.put({ id: "core::void", extensionId: "void", targetSystemPackageId: "core", data: first.extension });
+    await database.resourceExtensions.put({ id: "core::void", extensionId: "void", targetSystemPackageId: "core", data: replacement, assets: [{ 路径: "assets/card.png", 类型: "image/png", bytes: new Uint8Array([1]), sourceType: "resourceExtension", sourceId: "void" }] });
+
+    const extensions = await database.resourceExtensions.where("targetSystemPackageId").equals("core").toArray();
+    expect(extensions).toHaveLength(1);
+    expect(extensions[0].data.版本).toBe("2");
+    expect(extensions[0].assets?.[0]).toMatchObject({ 路径: "assets/card.png", sourceId: "void" });
+    expect(await database.systemPackages.get("current-system-package")).toMatchObject({ data: { marker: "unchanged" } });
+
+    await database.resourceExtensions.delete("core::void");
+    expect(await database.resourceExtensions.count()).toBe(0);
+    database.close();
   });
 });

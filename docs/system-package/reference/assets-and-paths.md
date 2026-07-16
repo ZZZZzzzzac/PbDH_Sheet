@@ -1,9 +1,11 @@
-# Assets and package paths
+# Images and package paths
 
-Asset manifest item：`ID`、`路径` 必填非空，`类型` 可选；未写 MIME 时由扩展名推断。Asset ID 必须唯一。Runtime asset 保存 bytes、normalized path 与 MIME，Resolver 产生 Blob URL 或 fallback。
+System Package 自动发现 `assets/**` 下的 PNG、JPEG、WebP、GIF、AVIF 和 SVG 图片。Author 不声明 Asset manifest item 或自定义 Asset ID；HTML、CSS、readOnlyDisplay 和 Card art 统一使用包内相对路径，例如 `assets/cards/flame.webp`。
 
-合法路径是包根相对路径。Normalizer：统一 `/`，拒绝绝对路径、drive prefix、URL、空路径和任何 `..` traversal。zip 允许所有文件共享一层公共根目录，Loader 会剥离该根；目录选择也会剥离选择目录名。
+合法路径是包根相对路径。Normalizer 统一 `/`，拒绝绝对路径、drive prefix、URL、空路径和任何 `..` traversal。zip 允许所有文件共享一层公共根目录，Loader 会剥离该根；目录选择也会剥离选择目录名。
 
-HTML/CSS 不允许外部 URL。Layout `<img src>` 应引用包内路径； readOnlyDisplay/Card art 可使用 Asset ID 或路径。缺失 art 使用文字 fallback，但明确写出的无效 Asset 引用是 Validator error。
+HTML/CSS 不允许外部 URL。明确写出的缺失图片引用是 Validator error；已发现但未引用的图片产生 warning。图片 bytes 与包缓存保存在 IndexedDB，Runtime Resolver 产生 Blob URL；Character Data 不复制 System Package 图片。
 
-Service Worker/PWA 不属于产品范围。Assets 与包缓存保存在 IndexedDB；浏览器清站点数据后可能丢失，应保留原始 System Package。
+字体、音频、视频和任意二进制文件不属于自动图片发现合同。不要把大型图片转成 base64 写入 JSON。
+
+导入限制：zip 压缩体积最多 128 MiB、展开体积最多 512 MiB、文件最多 4096 个、总压缩比最多 250。目录导入使用相同的展开体积与文件数限制。

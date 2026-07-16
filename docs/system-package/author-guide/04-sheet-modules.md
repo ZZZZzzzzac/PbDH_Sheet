@@ -8,9 +8,9 @@ Sheet Module 是框架提供的交互或展示部件。共同字段是唯一 `ID
 - `longText`：多行文本；需要 `标签`，可写 `默认值`、`行数`（2–20）、`隐藏标签`、`占位文本`。
 - `checkboxResource`：离散勾选项；需要 `标签` 和非空 `选项`，每项含唯一 `ID`、`标签`，`默认选中` 默认 false；相同 `分组` 可让多个独立 checkbox 共用一份说明文字。
 - `countableResource`：当前值/上下限；需要 `标签`，支持整数 `最小值`、`最大值`、`默认值`、正整数 `步长`、`最大值可改`。可选 `显示方式: "标记"`，并用两个不同的单一 Unicode 字素 `当前值标记` / `剩余值标记`（常用 emoji）显示当前值与剩余容量；此时最小值不得为负。
-- `readOnlyDisplay`：只读文本或 Asset；需要 `标签`，`内容` 与 `资源ID` 至少一个，可写 `替代文本`。
+- `readOnlyDisplay`：只读文本或图片；需要 `标签`，`内容` 与 `资源路径` 至少一个，可写 `替代文本`。
 - `imageField`：Player 上传头像/立绘；需要 `标签`，可写 `替代文本`。
-- `resourcePicker`：打开 Resource Library Browser 并发出临时选择事件；不保存选择本身。
+- `resourcePicker`：`资源库` 使用非空链接数组或字面值 `"其他"`。普通 Picker 可链接多个 Library；Browser 用左上角下拉切换表，每个链接独立定义 `字段模板` 与 `默认查询`。Other Picker 自动显示未被普通 Picker 链接的 Library。两者都只发出临时选择事件，不保存选择本身。
 - `cardTable`：显示和操作由 Resource Library 定义的 Cards。
 
 普通 Sheet Value 默认按文本保存，不要因为看起来像数字就假设 Validator 会做数值校验。模块完整字段见[Sheet Module Reference](../reference/sheet-modules.md)。

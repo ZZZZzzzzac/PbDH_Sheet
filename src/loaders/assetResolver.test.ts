@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createAssetResolver } from "./assetResolver";
+import { createAssetResolver, createRuntimeAssetResolver, resourceAssetUrlKey } from "./assetResolver";
 import { createVirtualFileSystem } from "./packageVfs";
 
 const encoder = new TextEncoder();
@@ -36,5 +36,19 @@ describe("createAssetResolver", () => {
         level: "fatal",
       }),
     });
+  });
+});
+
+describe("createRuntimeAssetResolver", () => {
+  it("isolates identical paths by owning Resource Extension", () => {
+    const resolver = createRuntimeAssetResolver([
+      { 路径: "assets/card.png", 类型: "image/png", bytes: new Uint8Array([1]), sourceType: "resourceExtension", sourceId: "author-a" },
+      { 路径: "assets/card.png", 类型: "image/png", bytes: new Uint8Array([2]), sourceType: "resourceExtension", sourceId: "author-b" },
+    ]);
+
+    const firstKey = resourceAssetUrlKey("resourceExtension", "author-a", "assets/card.png");
+    const secondKey = resourceAssetUrlKey("resourceExtension", "author-b", "assets/card.png");
+    expect(Object.keys(resolver.urls)).toEqual([firstKey, secondKey]);
+    expect(resolver.urls[firstKey]).not.toBe(resolver.urls[secondKey]);
   });
 });

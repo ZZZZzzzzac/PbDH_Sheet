@@ -118,7 +118,6 @@ describe("validateSystemPackage", () => {
 
   it.each([
     ["Page", "DUPLICATE_PAGE_ID", { pages: [minimalSystemPackage.pages[0], minimalSystemPackage.pages[0]] }],
-    ["Asset", "DUPLICATE_ASSET_ID", { assets: [{ ID: "same", 路径: "a.png" }, { ID: "same", 路径: "b.png" }] }],
     ["Validation Check", "DUPLICATE_VALIDATION_CHECK_ID", { validationChecks: [
       { ID: "same", 脚本: "a.js", scriptContent: "module.exports = () => [];" },
       { ID: "same", 脚本: "b.js", scriptContent: "module.exports = () => [];" },
@@ -303,7 +302,7 @@ describe("validateSystemPackage", () => {
       expect(findModule(result.package, "rule-note")?.类型).toBe("readOnlyDisplay");
       expect(findModule(result.package, "sect-emblem")?.类型).toBe("readOnlyDisplay");
       expect(findModule(result.package, "portrait")?.类型).toBe("imageField");
-      expect(findAsset(result.package, "demo-emblem")?.路径).toBe("assets/demo-emblem.svg");
+      expect(findAsset(result.package, "assets/demo-emblem.svg")?.路径).toBe("assets/demo-emblem.svg");
     }
   });
 
@@ -393,7 +392,7 @@ describe("validateSystemPackage", () => {
     const invalidPackage = {
       ...moduleDemoSystemPackage,
       modules: moduleDemoSystemPackage.modules.map((module) =>
-        module.ID === "sect-emblem" ? { ...module, 资源ID: "missing-asset" } : module,
+        module.ID === "sect-emblem" ? { ...module, 资源路径: "assets/missing.svg" } : module,
       ),
     };
 
@@ -430,11 +429,13 @@ describe("validateSystemPackage", () => {
           ID: "domain-pick",
           类型: "resourcePicker",
           按钮文本: "选择领域",
-          资源库ID: "domains",
-          字段模板: [
-            { 键: "名称", 标签: "卡名", 默认显示: true, 可筛选: false, 可排序: true },
-            { 键: "领域", 标签: "领域", 默认显示: true, 可筛选: true, 可排序: true },
-          ],
+          资源库: [{
+            ID: "domains",
+            字段模板: [
+              { 键: "名称", 标签: "卡名", 默认显示: true, 可筛选: false, 可排序: true },
+              { 键: "领域", 标签: "领域", 默认显示: true, 可筛选: true, 可排序: true },
+            ],
+          }],
         },
         {
           ID: "domain-name",
@@ -479,7 +480,10 @@ describe("validateSystemPackage", () => {
       const module = findModule(result.package, "domain-pick");
       expect(module?.类型).toBe("resourcePicker");
       if (module?.类型 === "resourcePicker") {
-        expect(module.字段模板?.map((field) => field.键)).toEqual(["名称", "领域"]);
+        expect(module.资源库).not.toBe("其他");
+        if (module.资源库 !== "其他") {
+          expect(module.资源库[0].字段模板?.map((field) => field.键)).toEqual(["名称", "领域"]);
+        }
       }
       expect(findResourceLibrary(result.package, "domains")?.entries[1].fields.等级).toBe("");
       expect(result.package.dependencies?.[0].动作[0].目标模块ID).toBe("domain-name");
@@ -527,7 +531,7 @@ describe("validateSystemPackage", () => {
       ...minimalSystemPackage,
       resourceLibraries: [{ ID: "classes", 名称: "职业", 路径: "classes.json", entries: [{ ID: "wizard", 名称: "法师" }] }],
       modules: [
-        { ID: "picker", 类型: "resourcePicker", 按钮文本: "选择", 资源库ID: "classes" },
+        { ID: "picker", 类型: "resourcePicker", 按钮文本: "选择", 资源库: [{ ID: "classes" }] },
         { ID: "target", 类型: "freeText", 标签: "结果" },
       ],
       pages: [{ ...minimalSystemPackage.pages[0], layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<pb-module id="picker"></pb-module><pb-module id="target"></pb-module>' } }],
@@ -549,7 +553,7 @@ describe("validateSystemPackage", () => {
       ...minimalSystemPackage,
       resourceLibraries: [{ ID: "items", 名称: "物品", 路径: "items.json", entries: [{ ID: "rope", 名称: "绳索", 描述: "长十米。" }] }],
       modules: [
-        { ID: "picker", 类型: "resourcePicker", 按钮文本: "选择", 资源库ID: "items" },
+        { ID: "picker", 类型: "resourcePicker", 按钮文本: "选择", 资源库: [{ ID: "items" }] },
         { ID: "display", 类型: "readOnlyDisplay", 标签: "结果", 内容: "初始内容" },
       ],
       pages: [{ ...minimalSystemPackage.pages[0], layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<pb-module id="picker"></pb-module><pb-module id="display"></pb-module>' } }],
@@ -617,7 +621,7 @@ describe("validateSystemPackage", () => {
           ID: "pick-domain-card",
           类型: "resourcePicker",
           按钮文本: "选择领域卡",
-          资源库ID: "domain-cards",
+          资源库: [{ ID: "domain-cards" }],
           创建卡牌: { 卡牌桌面模块ID: "domain-card-table", 默认状态: "configured" },
         },
         {
@@ -690,7 +694,7 @@ it("reports missing Card artwork asset references", () => {
           ID: "choice",
           类型: "resourcePicker",
           按钮文本: "选择",
-          资源库ID: "missing-library",
+          资源库: [{ ID: "missing-library" }],
         },
       ],
       pages: [
@@ -712,7 +716,7 @@ it("reports missing Card artwork asset references", () => {
         expect.objectContaining({
           code: "MISSING_RESOURCE_LIBRARY_REFERENCE",
           level: "error",
-          path: "modules.choice.资源库ID",
+          path: "modules.choice.资源库.0.ID",
         }),
       ]),
     );
@@ -727,7 +731,7 @@ it("reports missing Card artwork asset references", () => {
           ID: "pick",
           类型: "resourcePicker",
           按钮文本: "选择",
-          资源库ID: "domains",
+          资源库: [{ ID: "domains" }],
         },
         {
           ID: "image-target",

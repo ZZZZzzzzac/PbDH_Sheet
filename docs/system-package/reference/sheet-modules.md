@@ -56,11 +56,11 @@ Player value 作为原始文本写 Character Data，并按[Restricted Markdown](
 
 ## readOnlyDisplay
 
-`标签` 必填。`内容?: non-empty string` 与 `资源ID?: non-empty string` 至少一个；`替代文本?: string`。`资源ID` 必须匹配 Asset ID 或路径。`fillText` 可改变内存派生内容，不写 Character Data。
+`标签` 必填。`内容?: non-empty string` 与 `资源路径?: non-empty string` 至少一个；`替代文本?: string`。`资源路径` 必须匹配 `assets/**` 下自动发现的图片路径。`fillText` 可改变内存派生内容，不写 Character Data。
 
 ## imageField
 
-`标签` 必填；`替代文本?: string`。Player 图片以 data URL/base64 随 Character Data 恢复；System Package 图片应使用 Asset/readOnlyDisplay。
+`标签` 必填；`替代文本?: string`。Player 图片以 data URL/base64 随 Character Data 恢复；System Package 图片应使用自动发现的图片路径与 readOnlyDisplay。
 
 Player 点击图片区域或在其聚焦时按 Enter/Space 打开本地文件选择器；上传后可点击右上角移除按钮清除图片。再次点击图片区域可替换现有图片。稳定部件包括 `container`、`label`、`surface-frame`、`surface`、`image`、`image-fallback`、`remove-button`、`input`。
 
@@ -69,16 +69,19 @@ Player 点击图片区域或在其聚焦时按 Enter/Space 打开本地文件选
 | 字段 | 类型 | 必填 | 默认/约束 |
 | --- | --- | --- | --- |
 | `按钮文本` | string | 是 | 非空 |
-| `资源库ID` | string | 是 | 必须存在 |
-| `字段模板` | FieldTemplate[] | 否 | 按 `键` 局部覆盖推断 Library fields；未声明字段保留 |
+| `资源库` | LibraryLink[] \| `"其他"` | 是 | 普通 Picker 至少一个不重复链接；Other Picker 使用字面值 `"其他"` |
+| `资源库[].ID` | string | 条件 | 普通 Picker 必填且必须存在 |
+| `资源库[].字段模板` | FieldTemplate[] | 否 | 仅作用于该链接；按 `键` 局部覆盖推断 Library fields |
+| `资源库[].默认查询.filters` | record<string,string[]> | 否 | 仅作用于该链接；`{}` |
+| `资源库[].默认查询.sort.field` | string | 条件 | sort 存在时非空 |
+| `资源库[].默认查询.sort.direction` | `asc|desc` | 否 | `asc` |
 | `多选` | boolean | 否 | `false` |
-| `默认查询.filters` | record<string,string[]> | 否 | `{}` |
-| `默认查询.sort.field` | string | 条件 | sort 存在时非空 |
-| `默认查询.sort.direction` | `asc|desc` | 否 | `asc` |
-| `创建卡牌.卡牌桌面模块ID` | string | 条件 | 目标必须 cardTable，且其 `资源来源` 必须包含 Picker 的 Library |
+| `创建卡牌.卡牌桌面模块ID` | string | 条件 | 目标必须 cardTable，且其 `资源来源` 必须包含普通 Picker 的全部 Library |
 | `创建卡牌.默认状态` | string | 否 | 目标 Card Table 的第一个 `状态选项`，再回退内部 `default` |
 
-选择是临时事件，不存隐藏资源引用。
+普通 Picker 可链接多个 Library。Browser 同时只显示一个表；多库时左上角名称变为单选下拉。每个链接独立使用自己的字段模板和默认查询，打开期间也独立保留搜索、筛选、排序；关闭 Browser 后全部清空。选择、多选、Dependency 与创建 Card 行为不因库数量改变，事件携带实际选择所在 Library ID。
+
+`资源库: "其他"` 声明 Other Resources Picker：运行时显示未被任何普通 Picker 链接的有效 Library。该链接集合由框架计算，Author 不为它声明字段模板或默认查询，Player 不能配置链接。选择是临时事件，不存隐藏资源引用。
 
 ## resourceComposer
 

@@ -17,7 +17,7 @@ const reactAttributeNames = new Map([
   ["rowspan", "rowSpan"],
 ]);
 
-function renderTemplateNode(systemPackage: SystemPackage, node: ChildNode, key: string, moduleVisibility: Record<string, boolean>, pageOutlet?: ReactNode): ReactNode {
+function renderTemplateNode(systemPackage: SystemPackage, node: ChildNode, key: string, moduleVisibility: Record<string, boolean>, assetUrls: Record<string, string>, pageOutlet?: ReactNode): ReactNode {
   if (node.nodeType === 3) {
     return node.textContent;
   }
@@ -38,8 +38,8 @@ function renderTemplateNode(systemPackage: SystemPackage, node: ChildNode, key: 
     return null;
   }
 
-  const props = templateElementProps(element);
-  const children = [...element.childNodes].map((child, index) => renderTemplateNode(systemPackage, child, `${key}-${index}`, moduleVisibility, pageOutlet));
+  const props = templateElementProps(element, assetUrls);
+  const children = [...element.childNodes].map((child, index) => renderTemplateNode(systemPackage, child, `${key}-${index}`, moduleVisibility, assetUrls, pageOutlet));
 
   return createTemplateElement(tagName, key, props, children);
 }
@@ -64,7 +64,7 @@ function renderModulePlaceholder(systemPackage: SystemPackage, moduleId: string 
   );
 }
 
-function templateElementProps(element: Element) {
+function templateElementProps(element: Element, assetUrls: Record<string, string>) {
   const props: Record<string, string> = {};
 
   for (const attribute of [...element.attributes]) {
@@ -73,7 +73,7 @@ function templateElementProps(element: Element) {
       continue;
     }
     if (name.startsWith("data-") || allowedTemplateAttributes.has(name)) {
-      props[reactAttributeNames.get(name) ?? name] = attribute.value;
+      props[reactAttributeNames.get(name) ?? name] = name === "src" ? assetUrls[attribute.value] ?? attribute.value : attribute.value;
     }
   }
 
@@ -84,18 +84,25 @@ function createTemplateElement(tagName: string, key: string, props: Record<strin
   return createElement(tagName, { key, ...props }, ...children);
 }
 
-function renderHtmlTemplate(systemPackage: SystemPackage, html: string, moduleVisibility: Record<string, boolean>, pageOutlet?: ReactNode) {
+function renderHtmlTemplate(systemPackage: SystemPackage, html: string, moduleVisibility: Record<string, boolean>, assetUrls: Record<string, string>, pageOutlet?: ReactNode) {
   const document = new DOMParser().parseFromString(html, "text/html");
-  return [...document.body.childNodes].map((node, index) => renderTemplateNode(systemPackage, node, String(index), moduleVisibility, pageOutlet));
+  return [...document.body.childNodes].map((node, index) => renderTemplateNode(systemPackage, node, String(index), moduleVisibility, assetUrls, pageOutlet));
 }
 
-function scopeTemplateCss(pageId: string, css?: string): string {
+function scopeTemplateCss(pageId: string, css: string | undefined, assetUrls: Record<string, string>): string {
   if (!css) {
     return "";
   }
 
   const scope = `[data-template-page-id="${cssStringEscape(pageId)}"]`;
-  return scopeCssBlock(css, scope);
+  return scopeCssBlock(resolveTemplateCssAssets(css, assetUrls), scope);
+}
+
+function resolveTemplateCssAssets(css: string, assetUrls: Record<string, string>): string {
+  return css.replace(/url\(\s*(["']?)([^"')]+)\1\s*\)/giu, (match, quote: string, path: string) => {
+    const url = assetUrls[path];
+    return url ? `url(${quote}${url}${quote})` : match;
+  });
 }
 
 function scopeCssBlock(css: string, scope: string): string {
@@ -163,6 +170,7 @@ function cssStringEscape(value: string): string {
 export function SheetRenderer({ systemPackage, outputMode = false }: SheetRendererProps) {
   const pageVisibility = useRuntimeStore((state) => state.pageVisibility);
   const moduleVisibility = useRuntimeStore((state) => state.moduleVisibility);
+  const packageAssetUrls = useRuntimeStore((state) => state.packageAssetUrls);
   const [currentPageId, setCurrentPageId] = useState<string | null>(null);
   const visiblePages = runtimeVisiblePages(systemPackage.pages, pageVisibility);
   const resolvedCurrentPageId = resolveCurrentPageId(visiblePages, currentPageId);
@@ -176,8 +184,8 @@ export function SheetRenderer({ systemPackage, outputMode = false }: SheetRender
     {renderedPages.map((page) =>
       (
           <article className="sheet-page" data-template-page-id={page.ID} key={page.ID}>
-            <style>{scopeTemplateCss(page.ID, page.layout.cssContent)}</style>
-            {renderHtmlTemplate(systemPackage, page.layout.htmlContent, moduleVisibility)}
+            <style>{scopeTemplateCss(page.ID, page.layout.cssContent, packageAssetUrls)}</style>
+            {renderHtmlTemplate(systemPackage, page.layout.htmlContent, moduleVisibility, packageAssetUrls)}
           </article>
       ),
     )}
@@ -188,7 +196,7 @@ export function SheetRenderer({ systemPackage, outputMode = false }: SheetRender
       aria-label="Sheet Tool"
       data-countable-print-strategy={outputMode ? "clear-uniform-squares" : undefined}
     >
-      {systemPackage.shell ? <div className="sheet-shell" data-template-shell="true"><style>{scopeCssBlock(systemPackage.shell.cssContent ?? "", '[data-template-shell="true"]')}</style>{renderHtmlTemplate(systemPackage, systemPackage.shell.htmlContent, moduleVisibility, outlet)}</div> : outlet}
+      {systemPackage.shell ? <div className="sheet-shell" data-template-shell="true"><style>{scopeCssBlock(resolveTemplateCssAssets(systemPackage.shell.cssContent ?? "", packageAssetUrls), '[data-template-shell="true"]')}</style>{renderHtmlTemplate(systemPackage, systemPackage.shell.htmlContent, moduleVisibility, packageAssetUrls, outlet)}</div> : outlet}
     </main>
   );
 }

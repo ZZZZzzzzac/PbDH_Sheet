@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createVirtualFileSystem, createVirtualFileSystemFromDirectoryFiles, createVirtualFileSystemFromDirectoryHandle, normalizePackagePath, type PackageDirectoryHandle } from "./packageVfs";
+import { zipSync } from "fflate";
+import { createVirtualFileSystem, createVirtualFileSystemFromDirectoryFiles, createVirtualFileSystemFromDirectoryHandle, createVirtualFileSystemFromZipBytes, normalizePackagePath, packageArchiveLimits, type PackageDirectoryHandle } from "./packageVfs";
 
 const encoder = new TextEncoder();
 
@@ -55,5 +56,23 @@ describe("package VFS", () => {
     content = "second";
     const second = await createVirtualFileSystemFromDirectoryHandle(handle);
     expect(second.ok && second.vfs.readText("manifest.json")).toEqual({ ok: true, path: "manifest.json", value: "second" });
+  });
+
+  it("rejects directory selections with excessive file counts", async () => {
+    const files = Array.from({ length: packageArchiveLimits.maxFiles + 1 }, (_, index) => new File([""], `${index}.txt`));
+    const result = await createVirtualFileSystemFromDirectoryFiles(files);
+    expect(result).toEqual({
+      ok: false,
+      issues: [expect.objectContaining({ code: "PACKAGE_ARCHIVE_FILE_COUNT_LIMIT", level: "fatal" })],
+    });
+  });
+
+  it("rejects suspicious zip compression ratios", () => {
+    const bytes = zipSync({ "assets/huge.svg": new Uint8Array(1024 * 1024) });
+    const result = createVirtualFileSystemFromZipBytes(bytes);
+    expect(result).toEqual({
+      ok: false,
+      issues: [expect.objectContaining({ code: "PACKAGE_ARCHIVE_COMPRESSION_RATIO_LIMIT", level: "fatal" })],
+    });
   });
 });

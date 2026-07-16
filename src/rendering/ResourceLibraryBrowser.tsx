@@ -18,6 +18,9 @@ interface ResourceLibraryBrowserProps {
   multiSelect: boolean;
   selectedIds: string[];
   defaultQuery?: ResourceLibraryQuery;
+  libraryChoices?: Array<{ ID: string; 名称: string }>;
+  onLibraryChange?: (libraryId: string) => void;
+  onQueryChange?: (query: ResourceLibraryQuery) => void;
   onCommit: (entries: ResourceLibraryEntry[]) => void;
   onClose: () => void;
 }
@@ -29,6 +32,9 @@ export function ResourceLibraryBrowser({
   multiSelect,
   selectedIds,
   defaultQuery,
+  libraryChoices,
+  onLibraryChange,
+  onQueryChange,
   onCommit,
   onClose,
 }: ResourceLibraryBrowserProps) {
@@ -36,13 +42,25 @@ export function ResourceLibraryBrowser({
   const dialogLabel = title ?? `${library.名称}资源库`;
   const [filters, setFilters] = useState<Record<string, string[]>>(defaultQuery?.filters ?? {});
   const [sort, setSort] = useState<ResourceLibraryQuery["sort"]>(normalizeSort(defaultQuery?.sort));
-  const [keywords, setKeywords] = useState("");
+  const [keywords, setKeywords] = useState(defaultQuery?.keywords ?? "");
   const [openFilterField, setOpenFilterField] = useState<string | null>(null);
   const [draftSelectedIds, setDraftSelectedIds] = useState(selectedIds);
   const browserFields = fields ?? library.fields;
   const tableFields = browserFields.filter((field) => field.visible);
   const tableColumnFields = normalizeTableColumnWidths(tableFields);
   const rows = useMemo(() => queryResourceLibraryEntries(library, { filters, sort, keywords }, browserFields), [browserFields, filters, keywords, library, sort]);
+
+  useEffect(() => {
+    setFilters(defaultQuery?.filters ?? {});
+    setSort(normalizeSort(defaultQuery?.sort));
+    setKeywords(defaultQuery?.keywords ?? "");
+    setOpenFilterField(null);
+    setDraftSelectedIds(selectedIds);
+  }, [library.ID]);
+
+  useEffect(() => {
+    onQueryChange?.({ filters, sort, keywords });
+  }, [filters, keywords, sort]);
 
   useEffect(() => {
     if (!openFilterField) return;
@@ -91,7 +109,11 @@ export function ResourceLibraryBrowser({
     <div className="resource-dialog-backdrop">
       <section className="resource-dialog" role="dialog" aria-modal="true" aria-label={dialogLabel}>
         <header className="resource-dialog-header">
-          <h2>{dialogTitle}</h2>
+          {libraryChoices && libraryChoices.length > 1 ? (
+            <select className="input compact-input" aria-label="选择资源库" value={library.ID} onChange={(event) => onLibraryChange?.(event.target.value)}>
+              {libraryChoices.map((choice) => <option value={choice.ID} key={choice.ID}>{choice.名称}</option>)}
+            </select>
+          ) : <h2>{dialogTitle}</h2>}
           <div className="resource-header-search">
             <input id={`search-${library.ID}`} className="input compact-input" type="search" value={keywords} onChange={(event) => setKeywords(event.target.value)} placeholder="搜索" aria-label="搜索资源库" />
             <span role="status">{rows.length} 条结果</span>

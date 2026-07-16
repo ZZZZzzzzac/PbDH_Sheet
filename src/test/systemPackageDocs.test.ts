@@ -65,7 +65,7 @@ describe("System Package documentation", () => {
   it("covers current optional System Package contracts in the complete inline example", () => {
     const complete = readFileSync(join(docsRoot, "examples", "complete-package.md"), "utf8");
     const requiredExamples = [
-      '"shell"', '"dependencies"', '"characterCreationGuide"', '"resourceLibraries"', '"validationChecks"', '"assets"',
+      '"shell"', '"dependencies"', '"characterCreationGuide"', '"resourceLibraries"', '"validationChecks"',
       '"默认隐藏"', '"打印"', '"freeText"', '"longText"', '"checkboxResource"', '"countableResource"',
       '"readOnlyDisplay"', '"imageField"', '"resourcePicker"', '"resourceComposer"', '"cardTable"', '"字段模板"', '"默认查询"',
       '"来源槽位"', '"输出字段"', '"资源来源"', '"名称模板"', '"描述模板"', '"标签字段"',

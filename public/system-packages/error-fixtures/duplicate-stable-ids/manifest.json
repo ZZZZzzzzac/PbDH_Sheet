@@ -6,10 +6,6 @@
   "pages": "pages.json",
   "modules": "modules.json",
   "dependencies": "dependencies.json",
-  "assets": [
-    { "ID": "duplicate-asset", "路径": "assets/a.txt" },
-    { "ID": "duplicate-asset", "路径": "assets/b.txt" }
-  ],
   "validationChecks": [
     { "ID": "duplicate-check", "脚本": "checks/a.js" },
     { "ID": "duplicate-check", "脚本": "checks/b.js" }

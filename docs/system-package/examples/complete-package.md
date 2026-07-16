@@ -50,15 +50,11 @@ adventure-sheet/
   ],
   "validationChecks": [
     { "ID": "character-rules", "脚本": "checks/character-rules.js" }
-  ],
-  "assets": [
-    { "ID": "logo", "路径": "assets/logo.svg", "类型": "image/svg+xml" },
-    { "ID": "card-a-art", "路径": "assets/card-a.svg" }
   ]
 }
 ```
 
-可选字段是 `shell`、`dependencies`、`characterCreationGuide`、`resourceLibraries`、`validationChecks`、`assets`。`shell.css` 与 Asset `类型` 也可省略；Asset MIME 会从扩展名推断。
+可选字段是 `shell`、`dependencies`、`characterCreationGuide`、`resourceLibraries`、`validationChecks`。图片放入 `assets/**` 后自动发现。
 
 ## 2. pages.json
 
@@ -186,7 +182,7 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
     "类型": "readOnlyDisplay",
     "标签": "职业摘要",
     "内容": "尚未选择职业",
-    "资源ID": "logo",
+    "资源路径": "assets/logo.svg",
     "替代文本": "系统标志",
     "默认隐藏": false
   },
@@ -201,8 +197,9 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
     "ID": "pick-class",
     "类型": "resourcePicker",
     "按钮文本": "选择职业",
-    "资源库ID": "classes",
-    "字段模板": [
+    "资源库": [{
+      "ID": "classes",
+      "字段模板": [
       {
         "键": "名称",
         "标签": "职业名",
@@ -229,19 +226,20 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
         "可搜索": true,
         "列宽": "fill"
       }
-    ],
+      ],
+      "默认查询": {
+        "filters": { "流派": ["守护", "奥秘"] },
+        "sort": { "field": "名称", "direction": "asc" }
+      }
+    }],
     "多选": false,
-    "默认查询": {
-      "filters": { "流派": ["守护", "奥秘"] },
-      "sort": { "field": "名称", "direction": "asc" }
-    },
     "默认隐藏": false
   },
   {
     "ID": "pick-card",
     "类型": "resourcePicker",
     "按钮文本": "添加能力卡",
-    "资源库ID": "cards",
+    "资源库": [{ "ID": "cards" }],
     "多选": true,
     "创建卡牌": {
       "卡牌桌面模块ID": "card-table",
@@ -297,7 +295,7 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
 | longText | `默认值`、`行数`（2–20）、`隐藏标签`、`占位文本` |
 | checkboxResource option | `默认选中` |
 | countableResource | `最小值`、`最大值`、`默认值`、`步长`、`最大值可改`、`显示方式`、`当前值标记`、`剩余值标记`；标记展示要求两个不同的单一 Unicode 字素且最小值非负 |
-| readOnlyDisplay | `内容`、`资源ID`、`替代文本`；内容/资源至少一个 |
+| readOnlyDisplay | `内容`、`资源路径`、`替代文本`；内容/资源至少一个 |
 | imageField | `替代文本` |
 | resourcePicker | `字段模板`、`多选`、`默认查询`、`创建卡牌` |
 | resourceComposer | `来源槽位`、`输出字段`、`创建卡牌` |
@@ -572,7 +570,7 @@ Raw issue 的 `level` 是 `error | warning | info`，`text` 必填，`path/code`
 </svg>
 ```
 
-HTML `<img src>` 使用包内路径；readOnlyDisplay/Card art 可使用 Asset ID 或路径。不要使用外部 URL，也不要把大型图片 base64 写进资源 JSON。
+HTML `<img src>`、readOnlyDisplay 和 Card art 都使用 `assets/**` 包内相对路径。不要使用外部 URL，也不要把大型图片 base64 写进资源 JSON。
 
 ## 11. 生成与自检顺序
 

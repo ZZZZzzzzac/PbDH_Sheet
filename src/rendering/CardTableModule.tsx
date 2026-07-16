@@ -14,6 +14,8 @@ import {
 } from "../domain/cardEngine";
 import { resolveCardPresentation, type CardPresentation } from "../domain/cardPresentation";
 import { resolveResourceDefinition } from "../domain/resourceDefinition";
+import { findResourceEntryProvenance } from "../domain/effectiveResourceCatalog";
+import { resourceAssetUrlKey } from "../loaders/assetResolver";
 import { type ResourceLibraryEntry } from "../domain/resourceLibrary";
 import { findResourceLibrary, type CardTableModule as CardTableModuleConfig, type SystemPackage } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
@@ -295,7 +297,7 @@ function CardView({
         <X aria-hidden="true" size={14} />
       </button>
       <CardIndicatorColumn instance={instance} />
-      <CardFace definition={definition} module={moduleConfig} presentation={presentation} fallbackName={name} />
+      <CardFace definition={definition} definitionRef={instance.definitionRef} module={moduleConfig} presentation={presentation} fallbackName={name} />
     </article>
   );
 }
@@ -386,12 +388,14 @@ function resolveFrontCardDefinition(systemPackage: SystemPackage, characterData:
 
 function CardFace({
   definition,
+  definitionRef,
   module: moduleConfig,
   presentation,
   fallbackName,
   autoFitDescription = true,
 }: {
   definition?: ResourceLibraryEntry;
+  definitionRef?: CardInstance["definitionRef"];
   module: CardTableModuleConfig;
   presentation?: CardPresentation;
   fallbackName: string;
@@ -399,9 +403,12 @@ function CardFace({
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   const assetUrls = useRuntimeStore((state) => state.packageAssetUrls);
+  const resourceCatalog = useRuntimeStore((state) => state.resourceCatalog);
   const artField = moduleConfig.卡图字段 ?? "卡图";
   const cardArtRef = definition?.fields[artField] ?? "";
-  const cardArtUrl = cardArtRef ? assetUrls[cardArtRef] : undefined;
+  const libraryId = definitionRef?.type === "resourceLibrary" ? definitionRef.libraryId : undefined;
+  const provenance = findResourceEntryProvenance(resourceCatalog, libraryId, definition?.ID);
+  const cardArtUrl = cardArtRef ? assetUrls[resourceAssetUrlKey(provenance?.type, provenance?.id, cardArtRef)] : undefined;
   const showImage = resolveCardDisplayMode(definition, moduleConfig) === "image" && cardArtUrl && !imageFailed;
   useEffect(() => setImageFailed(false), [cardArtRef]);
   return showImage ? <img className="play-card-image" src={cardArtUrl} alt={fallbackName} draggable={false} onError={() => setImageFailed(true)} /> : <TextCard definition={definition} module={moduleConfig} presentation={presentation} fallbackName={fallbackName} autoFitDescription={autoFitDescription} />;
@@ -423,7 +430,7 @@ function CardDetailOverlay({ instance, definition, module, presentation, onClose
           className="card-detail-face"
           style={{ "--play-card-state-background": module.状态背景色?.[instance.state] } as CSSProperties}
         >
-          <CardFace definition={definition} module={module} presentation={presentation} fallbackName={name} autoFitDescription={false} />
+          <CardFace definition={definition} definitionRef={instance.definitionRef} module={module} presentation={presentation} fallbackName={name} autoFitDescription={false} />
         </div>
       </section>
     </div>

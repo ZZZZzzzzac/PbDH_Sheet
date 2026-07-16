@@ -4,12 +4,5 @@
   "版本": "0.1.0",
   "schemaVersion": "0.1.0",
   "pages": "pages.json",
-  "modules": "modules.json",
-  "assets": [
-    {
-      "ID": "readme",
-      "路径": "assets/readme.txt",
-      "类型": "text/plain"
-    }
-  ]
+  "modules": "modules.json"
 }

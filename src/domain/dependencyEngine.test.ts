@@ -368,14 +368,14 @@ function createDependencyPackage(options: { dependencies?: SystemPackage["depend
       },
     ],
     modules: [
-      { ID: "pick-class", 类型: "resourcePicker", 按钮文本: "选择职业", 资源库ID: "classes" },
+      { ID: "pick-class", 类型: "resourcePicker", 按钮文本: "选择职业", 资源库: [{ ID: "classes" }] },
       { ID: "class-name", 类型: "freeText", 标签: "职业" },
       { ID: "class-domains", 类型: "freeText", 标签: "领域" },
       { ID: "class-background", 类型: "readOnlyDisplay", 标签: "背景问题", 内容: "待选择职业" },
       { ID: "druid-note", 类型: "readOnlyDisplay", 标签: "德鲁伊提示", 内容: "德鲁伊专属", 默认隐藏: true },
-      { ID: "pick-subclass", 类型: "resourcePicker", 按钮文本: "选择子职", 资源库ID: "subclasses" },
+      { ID: "pick-subclass", 类型: "resourcePicker", 按钮文本: "选择子职", 资源库: [{ ID: "subclasses" }] },
       { ID: "martial-note", 类型: "freeText", 标签: "武斗提示" },
-      { ID: "pick-domain-cards", 类型: "resourcePicker", 按钮文本: "选择领域卡", 资源库ID: "domain-cards", 多选: true },
+      { ID: "pick-domain-cards", 类型: "resourcePicker", 按钮文本: "选择领域卡", 资源库: [{ ID: "domain-cards" }], 多选: true },
       { ID: "domain-card-list", 类型: "longText", 标签: "领域卡" },
       {
         ID: "creation-toggles",

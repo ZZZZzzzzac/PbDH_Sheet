@@ -34,7 +34,6 @@ export const minimalSystemPackage = {
   },
   pages: withHtmlTemplateContent(pages, minimalLayoutHtml, minimalLayoutCss),
   modules,
-  assets: manifest.assets,
 } as SystemPackage;
 
 export const moduleDemoSystemPackage = {
@@ -46,5 +45,5 @@ export const moduleDemoSystemPackage = {
   },
   pages: withHtmlTemplateContent(moduleDemoPages, moduleDemoLayoutHtml, moduleDemoLayoutCss),
   modules: moduleDemoModules,
-  assets: moduleDemoManifest.assets,
+  assets: [{ 路径: "assets/demo-emblem.svg", 类型: "image/svg+xml" }],
 } as SystemPackage;

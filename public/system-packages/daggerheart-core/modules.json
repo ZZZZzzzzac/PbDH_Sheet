@@ -188,7 +188,11 @@
     "ID": "pick-community",
     "类型": "resourcePicker",
     "按钮文本": "选择社群",
-    "资源库ID": "communities",
+    "资源库": [
+      {
+        "ID": "communities"
+      }
+    ],
     "创建卡牌": {
       "卡牌桌面模块ID": "character-card-table",
       "默认状态": "配置"
@@ -226,31 +230,35 @@
     "ID": "pick-class",
     "类型": "resourcePicker",
     "按钮文本": "职业",
-    "资源库ID": "classes",
-    "字段模板": [
+    "资源库": [
       {
-        "键": "关系问题1",
-        "默认显示": false
-      },
-      {
-        "键": "关系问题2",
-        "默认显示": false
-      },
-      {
-        "键": "关系问题3",
-        "默认显示": false
-      },
-      {
-        "键": "背景问题1",
-        "默认显示": false
-      },
-      {
-        "键": "背景问题2",
-        "默认显示": false
-      },
-      {
-        "键": "背景问题3",
-        "默认显示": false
+        "ID": "classes",
+        "字段模板": [
+          {
+            "键": "关系问题1",
+            "默认显示": false
+          },
+          {
+            "键": "关系问题2",
+            "默认显示": false
+          },
+          {
+            "键": "关系问题3",
+            "默认显示": false
+          },
+          {
+            "键": "背景问题1",
+            "默认显示": false
+          },
+          {
+            "键": "背景问题2",
+            "默认显示": false
+          },
+          {
+            "键": "背景问题3",
+            "默认显示": false
+          }
+        ]
       }
     ]
   },
@@ -258,16 +266,20 @@
     "ID": "pick-subclass",
     "类型": "resourcePicker",
     "按钮文本": "子职",
-    "资源库ID": "subclasses",
+    "资源库": [
+      {
+        "ID": "subclasses",
+        "默认查询": {
+          "sort": {
+            "field": "等级",
+            "direction": "asc"
+          }
+        }
+      }
+    ],
     "创建卡牌": {
       "卡牌桌面模块ID": "character-card-table",
       "默认状态": "配置"
-    },
-    "默认查询": {
-      "sort": {
-        "field": "等级",
-        "direction": "asc"
-      }
     }
   },
   {
@@ -382,14 +394,18 @@
     "ID": "pick-primary-weapon",
     "类型": "resourcePicker",
     "按钮文本": "选择主武器",
-    "资源库ID": "weapons",
-    "默认查询": {      
-      "filters": {
-        "类型": [
-          "主武器"
-        ]
+    "资源库": [
+      {
+        "ID": "weapons",
+        "默认查询": {
+          "filters": {
+            "类型": [
+              "主武器"
+            ]
+          }
+        }
       }
-    }
+    ]
   },
   {
     "ID": "primary-weapon-name",
@@ -409,14 +425,18 @@
     "ID": "pick-secondary-weapon",
     "类型": "resourcePicker",
     "按钮文本": "选择副武器",
-    "资源库ID": "weapons",
-    "默认查询": {
-      "filters": {
-        "类型": [
-          "副武器"
-        ]
+    "资源库": [
+      {
+        "ID": "weapons",
+        "默认查询": {
+          "filters": {
+            "类型": [
+              "副武器"
+            ]
+          }
+        }
       }
-    }
+    ]
   },
   {
     "ID": "secondary-weapon-name",
@@ -436,7 +456,11 @@
     "ID": "pick-backup-weapon-1",
     "类型": "resourcePicker",
     "按钮文本": "选择备用武器一",
-    "资源库ID": "weapons"    
+    "资源库": [
+      {
+        "ID": "weapons"
+      }
+    ]
   },
   {
     "ID": "backup-weapon-1-name",
@@ -456,7 +480,11 @@
     "ID": "pick-backup-weapon-2",
     "类型": "resourcePicker",
     "按钮文本": "选择备用武器二",
-    "资源库ID": "weapons"
+    "资源库": [
+      {
+        "ID": "weapons"
+      }
+    ]
   },
   {
     "ID": "backup-weapon-2-name",
@@ -476,7 +504,11 @@
     "ID": "pick-armor",
     "类型": "resourcePicker",
     "按钮文本": "选择护甲",
-    "资源库ID": "armor"
+    "资源库": [
+      {
+        "ID": "armor"
+      }
+    ]
   },
   {
     "ID": "armor-name",
@@ -515,7 +547,11 @@
     "ID": "pick-inventory-item",
     "类型": "resourcePicker",
     "按钮文本": "添加物品",
-    "资源库ID": "loot",
+    "资源库": [
+      {
+        "ID": "loot"
+      }
+    ],
     "多选": true
   },
   {
@@ -529,13 +565,17 @@
     "ID": "pick-domain-card",
     "类型": "resourcePicker",
     "按钮文本": "选择领域卡",
-    "资源库ID": "domain-cards",
-    "默认查询": {
-      "sort": {
-        "field": "等级",
-        "direction": "asc"
+    "资源库": [
+      {
+        "ID": "domain-cards",
+        "默认查询": {
+          "sort": {
+            "field": "等级",
+            "direction": "asc"
+          }
+        }
       }
-    },
+    ],
     "创建卡牌": {
       "卡牌桌面模块ID": "character-card-table",
       "默认状态": "配置"
@@ -1012,5 +1052,11 @@
       { "ID": "aware-2", "标签": "警觉：伙伴的闪避值永久获得 +2 加值。", "分组": "aware" },
       { "ID": "aware-3", "标签": "警觉：伙伴的闪避值永久获得 +2 加值。", "分组": "aware" }
     ]
+  },
+  {
+    "ID": "pick-other-resources",
+    "类型": "resourcePicker",
+    "按钮文本": "选择其他资源",
+    "资源库": "其他"
   }
 ]
