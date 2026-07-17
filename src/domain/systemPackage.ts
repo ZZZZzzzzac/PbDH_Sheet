@@ -361,6 +361,19 @@ const htmlTemplateLayoutSchema = z.object({
   cssContent: z.string().optional(),
 });
 
+const skinLayoutOverridesSchema = z.object({
+  shell: z.object({ htmlContent: z.string().min(1) }).optional(),
+  pages: z.array(z.object({ ID: z.string().min(1), htmlContent: z.string().min(1) })).min(1).optional(),
+});
+
+const systemPackageSkinSchema = z.object({
+  ID: z.string().min(1),
+  名称: z.string().min(1),
+  cssContent: z.string().min(1),
+  推荐框架配色: z.enum(["light", "dark"]),
+  layoutOverrides: skinLayoutOverridesSchema.optional(),
+});
+
 const pageSchema = z.object({
   ID: z.string().min(1),
   名称: z.string().min(1),
@@ -383,6 +396,8 @@ const validationCheckSchema = z.object({
 const systemPackageEnvelopeSchema = z.object({
   manifest: manifestSchema,
   shell: htmlTemplateLayoutSchema.optional(),
+  skins: z.array(systemPackageSkinSchema).min(1).optional(),
+  defaultSkin: z.string().min(1).optional(),
   pages: z.array(pageSchema).min(1),
   modules: z.array(z.unknown()).min(1),
   assets: z.array(assetSchema).optional(),
@@ -395,6 +410,8 @@ const systemPackageEnvelopeSchema = z.object({
 export interface SystemPackage {
   manifest: z.infer<typeof manifestSchema>;
   shell?: HtmlTemplateLayout;
+  skins?: SystemPackageSkin[];
+  defaultSkin?: string;
   pages: PackagePage[];
   modules: SheetModule[];
   assets?: PackageAsset[];
@@ -416,6 +433,7 @@ export type ResourceComposerModule = z.infer<typeof resourceComposerModuleSchema
 export type SheetModule = z.infer<typeof sheetModuleSchema>;
 export type PackageAsset = z.infer<typeof assetSchema>;
 export type HtmlTemplateLayout = z.infer<typeof htmlTemplateLayoutSchema>;
+export type SystemPackageSkin = z.infer<typeof systemPackageSkinSchema>;
 export type PackagePage = z.infer<typeof pageSchema>;
 export type DependencyRule = z.infer<typeof dependencyRuleSchema>;
 export type DependencySource = z.infer<typeof dependencySourceSchema>;
@@ -652,6 +670,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
   const issues: PackageIssue[] = [];
 
   collectDuplicateIdIssues(systemPackage.pages, "Page", "DUPLICATE_PAGE_ID", "pages", issues);
+  collectDuplicateIdIssues(systemPackage.skins ?? [], "Skin", "DUPLICATE_SKIN_ID", "skins", issues);
   collectDuplicateIdIssues(
     systemPackage.validationChecks ?? [],
     "Validation Check",
@@ -671,6 +690,41 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
 
   const assetRefs = new Set((systemPackage.assets ?? []).map((asset) => asset.路径));
   const usedAssetRefs = new Set<string>();
+
+  if (systemPackage.skins?.length) {
+    if (!systemPackage.defaultSkin || !systemPackage.skins.some((skin) => skin.ID === systemPackage.defaultSkin)) {
+      issues.push({
+        level: "error",
+        code: "MISSING_DEFAULT_SKIN_REFERENCE",
+        text: `默认 Skin 不存在：${systemPackage.defaultSkin ?? "未声明"}`,
+        path: "defaultSkin",
+      });
+    }
+
+    for (const skin of systemPackage.skins) {
+      const path = `skins.${skin.ID}.css`;
+      issues.push(...validateTemplateCss(skin.cssContent, path));
+      collectTemplateImageReferences("", skin.cssContent).forEach((assetPath) => {
+        usedAssetRefs.add(assetPath);
+        if (!assetRefs.has(assetPath)) {
+          issues.push({
+            level: "error",
+            code: "MISSING_TEMPLATE_IMAGE_REFERENCE",
+            text: `System Package Skin 引用了不存在的图片：${assetPath}`,
+            path,
+          });
+        }
+      });
+      validateSkinLayoutOverrides(systemPackage, skin, assetRefs, usedAssetRefs, issues);
+    }
+  } else if (systemPackage.defaultSkin) {
+    issues.push({
+      level: "error",
+      code: "MISSING_DEFAULT_SKIN_REFERENCE",
+      text: `默认 Skin 不存在：${systemPackage.defaultSkin}`,
+      path: "defaultSkin",
+    });
+  }
   for (const module of systemPackage.modules) {
     if (module.类型 === "readOnlyDisplay" && !module.内容 && !module.资源路径) {
       issues.push({
@@ -1605,6 +1659,101 @@ export function getHtmlTemplateModuleReferences(html: string): string[] {
   return [...matches].map((match) => match[1]);
 }
 
+function validateSkinLayoutOverrides(
+  systemPackage: SystemPackage,
+  skin: SystemPackageSkin,
+  assetRefs: Set<string>,
+  usedAssetRefs: Set<string>,
+  issues: PackageIssue[],
+): void {
+  const overrides = skin.layoutOverrides;
+  if (!overrides) return;
+
+  const moduleIds = new Set(systemPackage.modules.map((module) => module.ID));
+  const pageById = new Map(systemPackage.pages.map((page) => [page.ID, page]));
+  const seenPageIds = new Set<string>();
+
+  for (const override of overrides.pages ?? []) {
+    const path = `skins.${skin.ID}.layoutOverrides.pages.${override.ID}.html`;
+    if (seenPageIds.has(override.ID)) {
+      issues.push({ level: "error", code: "DUPLICATE_SKIN_LAYOUT_OVERRIDE_PAGE_ID", text: `Skin Page override ID 重复：${override.ID}`, path });
+      continue;
+    }
+    seenPageIds.add(override.ID);
+    const basePage = pageById.get(override.ID);
+    if (!basePage) {
+      issues.push({ level: "error", code: "SKIN_LAYOUT_OVERRIDE_PAGE_UNKNOWN", text: `Skin 引用了不存在的 Page：${override.ID}`, path: `skins.${skin.ID}.layoutOverrides.pages.${override.ID}.ID` });
+      continue;
+    }
+    issues.push(...validateHtmlTemplate(override.htmlContent, path));
+    validateOverrideModuleOwnership(basePage.layout.htmlContent, override.htmlContent, path, issues);
+    validateOverrideModuleReferences(override.htmlContent, moduleIds, path, issues);
+    if (printPageMarkerCount(override.htmlContent) !== printPageMarkerCount(basePage.layout.htmlContent)) {
+      issues.push({ level: "error", code: "SKIN_LAYOUT_PRINT_PAGE_MISMATCH", text: "Skin Page override 不能改变 data-print-page 页面数量。", path });
+    }
+    collectTemplateImageReferences(override.htmlContent, undefined).forEach((assetPath) => {
+      usedAssetRefs.add(assetPath);
+      if (!assetRefs.has(assetPath)) issues.push({ level: "error", code: "MISSING_TEMPLATE_IMAGE_REFERENCE", text: `Skin HTML override 引用了不存在的图片：${assetPath}`, path });
+    });
+  }
+
+  if (overrides.shell) {
+    const path = `skins.${skin.ID}.layoutOverrides.shell.html`;
+    if (!systemPackage.shell) {
+      issues.push({ level: "error", code: "SKIN_LAYOUT_OVERRIDE_SHELL_MISSING_BASE", text: "没有 Base Sheet Shell 时不能声明 Skin Shell override。", path });
+    } else {
+      issues.push(...validateHtmlTemplate(overrides.shell.htmlContent, path));
+      validateOverrideModuleOwnership(systemPackage.shell.htmlContent, overrides.shell.htmlContent, path, issues);
+      validateOverrideModuleReferences(overrides.shell.htmlContent, moduleIds, path, issues);
+      const outletCount = (overrides.shell.htmlContent.match(/<pb-page-outlet\b/gi) ?? []).length;
+      if (outletCount !== 1) issues.push({ level: "error", code: "SHELL_PAGE_OUTLET_COUNT_INVALID", text: "Skin Sheet Shell override 必须且只能包含一个 pb-page-outlet。", path });
+      if (printPageMarkerCount(overrides.shell.htmlContent) !== printPageMarkerCount(systemPackage.shell.htmlContent)) {
+        issues.push({ level: "error", code: "SKIN_LAYOUT_PRINT_PAGE_MISMATCH", text: "Skin Sheet Shell override 不能改变 data-print-page 页面数量。", path });
+      }
+      collectTemplateImageReferences(overrides.shell.htmlContent, undefined).forEach((assetPath) => {
+        usedAssetRefs.add(assetPath);
+        if (!assetRefs.has(assetPath)) issues.push({ level: "error", code: "MISSING_TEMPLATE_IMAGE_REFERENCE", text: `Skin Shell override 引用了不存在的图片：${assetPath}`, path });
+      });
+    }
+  }
+
+  const effectiveRegions = new Set<string>();
+  let duplicateRegion = false;
+  const pageOverrides = new Map((overrides.pages ?? []).map((override) => [override.ID, override.htmlContent]));
+  const effectiveHtml = systemPackage.pages.map((page) => pageOverrides.get(page.ID) ?? page.layout.htmlContent);
+  if (systemPackage.shell) effectiveHtml.push(overrides.shell?.htmlContent ?? systemPackage.shell.htmlContent);
+  for (const html of effectiveHtml) {
+    for (const regionId of getHtmlTemplateGuideRegionIds(html)) {
+      if (effectiveRegions.has(regionId)) duplicateRegion = true;
+      effectiveRegions.add(regionId);
+    }
+  }
+  if (duplicateRegion) issues.push({ level: "error", code: "DUPLICATE_GUIDE_REGION_ID", text: `Skin ${skin.ID} 的有效 Layout Region ID 必须全包唯一。`, path: `skins.${skin.ID}.layoutOverrides` });
+  for (const [stepIndex, step] of (systemPackage.characterCreationGuide?.步骤 ?? []).entries()) {
+    if (step.目标?.类型 === "region" && !effectiveRegions.has(step.目标.区域ID)) {
+      issues.push({ level: "error", code: "MISSING_GUIDE_TARGET_REGION", text: `Skin ${skin.ID} 缺少 Guide Layout Region：${step.目标.区域ID}`, path: `characterCreationGuide.步骤.${stepIndex}.目标.区域ID` });
+    }
+  }
+}
+
+function validateOverrideModuleOwnership(baseHtml: string, overrideHtml: string, path: string, issues: PackageIssue[]): void {
+  const baseIds = getHtmlTemplateModuleReferences(baseHtml).sort();
+  const overrideIds = getHtmlTemplateModuleReferences(overrideHtml).sort();
+  if (baseIds.length !== overrideIds.length || baseIds.some((id, index) => id !== overrideIds[index])) {
+    issues.push({ level: "error", code: "SKIN_LAYOUT_MODULE_OWNERSHIP_MISMATCH", text: "Skin HTML override 必须保留 Base Layout 的完整 Sheet Module 集合。", path });
+  }
+}
+
+function validateOverrideModuleReferences(html: string, moduleIds: Set<string>, path: string, issues: PackageIssue[]): void {
+  for (const moduleId of getHtmlTemplateModuleReferences(html)) {
+    if (!moduleIds.has(moduleId)) issues.push({ level: "error", code: "MISSING_MODULE_REFERENCE", text: `Skin HTML override 引用了不存在的 Sheet Module：${moduleId}`, path });
+  }
+}
+
+function printPageMarkerCount(html: string): number {
+  return (html.match(/\bdata-print-page\s*=\s*["']true["']/gi) ?? []).length;
+}
+
 export function getHtmlTemplateGuideRegionIds(html: string): string[] {
   const matches = html.matchAll(/<[a-z][a-z0-9-]*\b[^>]*\bdata-guide-region-id\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi);
   return [...matches].map((match) => match[1] ?? match[2] ?? match[3]);
@@ -1769,6 +1918,15 @@ function validateTemplateCss(css: string | undefined, path: string): PackageIssu
       level: "error",
       code: "CSS_TEMPLATE_IMPORT_FORBIDDEN",
       text: "HTML Layout Template CSS 禁止 @import。",
+      path,
+    });
+  }
+
+  if (/@font-face\b/i.test(css)) {
+    issues.push({
+      level: "error",
+      code: "CSS_TEMPLATE_FONT_FACE_FORBIDDEN",
+      text: "HTML Layout Template 与 Skin CSS 禁止 @font-face。",
       path,
     });
   }

@@ -4,6 +4,7 @@
 - [manifest](manifest.md)
 - [Pages](pages.md)
 - [HTML Layout Template](html-layout-template.md)
+- [System Package Skins](skins.md)
 - [Sheet Modules](sheet-modules.md)
 - [Resource Libraries](resource-libraries.md)
 - [Resource Extensions](resource-extensions.md)

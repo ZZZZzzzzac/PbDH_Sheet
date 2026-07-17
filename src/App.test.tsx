@@ -10,6 +10,8 @@ import type { SystemPackage } from "./domain/systemPackage";
 function createEmptyStorage(): StorageService {
   const saves = new Map<string, Parameters<StorageService["saveCharacterSave"]>[0]>();
   const active = new Map<string, string>();
+  const skinPreferences = new Map<string, string>();
+  let frameworkColorSchemePreference: "follow-skin" | "light" | "dark" = "follow-skin";
 
   return {
     async loadCurrentSystemPackage() {
@@ -62,6 +64,18 @@ function createEmptyStorage(): StorageService {
     },
     async setActiveCharacterSaveId(packageId, saveId) {
       active.set(packageId, saveId);
+    },
+    loadSystemPackageSkinPreference(packageId) {
+      return skinPreferences.get(packageId) ?? null;
+    },
+    setSystemPackageSkinPreference(packageId, skinId) {
+      skinPreferences.set(packageId, skinId);
+    },
+    loadFrameworkColorSchemePreference() {
+      return frameworkColorSchemePreference;
+    },
+    setFrameworkColorSchemePreference(preference) {
+      frameworkColorSchemePreference = preference;
     },
     async savePlayerImageBlob() {},
     async deletePlayerImageBlob() {},
@@ -795,7 +809,7 @@ describe("App Resource Manager", () => {
     expect(triggers.map((trigger) => trigger.textContent?.trim())).toEqual([
       "玩家功能",
       "玩家存档",
-      "存档导入导出",
+      "导入导出",
       "系统包",
     ]);
 
@@ -807,6 +821,38 @@ describe("App Resource Manager", () => {
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog", { name: "Resource Manager" })).not.toBeInTheDocument();
     await waitFor(() => expect(managerButton).toHaveFocus());
+  });
+});
+
+describe("App System Package Skin", () => {
+  afterEach(() => resetRuntimeDependencies());
+
+  it("switches among declared Skins from the System Package menu", async () => {
+    const skinnedPackage: SystemPackage = {
+      ...minimalSystemPackage,
+      defaultSkin: "plain",
+      skins: [
+        { ID: "plain", 名称: "简洁", cssContent: ".demo-sheet { color: black; }", 推荐框架配色: "light" },
+        { ID: "night", 名称: "夜间", cssContent: ".demo-sheet { color: white; }", 推荐框架配色: "dark" },
+      ],
+    };
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: skinnedPackage, issues: [] }),
+      storage: createEmptyStorage(),
+    });
+    useRuntimeStore.setState({ currentPackage: null, selectedSkinId: null, characterData: null, bootStatus: "idle" });
+    const user = userEvent.setup();
+    render(<App />);
+    await act(async () => useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob()));
+
+    await user.selectOptions(screen.getByLabelText("人物卡皮肤"), "night");
+
+    expect(useRuntimeStore.getState().selectedSkinId).toBe("night");
+    expect(document.querySelector('style[data-system-package-skin="night"]')).not.toBeNull();
+    expect(document.querySelector(".app-shell")).toHaveAttribute("data-framework-color-scheme", "dark");
+
+    await user.selectOptions(screen.getByLabelText("框架配色"), "light");
+    expect(document.querySelector(".app-shell")).toHaveAttribute("data-framework-color-scheme", "light");
   });
 });
 

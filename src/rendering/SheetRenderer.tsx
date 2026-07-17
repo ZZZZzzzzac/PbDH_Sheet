@@ -99,6 +99,27 @@ function scopeTemplateCss(pageId: string, css: string | undefined, assetUrls: Re
   return scopeCssBlock(resolveTemplateCssAssets(css, assetUrls), scope);
 }
 
+function scopeSkinCss(systemPackage: SystemPackage, skinId: string | null, assetUrls: Record<string, string>): string {
+  const skin = activeSkin(systemPackage, skinId);
+  if (!skin) return "";
+  const scope = `[data-system-package-id="${cssStringEscape(systemPackage.manifest.ID)}"]`;
+  return scopeCssBlock(resolveTemplateCssAssets(skin.cssContent, assetUrls), scope);
+}
+
+function activeSkin(systemPackage: SystemPackage, skinId: string | null) {
+  return systemPackage.skins?.find((candidate) => candidate.ID === skinId)
+    ?? systemPackage.skins?.find((candidate) => candidate.ID === systemPackage.defaultSkin);
+}
+
+function effectivePageHtml(systemPackage: SystemPackage, skinId: string | null, pageId: string, baseHtml: string): string {
+  return activeSkin(systemPackage, skinId)?.layoutOverrides?.pages?.find((page) => page.ID === pageId)?.htmlContent ?? baseHtml;
+}
+
+function effectiveShellHtml(systemPackage: SystemPackage, skinId: string | null): string | undefined {
+  if (!systemPackage.shell) return undefined;
+  return activeSkin(systemPackage, skinId)?.layoutOverrides?.shell?.htmlContent ?? systemPackage.shell.htmlContent;
+}
+
 function resolveTemplateCssAssets(css: string, assetUrls: Record<string, string>): string {
   return css.replace(/url\(\s*(["']?)([^"')]+)\1\s*\)/giu, (match, quote: string, path: string) => {
     const url = assetUrls[path];
@@ -125,7 +146,7 @@ function scopeCssBlock(css: string, scope: string): string {
     }
 
     const body = css.slice(openIndex + 1, closeIndex);
-    if (selector.startsWith("@media")) {
+    if (/^@(media|supports|container|layer)\b/i.test(selector)) {
       result += `${selector} {${scopeCssBlock(body, scope)}}`;
     } else if (selector.startsWith("@")) {
       result += `${selector} {${body}}`;
@@ -158,10 +179,51 @@ function findMatchingBrace(css: string, openIndex: number): number {
 }
 
 function scopeSelectors(selectors: string, scope: string): string {
-  return selectors
-    .split(",")
-    .map((selector) => `${scope} ${selector.trim()}`)
+  return splitCssSelectors(selectors)
+    .map((selector) => {
+      const trimmed = selector.trim();
+      return trimmed.includes(":scope") ? trimmed.replaceAll(":scope", scope) : `${scope} ${trimmed}`;
+    })
     .join(", ");
+}
+
+function splitCssSelectors(selectors: string): string[] {
+  const result: string[] = [];
+  let start = 0;
+  let parentheses = 0;
+  let brackets = 0;
+  let quote: string | null = null;
+  let escaped = false;
+
+  for (let index = 0; index < selectors.length; index += 1) {
+    const char = selectors[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (char === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (quote) {
+      if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+      continue;
+    }
+    if (char === "(") parentheses += 1;
+    else if (char === ")") parentheses = Math.max(0, parentheses - 1);
+    else if (char === "[") brackets += 1;
+    else if (char === "]") brackets = Math.max(0, brackets - 1);
+    else if (char === "," && parentheses === 0 && brackets === 0) {
+      result.push(selectors.slice(start, index));
+      start = index + 1;
+    }
+  }
+  result.push(selectors.slice(start));
+  return result;
 }
 
 function cssStringEscape(value: string): string {
@@ -172,11 +234,14 @@ export function SheetRenderer({ systemPackage, outputMode = false, requestedPage
   const pageVisibility = useRuntimeStore((state) => state.pageVisibility);
   const moduleVisibility = useRuntimeStore((state) => state.moduleVisibility);
   const packageAssetUrls = useRuntimeStore((state) => state.packageAssetUrls);
+  const selectedSkinId = useRuntimeStore((state) => state.selectedSkinId);
   const [currentPageId, setCurrentPageId] = useState<string | null>(null);
   const visiblePages = runtimeVisiblePages(systemPackage.pages, pageVisibility);
   const requestedVisiblePageId = requestedPageId && visiblePages.some((page) => page.ID === requestedPageId) ? requestedPageId : null;
   const resolvedCurrentPageId = requestedVisiblePageId ?? resolveCurrentPageId(visiblePages, currentPageId);
   const renderedPages = outputMode ? printablePages(systemPackage.pages, pageVisibility) : visiblePages.filter((page) => page.ID === resolvedCurrentPageId);
+  const skinCss = scopeSkinCss(systemPackage, selectedSkinId, packageAssetUrls);
+  const resolvedSkinId = activeSkin(systemPackage, selectedSkinId)?.ID;
   useEffect(() => setCurrentPageId(null), [systemPackage.manifest.ID, systemPackage.manifest.版本]);
   useEffect(() => { if (currentPageId !== resolvedCurrentPageId) setCurrentPageId(resolvedCurrentPageId); }, [currentPageId, resolvedCurrentPageId]);
 
@@ -187,7 +252,7 @@ export function SheetRenderer({ systemPackage, outputMode = false, requestedPage
       (
           <article className="sheet-page" data-template-page-id={page.ID} key={page.ID}>
             <style>{scopeTemplateCss(page.ID, page.layout.cssContent, packageAssetUrls)}</style>
-            {renderHtmlTemplate(systemPackage, page.layout.htmlContent, moduleVisibility, packageAssetUrls)}
+            {renderHtmlTemplate(systemPackage, effectivePageHtml(systemPackage, selectedSkinId, page.ID, page.layout.htmlContent), moduleVisibility, packageAssetUrls)}
           </article>
       ),
     )}
@@ -196,9 +261,11 @@ export function SheetRenderer({ systemPackage, outputMode = false, requestedPage
     <main
       className="sheet-tool"
       aria-label="Sheet Tool"
+      data-system-package-id={systemPackage.manifest.ID}
       data-countable-print-strategy={outputMode ? "clear-uniform-squares" : undefined}
     >
-      {systemPackage.shell ? <div className="sheet-shell" data-template-shell="true"><style>{scopeCssBlock(resolveTemplateCssAssets(systemPackage.shell.cssContent ?? "", packageAssetUrls), '[data-template-shell="true"]')}</style>{renderHtmlTemplate(systemPackage, systemPackage.shell.htmlContent, moduleVisibility, packageAssetUrls, outlet)}</div> : outlet}
+      {systemPackage.shell ? <div className="sheet-shell" data-template-shell="true"><style>{scopeCssBlock(resolveTemplateCssAssets(systemPackage.shell.cssContent ?? "", packageAssetUrls), '[data-template-shell="true"]')}</style>{renderHtmlTemplate(systemPackage, effectiveShellHtml(systemPackage, selectedSkinId)!, moduleVisibility, packageAssetUrls, outlet)}</div> : outlet}
+      {skinCss ? <style data-system-package-skin={resolvedSkinId}>{skinCss}</style> : null}
     </main>
   );
 }

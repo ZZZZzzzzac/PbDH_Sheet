@@ -56,10 +56,13 @@ export const autosaveDelayMs = 250;
 type BootStatus = "idle" | "loading" | "ready" | "error";
 type StorageStatus = "idle" | "saving" | "saved" | "error";
 type ValidationStatus = "idle" | "running" | "complete";
+export type FrameworkColorSchemePreference = "follow-skin" | "light" | "dark";
 
 interface RuntimeState {
   basePackage: SystemPackage | null;
   currentPackage: SystemPackage | null;
+  selectedSkinId: string | null;
+  frameworkColorSchemePreference: FrameworkColorSchemePreference;
   resourceCatalog: EffectiveResourceCatalog | null;
   installedResourceExtensions: ResourceExtension[];
   resourceExtensionImport: ResourceExtensionImportState | null;
@@ -86,6 +89,8 @@ interface RuntimeState {
   initialize: () => Promise<void>;
   uploadSystemPackageFromFile: (file: Blob) => Promise<void>;
   uploadSystemPackageFromDirectory: (files: Iterable<File>) => Promise<void>;
+  selectSystemPackageSkin: (skinId: string) => void;
+  setFrameworkColorSchemePreference: (preference: FrameworkColorSchemePreference) => void;
   uploadResourceExtensionFromFile: (file: Blob) => Promise<void>;
   confirmResourceExtensionReplacement: () => Promise<void>;
   cancelResourceExtensionReplacement: () => void;
@@ -241,9 +246,11 @@ async function loadPackageIntoState(
     const resourceCatalog = createEffectiveResourceCatalog(systemPackage, installedResourceExtensions);
     const effectivePackage = applyEffectiveResourceCatalog(systemPackage, resourceCatalog);
     const loaded = await loadActiveCharacterForPackage(effectivePackage, runtimeDependencies.storage);
+    const skinPreference = resolveSkinPreference(systemPackage);
     set({
       basePackage: systemPackage,
       currentPackage: effectivePackage,
+      selectedSkinId: skinPreference.skinId,
       resourceCatalog,
       installedResourceExtensions,
       resourceExtensionImport: null,
@@ -259,12 +266,15 @@ async function loadPackageIntoState(
       packageIssues: issues,
       bootStatus: "ready",
       storageStatus,
+      ...(skinPreference.fellBack ? { importNotice: `此前选择的 Skin 已不存在，已回退到默认 Skin：${skinPreference.skinId}` } : {}),
     });
   } catch {
     activePackageAssetResolver = createRuntimeAssetResolver(packageAssets ?? []);
+    const skinPreference = resolveSkinPreference(systemPackage);
     set({
       basePackage: systemPackage,
       currentPackage: systemPackage,
+      selectedSkinId: skinPreference.skinId,
       resourceCatalog: createEffectiveResourceCatalog(systemPackage, []),
       installedResourceExtensions: [],
       resourceExtensionImport: null,
@@ -279,7 +289,29 @@ async function loadPackageIntoState(
       packageIssues: issues,
       bootStatus: "ready",
       storageStatus: "error",
+      ...(skinPreference.fellBack ? { importNotice: `此前选择的 Skin 已不存在，已回退到默认 Skin：${skinPreference.skinId}` } : {}),
     });
+  }
+}
+
+function resolveSkinPreference(systemPackage: SystemPackage): { skinId: string | null; fellBack: boolean } {
+  const skins = systemPackage.skins ?? [];
+  if (skins.length === 0) return { skinId: null, fellBack: false };
+  let preferred: string | null = null;
+  try {
+    preferred = runtimeDependencies.storage.loadSystemPackageSkinPreference(systemPackage.manifest.ID);
+  } catch {
+    preferred = null;
+  }
+  if (preferred && skins.some((skin) => skin.ID === preferred)) return { skinId: preferred, fellBack: false };
+  return { skinId: systemPackage.defaultSkin ?? skins[0].ID, fellBack: preferred !== null };
+}
+
+function loadFrameworkColorSchemePreference(): FrameworkColorSchemePreference {
+  try {
+    return runtimeDependencies.storage.loadFrameworkColorSchemePreference();
+  } catch {
+    return "follow-skin";
   }
 }
 
@@ -409,6 +441,8 @@ function collectStaleResourceReferenceIssues(characterData: CharacterData | null
 export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   basePackage: null,
   currentPackage: null,
+  selectedSkinId: null,
+  frameworkColorSchemePreference: "follow-skin",
   resourceCatalog: null,
   installedResourceExtensions: [],
   resourceExtensionImport: null,
@@ -428,7 +462,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   authorPreviewActive: false,
 
   async initialize() {
-    set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null });
+    set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null, frameworkColorSchemePreference: loadFrameworkColorSchemePreference() });
 
     try {
       if (sessionStorage.getItem(authorPreviewSessionKey) === "active") {
@@ -518,6 +552,26 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       packageCacheStatus = "error";
     }
     await loadPackageIntoState(validation.package, validation.issues, set, packageCacheStatus, validation.packageAssets ?? []);
+  },
+
+  selectSystemPackageSkin(skinId) {
+    const systemPackage = get().currentPackage;
+    if (!systemPackage?.skins?.some((skin) => skin.ID === skinId)) return;
+    try {
+      runtimeDependencies.storage.setSystemPackageSkinPreference(systemPackage.manifest.ID, skinId);
+    } catch {
+      set({ importNotice: "Skin 已切换，但浏览器无法保存该偏好。" });
+    }
+    set({ selectedSkinId: skinId });
+  },
+
+  setFrameworkColorSchemePreference(preference) {
+    try {
+      runtimeDependencies.storage.setFrameworkColorSchemePreference(preference);
+    } catch {
+      set({ importNotice: "Framework 配色已切换，但浏览器无法保存该偏好。" });
+    }
+    set({ frameworkColorSchemePreference: preference });
   },
 
   async uploadResourceExtensionFromFile(file) {

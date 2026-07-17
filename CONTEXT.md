@@ -20,6 +20,14 @@ _Avoid_: Low-code platform
 A system-specific bundle of rules, resources, page definitions, and styling that plugs into the Base Framework to produce a finished sheet tool.
 _Avoid_: Plugin, template, card pack when referring to the whole system
 
+**System Package Skin**:
+The system-specific presentation of the Player-facing sheet area. It owns one package-wide scoped CSS file and may optionally provide an HTML Layout Template override for the Sheet Shell or individual Pages. It may change colors, typography, borders, surfaces, decoration, control geometry, static layout content, and module placement, but does not mutate the Base Layout Templates, change the fixed print page box, remove required Sheet Modules, or change Character Data, Dependency Logic, or layout meaning.
+_Avoid_: Base Framework theme, behavior variant
+
+**Framework Color Scheme**:
+A neutral Light or Dark presentation for Base Framework-owned surfaces such as toolbars, menus, dialogs, Resource Browsers, and validation UI. It preserves compatibility and readability rather than expressing a System Package's game-specific identity.
+_Avoid_: System Package Skin, game theme
+
 **Sheet Tool**:
 The finished web application used by Players for one specific PbDH system.
 _Avoid_: Framework, editor
@@ -221,6 +229,21 @@ _Avoid_: Script plugin
 - An **Author** creates one or more **System Packages**.
 - A **System Package** plugs into the **Base Framework**.
 - The **Base Framework** plus one **System Package** produces one **Sheet Tool**.
+- A **System Package Skin** visually owns the System Package sheet area, while the **Framework Color Scheme** remains neutral and applies only to Base Framework-owned surfaces.
+- Changing a **System Package Skin** or **Framework Color Scheme** does not change Sheet Modules, Character Data, Dependency Logic, validation behavior, or the semantic meaning of the layout.
+- A System Package declares its available **System Package Skins** and default Skin. A Player may select another declared Skin at runtime.
+- One selected **System Package Skin** applies consistently to the System Package Shell and all of its Pages. Players do not select different Skins per Page; a Skin may still contain page-specific rules through stable Page selectors.
+- The selected **System Package Skin** is a local UI preference and is not part of Character Data.
+- A first-version **System Package Skin** may use supported package images for textures and decoration, but cannot bundle font files; it must use fallback-capable system font stacks.
+- A System Package retains authoritative Base Layout Templates for its Sheet Shell and Pages. A **System Package Skin** may override any subset of those templates without editing them; every omitted Shell or Page override falls back to its Base Layout Template and still receives the selected Skin's package-wide CSS.
+- A Skin HTML override may add safe Static Layout Content and rearrange the existing Sheet Module placeholders within that Shell or Page, subject to the same sanitizer, module-reference, Guide target, and print invariants as a Base Layout Template.
+- Each Page and the Sheet Shell retain a fixed semantic ownership of their Sheet Modules across all Skins. A Skin HTML override must expose the same module-placeholder set as its Base Layout Template for that Page or Shell; it may rearrange those placeholders within the owner but cannot move them across Page or Shell boundaries.
+- Each **System Package Skin** recommends a Light or Dark **Framework Color Scheme**. The Base Framework follows that recommendation by default, while a Player may keep a local Light or Dark override.
+- The **Framework Color Scheme** does not affect printed System Package pages.
+- Every Skin declared by an Author must pass normal System Package path, CSS, and asset validation; a broken declared Skin is a package error rather than a Player-selectable degraded option.
+- If a locally preferred Skin no longer exists after a System Package update, the Base Framework falls back to that package's current default Skin without blocking Character Data loading.
+- A first-version **System Package Skin** is bundled, validated, cached, and distributed with its owning System Package. Independently installed third-party Skin packages are outside the first-version contract.
+- `daggerheart-core` initially keeps its current plain presentation as a compatibility and troubleshooting Skin, while its first purpose-designed Skin becomes the package default once complete.
 - A **Player** uses a **Sheet Tool** and should not need to understand the **Base Framework**.
 - A **Player** imports or selects a **System Package** separately from **Character Data**.
 - The first-version runtime uses one **Current System Package** at a time.

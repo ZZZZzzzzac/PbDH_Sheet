@@ -6,9 +6,9 @@
   height: 100%;
   min-height: 0;
   padding: 0;
-  color: #191919;
-  background: #fff;
-  font-family: "Noto Serif SC", "Songti SC", serif;
+  color: var(--dh-beast-ink);
+  background: var(--dh-surface);
+  font-family: var(--dh-font-serif);
 }
 
 .beast-tier h2,
@@ -34,7 +34,7 @@
 }
 
 .beast-tier h2 {
-  border-bottom: 0.25mm solid #777;
+  border-bottom: 0.25mm solid var(--dh-beast-line);
   padding: 2mm 5mm;
   font-size: 16px;
   line-height: 1;
@@ -46,8 +46,8 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  border: 0.2mm solid #aaa;
-  border-left: 0.8mm solid #555;
+  border: 0.2mm solid var(--dh-beast-line-soft);
+  border-left: 0.8mm solid var(--dh-beast-text-secondary);
   padding: 2mm 2mm;
   margin: 1mm 3mm 1mm 3mm;
   font-size: 13px;
@@ -70,7 +70,7 @@
 
 .beast-form header p {
   overflow: hidden;
-  color: #555;
+  color: var(--dh-beast-text-secondary);
   font-size: 12px;
   line-height: 1;
   text-align: right;
@@ -90,8 +90,8 @@
 
 .beast-summary {
   display: inline;
-  color: #333;
-  font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  color: var(--dh-beast-text-muted);
+  font-family: var(--dh-font-sans);
   font-size: 13px;
   line-height: 1;
 }
@@ -101,7 +101,7 @@
 }
 
 .beast-feature-name {
-  color: #8a1f1f;
+  color: var(--dh-beast-accent);
 }
 
 .beast-form ul {

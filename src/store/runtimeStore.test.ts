@@ -14,6 +14,8 @@ function createMemoryStorage(cachedPackage: unknown = null): StorageService & {
   let savedData: Awaited<ReturnType<StorageService["loadCurrentCharacterData"]>> = null;
   const characterSaves = new Map<string, { id: string; packageId: string; name: string; updatedAt: string; data: NonNullable<typeof savedData> }>();
   const activeSaveIds = new Map<string, string>();
+  const skinPreferences = new Map<string, string>();
+  let frameworkColorSchemePreference: "follow-skin" | "light" | "dark" = "follow-skin";
   let savedPackage = cachedPackage;
   let savedPackageAssets: Awaited<ReturnType<StorageService["loadCurrentPackageAssets"]>> = [];
   const playerImages = new Map<string, Awaited<ReturnType<StorageService["loadPlayerImageBlob"]>>>();
@@ -86,6 +88,18 @@ function createMemoryStorage(cachedPackage: unknown = null): StorageService & {
     async setActiveCharacterSaveId(packageId, saveId) {
       activeSaveIds.set(packageId, saveId);
     },
+    loadSystemPackageSkinPreference(packageId) {
+      return skinPreferences.get(packageId) ?? null;
+    },
+    setSystemPackageSkinPreference(packageId, skinId) {
+      skinPreferences.set(packageId, skinId);
+    },
+    loadFrameworkColorSchemePreference() {
+      return frameworkColorSchemePreference;
+    },
+    setFrameworkColorSchemePreference(preference) {
+      frameworkColorSchemePreference = preference;
+    },
     async savePlayerImageBlob(image) {
       playerImages.set(image.id, image);
     },
@@ -130,6 +144,8 @@ describe("runtime store", () => {
     useRuntimeStore.setState({
       basePackage: null,
       currentPackage: null,
+      selectedSkinId: null,
+      frameworkColorSchemePreference: "follow-skin",
       resourceCatalog: null,
       installedResourceExtensions: [],
       resourceExtensionImport: null,
@@ -291,6 +307,57 @@ describe("runtime store", () => {
     expect(useRuntimeStore.getState().currentPackage?.manifest.ID).toBe("demo-minimal");
     expect(useRuntimeStore.getState().bootStatus).toBe("ready");
     expect(memoryStorage.getCachedPackage()?.manifest.ID).toBe("demo-minimal");
+  });
+
+  it("switches and persists Skin per System Package without changing Character Data", async () => {
+    const skinnedPackage: SystemPackage = {
+      ...minimalSystemPackage,
+      defaultSkin: "plain",
+      skins: [
+        { ID: "plain", 名称: "简洁", cssContent: ".plain {}", 推荐框架配色: "light" },
+        { ID: "night", 名称: "夜间", cssContent: ".night {}", 推荐框架配色: "dark" },
+      ],
+    };
+    configureRuntimeDependencies({ loadSystemPackageFromFile: async () => ({ ok: true, package: skinnedPackage, issues: [] }), storage: memoryStorage });
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    const before = useRuntimeStore.getState().characterData;
+
+    act(() => useRuntimeStore.getState().selectSystemPackageSkin("night"));
+
+    expect(useRuntimeStore.getState().selectedSkinId).toBe("night");
+    expect(memoryStorage.loadSystemPackageSkinPreference(skinnedPackage.manifest.ID)).toBe("night");
+    expect(useRuntimeStore.getState().characterData).toBe(before);
+  });
+
+  it("falls back to the package default when a stored Skin was removed", async () => {
+    const twoSkins: SystemPackage = {
+      ...minimalSystemPackage,
+      defaultSkin: "plain",
+      skins: [
+        { ID: "plain", 名称: "简洁", cssContent: ".plain {}", 推荐框架配色: "light" },
+        { ID: "night", 名称: "夜间", cssContent: ".night {}", 推荐框架配色: "dark" },
+      ],
+    };
+    const upgraded: SystemPackage = { ...twoSkins, skins: [twoSkins.skins![0]] };
+    configureRuntimeDependencies({ loadSystemPackageFromFile: async () => ({ ok: true, package: twoSkins, issues: [] }), storage: memoryStorage });
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    useRuntimeStore.getState().selectSystemPackageSkin("night");
+    configureRuntimeDependencies({ loadSystemPackageFromFile: async () => ({ ok: true, package: upgraded, issues: [] }), storage: memoryStorage });
+
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+
+    expect(useRuntimeStore.getState().selectedSkinId).toBe("plain");
+    expect(useRuntimeStore.getState().importNotice).toContain("已回退到默认 Skin：plain");
+  });
+
+  it("persists the Framework Color Scheme preference outside Character Data", () => {
+    const before = useRuntimeStore.getState().characterData;
+
+    act(() => useRuntimeStore.getState().setFrameworkColorSchemePreference("dark"));
+
+    expect(useRuntimeStore.getState().frameworkColorSchemePreference).toBe("dark");
+    expect(memoryStorage.loadFrameworkColorSchemePreference()).toBe("dark");
+    expect(useRuntimeStore.getState().characterData).toBe(before);
   });
 
   it("restores cached System Package on initialize", async () => {

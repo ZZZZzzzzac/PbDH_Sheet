@@ -12,8 +12,8 @@
   min-width: 38rem;
   min-height: 90rem;
   overflow: hidden;
-  border: 1px solid #c8b9a6;
-  background: #f8f4ec;
+  border: 1px solid var(--dh-shell-line);
+  background: var(--dh-shell-surface);
 }
 
 .daggerheart-card-pane {

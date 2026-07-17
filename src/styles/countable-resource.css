@@ -91,20 +91,20 @@
   height: 28px;
   padding-inline: 2px;
   border: 0;
-  background: #ffffff;
-  color: #243438;
+  background: var(--framework-surface);
+  color: var(--framework-text-strong);
   cursor: pointer;
   font-weight: 700;
 }
 
 .stepper:disabled {
-  border-color: #c4ccce;
-  color: #98a4a7;
+  border-color: var(--framework-border-strong);
+  color: var(--framework-disabled-text);
   cursor: not-allowed;
 }
 
 .stepper:focus-visible {
-  outline: 3px solid #e0b441;
+  outline: 3px solid var(--framework-focus);
   outline-offset: 2px;
 }
 
@@ -119,14 +119,14 @@
 }
 
 .counter .value {
-  color: #607075;
+  color: var(--framework-text-muted);
   white-space: nowrap;
 }
 
 .max-input {
   width: 36px;
   min-height: 24px;
-  border: 1px solid #d8dfe1;
+  border: 1px solid var(--framework-border-subtle);
   text-align: center;
 }
 

@@ -242,6 +242,69 @@ describe("loadSystemPackageFromZipFile", () => {
     );
   });
 
+  it("loads bundled Skin CSS through the manifest", async () => {
+    const manifest = {
+      ...createManifest(),
+      defaultSkin: "plain",
+      skins: [{ ID: "plain", 名称: "简洁", css: "skins/plain.css", 推荐框架配色: "light" }],
+    };
+    const result = await loadSystemPackageFromZipFile(createPackageZip({
+      manifest,
+      skinFiles: { "skins/plain.css": ".skin-surface { background: #fff; }" },
+    }));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.package.defaultSkin).toBe("plain");
+      expect(result.package.skins).toEqual([{
+        ID: "plain",
+        名称: "简洁",
+        cssContent: ".skin-surface { background: #fff; }",
+        推荐框架配色: "light",
+      }]);
+    }
+  });
+
+  it("rejects a default Skin when the manifest declares no Skins", async () => {
+    const result = await loadSystemPackageFromZipFile(createPackageZip({
+      manifest: { ...createManifest(), defaultSkin: "missing" },
+    }));
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "MISSING_DEFAULT_SKIN_REFERENCE", level: "error" }),
+    ]));
+  });
+
+  it("loads an optional Skin Page HTML override", async () => {
+    const manifest = {
+      ...createManifest(),
+      defaultSkin: "editorial",
+      skins: [{
+        ID: "editorial",
+        名称: "编排版",
+        css: "skins/editorial/skin.css",
+        推荐框架配色: "light",
+        layoutOverrides: { pages: [{ ID: "main", html: "skins/editorial/main.html" }] },
+      }],
+    };
+    const result = await loadSystemPackageFromZipFile(createPackageZip({
+      manifest,
+      skinFiles: {
+        "skins/editorial/skin.css": ".editorial { display: grid; }",
+        "skins/editorial/main.html": '<main class="editorial"><pb-module id="character-name"></pb-module></main>',
+      },
+    }));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.package.skins?.[0].layoutOverrides?.pages[0]).toEqual({
+        ID: "main",
+        htmlContent: '<main class="editorial"><pb-module id="character-name"></pb-module></main>',
+      });
+    }
+  });
+
   it("rejects the removed manifest Asset list", async () => {
     const result = await loadSystemPackageFromZipFile(createPackageZip({
       manifest: { ...createManifest(), assets: [{ ID: "logo", 路径: "assets/logo.svg" }] },
@@ -378,6 +441,7 @@ function createPackageZip(
     dependencies?: unknown;
     validationScripts?: Record<string, string>;
     guide?: unknown;
+    skinFiles?: Record<string, string>;
   } = {},
 ) {
   return zipBlob({
@@ -391,6 +455,7 @@ function createPackageZip(
     ...(options.dependencies ? { "dependencies.json": JSON.stringify(options.dependencies) } : {}),
     ...(options.validationScripts ?? {}),
     ...(options.guide ? { "guides/character-creation.json": JSON.stringify(options.guide) } : {}),
+    ...(options.skinFiles ?? {}),
   });
 }
 

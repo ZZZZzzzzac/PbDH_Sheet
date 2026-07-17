@@ -20,13 +20,13 @@
   margin: 0;
   padding: 0;
   border: 0;
-  background: #e2e8e9;
-  color: #607075;
+  background: var(--framework-disabled-surface);
+  color: var(--framework-text-muted);
   cursor: pointer;
 }
 
 .image-upload-surface:focus-visible {
-  outline: 3px solid #e0b441;
+  outline: 3px solid var(--framework-focus);
   outline-offset: -3px;
 }
 
@@ -37,7 +37,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: #e2e8e9;
+  background: var(--framework-disabled-surface);
 }
 
 .image-fallback {
@@ -56,14 +56,14 @@
   width: 28px;
   height: 28px;
   padding: 0;
-  border: 1px solid #243438;
+  border: 1px solid var(--framework-text-strong);
   border-radius: 999px;
-  background: #ffffff;
-  color: #243438;
+  background: var(--framework-surface);
+  color: var(--framework-text-strong);
   cursor: pointer;
 }
 
 .image-remove-button:focus-visible {
-  outline: 3px solid #e0b441;
+  outline: 3px solid var(--framework-focus);
   outline-offset: 2px;
 }

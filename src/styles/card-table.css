@@ -45,9 +45,9 @@
   gap: 8px;
   min-height: 40px;
   padding: 0 10px;
-  border: 1px solid #c4ccce;
-  background: var(--play-card-state-background, #ffffff);
-  color: #425056;
+  border: 1px solid var(--framework-border-strong);
+  background: var(--play-card-state-background, var(--framework-surface));
+  color: var(--framework-text-secondary);
   font-size: 0.9rem;
 }
 
@@ -65,7 +65,7 @@
 
 .card-size-control input {
   width: 100%;
-  accent-color: #31565e;
+  accent-color: var(--framework-accent);
 }
 
 .card-table-side-actions .card-size-control input {
@@ -76,7 +76,7 @@
 }
 
 .card-size-control output {
-  color: #607075;
+  color: var(--framework-text-muted);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -88,9 +88,9 @@
 
 .card-count {
   padding: 4px 8px;
-  border: 1px solid #c4ccce;
-  background: #f8faf9;
-  color: #425056;
+  border: 1px solid var(--framework-border-strong);
+  background: var(--framework-surface-subtle);
+  color: var(--framework-text-secondary);
   font-size: 0.9rem;
 }
 
@@ -110,7 +110,7 @@
   min-width: 0;
   min-height: 520px;
   overflow: hidden;
-  border: 1px solid #cfd7d9;
+  border: 1px solid var(--framework-border);
   background:
     linear-gradient(90deg, rgba(49, 86, 94, 0.08) 1px, transparent 1px),
     linear-gradient(180deg, rgba(49, 86, 94, 0.08) 1px, transparent 1px),
@@ -125,8 +125,8 @@
   display: grid;
   place-items: center;
   margin: 0;
-  border: 1px dashed #aebabc;
-  color: #607075;
+  border: 1px dashed var(--framework-border-strong);
+  color: var(--framework-text-muted);
   background: rgba(255, 255, 255, 0.64);
 }
 
@@ -134,8 +134,8 @@
   position: absolute;
   width: min(var(--play-card-width), calc(100% - 32px));
   min-width: 0;
-  border: 1px solid #243438;
-  background: #ffffff;
+  border: 1px solid var(--framework-text-strong);
+  background: var(--framework-surface);
   box-shadow: 0 10px 24px rgba(32, 36, 38, 0.24);
   cursor: grab;
   transform-origin: center center;
@@ -156,10 +156,10 @@
   width: 26px;
   height: 26px;
   padding: 0;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--framework-surface);
   border-radius: 999px;
   background: #c9302c;
-  color: #ffffff;
+  color: var(--framework-surface);
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(32, 36, 38, 0.28);
   transform: rotate(var(--card-control-counter-rotation, 0deg));
@@ -191,7 +191,7 @@
 
 .play-card-name {
   margin: 0 0 8px;
-  color: #202426;
+  color: var(--framework-text);
   font-size: 1.05rem;
   font-weight: 700;
 }
@@ -216,7 +216,7 @@
   padding: 1px 6px;
   border: 1px solid #d8d0b8;
   background: #f8f0d9;
-  color: #607075;
+  color: var(--framework-text-muted);
   font-size: 0.78rem;
   line-height: 1.2;
   overflow-wrap: anywhere;
@@ -225,7 +225,7 @@
 .play-card-description {
   margin: 0;
   min-height: 0;
-  color: #202426;
+  color: var(--framework-text);
   line-height: 1.45;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -259,10 +259,10 @@
   width: 36px;
   height: 36px;
   padding: 3px;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--framework-surface);
   border-radius: 999px;
-  background: var(--card-indicator-color, #31565e);
-  color: #ffffff;
+  background: var(--card-indicator-color, var(--framework-accent));
+  color: var(--framework-surface);
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(32, 36, 38, 0.28);
   line-height: 1;
@@ -273,7 +273,7 @@
   filter: brightness(0.84);
 }
 
-.card-indicator-badge[data-color-index="0"] { --card-indicator-color: #31565e; }
+.card-indicator-badge[data-color-index="0"] { --card-indicator-color: var(--framework-accent); }
 .card-indicator-badge[data-color-index="1"] { --card-indicator-color: #9f302b; }
 .card-indicator-badge[data-color-index="2"] { --card-indicator-color: #8a6715; }
 .card-indicator-badge[data-color-index="3"] { --card-indicator-color: #397345; }
@@ -305,7 +305,7 @@
   border: 1px solid rgba(36, 52, 56, 0.32);
   border-radius: 999px;
   background: rgba(248, 250, 249, 0.92);
-  color: #425056;
+  color: var(--framework-text-secondary);
   box-shadow: 0 2px 8px rgba(32, 36, 38, 0.18);
 }
 
@@ -316,9 +316,9 @@
   gap: 6px;
   min-height: 40px;
   border: 0;
-  border-right: 1px solid #d8dfe1;
-  background: #ffffff;
-  color: #243438;
+  border-right: 1px solid var(--framework-border-subtle);
+  background: var(--framework-surface);
+  color: var(--framework-text-strong);
   cursor: pointer;
 }
 
@@ -336,11 +336,11 @@
 }
 
 .card-action-button:hover {
-  background: #edf6f1;
+  background: var(--framework-surface-muted);
 }
 
 .card-action-button.danger {
-  color: #8c2822;
+  color: var(--framework-danger);
 }
 
 .card-context-menu {
@@ -349,8 +349,8 @@
   display: grid;
   min-width: 148px;
   padding: 6px;
-  border: 1px solid #243438;
-  background: #ffffff;
+  border: 1px solid var(--framework-text-strong);
+  background: var(--framework-surface);
   box-shadow: 0 14px 32px rgba(32, 36, 38, 0.28);
 }
 
@@ -359,21 +359,21 @@
   border: 0;
   padding: 0 10px;
   background: transparent;
-  color: #243438;
+  color: var(--framework-text-strong);
   text-align: left;
   cursor: pointer;
 }
 
 .card-context-menu button:hover {
-  background: #edf6f1;
+  background: var(--framework-surface-muted);
 }
 
 .card-context-menu button.danger {
-  color: #8c2822;
+  color: var(--framework-danger);
 }
 
 .card-detail-backdrop { position: fixed; inset: 0; z-index: 140; display: grid; place-items: center; padding: 24px; background: rgba(15, 22, 24, 0.72); }
-.card-detail-dialog { position: relative; width: min(520px, 92vw); max-height: 92vh; overflow: auto; padding: 18px; background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+.card-detail-dialog { position: relative; width: min(520px, 92vw); max-height: 92vh; overflow: auto; padding: 18px; background: var(--framework-surface); box-shadow: 0 20px 60px rgba(0,0,0,.4); }
 .card-detail-face { width: 100%; }
 .card-detail-face .play-card-image { width: 100%; height: auto; max-height: 82vh; object-fit: contain; }
 .card-detail-face .play-card-text { min-height: 420px; font-size: 1.1rem; }

@@ -140,6 +140,8 @@ export default function App() {
   const [guideSession, setGuideSession] = useState<GuideSession | null>(null);
   const [resourceManagerOpen, setResourceManagerOpen] = useState(false);
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
+  const selectedSkinId = useRuntimeStore((state) => state.selectedSkinId);
+  const frameworkColorSchemePreference = useRuntimeStore((state) => state.frameworkColorSchemePreference);
   const resourceCatalog = useRuntimeStore((state) => state.resourceCatalog);
   const resourceExtensionImport = useRuntimeStore((state) => state.resourceExtensionImport);
   const pendingResourceExtensionReplacement = useRuntimeStore((state) => state.pendingResourceExtensionReplacement);
@@ -165,6 +167,8 @@ export default function App() {
   const importCharacterDataFromText = useRuntimeStore((state) => state.importCharacterDataFromText);
   const uploadSystemPackageFromFile = useRuntimeStore((state) => state.uploadSystemPackageFromFile);
   const uploadSystemPackageFromDirectory = useRuntimeStore((state) => state.uploadSystemPackageFromDirectory);
+  const selectSystemPackageSkin = useRuntimeStore((state) => state.selectSystemPackageSkin);
+  const setFrameworkColorSchemePreference = useRuntimeStore((state) => state.setFrameworkColorSchemePreference);
   const uploadResourceExtensionFromFile = useRuntimeStore((state) => state.uploadResourceExtensionFromFile);
   const confirmResourceExtensionReplacement = useRuntimeStore((state) => state.confirmResourceExtensionReplacement);
   const cancelResourceExtensionReplacement = useRuntimeStore((state) => state.cancelResourceExtensionReplacement);
@@ -378,12 +382,17 @@ export default function App() {
 
   const activeCharacterSaveName = characterSaves.find((save) => save.id === activeCharacterSaveId)?.name ?? "无角色存档";
   const systemPackageLabel = currentPackage ? `${currentPackage.manifest.名称} · v${currentPackage.manifest.版本}` : bootStatus === "loading" ? "系统包加载中" : "未加载系统包";
+  const selectedSkin = currentPackage?.skins?.find((skin) => skin.ID === selectedSkinId)
+    ?? currentPackage?.skins?.find((skin) => skin.ID === currentPackage.defaultSkin);
+  const resolvedFrameworkColorScheme = frameworkColorSchemePreference === "follow-skin"
+    ? selectedSkin?.推荐框架配色 ?? "light"
+    : frameworkColorSchemePreference;
   const guideTargetPageId = currentPackage?.characterCreationGuide && guideSession
     ? resolveGuideTargetPageId(currentPackage, currentPackage.characterCreationGuide.步骤[guideSession.stepIndex])
     : null;
 
   return (
-    <div className={`app-shell${printMode ? " print-mode" : ""}`}>
+    <div className={`app-shell${printMode ? " print-mode" : ""}`} data-framework-color-scheme={resolvedFrameworkColorScheme}>
       <header className="top-bar">
         <div className="brand-block">
           <span className="brand-mark">PbDH</span>
@@ -412,7 +421,7 @@ export default function App() {
                 disabled={!characterData || validationStatus === "running"}
               >
                 <ShieldCheck aria-hidden="true" size={16} />
-                <span>{validationStatus === "running" ? "检查中" : "检查"}</span>
+                <span>{validationStatus === "running" ? "检查中" : "车卡检查"}</span>
               </button>
               {currentPackage?.characterCreationGuide ? (
                 <button
@@ -490,7 +499,7 @@ export default function App() {
           <div className="top-menu">
             <button className="menu-trigger" type="button" aria-haspopup="true" disabled={!characterData}>
               <Download aria-hidden="true" size={17} />
-              <span className="menu-trigger-text">存档导入导出</span>
+              <span className="menu-trigger-text">导入导出</span>
             </button>
             <div className="menu-panel" role="menu">
               <button className="menu-item" type="button" onClick={() => void beginOutput("print")} aria-label="打开浏览器打印 PDF" disabled={!characterData}>
@@ -525,6 +534,22 @@ export default function App() {
             </button>
             <div className="menu-panel menu-panel-right" role="menu">
               <div className="menu-field menu-field-compact" title={systemPackageLabel}>{systemPackageLabel}</div>
+              {currentPackage?.skins && currentPackage.skins.length > 1 ? (
+                <label className="menu-field">
+                  <span>人物卡皮肤</span>
+                  <select className="menu-select" value={selectedSkinId ?? currentPackage.defaultSkin ?? ""} onChange={(event) => selectSystemPackageSkin(event.target.value)}>
+                    {currentPackage.skins.map((skin) => <option value={skin.ID} key={skin.ID}>{skin.名称}</option>)}
+                  </select>
+                </label>
+              ) : null}
+              <label className="menu-field">
+                <span>框架配色</span>
+                <select className="menu-select" value={frameworkColorSchemePreference} onChange={(event) => setFrameworkColorSchemePreference(event.target.value as "follow-skin" | "light" | "dark")}>
+                  <option value="follow-skin">跟随人物卡皮肤</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </label>
               <button
                 className="menu-item"
                 type="button"
@@ -533,11 +558,11 @@ export default function App() {
                 disabled={bootStatus === "loading"}
               >
                 <Upload aria-hidden="true" size={16} />
-                <span>上传 zip</span>
+                <span>上传系统包(zip)</span>
               </button>
               <button className="menu-item" type="button" onClick={() => packageDirectoryInputRef.current?.click()} disabled={bootStatus === "loading"}>
                 <Upload aria-hidden="true" size={16} />
-                <span>上传目录</span>
+                <span>上传系统包(文件夹)</span>
               </button>
               {authorPreviewActive ? (
                 <>
@@ -550,7 +575,7 @@ export default function App() {
                 </>
               ) : (
                 <button className="menu-item" type="button" onClick={() => void handleEnterAuthorPreview()}>
-                  <Eye aria-hidden="true" size={16} /><span>进入预览</span>
+                  <Eye aria-hidden="true" size={16} /><span>系统包预览</span>
                 </button>
               )}
             </div>

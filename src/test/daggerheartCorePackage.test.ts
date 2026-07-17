@@ -19,6 +19,18 @@ describe("Daggerheart core System Package", () => {
     if (!result.ok) return;
 
     expect(result.issues.filter((issue) => issue.level === "fatal" || issue.level === "error")).toEqual([]);
+    expect(result.package.defaultSkin).toBe("plain");
+    expect(result.package.skins).toEqual([expect.objectContaining({ ID: "plain", 推荐框架配色: "light" })]);
+    expect(result.package.skins?.[0]).not.toHaveProperty("layoutOverrides");
+  });
+
+  it("keeps presentation tokens in plain Skin and layout structure in Base CSS", () => {
+    const plain = readFileSync(join(packageRoot, "skins", "plain.css"), "utf8");
+    const base = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
+    expect(plain).toContain(":scope");
+    expect(plain).toContain("--dh-surface: #ffffff");
+    expect(base).toContain("background: var(--dh-surface)");
+    expect(base).not.toContain("background: #fff");
   });
 
   it("loads the complete 18-step Character Creation Guide with stable targets", async () => {

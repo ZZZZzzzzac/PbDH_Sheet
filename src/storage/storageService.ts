@@ -62,6 +62,10 @@ export interface StorageService {
   deleteCharacterSave(packageId: string, saveId: string): Promise<void>;
   loadActiveCharacterSaveId(packageId: string): Promise<string | null>;
   setActiveCharacterSaveId(packageId: string, saveId: string): Promise<void>;
+  loadSystemPackageSkinPreference(packageId: string): string | null;
+  setSystemPackageSkinPreference(packageId: string, skinId: string): void;
+  loadFrameworkColorSchemePreference(): "follow-skin" | "light" | "dark";
+  setFrameworkColorSchemePreference(preference: "follow-skin" | "light" | "dark"): void;
   savePlayerImageBlob(image: StoredPlayerImageBlob): Promise<void>;
   loadPlayerImageBlob(imageId: string): Promise<StoredPlayerImageBlob | null>;
   deletePlayerImageBlob(imageId: string): Promise<void>;
@@ -121,6 +125,8 @@ const db = new PbDHDatabase();
 const currentCharacterRecordId = "current-character";
 const currentSystemPackageRecordId = "current-system-package";
 const currentCharacterPointerPrefix = "pbdh-current-character:";
+const systemPackageSkinPreferencePrefix = "pbdh-system-package-skin:";
+const frameworkColorSchemePreferenceKey = "pbdh-framework-color-scheme";
 
 export const storageService: StorageService = {
   async loadCurrentSystemPackage(): Promise<SystemPackage | null> {
@@ -235,6 +241,23 @@ export const storageService: StorageService = {
 
   async setActiveCharacterSaveId(packageId: string, saveId: string): Promise<void> {
     localStorage.setItem(`${currentCharacterPointerPrefix}${packageId}`, saveId);
+  },
+
+  loadSystemPackageSkinPreference(packageId: string): string | null {
+    return localStorage.getItem(`${systemPackageSkinPreferencePrefix}${packageId}`);
+  },
+
+  setSystemPackageSkinPreference(packageId: string, skinId: string): void {
+    localStorage.setItem(`${systemPackageSkinPreferencePrefix}${packageId}`, skinId);
+  },
+
+  loadFrameworkColorSchemePreference(): "follow-skin" | "light" | "dark" {
+    const value = localStorage.getItem(frameworkColorSchemePreferenceKey);
+    return value === "light" || value === "dark" ? value : "follow-skin";
+  },
+
+  setFrameworkColorSchemePreference(preference: "follow-skin" | "light" | "dark"): void {
+    localStorage.setItem(frameworkColorSchemePreferenceKey, preference);
   },
 
   async savePlayerImageBlob(image: StoredPlayerImageBlob): Promise<void> {

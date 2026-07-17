@@ -32,7 +32,19 @@
 }
 
 .print-mode .sheet-tool {
+  --framework-canvas: #eef1f2 !important;
+  --framework-surface: #ffffff !important;
+  --framework-surface-subtle: #f8faf9 !important;
+  --framework-surface-muted: #edf6f1 !important;
+  --framework-text: #202426 !important;
+  --framework-text-strong: #243438 !important;
+  --framework-text-secondary: #425056 !important;
+  --framework-text-muted: #607075 !important;
+  --framework-border: #cdd5d7 !important;
+  --framework-border-strong: #c4ccce !important;
+  --framework-border-subtle: #d8dfe1 !important;
   padding: 0;
+  color-scheme: light;
 }
 
 .print-mode .sheet-page,
@@ -109,7 +121,19 @@
   }
 
   .sheet-tool {
+    --framework-canvas: #eef1f2 !important;
+    --framework-surface: #ffffff !important;
+    --framework-surface-subtle: #f8faf9 !important;
+    --framework-surface-muted: #edf6f1 !important;
+    --framework-text: #202426 !important;
+    --framework-text-strong: #243438 !important;
+    --framework-text-secondary: #425056 !important;
+    --framework-text-muted: #607075 !important;
+    --framework-border: #cdd5d7 !important;
+    --framework-border-strong: #c4ccce !important;
+    --framework-border-subtle: #d8dfe1 !important;
     padding: 0;
+    color-scheme: light;
   }
 
 [data-module-type="freeText"] [data-markdown-preview],

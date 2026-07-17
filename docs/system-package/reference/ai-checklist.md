@@ -20,5 +20,8 @@
 16. Resource Composer 只声明固定单选槽位和一对一字段路由；需要区分全部同源与异源组合时，可额外声明受限的 `选择关系输出`。不保存来源，不生成其他模板、条件或脚本。
 17. Card Table 只用 `资源来源`；每个来源可选声明 `卡牌展示.名称模板`、`描述模板` 与 `标签字段`。
 18. Resource Entry ID 可以使用中文；优先生成可读的稳定命名空间，不生成无必要的随机哈希。迁移已发布 ID 时显式写 `旧ID`，不得按名称猜测引用。
+19. Skin 默认只生成全包 scoped CSS 和 `assets/skins/<skin-id>/**`；不要修改 Base Layout。只有 CSS 无法表达且任务明确允许时才生成该 Skin 自己的 HTML override。
+20. Skin HTML override 必须保持对应 Base Page/Shell 完全相同的 `<pb-module>` ID 多重集合，不能跨 Page/Shell 移动；Shell 保持唯一 outlet 和打印标记数量，Guide Region 在每个有效 Skin 中仍可用。
+21. Skin 禁止 `@import`、`@font-face`、字体文件、外部 URL、脚本、事件属性和自定义交互控件。用系统字体栈和包内图片；Framework 配色只声明 `light` 或 `dark` 建议。
 
-生成顺序建议：manifest → resources/assets 图片树 → modules → pages/layouts/shell → dependencies → guide → checks → Validator → Preview。
+生成顺序建议：manifest → resources/assets 图片树 → modules → pages/layouts/shell → dependencies → guide → checks → skins → Validator → Preview。

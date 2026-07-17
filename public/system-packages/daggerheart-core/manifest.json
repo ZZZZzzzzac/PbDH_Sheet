@@ -3,6 +3,15 @@
   "名称": "Daggerheart 核心人物卡",
   "版本": "0.2.0",
   "schemaVersion": "0.1.0",
+  "skins": [
+    {
+      "ID": "plain",
+      "名称": "简洁",
+      "css": "skins/plain.css",
+      "推荐框架配色": "light"
+    }
+  ],
+  "defaultSkin": "plain",
   "pages": "pages.json",
   "shell": {
     "html": "layouts/shell.html",

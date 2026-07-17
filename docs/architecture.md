@@ -519,3 +519,4 @@ Validation Scripts：
 - [ADR-0015：车卡指引作为线性聚光灯导览](adr/0015-character-creation-guide-as-spotlight-tour.md)
 - [ADR-0021：车卡指引支持布局区域目标](adr/0021-guide-layout-region-target.md)
 - [ADR-0022：车卡指引支持长说明与跨页目标](adr/0022-guide-long-form-instructions-and-cross-page-targets.md)
+- [ADR-0023：System Package Skin 拥有包级作用域表现](adr/0023-system-package-skins-own-package-scoped-presentation.md)

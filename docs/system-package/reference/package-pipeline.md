@@ -4,7 +4,7 @@
 zip / directory files / directory handle
 → Package VFS（规范化路径、读取 bytes/text）
 → manifest.json Loader
-→ 读取 Pages/Layouts/Modules/Resources/Dependencies/Guide/Checks/Assets
+→ 读取 Pages/Layouts/Skins/Modules/Resources/Dependencies/Guide/Checks/Assets
 → Normalized System Package
 → System Package Validator
 → fatal/error: diagnostics only

@@ -9,14 +9,14 @@
   align-items: center;
   gap: 6px;
   min-height: 24px;
-  color: #202426;
+  color: var(--framework-text);
 }
 
 .checkbox-row input {
   width: 15px;
   height: 15px;
   flex: 0 0 auto;
-  accent-color: #31565e;
+  accent-color: var(--framework-accent);
 }
 
 .checkbox-row-grouped {

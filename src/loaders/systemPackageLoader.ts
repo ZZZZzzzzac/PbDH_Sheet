@@ -18,6 +18,17 @@ const packageManifestSchema = z.object({
   pages: z.string().min(1),
   modules: z.string().min(1),
   shell: z.object({ html: z.string().min(1), css: z.string().min(1).optional() }).optional(),
+  skins: z.array(z.object({
+    ID: z.string().min(1),
+    名称: z.string().min(1),
+    css: z.string().min(1),
+    推荐框架配色: z.enum(["light", "dark"]),
+    layoutOverrides: z.object({
+      shell: z.object({ html: z.string().min(1) }).optional(),
+      pages: z.array(z.object({ ID: z.string().min(1), html: z.string().min(1) })).min(1).optional(),
+    }).optional(),
+  })).min(1).optional(),
+  defaultSkin: z.string().min(1).optional(),
   dependencies: z.string().min(1).optional(),
   characterCreationGuide: z.string().min(1).optional(),
   assets: z.never().optional(),
@@ -115,6 +126,8 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
   }
   const shell = manifest.data.shell ? loadTemplateFilesFromVfs(vfs, manifest.data.shell) : undefined;
   if (shell && !shell.ok) return { ok: false, issues: [shell.issue] };
+  const skins = loadSkinFilesFromVfs(vfs, manifest.data.skins ?? []);
+  if (!skins.ok) return { ok: false, issues: [skins.issue] };
 
   const guideJson = manifest.data.characterCreationGuide
     ? readPackageJsonFile(vfs, manifest.data.characterCreationGuide)
@@ -143,6 +156,7 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
     validationChecks.value,
     guideJson?.value,
     shell?.value,
+    skins.value,
     packageAssets,
     buildPackageSourceMap(manifest.data, pagesJson.value),
   );
@@ -165,6 +179,7 @@ function normalizeManifestPackage(
   validationChecks?: Array<{ ID: string; 脚本: string; scriptContent: string }>,
   characterCreationGuide?: unknown,
   shell?: unknown,
+  skins?: Array<{ ID: string; 名称: string; cssContent: string; 推荐框架配色: "light" | "dark" }>,
   packageAssets: RuntimePackageAsset[] = [],
   sourceMap: PackageSourceMap = {},
 ): PackageValidationResult {
@@ -175,6 +190,8 @@ function normalizeManifestPackage(
       版本: manifest.版本,
       schemaVersion: manifest.schemaVersion,
     },
+    ...(skins && skins.length > 0 ? { skins } : {}),
+    ...(manifest.defaultSkin ? { defaultSkin: manifest.defaultSkin } : {}),
     pages,
     shell,
     modules,
@@ -200,6 +217,13 @@ function buildPackageSourceMap(manifest: z.infer<typeof packageManifestSchema>, 
   });
   manifest.validationChecks?.forEach((check, index) => {
     sourceMap[`validationChecks.${index}`] = check.脚本;
+  });
+  manifest.skins?.forEach((skin) => {
+    sourceMap[`skins.${skin.ID}.css`] = skin.css;
+    if (skin.layoutOverrides?.shell) sourceMap[`skins.${skin.ID}.layoutOverrides.shell.html`] = skin.layoutOverrides.shell.html;
+    skin.layoutOverrides?.pages?.forEach((page) => {
+      sourceMap[`skins.${skin.ID}.layoutOverrides.pages.${page.ID}.html`] = page.html;
+    });
   });
   if (Array.isArray(pages)) {
     pages.forEach((page) => {
@@ -342,6 +366,36 @@ function resolvePackageAssets(vfs: PackageVirtualFileSystem): LoadedPackageAsset
   }
 
   return resolvedAssets;
+}
+
+function loadSkinFilesFromVfs(
+  vfs: PackageVirtualFileSystem,
+  skins: NonNullable<z.infer<typeof packageManifestSchema>["skins"]>,
+) {
+  const normalizedSkins = [];
+  for (const skin of skins) {
+    const css = vfs.readText(skin.css);
+    if (!css.ok) return { ok: false as const, issue: css.issue };
+    const shell = skin.layoutOverrides?.shell ? vfs.readText(skin.layoutOverrides.shell.html) : undefined;
+    if (shell && !shell.ok) return { ok: false as const, issue: shell.issue };
+    const pages = [];
+    for (const page of skin.layoutOverrides?.pages ?? []) {
+      const html = vfs.readText(page.html);
+      if (!html.ok) return { ok: false as const, issue: html.issue };
+      pages.push({ ID: page.ID, htmlContent: html.value });
+    }
+    normalizedSkins.push({
+      ID: skin.ID,
+      名称: skin.名称,
+      cssContent: css.value,
+      推荐框架配色: skin.推荐框架配色,
+      ...((shell?.ok || pages.length > 0) ? { layoutOverrides: {
+        ...(shell?.ok ? { shell: { htmlContent: shell.value } } : {}),
+        ...(pages.length > 0 ? { pages } : {}),
+      } } : {}),
+    });
+  }
+  return { ok: true as const, value: normalizedSkins };
 }
 
 function isSupportedPackageImagePath(path: string): boolean {

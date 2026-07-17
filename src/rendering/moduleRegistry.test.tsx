@@ -97,6 +97,50 @@ describe("Module Registry rendering", () => {
     expect(document.querySelector("style")?.textContent).toContain('url("blob:demo-emblem")');
   });
 
+  it("applies the default System Package Skin after scoped Base Layout CSS", () => {
+    const systemPackage: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      defaultSkin: "plain",
+      skins: [{
+        ID: "plain",
+        名称: "简洁",
+        cssContent: ':is(.demo-sheet, .identity) { background-image: url("assets/demo-emblem.svg"); color: #123456; }',
+        推荐框架配色: "light",
+      }],
+    };
+
+    const result = renderModuleDemo(systemPackage, { "assets/demo-emblem.svg": "blob:skin-emblem" });
+    const sheetTool = result.container.querySelector(".sheet-tool");
+    const styles = [...result.container.querySelectorAll("style")].map((style) => style.textContent ?? "");
+
+    expect(sheetTool).toHaveAttribute("data-system-package-id", "demo-modules");
+    expect(styles.at(-1)).toContain('[data-system-package-id="demo-modules"] :is(.demo-sheet, .identity)');
+    expect(styles.at(-1)).toContain('url("blob:skin-emblem")');
+  });
+
+  it("uses a default Skin Page override and falls back for omitted Pages", () => {
+    const basePage = moduleDemoSystemPackage.pages[0];
+    const systemPackage: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      defaultSkin: "editorial",
+      skins: [{
+        ID: "editorial",
+        名称: "编排版",
+        cssContent: ".override-sheet { display: grid; }",
+        推荐框架配色: "light",
+        layoutOverrides: {
+          pages: [{ ID: basePage.ID, htmlContent: basePage.layout.htmlContent.replace("demo-sheet", "override-sheet") }],
+        },
+      }],
+    };
+
+    const result = renderModuleDemo(systemPackage);
+
+    expect(result.container.querySelector(".override-sheet")).not.toBeNull();
+    expect(result.container.querySelector(".demo-sheet")).toBeNull();
+    expect(screen.getByLabelText("姓名")).toBeVisible();
+  });
+
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();

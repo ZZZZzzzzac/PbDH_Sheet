@@ -12,4 +12,6 @@ Loaded layout shape：`{ 类型: "htmlTemplate", htmlContent: string, cssContent
 
 CSS 禁止 `@import`、外部/绝对 URL 和全局 `html/body/:root` 污染。Renderer 为页面加 scope；Module 根暴露 `data-module-id`、`data-module-type`，内部稳定部件使用 `data-part`。不要依赖 React DOM 层级或生成 class。
 
+Base Layout CSS 先于 selected [System Package Skin](skins.md) CSS 应用。Layout CSS 负责共享结构；Skin CSS 在 System Package scope 内提供全包视觉与必要的几何修正。
+
 Restricted Markdown 的七个 palette variables 可在 scoped Page/Shell selector 中覆盖；变量名与示例见[Restricted Markdown](restricted-markdown.md)。内容不能携带 inline color/CSS。

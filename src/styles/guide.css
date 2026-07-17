@@ -8,7 +8,7 @@
 .guide-mask-region {
   position: fixed;
   z-index: 50;
-  background: rgba(18, 25, 27, 0.68);
+  background: var(--framework-overlay);
   pointer-events: auto;
 }
 
@@ -32,10 +32,10 @@
   max-height: calc(100vh - 24px);
   overflow: auto;
   padding: 18px;
-  border: 1px solid #243438;
+  border: 1px solid var(--framework-text-strong);
   border-radius: 8px;
-  background: #fbfcfc;
-  color: #202426;
+  background: var(--framework-surface);
+  color: var(--framework-text);
   box-shadow: 0 20px 60px rgba(18, 25, 27, 0.34);
   pointer-events: auto;
 }
@@ -53,7 +53,7 @@
 
 .guide-progress {
   margin: 0;
-  color: #607075;
+  color: var(--framework-text-muted);
   font-size: 0.82rem;
   font-weight: 700;
 }
@@ -84,9 +84,9 @@
 
 .guide-target-unavailable {
   padding: 10px 12px;
-  border-left: 4px solid #c58b2b;
-  background: #fff8e8;
-  color: #68460f;
+  border-left: 4px solid var(--framework-warning-border);
+  background: var(--framework-warning-surface);
+  color: var(--framework-warning);
 }
 
 .guide-actions {
@@ -97,9 +97,9 @@
   gap: 8px;
   flex-wrap: wrap;
   padding: 6px;
-  border: 1px solid #243438;
+  border: 1px solid var(--framework-text-strong);
   border-radius: 8px;
-  background: #fbfcfc;
+  background: var(--framework-surface);
   box-shadow: 0 8px 24px rgba(18, 25, 27, 0.28);
   pointer-events: auto;
 }

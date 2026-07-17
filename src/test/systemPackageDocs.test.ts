@@ -75,6 +75,7 @@ describe("System Package documentation", () => {
       '"状态背景色"',
       '"selectedResourceFieldEquals"', '"selectedResourceFieldNotEquals"', '"selectedResourceFieldIn"',
       '"checkboxOptionChecked"', '"checkboxOptionUnchecked"', '<pb-page-outlet>', 'module.exports = async',
+      '"skins"', '"defaultSkin"', '"推荐框架配色"', '"layoutOverrides"',
     ];
 
     expect(requiredExamples.filter((example) => !complete.includes(example))).toEqual([]);

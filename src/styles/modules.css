@@ -8,8 +8,8 @@
   align-items: center;
   min-width: 0;
   min-height: 32px;
-  border: 1px solid #cfd7d9;
-  background: #ffffff;
+  border: 1px solid var(--framework-border);
+  background: var(--framework-surface);
 }
 
 .container-stack {
@@ -33,8 +33,8 @@ fieldset.container {
   margin: 0;
   min-height: 30px;
   padding: 0 4px;
-  border-right: 1px solid #d8dfe1;
-  color: #425056;
+  border-right: 1px solid var(--framework-border-subtle);
+  color: var(--framework-text-secondary);
   font-weight: 700;
 }
 
@@ -43,15 +43,15 @@ fieldset.container {
   min-height: 30px;
   border: 0;
   padding-left: 5px;
-  background: #ffffff;
-  color: #202426;
+  background: var(--framework-surface);
+  color: var(--framework-text);
   font-size: 0.92rem;
 }
 
 .container-stack .label {
   min-height: 24px;
   border-right: 0;
-  border-bottom: 1px solid #d8dfe1;
+  border-bottom: 1px solid var(--framework-border-subtle);
 }
 
 .textarea {
@@ -76,7 +76,7 @@ fieldset.container {
 .display-text {
   margin: 0;
   padding: 6px 8px 8px;
-  color: #202426;
+  color: var(--framework-text);
   line-height: 1.35;
   white-space: pre-wrap;
 }
@@ -114,12 +114,12 @@ fieldset.container {
 }
 
 .markdown-preview:focus-visible {
-  outline: 3px solid #e0b441;
+  outline: 3px solid var(--framework-focus);
   outline-offset: 2px;
 }
 
 .input:focus-visible {
-  outline: 3px solid #e0b441;
+  outline: 3px solid var(--framework-focus);
   outline-offset: 2px;
 }
 
@@ -131,6 +131,6 @@ fieldset.container {
   .label {
     min-height: 34px;
     border-right: 0;
-    border-bottom: 1px solid #d8dfe1;
+    border-bottom: 1px solid var(--framework-border-subtle);
   }
 }

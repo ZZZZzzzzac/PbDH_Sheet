@@ -6,8 +6,8 @@
   width: 100%;
   min-height: 100%;
   padding: 0.4rem;
-  background: #fff;
-  color: #202426;
+  background: var(--dh-surface);
+  color: var(--dh-ink);
 }
 
 .daggerheart-sheet *,
@@ -55,7 +55,7 @@
   place-items: center;
   min-height: 4rem;
   padding: 0.25rem;
-  border: 1px solid #cfd7d9;
+  border: 1px solid var(--dh-line);
   font-size: 1.1rem;
   font-weight: 700;
   text-align: center;
@@ -120,7 +120,7 @@
 .level-field [data-part="label"] {
   min-height: 1.35rem;
   border-right: 0;
-  border-bottom: 1px solid #d8dfe1;
+  border-bottom: 1px solid var(--dh-line-soft);
   justify-content: center;
 }
 
@@ -161,7 +161,7 @@
 .trait-summary [data-part="label"] {
   min-height: 1.35rem;
   border-right: 0;
-  border-bottom: 1px solid #d8dfe1;
+  border-bottom: 1px solid var(--dh-line-soft);
   justify-content: center;
 }
 
@@ -256,7 +256,7 @@
 .equipment-slot {
   min-width: 0;
   padding-top: 0.15rem;
-  border-top: 1px solid #d3d8da;
+  border-top: 1px solid var(--dh-line-muted);
 }
 
 .equipment-slot + .equipment-slot {
@@ -324,7 +324,7 @@
   display: block;
   margin: 0.2rem 0 0.125rem;
   padding: 0 0.2rem 0.1rem;
-  border-bottom: 1px solid #616b6e;
+  border-bottom: 1px solid var(--dh-line-strong);
   font-size: 0.75rem;
   line-height: 1.2;
   text-align: left;
@@ -401,7 +401,7 @@
   gap: 0.125rem;
   min-width: 0;
   padding: 0.2rem;
-  border: 1px solid #d3d8da;
+  border: 1px solid var(--dh-line-muted);
 }
 
 .advancement-grid article h3 {

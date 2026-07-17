@@ -725,7 +725,7 @@ async function openSystemPackageMenu(page: Page) {
 }
 
 async function openExportMenu(page: Page) {
-  await page.getByRole("button", { name: "存档导入导出", exact: true }).click();
+  await page.getByRole("button", { name: "导入导出", exact: true }).click();
 }
 
 async function waitForAutosave(page: Page) {

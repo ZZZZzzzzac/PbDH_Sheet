@@ -11,6 +11,8 @@
 | `pages` | path string | 是 | 安全相对路径 | Page JSON |
 | `modules` | path string | 是 | 安全相对路径 | Module JSON |
 | `shell` | object | 否 | `{html, css?}` | common Sheet Shell |
+| `skins` | array | 否 | 至少一项 | bundled System Package Skins；见 [Skins](skins.md) |
+| `defaultSkin` | string | 声明 Skin 时是 | 引用 `skins[].ID` | 默认表现 |
 | `dependencies` | path string | 否 | — | Dependency array |
 | `characterCreationGuide` | path string | 否 | — | Guide object |
 | `resourceLibraries` | array | 否 | `[]` | `{ID, 名称, 路径}` |
@@ -33,3 +35,5 @@
 ```
 
 图片无需 manifest 声明；Loader 自动发现 `assets/**` 下的支持格式，Author 直接引用相对路径。
+
+Skin item 的完整 `css`、`推荐框架配色` 与 `layoutOverrides` 字段见 [System Package Skins](skins.md)。
