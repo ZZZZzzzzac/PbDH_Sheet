@@ -21,6 +21,39 @@ describe("Daggerheart core System Package", () => {
     expect(result.issues.filter((issue) => issue.level === "fatal" || issue.level === "error")).toEqual([]);
   });
 
+  it("loads the complete 18-step Character Creation Guide with stable targets", async () => {
+    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const steps = result.package.characterCreationGuide?.步骤;
+    expect(steps).toHaveLength(18);
+    expect(steps?.[0]).toMatchObject({ 标题: "车卡器功能介绍" });
+    expect(steps?.[17]).toMatchObject({ 标题: "人际关系" });
+    expect(steps?.map((step) => step.目标)).toEqual([
+      undefined,
+      undefined,
+      { 类型: "region", 区域ID: "guide-class" },
+      { 类型: "module", 模块ID: "pick-subclass" },
+      { 类型: "region", 区域ID: "guide-ancestry" },
+      { 类型: "region", 区域ID: "guide-community" },
+      { 类型: "region", 区域ID: "guide-traits" },
+      { 类型: "region", 区域ID: "guide-resources" },
+      { 类型: "region", 区域ID: "guide-resources" },
+      { 类型: "region", 区域ID: "guide-equipment" },
+      { 类型: "region", 区域ID: "guide-equipment" },
+      { 类型: "module", 模块ID: "armor-value" },
+      { 类型: "module", 模块ID: "evasion" },
+      { 类型: "region", 区域ID: "guide-inventory" },
+      { 类型: "region", 区域ID: "guide-background-questions" },
+      { 类型: "region", 区域ID: "guide-experiences" },
+      { 类型: "region", 区域ID: "guide-domain-cards" },
+      { 类型: "region", 区域ID: "guide-connection-questions" },
+    ]);
+    expect(steps?.[3].说明).toContain(":red[**基础**]");
+    expect(steps?.[2].说明).toContain("https://daggerheart.huijiwiki.com/wiki/");
+  });
+
   it("routes pure and mixed ancestry features through one Resource Composer", async () => {
     const result = await loadSystemPackageFromZipFile(createPackageZip());
     expect(result.ok).toBe(true);

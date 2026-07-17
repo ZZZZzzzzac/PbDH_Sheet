@@ -20,7 +20,7 @@ system-package/
 
 路径使用 `/`，不能是绝对路径，不能含 `..`，不能引用 `http:`、`https:` 或包外文件。Windows 的反斜杠会规范化，但 Author 文件应统一写 `/`。
 
-所有被引用实体都使用稳定 `ID`。Page、Module、Resource Library、Dependency Rule、Validation Check、Guide Step 和同一 Library 内的 Resource Entry ID 不得重复。图片使用 `assets/**` 下的稳定相对路径。修改 ID 或图片路径等于修改外部契约，相关引用必须同步更新。
+所有被引用实体都使用稳定 `ID`。Page、Module、Resource Library、Dependency Rule、Validation Check、Guide Step 和同一 Library 内的 Resource Entry ID 不得重复；`data-guide-region-id` 在整个 System Package 内不得重复。图片使用 `assets/**` 下的稳定相对路径。修改 ID 或图片路径等于修改外部契约，相关引用必须同步更新。
 
 中文字段名属于 Author Data；普通资源扩展字段可以自由命名。框架字段必须精确拼写，例如 `类型`、Picker 的 `资源库`、Card Table 的 `资源来源`、`默认隐藏`、`打印`。Validator 不会猜测普通扩展字段的含义。
 

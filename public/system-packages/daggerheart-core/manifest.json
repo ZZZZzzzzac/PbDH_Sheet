@@ -10,6 +10,7 @@
   },
   "modules": "modules.json",
   "dependencies": "dependencies.json",
+  "characterCreationGuide": "guides/character-creation.json",
   "validationChecks": [
     {
       "ID": "character-consistency",

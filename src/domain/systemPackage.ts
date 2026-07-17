@@ -814,6 +814,25 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
 
   const moduleById = new Map(systemPackage.modules.map((module) => [module.ID, module]));
   const pageById = new Map(systemPackage.pages.map((page) => [page.ID, page]));
+  const guideRegions = [
+    ...systemPackage.pages.flatMap((page) =>
+      getHtmlTemplateGuideRegionIds(page.layout.htmlContent).map((id) => ({ id, path: `pages.${page.ID}.layout.html` }))),
+    ...(systemPackage.shell
+      ? getHtmlTemplateGuideRegionIds(systemPackage.shell.htmlContent).map((id) => ({ id, path: "shell.html" }))
+      : []),
+  ];
+  const guideRegionIds = new Set<string>();
+  for (const region of guideRegions) {
+    if (guideRegionIds.has(region.id)) {
+      issues.push({
+        level: "error",
+        code: "DUPLICATE_GUIDE_REGION_ID",
+        text: `Layout Region ID 重复：${region.id}`,
+        path: region.path,
+      });
+    }
+    guideRegionIds.add(region.id);
+  }
 
   const guideStepIds = new Set<string>();
   for (const [stepIndex, step] of (systemPackage.characterCreationGuide?.步骤 ?? []).entries()) {
@@ -842,6 +861,15 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
         code: "MISSING_GUIDE_TARGET_PAGE",
         text: `Guide Step 引用了不存在的页面：${step.目标.页面ID}`,
         path: `characterCreationGuide.步骤.${stepIndex}.目标.页面ID`,
+      });
+    }
+
+    if (step.目标?.类型 === "region" && !guideRegionIds.has(step.目标.区域ID)) {
+      issues.push({
+        level: "error",
+        code: "MISSING_GUIDE_TARGET_REGION",
+        text: `Guide Step 引用了不存在的 Layout Region：${step.目标.区域ID}`,
+        path: `characterCreationGuide.步骤.${stepIndex}.目标.区域ID`,
       });
     }
   }
@@ -1577,6 +1605,11 @@ export function getHtmlTemplateModuleReferences(html: string): string[] {
   return [...matches].map((match) => match[1]);
 }
 
+export function getHtmlTemplateGuideRegionIds(html: string): string[] {
+  const matches = html.matchAll(/<[a-z][a-z0-9-]*\b[^>]*\bdata-guide-region-id\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/gi);
+  return [...matches].map((match) => match[1] ?? match[2] ?? match[3]);
+}
+
 const forbiddenHtmlTags = new Set(["button", "form", "input", "script", "select", "textarea"]);
 const allowedGlobalHtmlAttributes = new Set(["aria-label", "class", "title"]);
 const allowedHtmlAttributesByTag = new Map([
@@ -1678,6 +1711,15 @@ function validateHtmlTemplateAttributes(tagName: string, attributes: string, pat
 
     if (tagName === "pb-module" && attributeName === "id") {
       moduleId = attributeValue;
+    }
+
+    if (attributeName === "data-guide-region-id" && !attributeValue?.trim()) {
+      issues.push({
+        level: "error",
+        code: "GUIDE_REGION_ID_EMPTY",
+        text: "HTML Layout Template 的 data-guide-region-id 不能为空。",
+        path,
+      });
     }
 
     const isAllowedAttribute =

@@ -49,8 +49,12 @@ A future Player-facing character creation aid that asks preference or psychometr
 _Avoid_: Character Creation Guide, personality test as rules authority, automatic build generator
 
 **Guide Step**:
-One item in the ordered linear sequence of a Character Creation Guide, containing an Author-written plain-text title and instructions plus at most one stable page or Sheet Module target to highlight.
+One item in the ordered linear sequence of a Character Creation Guide, containing an Author-written plain-text title, Restricted Markdown instructions, and at most one stable page, Sheet Module, or Layout Region target to highlight.
 _Avoid_: Custom imperative code
+
+**Layout Region**:
+An Author-named safe static HTML container that groups related layout content and Sheet Modules so a Guide Step can spotlight them as one rectangular target.
+_Avoid_: Arbitrary selector, simultaneous target list, new Sheet Module
 
 **AI-Readable Documentation**:
 Author-facing documentation structured so an AI assistant can reliably generate, modify, and validate System Packages.
@@ -235,15 +239,16 @@ _Avoid_: Script plugin
 - A **Guide Step** explains the next creation task and identifies what to highlight; all editing, resource selection, filtering, text filling, and Card interaction remain ordinary Player behavior outside the guide.
 - A Player advances, returns, exits, or finishes a **Character Creation Guide** manually; the guide does not read **Character Data**, infer completion, or automatically advance.
 - The Sheet Module highlighted by a **Guide Step** remains interactive, but the guide neither observes the interaction result nor advances in response to it.
-- A **Guide Step** targets one **Sheet Module**, one page, or no target; arbitrary selectors, multiple simultaneous targets, and controls inside framework dialogs are not guide targets.
+- A **Guide Step** targets one **Sheet Module**, one page, one **Layout Region**, or no target; arbitrary selectors, multiple simultaneous targets, and controls inside framework dialogs are not guide targets.
 - A Player starts the optional **Character Creation Guide** explicitly from the Sheet Tool toolbar menu; guide position is transient, is never persisted, and every new run starts at the first step.
 - A visible **Guide Step** target is scrolled into view; an existing but currently hidden target stays hidden, and the guide falls back to instructions plus a target-unavailable notice without changing derived visibility.
+- A Guide Step whose target belongs to another **Runtime-Visible Page** selects that page before resolving spotlight geometry; leaving the Guide does not restore the previous **Current Page**.
 - While a **Guide Step** is active, only its visible target, the guide controls, and any framework dialog opened from that target remain interactive; dimmed content is inert, and the Player may exit with Escape.
 - Finishing a **Character Creation Guide** only closes the tour; it does not mean the character is complete or valid and does not trigger saving, validation, export, or printing.
 - **Questionnaire Character Creation** is distinct from a **Character Creation Guide**: it discovers Player preferences and recommends resources or paths, while a Character Creation Guide walks a Player through known creation tasks.
 - **Questionnaire Character Creation** should not write Character Data directly. If it later offers apply actions, those actions must reuse framework-approved Sheet Module, Dependency Engine, or Card Engine actions; the Character Creation Guide remains presentation-only.
 - **Questionnaire Character Creation** is a future plan, not part of the first-version requirement.
-- A **Guide Step** depends only on stable target IDs and framework-owned highlighting behavior; it never writes **Character Data** or requests behavior from the highlighted target.
+- A **Guide Step** depends only on stable target IDs and framework-owned highlighting behavior; a **Layout Region** uses a package-wide unique `data-guide-region-id`, and the Guide never writes **Character Data** or requests behavior from the highlighted target.
 - **AI-Readable Documentation** is a first-version requirement because non-programmer Authors may rely on AI to create System Packages.
 - A **System Package Validator** should be strict about IDs, references, required structural fields, and broken links, but permissive about ordinary **Sheet Values**.
 - **Resource Values** are displayed as provided; the Base Framework does not interpret their game meaning.

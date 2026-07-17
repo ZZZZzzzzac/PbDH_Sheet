@@ -26,7 +26,9 @@
   z-index: 60;
   display: grid;
   gap: 16px;
-  width: min(380px, calc(100vw - 24px));
+  width: fit-content;
+  min-width: min(320px, calc(100vw - 24px));
+  max-width: min(720px, calc(100vw - 24px));
   max-height: calc(100vh - 24px);
   overflow: auto;
   padding: 18px;
@@ -63,8 +65,21 @@
 }
 
 .guide-instructions {
-  white-space: pre-wrap;
+  white-space: normal;
   line-height: 1.6;
+}
+
+.guide-instructions > p {
+  margin: 0;
+}
+
+.guide-instructions > :is(ul, ol) {
+  margin-block: 0.35em;
+  padding-inline-start: 1.5em;
+}
+
+.guide-instructions li + li {
+  margin-top: 0.2em;
 }
 
 .guide-target-unavailable {
@@ -75,10 +90,18 @@
 }
 
 .guide-actions {
+  position: fixed;
+  z-index: 61;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
+  padding: 6px;
+  border: 1px solid #243438;
+  border-radius: 8px;
+  background: #fbfcfc;
+  box-shadow: 0 8px 24px rgba(18, 25, 27, 0.28);
+  pointer-events: auto;
 }
 
 @media (max-width: 640px) {

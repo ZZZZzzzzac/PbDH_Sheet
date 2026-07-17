@@ -4,6 +4,7 @@ module.exports = ({ characterData, resourceLibraries }) => {
 
   checkLevel(issues, context);
   checkRequiredCardCounts(issues, context);
+  checkWeaponLoadout(issues, context);
   checkAdvancement(issues, context);
   checkDomainCards(issues, context);
   checkDerivedValues(issues, context);
@@ -36,9 +37,27 @@ function createContext(characterData, resourceLibraries) {
     tier,
     classEntry,
     armorEntry,
+    primaryWeapon,
+    secondaryWeapon,
     weapons: [primaryWeapon, secondaryWeapon].filter(Boolean),
     inventoryEntries,
   };
+}
+
+function checkWeaponLoadout(issues, context) {
+  if (context.secondaryWeapon && field(context.secondaryWeapon, "类型") === "主武器") {
+    warn(issues, "PRIMARY_WEAPON_IN_SECONDARY_SLOT", "character.values.secondary-weapon-name", "副武器栏不能装备主武器。" );
+  }
+
+  const hasSecondaryWeapon = text(context.values["secondary-weapon-name"]) !== "";
+  if (
+    context.primaryWeapon
+    && field(context.primaryWeapon, "负荷") === "双手"
+    && field(context.classEntry, "名称") !== "战士"
+    && hasSecondaryWeapon
+  ) {
+    warn(issues, "TWO_HANDED_PRIMARY_WITH_SECONDARY", "character.values.secondary-weapon-name", "除战士外，装备双手主武器时副武器栏必须为空。" );
+  }
 }
 
 function checkRequiredCardCounts(issues, context) {

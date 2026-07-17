@@ -46,6 +46,26 @@ describe("daggerheart-core character consistency validation", () => {
     expect(issueCodes(issues)).toContain("ARMOR_VALUE_MAX_MISMATCH");
   });
 
+  it("enforces two-handed load and rejects primary weapons in the secondary slot", async () => {
+    const nonWarrior = await validate({
+      "class-name": "法师",
+      "primary-weapon-name": "**巨剑**｜力量｜近战｜d10 物理｜双手",
+      "secondary-weapon-name": "**圆盾**｜力量｜近战｜d4 物理｜单手",
+    });
+    expect(issueCodes(nonWarrior)).toContain("TWO_HANDED_PRIMARY_WITH_SECONDARY");
+
+    const warrior = await validate({
+      "primary-weapon-name": "**巨剑**｜力量｜近战｜d10 物理｜双手",
+      "secondary-weapon-name": "**圆盾**｜力量｜近战｜d4 物理｜单手",
+    });
+    expect(issueCodes(warrior)).not.toContain("TWO_HANDED_PRIMARY_WITH_SECONDARY");
+
+    const primaryInSecondarySlot = await validate({
+      "secondary-weapon-name": "**战锤**｜力量｜近战｜d10 物理｜双手",
+    });
+    expect(issueCodes(primaryInSecondarySlot)).toContain("PRIMARY_WEAPON_IN_SECONDARY_SLOT");
+  });
+
   it("reports advancement totals, paired options, subclass conflicts, and derived progression", async () => {
     const issues = await validate({
       level: "3",

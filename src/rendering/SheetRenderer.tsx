@@ -8,6 +8,7 @@ import { printablePages, resolveCurrentPageId, runtimeVisiblePages } from "./pag
 interface SheetRendererProps {
   systemPackage: SystemPackage;
   outputMode?: boolean;
+  requestedPageId?: string | null;
 }
 
 const allowedTemplateAttributes = new Set(["alt", "aria-label", "class", "colspan", "rowspan", "src", "title"]);
@@ -167,13 +168,14 @@ function cssStringEscape(value: string): string {
   return value.replace(/["\\]/g, "\\$&");
 }
 
-export function SheetRenderer({ systemPackage, outputMode = false }: SheetRendererProps) {
+export function SheetRenderer({ systemPackage, outputMode = false, requestedPageId }: SheetRendererProps) {
   const pageVisibility = useRuntimeStore((state) => state.pageVisibility);
   const moduleVisibility = useRuntimeStore((state) => state.moduleVisibility);
   const packageAssetUrls = useRuntimeStore((state) => state.packageAssetUrls);
   const [currentPageId, setCurrentPageId] = useState<string | null>(null);
   const visiblePages = runtimeVisiblePages(systemPackage.pages, pageVisibility);
-  const resolvedCurrentPageId = resolveCurrentPageId(visiblePages, currentPageId);
+  const requestedVisiblePageId = requestedPageId && visiblePages.some((page) => page.ID === requestedPageId) ? requestedPageId : null;
+  const resolvedCurrentPageId = requestedVisiblePageId ?? resolveCurrentPageId(visiblePages, currentPageId);
   const renderedPages = outputMode ? printablePages(systemPackage.pages, pageVisibility) : visiblePages.filter((page) => page.ID === resolvedCurrentPageId);
   useEffect(() => setCurrentPageId(null), [systemPackage.manifest.ID, systemPackage.manifest.版本]);
   useEffect(() => { if (currentPageId !== resolvedCurrentPageId) setCurrentPageId(resolvedCurrentPageId); }, [currentPageId, resolvedCurrentPageId]);

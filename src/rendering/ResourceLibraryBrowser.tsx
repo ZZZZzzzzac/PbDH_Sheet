@@ -107,7 +107,7 @@ export function ResourceLibraryBrowser({
 
   return (
     <div className="resource-dialog-backdrop">
-      <section className="resource-dialog" role="dialog" aria-modal="true" aria-label={dialogLabel}>
+      <section className="resource-dialog" role="dialog" aria-modal="true" aria-label={dialogLabel} data-guide-interaction-surface>
         <header className="resource-dialog-header">
           {libraryChoices && libraryChoices.length > 1 ? (
             <select className="input compact-input" aria-label="选择资源库" value={library.ID} onChange={(event) => onLibraryChange?.(event.target.value)}>

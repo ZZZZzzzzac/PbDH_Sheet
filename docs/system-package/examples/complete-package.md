@@ -377,7 +377,7 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
     <img src="assets/logo.svg" alt="冒险人物卡标志">
     <h1>人物卡</h1>
   </header>
-  <section class="identity" aria-label="身份">
+  <section class="identity" aria-label="身份" data-guide-region-id="identity">
     <pb-module id="name"></pb-module>
     <pb-module id="portrait"></pb-module>
     <pb-module id="pick-class"></pb-module>
@@ -520,12 +520,18 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
       "标题": "检查人物卡",
       "说明": "检查已填写的核心资料。",
       "目标": { "类型": "page", "页面ID": "main" }
+    },
+    {
+      "ID": "review-identity",
+      "标题": "检查身份资料",
+      "说明": "检查这一组身份资料。",
+      "目标": { "类型": "region", "区域ID": "identity" }
     }
   ]
 }
 ```
 
-`目标` 可省略，或是一个 Page/Module target。Guide 不支持分支、完成条件、动作、脚本或持久进度。
+`目标` 可省略，或是一个 Page/Module/Layout Region target。Layout Region 在 HTML 中使用 package-wide unique `data-guide-region-id` 标记。Guide 不支持目标数组、任意 selector、分支、完成条件、动作、脚本或持久进度。
 
 ## 9. checks/character-rules.js
 

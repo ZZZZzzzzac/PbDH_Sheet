@@ -6,9 +6,15 @@ import {
   nextGuideStep,
   previousGuideStep,
   startGuideSession,
+  type GuideStep,
   type GuideSession,
 } from "./domain/characterCreationGuide";
-import type { PackageIssue } from "./domain/systemPackage";
+import {
+  getHtmlTemplateGuideRegionIds,
+  getHtmlTemplateModuleReferences,
+  type PackageIssue,
+  type SystemPackage,
+} from "./domain/systemPackage";
 import type { PackageDirectoryHandle } from "./loaders/packageVfs";
 import type { ValidationIssue } from "./domain/validationRunner";
 import { buildReadonlyHtmlSnapshot, waitForVisibleImages } from "./export/output";
@@ -372,6 +378,9 @@ export default function App() {
 
   const activeCharacterSaveName = characterSaves.find((save) => save.id === activeCharacterSaveId)?.name ?? "无角色存档";
   const systemPackageLabel = currentPackage ? `${currentPackage.manifest.名称} · v${currentPackage.manifest.版本}` : bootStatus === "loading" ? "系统包加载中" : "未加载系统包";
+  const guideTargetPageId = currentPackage?.characterCreationGuide && guideSession
+    ? resolveGuideTargetPageId(currentPackage, currentPackage.characterCreationGuide.步骤[guideSession.stepIndex])
+    : null;
 
   return (
     <div className={`app-shell${printMode ? " print-mode" : ""}`}>
@@ -598,6 +607,7 @@ export default function App() {
         <SheetRenderer
           systemPackage={currentPackage}
           outputMode={printMode}
+          requestedPageId={guideTargetPageId}
         />
       ) : null}
       {currentPackage?.characterCreationGuide && guideSession ? (
@@ -634,6 +644,17 @@ export default function App() {
       ) : null}
     </div>
   );
+}
+
+function resolveGuideTargetPageId(systemPackage: SystemPackage, step: GuideStep | undefined): string | null {
+  const target = step?.目标;
+  if (!target) return null;
+  if (target.类型 === "page") return target.页面ID;
+
+  const references = target.类型 === "module" ? getHtmlTemplateModuleReferences : getHtmlTemplateGuideRegionIds;
+  const targetId = target.类型 === "module" ? target.模块ID : target.区域ID;
+  if (systemPackage.shell && references(systemPackage.shell.htmlContent).includes(targetId)) return null;
+  return systemPackage.pages.find((page) => references(page.layout.htmlContent).includes(targetId))?.ID ?? null;
 }
 
 function readCardTableSurfaceWidth(moduleId: string): number {

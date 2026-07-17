@@ -9,6 +9,10 @@ export const guideTargetSchema = z.discriminatedUnion("类型", [
     类型: z.literal("page"),
     页面ID: z.string().min(1),
   }),
+  z.object({
+    类型: z.literal("region"),
+    区域ID: z.string().min(1),
+  }),
 ]);
 
 export const guideStepSchema = z.object({

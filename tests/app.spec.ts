@@ -269,7 +269,7 @@ test("Character Creation Guide spotlights interactive targets without taking ove
   await expect(guide).toContainText("开始创建角色");
   await expect(guide).toContainText("1 / 4");
 
-  await guide.getByRole("button", { name: "下一步" }).click();
+  await page.getByRole("button", { name: "下一步" }).click();
   await expect(guide).toContainText("选择职业");
   await expect(guide).toContainText("2 / 4");
   const classTarget = page.locator('[data-module-slot-id="pick-class"]');
@@ -302,13 +302,13 @@ test("Character Creation Guide spotlights interactive targets without taking ove
   await expect(resourceDialog).not.toBeVisible();
   await expect(guide).toContainText("2 / 4");
 
-  await guide.getByRole("button", { name: "下一步" }).click();
+  await page.getByRole("button", { name: "下一步" }).click();
   await expect(guide).toContainText("选择子职");
-  await guide.getByRole("button", { name: "下一步" }).click();
+  await page.getByRole("button", { name: "下一步" }).click();
   await expect(guide).toContainText("查看职业专属页面");
   await expect(page.locator('[data-template-page-id="druid-shape-page"]')).toBeVisible();
   await expect(page.getByText("当前目标不可见")).toHaveCount(0);
-  await guide.getByRole("button", { name: "完成车卡指引" }).click();
+  await page.getByRole("button", { name: "完成车卡指引" }).click();
   await expect(guide).not.toBeVisible();
 
   await page.reload();
@@ -317,7 +317,7 @@ test("Character Creation Guide spotlights interactive targets without taking ove
   const restartedGuide = page.getByRole("dialog", { name: "车卡指引" });
   await expect(restartedGuide).toContainText("1 / 4");
   for (let step = 0; step < 3; step += 1) {
-    await restartedGuide.getByRole("button", { name: "下一步" }).click();
+    await page.getByRole("button", { name: "下一步" }).click();
   }
   await expect(restartedGuide).toContainText("当前目标不可见");
   await expect(page.locator('[data-template-page-id="druid-shape-page"]')).toHaveCount(0);
@@ -326,11 +326,11 @@ test("Character Creation Guide spotlights interactive targets without taking ove
   await expect(page.getByRole("button", { name: "启动车卡指引" })).toBeFocused();
 });
 
-test("Character Creation Guide uses a bottom panel on a mobile viewport", async ({ page }) => {
+test("Character Creation Guide uses a bottom panel on a mobile viewport", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 480, height: 900 });
   await page.goto("/");
   await expect(page.getByText("未加载")).toBeVisible();
-  await uploadPackage(page, selectionDemoPackagePath());
+  await uploadPackage(page, await createDaggerheartCorePackage(testInfo));
   await openSystemPackageMenu(page);
   await page.getByRole("button", { name: "启动车卡指引" }).click();
 
@@ -346,6 +346,44 @@ test("Character Creation Guide uses a bottom panel on a mobile viewport", async 
   await page.setViewportSize({ width: 900, height: 700 });
   await expect(page.locator(".guide-panel-mobile")).toHaveCount(0);
   await expect(page.locator(".guide-panel-default")).toBeVisible();
+});
+
+test("Daggerheart Guide renders long Restricted Markdown and follows cross-page targets", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await uploadPackage(page, await createDaggerheartCorePackage(testInfo));
+
+  await openSystemPackageMenu(page);
+  await page.getByRole("button", { name: "启动车卡指引" }).click();
+  const guide = page.getByRole("dialog", { name: "车卡指引" });
+  const actions = page.getByRole("toolbar", { name: "车卡指引操作" });
+  await expect(guide).toContainText("车卡器功能介绍");
+  await expect(guide).toContainText("1 / 18");
+  await expect(actions).toBeVisible();
+  await expect.poll(() => actions.evaluate((element) => getComputedStyle(element).position)).toBe("fixed");
+
+  await page.getByRole("button", { name: "下一步" }).click();
+  await page.getByRole("button", { name: "下一步" }).click();
+  await expect(guide).toContainText("职业");
+  await expect(page.locator('[data-guide-region-id="guide-class"]')).toBeVisible();
+
+  await page.getByRole("button", { name: "下一步" }).click();
+  const baseFeature = guide.getByText("基础", { exact: true });
+  await expect(baseFeature).toHaveJSProperty("tagName", "STRONG");
+  await expect(baseFeature.locator("xpath=ancestor::span[1]")).toHaveAttribute("data-markdown-color", "red");
+
+  for (let step = 4; step < 15; step += 1) {
+    await page.getByRole("button", { name: "下一步" }).click();
+  }
+  await expect(guide).toContainText("背景与问题");
+  await expect(guide).toContainText("15 / 18");
+  await expect(page.locator('[data-guide-region-id="guide-background-questions"]')).toBeVisible();
+  await expect(page.locator('[data-template-page-id="character-story"]')).toBeVisible();
+  const panelBox = await guide.boundingBox();
+  expect(panelBox).not.toBeNull();
+  expect(panelBox!.width).toBeLessThanOrEqual(721);
+
+  await page.getByRole("button", { name: "退出车卡指引" }).click();
+  await expect(page.locator('[data-template-page-id="character-story"]')).toBeVisible();
 });
 
 test("HTML Layout Template from demo zip stacks columns on small screens", async ({ page }) => {

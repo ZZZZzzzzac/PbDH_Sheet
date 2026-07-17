@@ -9,7 +9,7 @@
 5. Resource Picker 是 transient trigger；不要生成 `selectionText` 或隐藏选择字段。
 6. 普通 Resource Value 保持显示文本语义，不自行收紧为游戏数值类型。
 7. Dependency 只用已定义 trigger/condition/action，声明 sources/targets，假设单轮且无链式；不要生成手动重放开关，框架只自动重建纯派生动作。
-8. Guide 只生成线性说明和单目标，不生成完成条件、动作或 Character Data 访问。
+8. Guide 只生成 Restricted Markdown 线性说明和单个 Page、Module 或 Layout Region 目标，不生成目标数组、任意 selector、完成条件、动作或 Character Data 访问。Layout Region 使用 package-wide unique `data-guide-region-id`；跨页目标由框架切换 Current Page。
 9. Validation Script 只读输入并返回 issues；不访问 DOM、网络或框架状态。
 10. 所有路径安全相对，所有 ID 唯一，所有引用存在。
 11. `fillCountable` 只使用整数常量或可严格解析为整数的 Resource 字段；多选 Picker 声明 `选择索引`。

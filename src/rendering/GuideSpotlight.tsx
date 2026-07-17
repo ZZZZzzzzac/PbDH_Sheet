@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { CharacterCreationGuide, GuideSession, GuideStep } from "../domain/characterCreationGuide";
+import { RestrictedMarkdown } from "./RestrictedMarkdown";
 
 interface GuideSpotlightProps {
   guide: CharacterCreationGuide;
@@ -29,9 +30,22 @@ export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, o
   const overlayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const warnedUnavailableStepRef = useRef<string | null>(null);
+  const [interactionSurface, setInteractionSurface] = useState<HTMLElement | null>(() => findGuideInteractionSurface());
   const [targetState, setTargetState] = useState<TargetState>(() => resolveTargetState(step));
   const [panelPosition, setPanelPosition] = useState<PanelPosition | null>(null);
   const isMobile = useMediaQuery("(max-width: 640px)");
+
+  useEffect(() => {
+    const updateInteractionSurface = () => {
+      const next = findGuideInteractionSurface();
+      setInteractionSurface((current) => current === next ? current : next);
+    };
+
+    updateInteractionSurface();
+    const observer = new MutationObserver(updateInteractionSurface);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -45,13 +59,14 @@ export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, o
   }, [onExit]);
 
   useLayoutEffect(() => {
-    const element = findGuideTarget(step);
-    if (element) {
-      element.scrollIntoView({ block: "center", inline: "center" });
+    const guideTarget = findGuideTarget(step);
+    const element = interactionSurface ?? guideTarget;
+    if (!interactionSurface && guideTarget) {
+      guideTarget.scrollIntoView({ block: "center", inline: "center" });
     }
 
     const updateTarget = () => {
-      const next = resolveTargetState(step);
+      const next = resolveTargetState(step, interactionSurface);
       setTargetState(next);
       if (next.unavailable && step.目标 && warnedUnavailableStepRef.current !== step.ID) {
         warnedUnavailableStepRef.current = step.ID;
@@ -74,7 +89,7 @@ export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, o
       window.removeEventListener("scroll", updateTarget, true);
       observer?.disconnect();
     };
-  }, [step]);
+  }, [interactionSurface, step]);
 
   useLayoutEffect(() => {
     if (isMobile || !targetState.rect || targetState.unavailable) {
@@ -94,15 +109,20 @@ export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, o
   }, [targetState.element, targetState.unavailable]);
 
   useEffect(() => {
-    const primary = panelRef.current?.querySelector<HTMLElement>("[data-guide-primary]");
+    if (interactionSurface) {
+      return;
+    }
+    const primary = overlayRef.current?.querySelector<HTMLElement>("[data-guide-primary]");
     primary?.focus();
-  }, [session.stepIndex]);
+  }, [interactionSurface, session.stepIndex]);
 
   const isLastStep = session.stepIndex === guide.步骤.length - 1;
   const maskStyles = targetState.rect && !targetState.unavailable ? createMaskStyles(targetState.rect) : [fullViewportMask()];
-  const panelStyle: CSSProperties | undefined = panelPosition
-    ? { top: panelPosition.top, left: panelPosition.left }
-    : undefined;
+  const panelStyle: CSSProperties = {
+    ...(!isMobile ? { width: "fit-content" } : {}),
+    ...(panelPosition ? { top: panelPosition.top, left: panelPosition.left } : {}),
+  };
+  const actionsStyle = placeActions(targetState.rect && !targetState.unavailable ? targetState.rect : null);
 
   return createPortal(
     <div className="guide-spotlight-root" ref={overlayRef} data-guide-step-id={step.ID}>
@@ -112,7 +132,30 @@ export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, o
       {targetState.rect && !targetState.unavailable ? (
         <div className="guide-target-ring" style={ringStyle(targetState.rect)} aria-hidden="true" />
       ) : null}
-      <section
+      {!interactionSurface ? <div className="guide-actions" style={actionsStyle} role="toolbar" aria-label="车卡指引操作">
+        <button type="button" className="icon-button secondary-button" onClick={onExit} aria-label="退出车卡指引">
+          退出
+        </button>
+        <button
+          type="button"
+          className="icon-button secondary-button"
+          onClick={onPrevious}
+          disabled={session.stepIndex === 0}
+          aria-label="上一步"
+        >
+          上一步
+        </button>
+        {isLastStep ? (
+          <button type="button" className="icon-button" onClick={onFinish} data-guide-primary aria-label="完成车卡指引">
+            完成
+          </button>
+        ) : (
+          <button type="button" className="icon-button" onClick={onNext} data-guide-primary aria-label="下一步">
+            下一步
+          </button>
+        )}
+      </div> : null}
+      {!interactionSurface ? <section
         className={`guide-panel${isMobile ? " guide-panel-mobile" : ""}${!targetState.rect || targetState.unavailable ? " guide-panel-default" : ""}`}
         style={panelStyle}
         ref={panelRef}
@@ -124,33 +167,10 @@ export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, o
             {session.stepIndex + 1} / {guide.步骤.length}
           </p>
           <h2>{step.标题}</h2>
-          <p className="guide-instructions">{step.说明}</p>
+          <RestrictedMarkdown className="guide-instructions" value={step.说明} />
           {targetState.unavailable ? <p className="guide-target-unavailable" role="status">当前目标不可见，请先完成前置步骤。</p> : null}
         </div>
-        <div className="guide-actions">
-          <button type="button" className="icon-button secondary-button" onClick={onExit} aria-label="退出车卡指引">
-            退出
-          </button>
-          <button
-            type="button"
-            className="icon-button secondary-button"
-            onClick={onPrevious}
-            disabled={session.stepIndex === 0}
-            aria-label="上一步"
-          >
-            上一步
-          </button>
-          {isLastStep ? (
-            <button type="button" className="icon-button" onClick={onFinish} data-guide-primary aria-label="完成车卡指引">
-              完成
-            </button>
-          ) : (
-            <button type="button" className="icon-button" onClick={onNext} data-guide-primary aria-label="下一步">
-              下一步
-            </button>
-          )}
-        </div>
-      </section>
+      </section> : null}
     </div>,
     document.body,
   );
@@ -161,12 +181,23 @@ function findGuideTarget(step: GuideStep): HTMLElement | null {
     return null;
   }
 
-  const id = step.目标.类型 === "module" ? step.目标.模块ID : step.目标.页面ID;
-  const attribute = step.目标.类型 === "module" ? "data-module-slot-id" : "data-template-page-id";
+  const { id, attribute } = step.目标.类型 === "module"
+    ? { id: step.目标.模块ID, attribute: "data-module-slot-id" }
+    : step.目标.类型 === "page"
+      ? { id: step.目标.页面ID, attribute: "data-template-page-id" }
+      : { id: step.目标.区域ID, attribute: "data-guide-region-id" };
   return document.querySelector<HTMLElement>(`[${attribute}="${escapeAttributeValue(id)}"]`);
 }
 
-function resolveTargetState(step: GuideStep): TargetState {
+function findGuideInteractionSurface(): HTMLElement | null {
+  const surfaces = document.querySelectorAll<HTMLElement>("[data-guide-interaction-surface]");
+  return surfaces.item(surfaces.length - 1);
+}
+
+function resolveTargetState(step: GuideStep, interactionSurface: HTMLElement | null = null): TargetState {
+  if (interactionSurface?.isConnected && isElementVisible(interactionSurface)) {
+    return { element: interactionSurface, rect: interactionSurface.getBoundingClientRect(), unavailable: false };
+  }
   if (!step.目标) {
     return { element: null, rect: null, unavailable: false };
   }
@@ -212,6 +243,22 @@ function ringStyle(rect: DOMRect): CSSProperties {
   const right = clamp(rect.right + spotlightPadding, 0, window.innerWidth);
   const bottom = clamp(rect.bottom + spotlightPadding, 0, window.innerHeight);
   return { left, top, width: Math.max(0, right - left), height: Math.max(0, bottom - top) };
+}
+
+function placeActions(rect: DOMRect | null): CSSProperties {
+  const margin = 8;
+  if (!rect) {
+    return { position: "fixed", top: margin, left: margin };
+  }
+
+  const estimatedHeight = 44;
+  const estimatedWidth = 260;
+  const outsideTop = rect.top - spotlightPadding - estimatedHeight - margin;
+  return {
+    position: "fixed",
+    top: outsideTop >= margin ? outsideTop : clamp(rect.top + spotlightPadding, margin, window.innerHeight - estimatedHeight - margin),
+    left: clamp(rect.left - spotlightPadding, margin, Math.max(margin, window.innerWidth - estimatedWidth - margin)),
+  };
 }
 
 function placePanel(rect: DOMRect, panel: HTMLElement | null): PanelPosition {

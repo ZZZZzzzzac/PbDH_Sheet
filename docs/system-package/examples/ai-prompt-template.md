@@ -16,7 +16,7 @@
 - Resource Libraries：[资源类型、字段、现有数据]
 - Cards：[哪些 Libraries 生成 Cards；名称/描述/卡图/展示字段]
 - Dependencies：[选择/勾选后填文本、填 Counter、显隐、默认筛选]
-- Guide：[线性步骤和可选 Page/Module target]
+- Guide：[线性步骤和可选 Page/Module/Layout Region target]
 - Validation Checks：[只读报告规则]
 - Images：[放入 `assets/**` 后自动发现的图片相对路径]
 
@@ -92,7 +92,7 @@ Dependency Rule：
 - setResourceDefaultFilter：目标 Resource Picker，值是非空 string[]
 
 Guide：
-{ 步骤:[{ ID, 标题, 说明, 目标?: {类型:"page",页面ID}|{类型:"module",模块ID} }] }
+{ 步骤:[{ ID, 标题, 说明, 目标?: {类型:"page",页面ID}|{类型:"module",模块ID}|{类型:"region",区域ID} }] }
 
 Validation Script：
 module.exports = async ({ characterData, resourceLibraries, cardState, packageMetadata }) => [];
@@ -100,6 +100,7 @@ module.exports = async ({ characterData, resourceLibraries, cardState, packageMe
 
 HTML/CSS 要求：
 - 使用安全静态 HTML、pb-module 和可选 Sheet Shell 的唯一 pb-page-outlet。
+- 多个连续模块需作为单一 Guide 目标时，用 package-wide unique `data-guide-region-id` 包裹为 Layout Region。
 - 不使用 Flow Layout、selectionText、自定义 input/button/script、inline style、on*、外部 URL。
 - CSS 不用 @import，不污染 html/body/:root，不依赖 React DOM/class。
 
@@ -109,7 +110,7 @@ HTML/CSS 要求：
 - Card Table 使用类型化资源来源；每个来源可选声明 Card Presentation。
 - Resource Composer 的 `选择关系输出` 只比较各槽所选 Entry ID 是否全部相同；可配合 Card Table 的 `显示方式字段` 让同源组合显示图片、异源组合显示文字，不生成具体游戏规则判断。
 - Dependency 单轮执行，不生成链式规则或任意脚本写状态。
-- Guide 不读取 Character Data，不分支、不自动推进。
+- Guide 不读取 Character Data，不分支、不自动推进，不生成目标数组或任意 selector。
 - Validator 规则不能由包关闭、降级或声明例外。
 - 不生成 suggestion 字段。
 

@@ -3,13 +3,13 @@
     <div class="brand-panel" aria-label="匕首之心">匕首之心</div>
     <div class="identity-fields">
       <div class="character-name-field"><pb-module id="character-name"></pb-module></div>
-      <div class="picker-field class-field">
+      <div class="picker-field class-field" data-guide-region-id="guide-class">
         <pb-module id="class-name"></pb-module>
         <pb-module id="pick-class"></pb-module>
         <pb-module id="pick-subclass"></pb-module>
       </div>
-      <div class="picker-field ancestry-field"><pb-module id="ancestry-name"></pb-module><pb-module id="pick-ancestry"></pb-module></div>
-      <div class="picker-field community-field"><pb-module id="community-name"></pb-module><pb-module id="pick-community"></pb-module></div>
+      <div class="picker-field ancestry-field" data-guide-region-id="guide-ancestry"><pb-module id="ancestry-name"></pb-module><pb-module id="pick-ancestry"></pb-module></div>
+      <div class="picker-field community-field" data-guide-region-id="guide-community"><pb-module id="community-name"></pb-module><pb-module id="pick-community"></pb-module></div>
     </div>
     <div class="level-field"><pb-module id="level"></pb-module></div>
   </header>
@@ -21,7 +21,7 @@
       <pb-module id="major-threshold"></pb-module>
       <pb-module id="severe-threshold"></pb-module>
     </div>
-    <div class="trait-summary">
+    <div class="trait-summary" data-guide-region-id="guide-traits">
       <pb-module id="agility"></pb-module>
       <pb-module id="strength"></pb-module>
       <pb-module id="finesse"></pb-module>
@@ -33,7 +33,7 @@
 
   <div class="sheet-body-layout">
     <div class="sheet-left-column sheet-main-left">
-      <section class="sheet-region resource-region" aria-label="生命压力与阈值">
+      <section class="sheet-region resource-region" aria-label="生命压力与阈值" data-guide-region-id="guide-resources">
         <div class="resource-row">
           <pb-module id="hp"></pb-module>
           <pb-module id="stress"></pb-module>
@@ -43,7 +43,7 @@
         <pb-module id="class-hope-feature"></pb-module>
       </section>
 
-      <section class="sheet-region experience-region" aria-label="经历">
+      <section class="sheet-region experience-region" aria-label="经历" data-guide-region-id="guide-experiences">
         <h2 class="section-title">经历</h2>
         <div class="experience-list">
           <div><pb-module id="experience-1"></pb-module><pb-module id="experience-modifier-1"></pb-module></div>
@@ -61,7 +61,7 @@
     </div>
 
     <div class="sheet-right-column sheet-main-right">
-      <section class="sheet-region equipment-region" aria-label="装备">
+      <section class="sheet-region equipment-region" aria-label="装备" data-guide-region-id="guide-equipment">
         <div class="region-heading-row">
           <h2>装备</h2>
           <pb-module id="proficiency"></pb-module>
@@ -98,7 +98,7 @@
         </article>
       </section>
 
-      <section class="sheet-region inventory-region" aria-label="背包与备用武器">
+      <section class="sheet-region inventory-region" aria-label="背包与备用武器" data-guide-region-id="guide-inventory">
       <h2 class="section-title">物品栏</h2>
       <div class="item-list">
         <pb-module id="inventory"></pb-module>

@@ -229,4 +229,4 @@ module.exports = () => [{
 2. 第二项
 ```
 
-只支持段落/换行、粗体、斜体、三星号粗斜体、有序/无序列表，以及 `red/orange/yellow/green/blue/purple/gray` 七个 directive。未知、畸形或嵌套颜色安全降级为无颜色文本。不要把 Markdown 写进标签、placeholder、按钮、Guide、诊断或无障碍名称。
+只支持段落/换行、粗体、斜体、三星号粗斜体、有序/无序列表，以及 `red/orange/yellow/green/blue/purple/gray` 七个 directive。未知、畸形或嵌套颜色安全降级为无颜色文本。Guide 只在 `说明` 使用 Restricted Markdown；不要把 Markdown 写进标签、placeholder、按钮、Guide `标题`、诊断或无障碍名称。

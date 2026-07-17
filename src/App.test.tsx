@@ -499,6 +499,51 @@ describe("App Character Creation Guide", () => {
     expect(screen.queryByRole("button", { name: "启动车卡指引" })).not.toBeInTheDocument();
   });
 
+  it("renders Guide instructions with Restricted Markdown", async () => {
+    const markdownPackage = createGuidePackage([
+      { ID: "markdown", 标题: "选择子职", 说明: "拿取 :red[**基础**] 特性卡。" },
+    ]);
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: markdownPackage, issues: [] }),
+      storage: createEmptyStorage(),
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+    await user.click(screen.getByRole("button", { name: "启动车卡指引" }));
+
+    const emphasis = screen.getByText("基础");
+    expect(emphasis.tagName).toBe("STRONG");
+    expect(emphasis.closest("span")).toHaveClass("restricted-markdown-color");
+    expect(emphasis.closest("span")).toHaveAttribute("data-markdown-color", "red");
+  });
+
+  it("keeps Guide actions out of long instruction flow and sizes the panel to content", async () => {
+    const longPackage = createGuidePackage([
+      { ID: "long", 标题: "长说明", 说明: "很长的说明。\n\n".repeat(100) },
+    ]);
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: longPackage, issues: [] }),
+      storage: createEmptyStorage(),
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+    await user.click(screen.getByRole("button", { name: "启动车卡指引" }));
+
+    const panel = screen.getByRole("dialog", { name: "车卡指引" });
+    const actions = document.querySelector<HTMLElement>(".guide-actions");
+    expect(actions).not.toBeNull();
+    expect(actions).toHaveStyle({ position: "fixed" });
+    expect(panel).toHaveStyle({ width: "fit-content" });
+  });
+
   it("keeps a highlighted Sheet Module interactive while making dimmed content inert", async () => {
     const user = userEvent.setup();
     vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
@@ -529,6 +574,153 @@ describe("App Character Creation Guide", () => {
     expect(document.querySelector(".guide-target-ring")).toBeInTheDocument();
   });
 
+  it("keeps every Sheet Module inside a highlighted Layout Region interactive", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      if (this.dataset.guideRegionId === "identity") {
+        return { x: 80, y: 120, top: 120, left: 80, right: 480, bottom: 320, width: 400, height: 200, toJSON() {} } as DOMRect;
+      }
+      return { x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, toJSON() {} } as DOMRect;
+    });
+    const targetPackage = createGuidePackage([
+      { ID: "identity", 标题: "填写身份", 说明: "填写角色身份。", 目标: { 类型: "region" as const, 区域ID: "identity" } },
+    ]);
+    targetPackage.modules = [
+      ...targetPackage.modules,
+      { ID: "character-title", 类型: "freeText", 标签: "称号", 默认值: "" },
+    ];
+    targetPackage.pages = [{
+      ...targetPackage.pages[0],
+      layout: {
+        ...targetPackage.pages[0].layout,
+        htmlContent: '<main><section data-guide-region-id="identity"><pb-module id="character-name"></pb-module><pb-module id="character-title"></pb-module></section></main>',
+      },
+    }];
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: targetPackage, issues: [] }),
+      storage: createEmptyStorage(),
+    });
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+    await user.click(screen.getByRole("button", { name: "启动车卡指引" }));
+
+    const nameInput = screen.getByLabelText("姓名");
+    const titleInput = screen.getByLabelText("称号");
+    await user.type(nameInput, "阿青");
+    await user.type(titleInput, "剑客");
+    expect(nameInput).toHaveValue("阿青");
+    expect(titleInput).toHaveValue("剑客");
+    expect(document.querySelector('[data-guide-region-id="identity"]')).not.toHaveProperty("inert", true);
+    expect(document.querySelector(".top-bar")).toHaveProperty("inert", true);
+    expect(document.querySelectorAll(".guide-target-ring")).toHaveLength(1);
+  });
+
+  it("moves the Guide spotlight to a Resource Library opened from the highlighted Picker", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      if (this.matches('[data-module-slot-id="domain-picker"]')) {
+        return { x: 80, y: 120, top: 120, left: 80, right: 380, bottom: 220, width: 300, height: 100, toJSON() {} } as DOMRect;
+      }
+      if (this.matches('.resource-dialog')) {
+        return { x: 20, y: 30, top: 30, left: 20, right: 980, bottom: 730, width: 960, height: 700, toJSON() {} } as DOMRect;
+      }
+      return { x: 0, y: 0, top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, toJSON() {} } as DOMRect;
+    });
+    const targetPackage = createGuideResourcePickerPackage();
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: targetPackage, issues: [] }),
+      storage: createEmptyStorage(),
+    });
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+    await user.click(screen.getByRole("button", { name: "启动车卡指引" }));
+    await user.click(screen.getByRole("button", { name: "选择职业" }));
+
+    const resourceDialog = screen.getByRole("dialog", { name: "职业资源库" });
+    await waitFor(() => expect(document.querySelector(".guide-target-ring")).toHaveStyle({ left: "14px", top: "24px" }));
+    expect(resourceDialog.closest("[inert]")).toBeNull();
+
+    await user.click(screen.getByLabelText("选择 德鲁伊"));
+    expect(screen.queryByRole("dialog", { name: "职业资源库" })).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "车卡指引" })).toBeVisible();
+    await waitFor(() => expect(document.querySelector(".guide-target-ring")).toHaveStyle({ left: "74px", top: "114px" }));
+  });
+
+  it("keeps a two-slot Resource Composer in front of the Guide until composition finishes", async () => {
+    const user = userEvent.setup();
+    const targetPackage = createGuideResourceComposerPackage();
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: targetPackage, issues: [] }),
+      storage: createEmptyStorage(),
+    });
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+    await user.click(screen.getByRole("button", { name: "启动车卡指引" }));
+    await user.click(screen.getByRole("button", { name: "选择种族" }));
+
+    expect(screen.getByRole("dialog", { name: "请选择特性 A 来源" })).toBeVisible();
+    expect(screen.queryByRole("dialog", { name: "车卡指引" })).not.toBeInTheDocument();
+    await user.click(screen.getByLabelText("选择 精灵"));
+    expect(screen.getByRole("dialog", { name: "请选择特性 B 来源" })).toBeVisible();
+    expect(screen.queryByRole("dialog", { name: "车卡指引" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByLabelText("选择 人类"));
+    expect(screen.queryByRole("dialog", { name: "请选择特性 B 来源" })).not.toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "车卡指引" })).toBeVisible();
+    expect(useRuntimeStore.getState().characterData?.compositeResources["compose-ancestry"].fields).toMatchObject({ 特性A: "敏锐", 特性B: "应变" });
+  });
+
+  it("selects the Runtime-Visible Page that owns the current Guide target", async () => {
+    const user = userEvent.setup();
+    const targetPackage = createGuidePackage([
+      { ID: "main", 标题: "人物卡", 说明: "填写人物卡。", 目标: { 类型: "region" as const, 区域ID: "main-region" } },
+      { ID: "story", 标题: "背景", 说明: "填写背景。", 目标: { 类型: "region" as const, 区域ID: "story-region" } },
+    ]);
+    targetPackage.pages = [
+      {
+        ...targetPackage.pages[0],
+        layout: { ...targetPackage.pages[0].layout, htmlContent: '<section data-guide-region-id="main-region"><pb-module id="character-name"></pb-module></section>' },
+      },
+      {
+        ...targetPackage.pages[0],
+        ID: "story",
+        名称: "背景与关系",
+        layout: { ...targetPackage.pages[0].layout, htmlContent: '<section data-guide-region-id="story-region"><pb-module id="character-name"></pb-module></section>' },
+      },
+    ];
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: targetPackage, issues: [] }),
+      storage: createEmptyStorage(),
+    });
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+    await user.click(screen.getByRole("button", { name: "启动车卡指引" }));
+    expect(document.querySelector('[data-guide-region-id="main-region"]')).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "下一步" }));
+    expect(document.querySelector('[data-guide-region-id="story-region"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-guide-region-id="main-region"]')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "上一步" }));
+    expect(document.querySelector('[data-guide-region-id="main-region"]')).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "下一步" }));
+    await user.click(screen.getByRole("button", { name: "退出车卡指引" }));
+    expect(document.querySelector('[data-guide-region-id="story-region"]')).toBeInTheDocument();
+  });
+
   it("falls back to a target-unavailable notice without revealing a hidden target", async () => {
     const hiddenPackage = createGuidePackage([
       { ID: "hidden", 标题: "隐藏字段", 说明: "先完成前置步骤。", 目标: { 类型: "module" as const, 模块ID: "character-name" } },
@@ -548,6 +740,34 @@ describe("App Character Creation Guide", () => {
 
     expect(await screen.findByRole("status")).toHaveTextContent("当前目标不可见");
     expect(screen.queryByLabelText("姓名")).not.toBeInTheDocument();
+  });
+
+  it("falls back to a target-unavailable notice for a Layout Region on a hidden page", async () => {
+    const hiddenPackage = createGuidePackage([
+      { ID: "hidden-region", 标题: "隐藏区域", 说明: "先完成前置步骤。", 目标: { 类型: "region" as const, 区域ID: "identity" } },
+    ]);
+    hiddenPackage.pages = [{
+      ...hiddenPackage.pages[0],
+      默认隐藏: true,
+      layout: {
+        ...hiddenPackage.pages[0].layout,
+        htmlContent: '<section data-guide-region-id="identity"><pb-module id="character-name"></pb-module></section>',
+      },
+    }];
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: hiddenPackage, issues: [] }),
+      storage: createEmptyStorage(),
+    });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+    await user.click(screen.getByRole("button", { name: "启动车卡指引" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("当前目标不可见");
+    expect(document.querySelector('[data-guide-region-id="identity"]')).not.toBeInTheDocument();
   });
 });
 
@@ -590,6 +810,76 @@ function createGuidePackage(
   return {
     ...minimalSystemPackage,
     characterCreationGuide: { 步骤: steps },
+  };
+}
+
+function createGuideResourcePickerPackage(): SystemPackage {
+  return {
+    ...createGuidePackage([
+      { ID: "class", 标题: "选择职业", 说明: "打开职业资源库。", 目标: { 类型: "module", 模块ID: "domain-picker" } },
+    ]),
+    pages: [{
+      ...minimalSystemPackage.pages[0],
+      layout: {
+        ...minimalSystemPackage.pages[0].layout,
+        htmlContent: '<main><pb-module id="domain-picker"></pb-module></main>',
+      },
+    }],
+    modules: [{
+      ID: "domain-picker",
+      类型: "resourcePicker",
+      按钮文本: "选择职业",
+      资源库: [{ ID: "classes" }],
+    }],
+    resourceLibraries: [{
+      ID: "classes",
+      名称: "职业",
+      路径: "resources/classes.json",
+      fields: [{ key: "名称", label: "名称", visible: true, filterable: false, sortable: false, searchable: true }],
+      entries: [{ ID: "druid", fields: { 名称: "德鲁伊" } }],
+    }],
+  };
+}
+
+function createGuideResourceComposerPackage(): SystemPackage {
+  return {
+    ...createGuidePackage([
+      { ID: "ancestry", 标题: "种族", 说明: "分别选择两个种族特性。", 目标: { 类型: "module", 模块ID: "compose-ancestry" } },
+    ]),
+    pages: [{
+      ...minimalSystemPackage.pages[0],
+      layout: {
+        ...minimalSystemPackage.pages[0].layout,
+        htmlContent: '<main><pb-module id="compose-ancestry"></pb-module></main>',
+      },
+    }],
+    modules: [{
+      ID: "compose-ancestry",
+      类型: "resourceComposer",
+      按钮文本: "选择种族",
+      来源槽位: [
+        { ID: "a", 标签: "特性 A 来源", 资源库ID: "ancestries" },
+        { ID: "b", 标签: "特性 B 来源", 资源库ID: "ancestries" },
+      ],
+      输出字段: [
+        { 字段: "特性A", 来源槽位ID: "a", 来源字段: "特性A" },
+        { 字段: "特性B", 来源槽位ID: "b", 来源字段: "特性B" },
+      ],
+    }],
+    resourceLibraries: [{
+      ID: "ancestries",
+      名称: "种族",
+      路径: "resources/ancestries.json",
+      fields: [
+        { key: "名称", label: "名称", visible: true, filterable: false, sortable: false, searchable: true },
+        { key: "特性A", label: "特性 A", visible: true, filterable: false, sortable: false, searchable: true },
+        { key: "特性B", label: "特性 B", visible: true, filterable: false, sortable: false, searchable: true },
+      ],
+      entries: [
+        { ID: "elf", fields: { 名称: "精灵", 特性A: "敏锐", 特性B: "冥想" } },
+        { ID: "human", fields: { 名称: "人类", 特性A: "活力", 特性B: "应变" } },
+      ],
+    }],
   };
 }
 
