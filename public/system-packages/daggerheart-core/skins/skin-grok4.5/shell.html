@@ -1,0 +1,26 @@
+<main class="daggerheart-workspace prism-workspace">
+  <section class="daggerheart-sheet-pane prism-sheet-pane" aria-label="人物卡页面">
+    <div class="prism-pane-rail">
+      <span class="prism-pane-chip">SHEET</span>
+      <span class="prism-pane-chip prism-pane-chip-soft">A4</span>
+    </div>
+    <pb-page-outlet></pb-page-outlet>
+  </section>
+  <section class="daggerheart-card-pane prism-card-pane" data-print-page="true" aria-label="持久卡牌桌面" data-guide-region-id="guide-domain-cards">
+    <header class="prism-card-banner">
+      <span class="prism-card-glyph">◇</span>
+      <div class="prism-card-banner-copy">
+        <small>DOMAIN LATTICE</small>
+        <strong>卡牌桌面</strong>
+      </div>
+      <span class="prism-card-banner-beam"></span>
+    </header>
+    <div class="card-picker-grid">
+      <pb-module id="pick-domain-card"></pb-module>
+      <pb-module id="pick-other-resources"></pb-module>
+    </div>
+    <div class="daggerheart-card-table-slot">
+      <pb-module id="character-card-table"></pb-module>
+    </div>
+  </section>
+</main>

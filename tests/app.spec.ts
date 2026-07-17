@@ -431,6 +431,191 @@ test("Daggerheart story editors fill their outer frames", async ({ page }, testI
   }
 });
 
+test("Astral Cartographer Skin keeps every printable surface inside its A4 page box", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await uploadPackage(page, await createDaggerheartCorePackage(testInfo));
+  await selectDaggerheartSkin(page, "skin-gpt-5.6sol");
+
+  await expect(page.locator(".astral-workspace")).toBeVisible();
+  await expect(page.locator(".astral-main-page")).toBeVisible();
+  await expect(page.locator('[data-guide-region-id="guide-class"]')).toBeVisible();
+  await page.locator('[data-module-id="class-name"] input').fill("游侠");
+  await page.locator('[data-module-id="ancestry-name"] input').fill("械灵 / 树精");
+  await page.locator('[data-module-id="community-name"] input').fill("博识之士");
+  const identityGeometry = await page.locator(".astral-identity-fields").evaluate((element) => {
+    const rect = (selector: string) => {
+      const box = element.querySelector<HTMLElement>(selector)!.getBoundingClientRect();
+      return { top: box.top, right: box.right, bottom: box.bottom, left: box.left, width: box.width };
+    };
+    return {
+      classField: rect(".class-field"),
+      ancestryField: rect(".ancestry-field"),
+      communityField: rect(".community-field"),
+    };
+  });
+  expect(identityGeometry.classField.bottom).toBeLessThanOrEqual(identityGeometry.ancestryField.top + 1);
+  expect(Math.abs(identityGeometry.ancestryField.top - identityGeometry.communityField.top)).toBeLessThanOrEqual(1);
+  expect(identityGeometry.ancestryField.right).toBeLessThanOrEqual(identityGeometry.communityField.left + 1);
+  expect(identityGeometry.ancestryField.width).toBeGreaterThanOrEqual(180);
+  expect(identityGeometry.communityField.width).toBeGreaterThanOrEqual(180);
+  const defenceGeometry = await page.locator(".astral-defense-dials").evaluate((element) => {
+    const rect = (moduleId: string) => {
+      const box = element.querySelector<HTMLElement>(`[data-module-slot-id="${moduleId}"]`)!.getBoundingClientRect();
+      return { top: box.top, right: box.right, bottom: box.bottom, left: box.left };
+    };
+    return [rect("evasion"), rect("armor-value"), rect("major-threshold"), rect("severe-threshold")];
+  });
+  expect(Math.abs(defenceGeometry[0].top - defenceGeometry[1].top)).toBeLessThanOrEqual(1);
+  expect(Math.abs(defenceGeometry[2].top - defenceGeometry[3].top)).toBeLessThanOrEqual(1);
+  expect(defenceGeometry[0].right).toBeLessThanOrEqual(defenceGeometry[1].left - 4);
+  expect(defenceGeometry[0].bottom).toBeLessThanOrEqual(defenceGeometry[2].top - 4);
+  expect(defenceGeometry[2].right).toBeLessThanOrEqual(defenceGeometry[3].left - 4);
+  await page.locator(".astral-sheet-vessel").screenshot({ path: testInfo.outputPath("astral-main-screen.png") });
+  await page.getByRole("button", { name: "背景与关系", exact: true }).click();
+  await expect(page.locator(".astral-story-page")).toBeVisible();
+  await page.locator(".astral-sheet-vessel").screenshot({ path: testInfo.outputPath("astral-story-screen.png") });
+  await page.getByRole("button", { name: "人物卡", exact: true }).click();
+
+  const classPicker = page.locator('[data-module-id="pick-class"]');
+  await classPicker.getByRole("button").click();
+  await page.getByLabel("选择 德鲁伊").click();
+  await expect(page.getByRole("button", { name: "野兽形态 T1-T2", exact: true })).toBeVisible();
+
+  await openExportMenu(page);
+  const printButton = page.locator('button[aria-label="打开浏览器打印 PDF"]');
+  await expect(printButton).toHaveCount(1);
+  await page.emulateMedia({ media: "print" });
+  await page.evaluate(() => {
+    window.print = () => {
+      const surfaces = [...document.querySelectorAll<HTMLElement>('.sheet-page, [data-print-page="true"]')];
+      document.documentElement.dataset.astralA4Probe = JSON.stringify(surfaces.map((surface) => {
+        const rect = surface.getBoundingClientRect();
+        const descendants = [...surface.querySelectorAll<HTMLElement>("*")].filter((element) => getComputedStyle(element).position !== "fixed");
+        const right = Math.max(rect.right, ...descendants.map((element) => element.getBoundingClientRect().right));
+        const bottom = Math.max(rect.bottom, ...descendants.map((element) => element.getBoundingClientRect().bottom));
+        return {
+          pageId: surface.matches(".sheet-page")
+            ? surface.dataset.templatePageId ?? surface.querySelector<HTMLElement>("[data-template-page-id]")?.dataset.templatePageId ?? "sheet-page"
+            : "shell-card-page",
+          width: rect.width,
+          height: rect.height,
+          horizontalOverflow: Math.max(surface.scrollWidth - surface.clientWidth, right - rect.right),
+          verticalOverflow: Math.max(surface.scrollHeight - surface.clientHeight, bottom - rect.bottom),
+        };
+      }));
+    };
+  });
+
+  await printButton.evaluate((button) => (button as HTMLButtonElement).click());
+  await expect.poll(() => page.evaluate(() => Boolean(
+    document.documentElement.dataset.astralA4Probe
+      || document.querySelector('button[aria-label="继续输出"]'),
+  ))).toBe(true);
+  const hiddenContinueButton = page.locator('button[aria-label="继续输出"]');
+  if (await hiddenContinueButton.count()) {
+    await hiddenContinueButton.evaluate((button) => (button as HTMLButtonElement).click());
+  }
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.astralA4Probe)).not.toBeUndefined();
+  const metrics = JSON.parse(await page.evaluate(() => document.documentElement.dataset.astralA4Probe!)) as Array<{
+    pageId: string;
+    width: number;
+    height: number;
+    horizontalOverflow: number;
+    verticalOverflow: number;
+  }>;
+
+  expect(metrics.map((metric) => metric.pageId)).toEqual([
+    "character-main",
+    "character-story",
+    "beast-forms-t1-t2",
+    "beast-forms-t3-t4",
+    "shell-card-page",
+  ]);
+  for (const metric of metrics) {
+    expect(metric.width, metric.pageId).toBeCloseTo(210 / 25.4 * 96, 0);
+    expect(metric.height, metric.pageId).toBeCloseTo(297 / 25.4 * 96, 0);
+  }
+  expect(metrics.filter((metric) => metric.horizontalOverflow > 1 || metric.verticalOverflow > 1)).toEqual([]);
+});
+
+test("Thread-bound KimiK3 Skin keeps every printable surface inside its A4 page box", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await uploadPackage(page, await createDaggerheartCorePackage(testInfo));
+  await selectDaggerheartSkin(page, "skin-KimiK3");
+
+  await expect(page.locator(".character-main-page.kimi-thread-book")).toBeVisible();
+  await expect(page.locator(".book-fold-edge")).toBeVisible();
+  await expect(page.locator(".brand-slip")).toBeVisible();
+  await expect(page.locator(".card-table-banner")).toBeVisible();
+  await expect(page.locator('[data-guide-region-id="guide-class"]')).toBeVisible();
+  await page.locator(".daggerheart-sheet-pane").screenshot({ path: testInfo.outputPath("kimi-main-screen.png") });
+  await page.getByRole("button", { name: "背景与关系", exact: true }).click();
+  await expect(page.locator(".character-story-page.kimi-thread-book")).toBeVisible();
+  await page.locator(".daggerheart-sheet-pane").screenshot({ path: testInfo.outputPath("kimi-story-screen.png") });
+  await page.getByRole("button", { name: "人物卡", exact: true }).click();
+
+  const classPicker = page.locator('[data-module-id="pick-class"]');
+  await classPicker.getByRole("button").click();
+  await page.getByLabel("选择 德鲁伊").click();
+  await expect(page.getByRole("button", { name: "野兽形态 T1-T2", exact: true })).toBeVisible();
+
+  await openExportMenu(page);
+  const printButton = page.locator('button[aria-label="打开浏览器打印 PDF"]');
+  await expect(printButton).toHaveCount(1);
+  await page.emulateMedia({ media: "print" });
+  await page.evaluate(() => {
+    window.print = () => {
+      const surfaces = [...document.querySelectorAll<HTMLElement>('.sheet-page, [data-print-page="true"]')];
+      document.documentElement.dataset.kimiA4Probe = JSON.stringify(surfaces.map((surface) => {
+        const rect = surface.getBoundingClientRect();
+        const descendants = [...surface.querySelectorAll<HTMLElement>("*")].filter((element) => getComputedStyle(element).position !== "fixed");
+        const right = Math.max(rect.right, ...descendants.map((element) => element.getBoundingClientRect().right));
+        const bottom = Math.max(rect.bottom, ...descendants.map((element) => element.getBoundingClientRect().bottom));
+        return {
+          pageId: surface.matches(".sheet-page")
+            ? surface.dataset.templatePageId ?? surface.querySelector<HTMLElement>("[data-template-page-id]")?.dataset.templatePageId ?? "sheet-page"
+            : "shell-card-page",
+          width: rect.width,
+          height: rect.height,
+          horizontalOverflow: Math.max(surface.scrollWidth - surface.clientWidth, right - rect.right),
+          verticalOverflow: Math.max(surface.scrollHeight - surface.clientHeight, bottom - rect.bottom),
+        };
+      }));
+    };
+  });
+
+  await printButton.evaluate((button) => (button as HTMLButtonElement).click());
+  await expect.poll(() => page.evaluate(() => Boolean(
+    document.documentElement.dataset.kimiA4Probe
+      || document.querySelector('button[aria-label="继续输出"]'),
+  ))).toBe(true);
+  const hiddenContinueButton = page.locator('button[aria-label="继续输出"]');
+  if (await hiddenContinueButton.count()) {
+    await hiddenContinueButton.evaluate((button) => (button as HTMLButtonElement).click());
+  }
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.kimiA4Probe)).not.toBeUndefined();
+  const metrics = JSON.parse(await page.evaluate(() => document.documentElement.dataset.kimiA4Probe!)) as Array<{
+    pageId: string;
+    width: number;
+    height: number;
+    horizontalOverflow: number;
+    verticalOverflow: number;
+  }>;
+
+  expect(metrics.map((metric) => metric.pageId)).toEqual([
+    "character-main",
+    "character-story",
+    "beast-forms-t1-t2",
+    "beast-forms-t3-t4",
+    "shell-card-page",
+  ]);
+  for (const metric of metrics) {
+    expect(metric.width, metric.pageId).toBeCloseTo(210 / 25.4 * 96, 0);
+    expect(metric.height, metric.pageId).toBeCloseTo(297 / 25.4 * 96, 0);
+  }
+  expect(metrics.filter((metric) => metric.horizontalOverflow > 1 || metric.verticalOverflow > 1)).toEqual([]);
+});
+
 test("Daggerheart beast-form references fit equal-height cards when printed", async ({ page }, testInfo) => {
   await page.goto("/");
   await uploadPackage(page, await createDaggerheartCorePackage(testInfo));
@@ -498,6 +683,7 @@ test("Daggerheart beast-form references fit equal-height cards when printed", as
 test("Daggerheart Ranger companion stays within one A4 page when printed", async ({ page }, testInfo) => {
   await page.goto("/");
   await uploadPackage(page, await createDaggerheartCorePackage(testInfo));
+  await selectDaggerheartSkin(page, "skin-gpt-5.6sol");
 
   await expect(page.getByRole("button", { name: "游侠动物伙伴", exact: true })).toHaveCount(0);
   const subclassPicker = page.locator('[data-module-id="pick-subclass"]');
@@ -726,6 +912,13 @@ async function openSystemPackageMenu(page: Page) {
 
 async function openExportMenu(page: Page) {
   await page.getByRole("button", { name: "导入导出", exact: true }).click();
+}
+
+async function selectDaggerheartSkin(page: Page, skinId: string) {
+  await openSystemPackageMenu(page);
+  const select = page.locator("select.menu-select", { has: page.locator(`option[value="${skinId}"]`) });
+  await expect(select).toHaveCount(1);
+  await select.selectOption(skinId);
 }
 
 async function waitForAutosave(page: Page) {

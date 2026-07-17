@@ -3,6 +3,7 @@ import { join, relative } from "node:path";
 import { zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
+import { getHtmlTemplateModuleReferences } from "../domain/systemPackage";
 import { composeResource } from "../domain/resourceComposer";
 import { createEmptyCharacterData, updateResourceSelectionSnapshot } from "../domain/characterData";
 import { rebuildDerivedDependencies } from "../domain/dependencyEngine";
@@ -20,8 +21,22 @@ describe("Daggerheart core System Package", () => {
 
     expect(result.issues.filter((issue) => issue.level === "fatal" || issue.level === "error")).toEqual([]);
     expect(result.package.defaultSkin).toBe("plain");
-    expect(result.package.skins).toEqual([expect.objectContaining({ ID: "plain", 推荐框架配色: "light" })]);
-    expect(result.package.skins?.[0]).not.toHaveProperty("layoutOverrides");
+    expect(result.package.skins).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ID: "plain", 推荐框架配色: "light" }),
+        expect.objectContaining({ ID: "skin-gpt-5.6sol", 推荐框架配色: "dark" }),
+      ]),
+    );
+    expect(result.package.skins?.length).toBeGreaterThanOrEqual(2);
+    expect(result.package.skins?.find((skin) => skin.ID === "plain")).not.toHaveProperty("layoutOverrides");
+    const astralSkin = result.package.skins?.find((skin) => skin.ID === "skin-gpt-5.6sol");
+    expect(astralSkin?.layoutOverrides?.shell?.htmlContent).toContain("astral-workspace");
+    expect(astralSkin?.layoutOverrides?.pages.map((page) => page.ID)).toEqual([
+      "character-main",
+      "character-story",
+      "ranger-companion",
+    ]);
+    expect(astralSkin?.layoutOverrides?.pages.every((page) => page.htmlContent.includes("astral-"))).toBe(true);
   });
 
   it("keeps presentation tokens in plain Skin and layout structure in Base CSS", () => {
@@ -31,6 +46,66 @@ describe("Daggerheart core System Package", () => {
     expect(plain).toContain("--dh-surface: #ffffff");
     expect(base).toContain("background: var(--dh-surface)");
     expect(base).not.toContain("background: #fff");
+  });
+
+  it("ships skin-gpt-5.6sol as a scoped dark Skin with a light print presentation", () => {
+    const skin = readFileSync(join(packageRoot, "skins", "skin-gpt-5.6sol", "skin.css"), "utf8");
+    expect(skin).toContain(":scope");
+    expect(skin).toContain("color-scheme: dark");
+    expect(skin).toContain('@media print');
+    expect(skin).toMatch(/@media print\s*\{[\s\S]*?color-scheme:\s*light/);
+    expect(skin).toMatch(/\.play-card-name,\s*\.play-card-description\s*\{[^}]*color:\s*#[0-9a-f]{6}/i);
+    expect(skin).toMatch(/\.play-card-tag\s*\{[^}]*background:/);
+    expect(skin).toContain('url("assets/skins/skin-gpt-5.6sol/astral-chart.svg")');
+    expect(skin).not.toMatch(/@import|@font-face/i);
+  });
+
+  it("ships skin-KimiK3 with thread-bound HTML overrides that preserve module ownership and Guide regions", async () => {
+    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    expect(result.ok, result.ok ? undefined : JSON.stringify(result.issues, null, 2)).toBe(true);
+    if (!result.ok) return;
+
+    const skin = result.package.skins?.find((candidate) => candidate.ID === "skin-KimiK3");
+    expect(skin).toBeTruthy();
+    if (!skin?.layoutOverrides?.shell) return;
+    expect(skin.推荐框架配色).toBe("light");
+    expect(skin.layoutOverrides.pages?.map((page) => page.ID)).toEqual(["character-main", "character-story"]);
+
+    for (const override of skin.layoutOverrides.pages ?? []) {
+      const basePage = result.package.pages.find((page) => page.ID === override.ID);
+      expect(basePage, override.ID).toBeTruthy();
+      if (!basePage) continue;
+      expect(getHtmlTemplateModuleReferences(override.htmlContent).sort(), override.ID)
+        .toEqual(getHtmlTemplateModuleReferences(basePage.layout.htmlContent).sort());
+      expect(override.htmlContent).toContain("book-fold-edge");
+    }
+
+    expect(result.package.shell).toBeTruthy();
+    if (!result.package.shell) return;
+    expect(getHtmlTemplateModuleReferences(skin.layoutOverrides.shell.htmlContent).sort())
+      .toEqual(getHtmlTemplateModuleReferences(result.package.shell.htmlContent).sort());
+    expect(skin.layoutOverrides.shell.htmlContent.match(/<pb-page-outlet\b/gi)).toHaveLength(1);
+    expect(skin.layoutOverrides.shell.htmlContent.match(/\bdata-print-page\s*=\s*["']true["']/gi)).toHaveLength(1);
+
+    const effectiveHtml = [
+      ...result.package.pages.map(
+        (page) => skin.layoutOverrides?.pages?.find((override) => override.ID === page.ID)?.htmlContent ?? page.layout.htmlContent,
+      ),
+      skin.layoutOverrides.shell.htmlContent,
+    ].join("\n");
+    const guideRegions = [
+      "guide-class", "guide-ancestry", "guide-community", "guide-traits",
+      "guide-resources", "guide-equipment", "guide-inventory", "guide-experiences",
+      "guide-background-questions", "guide-connection-questions", "guide-domain-cards",
+    ];
+    for (const regionId of guideRegions) {
+      expect(effectiveHtml, regionId).toContain(`data-guide-region-id="${regionId}"`);
+    }
+
+    expect(skin.cssContent).toContain(":scope");
+    expect(skin.cssContent).toContain("@media print");
+    expect(skin.cssContent).toContain('url("assets/skins/skin-KimiK3/ink-wash-mountains.svg")');
+    expect(skin.cssContent).not.toMatch(/@import|@font-face/i);
   });
 
   it("loads the complete 18-step Character Creation Guide with stable targets", async () => {
@@ -63,7 +138,7 @@ describe("Daggerheart core System Package", () => {
       { 类型: "region", 区域ID: "guide-connection-questions" },
     ]);
     expect(steps?.[3].说明).toContain(":red[**基础**]");
-    expect(steps?.[2].说明).toContain("https://daggerheart.huijiwiki.com/wiki/");
+    expect(steps?.[2].说明).toContain("每个职业都始于一个或多个独特的职业特性");
   });
 
   it("routes pure and mixed ancestry features through one Resource Composer", async () => {
@@ -199,7 +274,8 @@ describe("Daggerheart core System Package", () => {
       }
     }
     expect(frontPaths.size).toBe(270);
-    expect(assetPaths.size).toBe(280);
+    expect([...assetPaths].filter((path) => !path.startsWith("assets/skins/"))).toHaveLength(280);
+    expect(assetPaths).toContain("assets/skins/skin-gpt-5.6sol/astral-chart.svg");
   });
 
   it("uses readable Chinese IDs for every core Resource Entry", async () => {

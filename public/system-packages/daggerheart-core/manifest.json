@@ -9,6 +9,61 @@
       "名称": "简洁",
       "css": "skins/plain.css",
       "推荐框架配色": "light"
+    },
+    {
+      "ID": "skin-gpt-5.6sol",
+      "名称": "暮光秘仪",
+      "css": "skins/skin-gpt-5.6sol/skin.css",
+      "推荐框架配色": "dark",
+      "layoutOverrides": {
+        "shell": { "html": "skins/skin-gpt-5.6sol/shell.html" },
+        "pages": [
+          { "ID": "character-main", "html": "skins/skin-gpt-5.6sol/character-main.html" },
+          { "ID": "character-story", "html": "skins/skin-gpt-5.6sol/character-story.html" },
+          { "ID": "ranger-companion", "html": "skins/skin-gpt-5.6sol/ranger-companion.html" }
+        ]
+      }
+    },
+    {
+      "ID": "skin-deepseekV4pro",
+      "名称": "星陨秘卷",
+      "css": "skins/skin-deepseekV4pro/skin.css",
+      "推荐框架配色": "dark",
+      "layoutOverrides": {
+        "shell": { "html": "skins/skin-deepseekV4pro/shell.html" },
+        "pages": [
+          { "ID": "character-main", "html": "skins/skin-deepseekV4pro/character-main.html" },
+          { "ID": "character-story", "html": "skins/skin-deepseekV4pro/character-story.html" },
+          { "ID": "ranger-companion", "html": "skins/skin-deepseekV4pro/ranger-companion.html" }
+        ]
+      }
+    },
+    {
+      "ID": "skin-KimiK3",
+      "名称": "松烟纸墨",
+      "css": "skins/skin-KimiK3/skin.css",
+      "推荐框架配色": "light",
+      "layoutOverrides": {
+        "shell": { "html": "skins/skin-KimiK3/shell.html" },
+        "pages": [
+          { "ID": "character-main", "html": "skins/skin-KimiK3/character-main.html" },
+          { "ID": "character-story", "html": "skins/skin-KimiK3/character-story.html" }
+        ]
+      }
+    },
+    {
+      "ID": "skin-grok4.5",
+      "名称": "晨光棱镜",
+      "css": "skins/skin-grok4.5/skin.css",
+      "推荐框架配色": "light",
+      "layoutOverrides": {
+        "shell": { "html": "skins/skin-grok4.5/shell.html" },
+        "pages": [
+          { "ID": "character-main", "html": "skins/skin-grok4.5/character-main.html" },
+          { "ID": "character-story", "html": "skins/skin-grok4.5/character-story.html" },
+          { "ID": "ranger-companion", "html": "skins/skin-grok4.5/ranger-companion.html" }
+        ]
+      }
     }
   ],
   "defaultSkin": "plain",

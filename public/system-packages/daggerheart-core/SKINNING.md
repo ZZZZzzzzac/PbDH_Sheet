@@ -16,3 +16,13 @@ Start with [System Package Skin Author Guide](../../../docs/system-package/autho
 All five Page IDs and the Shell have fixed meaning. An override may rearrange modules only inside its matching owner. It cannot change Page metadata, A4 sizing, Guide behavior, Character Data, Dependencies, Validation Checks or Card behavior.
 
 Before handoff, verify every runtime-visible Page, hidden conditional Page, the Shell card area, Guide targets, narrow viewport and browser print preview.
+
+## Text-card contrast check
+
+Before handoff, create or inspect text-mode Cards in both compact Card Face and Card Detail. Confirm that the Card name, description, tags and overflow indicator remain clearly readable against:
+
+- the default text-card background;
+- every background declared in the Card Table's `状态背景色` mapping; and
+- the Skin's screen and print presentations.
+
+Do not assume the Skin's `--framework-text` color is compatible with Card backgrounds. Base text Cards and Author-defined Card states may use light surfaces even when the Skin recommends the Dark Framework Color Scheme. When contrast is insufficient, add Skin-scoped Card text/tag colors while preserving Author-defined `--play-card-state-background` values and their state meaning.

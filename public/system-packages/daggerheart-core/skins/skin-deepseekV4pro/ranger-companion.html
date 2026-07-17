@@ -1,0 +1,67 @@
+<main class="companion-page">
+  <header class="companion-header">
+    <div class="companion-title"><strong>游侠</strong><span>星灵伙伴</span></div>
+    <div class="companion-name-field"><pb-module id="companion-name"></pb-module></div>
+    <div class="companion-evasion">
+      <span>星闪避值</span>
+      <pb-module id="companion-evasion"></pb-module>
+      <small>初始为 10</small>
+    </div>
+  </header>
+
+  <section class="companion-portrait"><pb-module id="companion-portrait"></pb-module></section>
+
+  <p class="companion-introduction illuminated-caps">
+    与星轨之主商议，决定你的星灵伙伴以何种形态显现于诸界。为其赋名，于上方空框中绘下或镶嵌它的星辉肖像。依其受训之道与你们共度的星辰岁月，为它谱写两项星灵经历。最后，记述它降下星罚的方式——其标准攻击，铭刻于"星辉攻击与星罚"章节。初始的星罚骰为 1d6，射程为近战。
+  </p>
+
+  <div class="cosmic-divider"><span>&#10038;</span></div>
+
+  <section class="companion-experiences">
+    <div class="companion-experience-editor">
+      <h2>星灵经历</h2>
+      <p class="illuminated-caps">以两项 +2 星灵经历为始。每当你获得新的经历，你的星灵伙伴同样获得一个新的经历。所有新的经历均以 +2 开始。</p>
+      <div class="companion-experience-list">
+        <div><pb-module id="companion-experience-1"></pb-module><pb-module id="companion-experience-modifier-1"></pb-module></div>
+        <div><pb-module id="companion-experience-2"></pb-module><pb-module id="companion-experience-modifier-2"></pb-module></div>
+        <div><pb-module id="companion-experience-3"></pb-module><pb-module id="companion-experience-modifier-3"></pb-module></div>
+        <div><pb-module id="companion-experience-4"></pb-module><pb-module id="companion-experience-modifier-4"></pb-module></div>
+        <div><pb-module id="companion-experience-5"></pb-module><pb-module id="companion-experience-modifier-5"></pb-module></div>
+      </div>
+    </div>
+    <div class="companion-experience-examples">
+      <h3>星灵经历范例</h3>
+      <p class="illuminated-caps">勇猛干扰者、攀爬专家、寻回能手、友善亲和、森林守卫者、救人威胁、凶暴恐吓、至死不渝、导航专家、灵巧迅捷、不抛弃任何人、高度警惕、保护者、皇家伙伴、侦察兵猴、服务型动物、可靠坐骑、守夜者、追踪大师、无迹可寻</p>
+    </div>
+  </section>
+
+  <p class="companion-action-rule illuminated-caps">
+    进行一次施法掷骰，与你的星灵建立共鸣并命其行动。<strong>花费 1 希望点</strong>，将一项适用的星灵经历加入掷骰中。<strong>希望成功</strong>时，若你下一次行动基于星灵的成功，则你在掷骰中获得<strong>优势</strong>。
+  </p>
+
+  <div class="companion-lower-grid">
+    <div class="companion-combat-column">
+      <section class="companion-section companion-attack-section">
+        <h2>星辉攻击与星罚</h2>
+        <div class="companion-attack-fields">
+          <pb-module id="companion-attack-die"></pb-module>
+          <div class="companion-attack-range">星罚射程<pb-module id="companion-attack-range"></pb-module></div>
+        </div>
+        <p class="illuminated-caps">当你命星灵进行攻击时，其获得通常只适用于你的任何增益（例如"游侠专注"的效果）。在成功命中时，其星罚掷骰使用你的熟练值和其自身的星罚骰。</p>
+      </section>
+
+      <section class="companion-section companion-stress-section">
+        <h2>星辉压力</h2>
+        <pb-module id="companion-stress"></pb-module>
+        <p class="illuminated-caps">当你的星灵受到任何数量的伤害时，其<strong>标记 1 压力点</strong>。当其标记最后一个压力点时，星灵将散逸回归星界（通过隐匿、遁逃或类似行动），并且直到你下一次长休开始前不可召唤，届时星灵将重新凝聚于你身边并清除 1 压力点。</p>
+        <p class="illuminated-caps">当你选择一个可以清除自身压力点的休整行动时，你的星灵也会清除等量的压力点。</p>
+      </section>
+    </div>
+
+    <section class="companion-section companion-upgrade-section">
+      <h2>星灵升阶</h2>
+      <p class="illuminated-caps">当你的角色升阶时，从下列星灵选项中选择一个可用选项，并将其标记在你的星灵伙伴卷轴上。</p>
+      <pb-module id="companion-upgrades"></pb-module>
+    </section>
+  </div>
+</main>
