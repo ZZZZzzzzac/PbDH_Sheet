@@ -774,7 +774,7 @@ describe("App Character Creation Guide", () => {
 describe("App Resource Manager", () => {
   afterEach(() => resetRuntimeDependencies());
 
-  it("opens from the System Package toolbar menu", async () => {
+  it("opens from the Player Features toolbar menu", async () => {
     configureRuntimeDependencies({
       loadSystemPackageFromFile: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
       storage: createEmptyStorage(),
@@ -789,6 +789,15 @@ describe("App Resource Manager", () => {
     const user = userEvent.setup();
     render(<App />);
     await act(async () => useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob()));
+
+    const toolbar = screen.getByRole("navigation", { name: "Sheet Tool actions" });
+    const triggers = Array.from(toolbar.querySelectorAll(".menu-trigger"));
+    expect(triggers.map((trigger) => trigger.textContent?.trim())).toEqual([
+      "玩家功能",
+      "玩家存档",
+      "存档导入导出",
+      "系统包",
+    ]);
 
     const managerButton = screen.getByRole("button", { name: "资源管理器" });
     await user.click(managerButton);

@@ -396,38 +396,10 @@ export default function App() {
         <nav className="top-menu-bar" aria-label="Sheet Tool actions">
           <div className="top-menu">
             <button className="menu-trigger" type="button" aria-haspopup="true">
-              <Archive aria-hidden="true" size={17} />
-              <span className="menu-trigger-text">{systemPackageLabel}</span>
+              <Map aria-hidden="true" size={17} />
+              <span className="menu-trigger-text">玩家功能</span>
             </button>
             <div className="menu-panel" role="menu">
-              <button
-                className="menu-item"
-                type="button"
-                onClick={() => packageFileInputRef.current?.click()}
-                aria-label="上传 System Package zip"
-                disabled={bootStatus === "loading"}
-              >
-                <Upload aria-hidden="true" size={16} />
-                <span>上传 zip</span>
-              </button>
-              <button className="menu-item" type="button" onClick={() => packageDirectoryInputRef.current?.click()} disabled={bootStatus === "loading"}>
-                <Upload aria-hidden="true" size={16} />
-                <span>上传目录</span>
-              </button>
-              {authorPreviewActive ? (
-                <>
-                  <button className="menu-item" type="button" onClick={() => void handleEnterAuthorPreview()}>
-                    <Eye aria-hidden="true" size={16} /><span>重新选择预览目录</span>
-                  </button>
-                  <button className="menu-item" type="button" onClick={exitAuthorPreview}>
-                    <X aria-hidden="true" size={16} /><span>退出预览</span>
-                  </button>
-                </>
-              ) : (
-                <button className="menu-item" type="button" onClick={() => void handleEnterAuthorPreview()}>
-                  <Eye aria-hidden="true" size={16} /><span>进入预览</span>
-                </button>
-              )}
               <button ref={resourceManagerButtonRef} className="menu-item" type="button" onClick={() => setResourceManagerOpen(true)} disabled={!currentPackage || !resourceCatalog}>
                 <Library aria-hidden="true" size={16} />
                 <span>资源管理器</span>
@@ -459,9 +431,10 @@ export default function App() {
 
           <div className="top-menu">
             <button className="menu-trigger" type="button" aria-haspopup="true" disabled={!currentPackage || !characterData}>
-              <span className="menu-trigger-text">当前存档 {activeCharacterSaveName}</span>
+              <span className="menu-trigger-text">玩家存档</span>
             </button>
             <div className="menu-panel" role="menu">
+              <div className="menu-field menu-field-compact" title={activeCharacterSaveName}>当前存档：{activeCharacterSaveName}</div>
               <label className="menu-field menu-field-compact">
                 <select
                   className="menu-select"
@@ -517,9 +490,9 @@ export default function App() {
           <div className="top-menu">
             <button className="menu-trigger" type="button" aria-haspopup="true" disabled={!characterData}>
               <Download aria-hidden="true" size={17} />
-              <span className="menu-trigger-text">导出</span>
+              <span className="menu-trigger-text">存档导入导出</span>
             </button>
-            <div className="menu-panel menu-panel-right" role="menu">
+            <div className="menu-panel" role="menu">
               <button className="menu-item" type="button" onClick={() => void beginOutput("print")} aria-label="打开浏览器打印 PDF" disabled={!characterData}>
                 <Printer aria-hidden="true" size={16} />
                 <span>打印 PDF</span>
@@ -542,6 +515,44 @@ export default function App() {
                 <FileText aria-hidden="true" size={16} />
                 <span>导出 HTML</span>
               </button>
+            </div>
+          </div>
+
+          <div className="top-menu">
+            <button className="menu-trigger" type="button" aria-haspopup="true">
+              <Archive aria-hidden="true" size={17} />
+              <span className="menu-trigger-text">系统包</span>
+            </button>
+            <div className="menu-panel menu-panel-right" role="menu">
+              <div className="menu-field menu-field-compact" title={systemPackageLabel}>{systemPackageLabel}</div>
+              <button
+                className="menu-item"
+                type="button"
+                onClick={() => packageFileInputRef.current?.click()}
+                aria-label="上传 System Package zip"
+                disabled={bootStatus === "loading"}
+              >
+                <Upload aria-hidden="true" size={16} />
+                <span>上传 zip</span>
+              </button>
+              <button className="menu-item" type="button" onClick={() => packageDirectoryInputRef.current?.click()} disabled={bootStatus === "loading"}>
+                <Upload aria-hidden="true" size={16} />
+                <span>上传目录</span>
+              </button>
+              {authorPreviewActive ? (
+                <>
+                  <button className="menu-item" type="button" onClick={() => void handleEnterAuthorPreview()}>
+                    <Eye aria-hidden="true" size={16} /><span>重新选择预览目录</span>
+                  </button>
+                  <button className="menu-item" type="button" onClick={exitAuthorPreview}>
+                    <X aria-hidden="true" size={16} /><span>退出预览</span>
+                  </button>
+                </>
+              ) : (
+                <button className="menu-item" type="button" onClick={() => void handleEnterAuthorPreview()}>
+                  <Eye aria-hidden="true" size={16} /><span>进入预览</span>
+                </button>
+              )}
             </div>
           </div>
           <input

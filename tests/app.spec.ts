@@ -721,11 +721,11 @@ async function uploadPackage(page: Page, packagePath: string) {
 }
 
 async function openSystemPackageMenu(page: Page) {
-  await page.locator(".top-menu").first().locator(".menu-trigger").click();
+  await page.getByRole("button", { name: "系统包", exact: true }).click();
 }
 
 async function openExportMenu(page: Page) {
-  await page.locator(".top-menu").nth(2).locator(".menu-trigger").click();
+  await page.getByRole("button", { name: "存档导入导出", exact: true }).click();
 }
 
 async function waitForAutosave(page: Page) {
