@@ -268,28 +268,28 @@ async function loadPackageIntoState(
       storageStatus,
       ...(skinPreference.fellBack ? { importNotice: `此前选择的 Skin 已不存在，已回退到默认 Skin：${skinPreference.skinId}` } : {}),
     });
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     activePackageAssetResolver = createRuntimeAssetResolver(packageAssets ?? []);
-    const skinPreference = resolveSkinPreference(systemPackage);
     set({
       basePackage: systemPackage,
       currentPackage: systemPackage,
-      selectedSkinId: skinPreference.skinId,
-      resourceCatalog: createEffectiveResourceCatalog(systemPackage, []),
+      resourceCatalog: null,
       installedResourceExtensions: [],
       resourceExtensionImport: null,
       pendingResourceExtensionReplacement: null,
       pendingResourceExtensionRemoval: null,
       resourceReferenceIssues: [],
-      packageAssetUrls: activePackageAssetResolver.urls,
-      characterData: createEmptyCharacterData(systemPackage),
+      packageAssetUrls: {},
+      characterData: null,
       characterSaves: [],
       activeCharacterSaveId: null,
       ...emptyDerivedState(),
-      packageIssues: issues,
-      bootStatus: "ready",
+      packageIssues: [...issues, { level: "error", code: "PACKAGE_LOAD_FAILED", text: `加载 System Package 时出错：${message}`, path: "boot" }],
+      bootStatus: "error",
       storageStatus: "error",
-      ...(skinPreference.fellBack ? { importNotice: `此前选择的 Skin 已不存在，已回退到默认 Skin：${skinPreference.skinId}` } : {}),
+      importError: message,
+      importNotice: null,
     });
   }
 }
@@ -538,8 +538,30 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       }
 
       await loadPackageIntoState(cachedValidation.package, [], set);
-    } catch {
-      await clearCachedPackageAndResetState(set);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      activePackageAssetResolver?.revokeAll();
+      activePackageAssetResolver = undefined;
+      set({
+        basePackage: null,
+        currentPackage: null,
+        resourceCatalog: null,
+        installedResourceExtensions: [],
+        resourceExtensionImport: null,
+        pendingResourceExtensionReplacement: null,
+        pendingResourceExtensionRemoval: null,
+        resourceReferenceIssues: [],
+        packageAssetUrls: {},
+        characterData: null,
+        characterSaves: [],
+        activeCharacterSaveId: null,
+        ...emptyDerivedState(),
+        packageIssues: [{ level: "error", code: "INITIALIZE_FAILED", text: `初始化时出错：${message}，请检查浏览器存储或重新上传系统包。`, path: "boot" }],
+        bootStatus: "error",
+        storageStatus: "error",
+        importError: message,
+        importNotice: null,
+      });
     }
   },
 

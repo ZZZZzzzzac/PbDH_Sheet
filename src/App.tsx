@@ -639,7 +639,7 @@ export default function App() {
             : undefined
         }
       />
-      {currentPackage ? (
+      {!importError && currentPackage ? (
         <SheetRenderer
           systemPackage={currentPackage}
           outputMode={printMode}
