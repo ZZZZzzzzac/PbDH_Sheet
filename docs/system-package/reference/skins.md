@@ -53,6 +53,47 @@ Skin 调整 Page 内部 Grid/Flex 时，主列宽应相对于固定 A4 内容区
 
 Skin CSS 禁止 `@import`、`@font-face`、外部/绝对 URL。图片只能引用 System Package `assets/**` 下已发现的支持格式；字体只能使用带 fallback 的系统字体栈。
 
+## 网页与打印的所见即所得合同
+
+Base Framework 固定拥有 A4 打印页盒。Skin 的“所见即所得”不是把任意宽度的 desktop 页面原样塞进 A4，也不是在打印时另做一套紧凑布局；它表示网页预览与打印在同一有效 A4 内容宽度下使用相同的结构、轨道比例、Module 尺寸、题眉和装饰。
+
+- 如果网页 Page 默认可扩展到比 A4 更宽，而 Skin 的内容会因此在打印时重新换行或挤压，Skin 应让网页预览也使用真实 A4 页宽、相同 `box-sizing` 和相同页内 padding。不要等到 `@media print` 才缩窄 Page。
+- 主列和嵌套列使用 `%`、`fr`、`minmax(0, …)`。推荐把可调比例放进 Skin 私有 CSS variables，保证 Author 只改一个入口，并同时影响网页与打印。
+- 不要在 `@media print` 中隐藏题签、删除装饰、改变主列数量、把换行改成不换行，或用另一套 padding/字号掩盖 A4 溢出。若完整布局放不进 A4，应先调整网页与打印共享的 Grid/Flex、gap、装饰 padding 或 Author Data。
+- Skin 不应固定 Module 拥有的几何。特别是 longText 的高度由 Module `行数`决定；不要在 Skin 中对 `[data-module-type="longText"] [data-part="input"]` 写 `height` 或 `max-height`。Marker Presentation 的槽位和输出策略同样由 Base Framework 与 Module 配置拥有。
+- 打印会隐藏 Resource Picker 等交互控件。若 Picker 在 Grid/Flex 中占有独立轨道，打印规则应只回收这个已经消失的交互轨道，让相邻 freeText 延展；这属于输出补偿，不应改变页面主结构。
+- 需要保留背景、渐变和颜色时，在 Skin 的 Page 根使用 `print-color-adjust: exact` 与 `-webkit-print-color-adjust: exact`。这只请求浏览器精确打印颜色，不改变布局合同。
+
+打印隐藏 Picker 后回收轨道的典型写法：
+
+```css
+.picker-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 11mm;
+}
+
+@media print {
+  .picker-field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+```
+
+这里 freeText 与 Picker 的 Module/DOM 均不改变；打印时 Framework 隐藏 Picker，Skin 只把剩余可见字段扩展到父容器宽度。HTML snapshot、输出准备态和浏览器打印都应验证这一行为，不能只在普通网页中切换 DevTools 的单一样式规则。
+
+### 必须比较的验收信号
+
+Skin 的网页与打印自动化验收至少应覆盖：
+
+1. 每个打印 Page 的 `scrollWidth <= clientWidth` 且 `scrollHeight <= clientHeight`。
+2. 网页与打印 Page 具有相同宽高比；以真实 A4 预览为目标时，页宽和页内 padding 也应一致。
+3. 关键栏宽按“左栏宽 / 两栏宽度之和”等父容器内比例比较，不能只检查绝对像素。
+4. 题眉换行、分区标题显示状态和关键 Grid/Flex 方向在网页与打印中一致。
+5. 打印隐藏交互控件后，原相邻字段占满回收后的空间，不留下空白轨道。
+6. longText 的不同 `行数`产生不同且符合 Module 配置的高度，Skin CSS 不覆盖其 `height/max-height`。
+
+仅仅“没有产生第二张纸”不足以证明所见即所得；内容也可能被固定 `overflow: hidden` 静默裁切。验收必须同时检查 scroll/client 尺寸和关键区域几何。
+
 ## Effective HTML
 
 每个位置独立计算：`Skin override ?? Base Layout Template`。Skin 可只覆盖一个 Page；其他 Page 与 Shell 回退 Base HTML。Base Layout CSS 始终先加载，Skin 的同一份 package-wide CSS 最后加载。
