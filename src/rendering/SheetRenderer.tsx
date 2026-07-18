@@ -260,7 +260,6 @@ export function SheetRenderer({ systemPackage, outputMode = false, requestedPage
       className="sheet-tool"
       aria-label="Sheet Tool"
       data-system-package-id={systemPackage.manifest.ID}
-      data-countable-print-strategy={outputMode ? "clear-uniform-squares" : undefined}
     >
       {systemPackage.shell ? <div className="sheet-shell" data-template-shell="true"><style>{scopeCssBlock(resolveTemplateCssAssets(systemPackage.shell.cssContent ?? "", packageAssetUrls), '[data-template-shell="true"]')}</style>{renderHtmlTemplate(systemPackage, effectiveShellHtml(systemPackage, selectedSkinId)!, moduleVisibility, packageAssetUrls, outlet)}</div> : outlet}
       {skinCss ? <style data-system-package-skin={resolvedSkinId}>{skinCss}</style> : null}
