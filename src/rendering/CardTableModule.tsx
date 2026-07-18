@@ -485,8 +485,9 @@ function resolveVisibleCardDefinition(
   }
   const reverseId = front.fields[module.背面卡牌ID字段 ?? "背面卡牌ID"]?.trim();
   const libraryId = instance.definitionRef.type === "resourceLibrary" ? instance.definitionRef.libraryId : undefined;
+  if (!libraryId) return front;
   return reverseId
-    ? findResourceLibrary(systemPackage, libraryId ?? "")?.entries.find((entry) => entry.ID === reverseId) ?? front
+    ? findResourceLibrary(systemPackage, libraryId)?.entries.find((entry) => entry.ID === reverseId) ?? front
     : front;
 }
 
@@ -496,8 +497,9 @@ function hasReverseCardDefinition(systemPackage: SystemPackage, characterData: R
   if (backArt) return true;
   const reverseId = front?.fields[module.背面卡牌ID字段 ?? "背面卡牌ID"]?.trim();
   const libraryId = instance?.definitionRef.type === "resourceLibrary" ? instance.definitionRef.libraryId : undefined;
+  if (!libraryId) return false;
   return Boolean(reverseId && reverseId !== front?.ID
-    && findResourceLibrary(systemPackage, libraryId ?? "")?.entries.some((entry) => entry.ID === reverseId));
+    && findResourceLibrary(systemPackage, libraryId)?.entries.some((entry) => entry.ID === reverseId));
 }
 
 const cardIndicatorColorNames = ["青色", "红色", "金色", "绿色", "蓝色", "紫色", "粉色", "灰色", "橙色", "湖蓝色"] as const;
