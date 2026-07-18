@@ -23,5 +23,6 @@
 19. Skin 默认只生成全包 scoped CSS 和 `assets/skins/<skin-id>/**`；不要修改 Base Layout。只有 CSS 无法表达且任务明确允许时才生成该 Skin 自己的 HTML override。
 20. Skin HTML override 必须保持对应 Base Page/Shell 完全相同的 `<pb-module>` ID 多重集合，不能跨 Page/Shell 移动；Shell 保持唯一 outlet 和打印标记数量，Guide Region 在每个有效 Skin 中仍可用。
 21. Skin 禁止 `@import`、`@font-face`、字体文件、外部 URL、脚本、事件属性和自定义交互控件。用系统字体栈和包内图片；Framework 配色只声明 `light` 或 `dark` 建议。
+22. A4 Page 内部主列使用 `%`/`fr`/`minmax(0, …)`；不要用固定 `mm`/`px` 定义立绘栏、正文栏等主轨道，并比较网页与打印中的关键区域占比。
 
 生成顺序建议：manifest → resources/assets 图片树 → modules → pages/layouts/shell → dependencies → guide → checks → skins → Validator → Preview。

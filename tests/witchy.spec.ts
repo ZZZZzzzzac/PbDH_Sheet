@@ -20,6 +20,7 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
   expect(portraitBox).not.toBeNull();
   expect(essenceBox).not.toBeNull();
   expect(magicPointsBox).not.toBeNull();
+  const screenPortraitShare = portraitBox!.width / identityBox!.width;
   expect(identityBox!.x).toBeLessThan(resourceBox!.x);
   expect(portraitBox!.x).toBeLessThan(nameBox!.x);
   const identityTerminalPanelBox = await page.locator(".identity-terminal-panel").boundingBox();
@@ -144,11 +145,14 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
       const pages = [...document.querySelectorAll<HTMLElement>('.sheet-page, [data-print-page="true"]')];
       document.documentElement.dataset.witchyPrintProbe = JSON.stringify(pages.map((item) => {
         const rect = item.getBoundingClientRect();
+        const summary = item.querySelector<HTMLElement>(".character-summary")!.getBoundingClientRect();
+        const portrait = item.querySelector<HTMLElement>('[data-module-slot-id="character-portrait"]')!.getBoundingClientRect();
         return {
           widthFits: item.scrollWidth <= item.clientWidth + 1,
           heightFits: item.scrollHeight <= item.clientHeight + 1,
           clientHeight: item.clientHeight,
           scrollHeight: item.scrollHeight,
+          portraitShare: portrait.width / summary.width,
           ratio: rect.width / rect.height,
         };
       }));
@@ -168,6 +172,7 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
   expect(printProbe).toHaveLength(1);
   expect(printProbe[0].widthFits && printProbe[0].heightFits, JSON.stringify(printProbe)).toBe(true);
   expect(printProbe[0].ratio).toBeCloseTo(210 / 297, 2);
+  expect(Math.abs(printProbe[0].portraitShare - screenPortraitShare)).toBeLessThanOrEqual(0.03);
 });
 
 test("Witchy editable regions remain reachable on a narrow viewport", async ({ page }, testInfo) => {

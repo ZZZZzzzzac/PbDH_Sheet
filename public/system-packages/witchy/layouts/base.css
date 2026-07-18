@@ -53,7 +53,7 @@
 
 .character-summary {
   display: grid;
-  grid-template-columns: 55mm minmax(0, 1fr);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   gap: 2mm;
   align-items: stretch;
   min-width: 0;
@@ -245,9 +245,6 @@
     grid-template-columns: 1fr;
   }
 
-  .character-summary {
-    grid-template-columns: 34mm minmax(0, 1fr);
-  }
 }
 
 @media print {

@@ -41,6 +41,16 @@ manifest.json 中该 Skin 的注册项
 
 Skin 可以覆盖控件尺寸、spacing 和 Grid/Flex。只有 CSS 无法表达时才使用 HTML override。
 
+人物卡 Page 的内部主布局必须相对于 A4 内容区定义。列宽、立绘栏、正文栏等优先使用 `%`、`fr` 和 `minmax(0, …)`，让网页预览与打印保持相同占比；不要用固定 `mm` 或 `px` 定义这些子栏。`mm` 只用于纸张外盒、打印边距等确实需要物理尺寸的地方。例如：
+
+```css
+.character-summary {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+```
+
+不要把立绘栏写成 `55mm minmax(0, 1fr)`：网页较宽时看似正常，进入 A4 后固定列会占据更高比例并挤压相邻字段。Author Preview 与打印验收应比较关键区域的相对宽度，而不只检查是否溢出。
+
 ## 可选 HTML override
 
 Skin 可以只覆盖一个 Page，其他位置继续使用 Base HTML，并仍应用同一 Skin CSS：
