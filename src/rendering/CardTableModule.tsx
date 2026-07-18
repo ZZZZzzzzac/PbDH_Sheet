@@ -33,6 +33,8 @@ interface DragState {
   pointerId: number;
   offsetXPct: number;
   offsetYPct: number;
+  pendingXPct: number;
+  pendingYPct: number;
 }
 
 interface CardMenuState {
@@ -129,6 +131,8 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
       pointerId: event.pointerId,
       offsetXPct: point.xPct - instance.xPct,
       offsetYPct: point.yPct - instance.yPct,
+      pendingXPct: instance.xPct,
+      pendingYPct: instance.yPct,
     });
   };
 
@@ -141,18 +145,26 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
     const nextXPct = point.xPct - dragState.offsetXPct;
     const nextYPct = point.yPct - dragState.offsetYPct;
     const moved =
-      Math.abs(nextXPct - getDraggingInstanceX(visibleInstances, dragState.instanceId)) > 0.8 ||
-      Math.abs(nextYPct - getDraggingInstanceY(visibleInstances, dragState.instanceId)) > 0.8;
+      Math.abs(nextXPct - dragState.pendingXPct) > 0.8 ||
+      Math.abs(nextYPct - dragState.pendingYPct) > 0.8;
     if (moved) {
       clearLongPressTimer();
     }
     const nextPosition = clampCardTablePosition(tableLayout, nextXPct, nextYPct);
-    updateCardInstancePosition(event.currentTarget.dataset.cardInstanceId ?? dragState.instanceId, nextPosition.xPct, nextPosition.yPct);
+    setDragState({
+      ...dragState,
+      pendingXPct: nextPosition.xPct,
+      pendingYPct: nextPosition.yPct,
+    });
   };
 
   const endDrag = (event: PointerEvent<HTMLElement>) => {
     if (dragState?.pointerId === event.pointerId) {
       clearLongPressTimer();
+      if (dragState.pendingXPct !== getDraggingInstanceX(visibleInstances, dragState.instanceId) ||
+          dragState.pendingYPct !== getDraggingInstanceY(visibleInstances, dragState.instanceId)) {
+        updateCardInstancePosition(dragState.instanceId, dragState.pendingXPct, dragState.pendingYPct);
+      }
       setDragState(null);
     }
   };
@@ -206,6 +218,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
         {visibleInstances.map((instance) => (
           <CardView
             instance={instance}
+            dragState={dragState}
             definition={resolveVisibleCardDefinition(systemPackage, characterData, module, instance)}
             module={module}
             presentation={findCardPresentation(systemPackage, module, instance)}
@@ -244,6 +257,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
 
 function CardView({
   instance,
+  dragState,
   definition,
   module: moduleConfig,
   presentation,
@@ -253,6 +267,7 @@ function CardView({
   onContextMenu,
 }: {
   instance: CardInstance;
+  dragState: DragState | null;
   definition?: ResourceLibraryEntry;
   module: CardTableModuleConfig;
   presentation?: CardPresentation;
@@ -264,14 +279,17 @@ function CardView({
   const deleteCardInstance = useRuntimeStore((state) => state.deleteCardInstance);
   const resolvedPresentation = resolvePresentation(definition, moduleConfig, presentation);
   const name = resolvedPresentation.name || definitionReferenceId(instance);
+  const isDragging = dragState?.instanceId === instance.instanceId;
+  const positionXPct = isDragging ? dragState.pendingXPct : instance.xPct;
+  const positionYPct = isDragging ? dragState.pendingYPct : instance.yPct;
 
   return (
     <article
       className="play-card"
       data-card-instance-id={instance.instanceId}
       style={{
-        left: `${instance.xPct}%`,
-        top: `${instance.yPct}%`,
+        left: `${positionXPct}%`,
+        top: `${positionYPct}%`,
         zIndex: instance.zIndex,
         transform: `rotate(${instance.rotation}deg) scale(${instance.scale})`,
         "--card-control-counter-rotation": `${-instance.rotation}deg`,
