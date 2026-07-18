@@ -5,6 +5,14 @@ import { findModule, getResourcePickerLinks, type DependencyAction, type Depende
 import { formatResourceTextTemplate } from "./resourceTextTemplate";
 import { clampInt } from "../utils";
 
+export interface CardCreationInstruction {
+  moduleId: string;
+  cardTableModuleId: string;
+  entries: ResourceLibraryEntry[];
+  libraryId?: string;
+  defaultState?: string;
+}
+
 export interface ResourceSelectedEvent {
   type: "resourceSelected";
   sourceModuleId: string;
@@ -29,6 +37,7 @@ export interface DependencyEvaluationResult {
   pageVisibility: Record<string, boolean>;
   resourcePickerDefaultQueries: Record<string, ResourceLibraryQuery>;
   warnings: string[];
+  cardCreationInstructions: CardCreationInstruction[];
 }
 
 export function createEmptyDependencyEvaluationResult(): DependencyEvaluationResult {
@@ -39,6 +48,7 @@ export function createEmptyDependencyEvaluationResult(): DependencyEvaluationRes
     pageVisibility: {},
     resourcePickerDefaultQueries: {},
     warnings: [],
+    cardCreationInstructions: [],
   };
 }
 
@@ -67,6 +77,20 @@ export function evaluateDependencies(
         result,
         ruleId: rule.ID,
         writtenTargets,
+      });
+    }
+  }
+
+  if (event.type === "resourceSelected") {
+    const sourceModule = findModule(systemPackage, event.sourceModuleId);
+    const config = (sourceModule as Record<string, unknown> | undefined)?.创建卡牌 as { 卡牌桌面模块ID?: string; 默认状态?: string } | undefined;
+    if (config?.卡牌桌面模块ID && event.selectedEntries.length > 0) {
+      result.cardCreationInstructions.push({
+        moduleId: event.sourceModuleId,
+        cardTableModuleId: config.卡牌桌面模块ID,
+        entries: event.selectedEntries,
+        libraryId: event.libraryId,
+        defaultState: config.默认状态,
       });
     }
   }
@@ -103,6 +127,7 @@ export function rebuildDerivedDependencies(
       applyAction({ action, data, systemPackage, event, result, ruleId: rule.ID, writtenTargets });
     }
   }
+
 
   return result;
 }

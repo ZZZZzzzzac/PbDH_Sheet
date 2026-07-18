@@ -1010,13 +1010,12 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     });
     warnDependencyIssues(result);
 
-    const nextData = createCardInstancesFromSelection(
-      applyDependencyResultToCharacterData(dataWithSnapshot, result),
-      currentPackage,
-      moduleId,
-      libraryId,
-      entries,
-    );
+    let nextData = applyDependencyResultToCharacterData(dataWithSnapshot, result);
+    for (const instruction of result.cardCreationInstructions) {
+      if (instruction.libraryId) {
+        nextData = createCardInstancesFromSelection(nextData, currentPackage, instruction.moduleId, instruction.libraryId, instruction.entries);
+      }
+    }
     const derivedResult = rebuildDerivedDependencies(nextData, currentPackage);
     warnDependencyIssues(derivedResult);
 
@@ -1053,7 +1052,10 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       selectedEntries: [composite],
     });
     warnDependencyIssues(result);
-    const nextData = createCardInstanceFromComposite(applyDependencyResultToCharacterData(withComposite, result), currentPackage, moduleId, composite);
+    let nextData = applyDependencyResultToCharacterData(withComposite, result);
+    if (result.cardCreationInstructions.length > 0) {
+      nextData = createCardInstanceFromComposite(nextData, currentPackage, moduleId, composite);
+    }
     const derivedResult = rebuildDerivedDependencies(nextData, currentPackage);
     warnDependencyIssues(derivedResult);
     set(() => ({

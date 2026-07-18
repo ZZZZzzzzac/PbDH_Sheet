@@ -30,6 +30,7 @@ Dependency Engine 是独立核心模块：
 - 每条 dependency rule 应声明 `sources` 和 `targets`，用于校验、冲突检测和未来性能优化。
 - 依赖冲突是 System Package 错误，由 Validator 或运行时依赖检查报 error，Author 负责修复。
 - MVP 不支持链式触发。规则基于当前已提交 Character Data 单轮计算，产生 patch 后提交，不继续用本轮结果触发下一轮。
+- Card 实例创建也通过 Dependency Engine 统一管道：`resourceSelected` 事件触发 `evaluateDependencies`，Engine 检测 source 模块的 `创建卡牌` 配置后，在 `cardCreationInstructions` 中返回创建指令，由 Store 的 `applyDependencyResult` 统一执行。Card 创建不再是 Dependency Engine 之外的独立写通道。
 
 ## 理由
 
