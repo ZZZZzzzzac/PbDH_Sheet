@@ -1214,23 +1214,6 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     });
   }
 
-  const writtenTargets = new Map<string, string[]>();
-  for (const dependency of systemPackage.dependencies ?? []) {
-    for (const [actionIndex, action] of (dependency.动作 ?? []).entries()) {
-      if (!("目标模块ID" in action)) continue;
-      const writers = writtenTargets.get(action.目标模块ID);
-      if (writers && !writers.includes(dependency.ID)) {
-        issues.push({
-          level: "warning",
-          code: "DUPLICATE_DEPENDENCY_WRITE_TARGET",
-          text: `Dependency Rule "${dependency.ID}" 与 "${writers[0]}" 都写入同一目标模块：${action.目标模块ID}`,
-          path: `dependencies.${dependency.ID}.动作.${actionIndex}`,
-        });
-      }
-      writtenTargets.set(action.目标模块ID, [...(writers ?? []), dependency.ID]);
-    }
-  }
-
   // --- Card creation references ---
 
   for (const module of systemPackage.modules) {
@@ -1642,7 +1625,6 @@ interface ValidationContext {
   guideRegions: Array<{ id: string; source: string }>;
   cardArtFieldsByLibrary: Map<string, Set<string>>;
   cardPresentationsByLibrary: Map<string, Array<{ moduleId: string; presentation?: z.infer<typeof cardPresentationSchema> }>>;
-  writtenTargets: Map<string, string[]>;
   issues: PackageIssue[];
 }
 
