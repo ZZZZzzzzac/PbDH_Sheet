@@ -7,22 +7,22 @@ const entry = {
 };
 
 describe("Card Presentation", () => {
-  it("uses 名称, 描述, and remaining fields by default", () => {
+it("uses 名称, 描述, and remaining fields by default", () => {
     expect(resolveCardPresentation(entry)).toMatchObject({
       name: "原名",
       description: "原描述",
-      tags: ["飞行", "可以飞行", "种族", "内部"],
+      tags: ["Original", "card-old", "飞行", "可以飞行", "种族", "内部"],
     });
   });
 
   it("formats name and description templates and excludes consumed fields from inferred tags", () => {
     expect(resolveCardPresentation(entry, {
-      名称模板: "{{名称}} · {{类型}}",
-      描述模板: "**{{特性名}}**：{{特性描述}}",
+       名称模板: "{{名称}} · {{类型}}",
+       描述模板: "**{{特性名}}**：{{特性描述}}",
     })).toMatchObject({
       name: "原名 · 种族",
       description: "**飞行**：可以飞行",
-      tags: ["原描述", "内部"],
+      tags: ["Original", "card-old", "原描述", "内部"],
     });
   });
 

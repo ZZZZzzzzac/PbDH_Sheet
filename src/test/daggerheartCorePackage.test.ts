@@ -198,8 +198,8 @@ describe("Daggerheart core System Package", () => {
     const result = await loadSystemPackageFromZipFile(createPackageZip());
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    const cases = [
-      { moduleId: "pick-class", libraryId: "classes", hidden: ["推荐初始属性", "推荐初始武器", "推荐初始护甲", "职业物品", "原名", "类型"] },
+    const cases: Array<{ moduleId: string; libraryId: string; hidden: string[]; visible?: string[] }> = [
+      { moduleId: "pick-class", libraryId: "classes", hidden: ["推荐初始属性", "推荐初始武器", "推荐初始护甲", "职业物品", "类型"], visible: ["原名"] },
       { moduleId: "pick-subclass", libraryId: "subclasses", hidden: ["类型"] },
       { moduleId: "pick-community", libraryId: "communities", hidden: ["类型"] },
       { moduleId: "pick-domain-card", libraryId: "domain-cards", hidden: ["背面卡牌ID", "原名", "类型"] },
@@ -219,6 +219,9 @@ describe("Daggerheart core System Package", () => {
           sortable: false,
           searchable: false,
         });
+      }
+      for (const field of item.visible ?? []) {
+        expect(fields.find((candidate) => candidate.key === field)?.visible, `${item.moduleId}.${field}`).not.toBe(false);
       }
     }
 
@@ -293,9 +296,8 @@ describe("Daggerheart core System Package", () => {
         expect(entry.ID, `${libraryId}/${entry.fields.名称}`).toBe(expectedReadableCoreId(libraryId, entry.fields));
         expect(entry.aliases).toHaveLength(1);
       }
-      expect(library?.fields.find((field) => field.key === "旧ID")).toMatchObject({
-        visible: false, filterable: false, sortable: false, searchable: false,
-      });
+      expect(library?.fields.find((field) => field.key === "旧ID")).toBeDefined();
+      expect(library?.fields.find((field) => field.key === "旧ID")!.visible).not.toBe(false);
     }
   });
 

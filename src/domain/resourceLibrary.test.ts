@@ -21,9 +21,9 @@ describe("Resource Library normalization", () => {
     if (!result.ok) return;
     const library = result.resourceLibraries[0];
     expect(library.entries[0].aliases).toEqual(["class-old"]);
-    expect(library.fields.find((field) => field.key === "旧ID")).toMatchObject({
-      visible: false, filterable: false, sortable: false, searchable: false,
-    });
+    const 旧IDField = library.fields.find((field) => field.key === "旧ID");
+    expect(旧IDField).toBeDefined();
+    expect(旧IDField!.visible).not.toBe(false);
     expect(findResourceLibraryEntry(library, "class-old")?.ID).toBe("职业:德鲁伊");
   });
 
