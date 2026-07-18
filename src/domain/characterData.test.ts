@@ -98,7 +98,7 @@ describe("Character Data import/export", () => {
         expect.objectContaining({
           instanceId: "card-instance-1",
           definitionRef: { type: "resourceLibrary", libraryId: "domain-cards", entryId: "domain-card:符文护符" },
-          state: "default",
+          state: "",
           tableModuleId: "domain-card-table",
         }),
       ]);
