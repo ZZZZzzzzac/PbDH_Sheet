@@ -1107,15 +1107,16 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   // ========== Card operations ==========
 
   updateCardInstancePosition(instanceId, xPct, yPct) {
-    if (!get().characterData) {
+    const data = get().characterData;
+    if (!data) {
       return;
     }
 
-    set((state) => ({
-      characterData: state.characterData ? updateCardInstancePositionDomain(state.characterData, instanceId, xPct, yPct) : null,
+    set({
+      characterData: updateCardInstancePositionDomain(data, instanceId, xPct, yPct),
       importError: null,
       importNotice: null,
-    }));
+    });
 
     scheduleAutosave(
       () => get().characterData,
@@ -1124,15 +1125,16 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   },
 
   bringCardInstanceToFront(instanceId) {
-    if (!get().characterData) {
+    const data = get().characterData;
+    if (!data) {
       return;
     }
 
-    set((state) => ({
-      characterData: state.characterData ? bringCardInstanceToFrontDomain(state.characterData, instanceId) : null,
+    set({
+      characterData: bringCardInstanceToFrontDomain(data, instanceId),
       importError: null,
       importNotice: null,
-    }));
+    });
 
     scheduleAutosave(
       () => get().characterData,
@@ -1141,15 +1143,16 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   },
 
   updateCardInstanceState(instanceId, cardState) {
-    if (!get().characterData) {
+    const data = get().characterData;
+    if (!data) {
       return;
     }
 
-    set((state) => ({
-      characterData: state.characterData ? updateCardInstanceStateDomain(state.characterData, instanceId, cardState) : null,
+    set({
+      characterData: updateCardInstanceStateDomain(data, instanceId, cardState),
       importError: null,
       importNotice: null,
-    }));
+    });
 
     scheduleAutosave(
       () => get().characterData,
@@ -1158,15 +1161,16 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   },
 
   tidyCardTable(tableModuleId, layout) {
-    if (!get().characterData) {
+    const data = get().characterData;
+    if (!data) {
       return;
     }
 
-    set((state) => ({
-      characterData: state.characterData ? tidyCardTableDomain(state.characterData, tableModuleId, layout) : null,
+    set({
+      characterData: tidyCardTableDomain(data, tableModuleId, layout),
       importError: null,
       importNotice: null,
-    }));
+    });
 
     scheduleAutosave(
       () => get().characterData,
@@ -1184,15 +1188,16 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   },
 
   deleteCardInstance(instanceId) {
-    if (!get().characterData) {
+    const data = get().characterData;
+    if (!data) {
       return;
     }
 
-    set((state) => ({
-      characterData: state.characterData ? deleteCardInstanceDomain(state.characterData, instanceId) : null,
+    set({
+      characterData: deleteCardInstanceDomain(data, instanceId),
       importError: null,
       importNotice: null,
-    }));
+    });
 
     scheduleAutosave(
       () => get().characterData,
@@ -1309,11 +1314,11 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   // ========== Image & import/export ==========
 
   async removePlayerImage(moduleId) {
-    const characterData = get().characterData;
-    const value = characterData?.character.values[moduleId];
-    if (!characterData || !isPlayerImageValue(value)) return;
+    const data = get().characterData;
+    const value = data?.character.values[moduleId];
+    if (!data || !isPlayerImageValue(value)) return;
 
-    set((state) => ({ characterData: state.characterData ? removePlayerImageData(state.characterData, moduleId) : null }));
+    set({ characterData: removePlayerImageData(data, moduleId) });
     scheduleAutosave(
       () => get().characterData,
       (status) => set({ storageStatus: status }),
@@ -1388,14 +1393,15 @@ function updateCardStateAndAutosave(
   set: (partial: Partial<RuntimeState> | ((state: RuntimeState) => Partial<RuntimeState>)) => void,
   update: (data: CharacterData) => CharacterData,
 ) {
-  if (!get().characterData) {
+  const data = get().characterData;
+  if (!data) {
     return;
   }
-  set((state) => ({
-    characterData: state.characterData ? update(state.characterData) : null,
+  set({
+    characterData: update(data),
     importError: null,
     importNotice: null,
-  }));
+  });
   scheduleAutosave(
     () => get().characterData,
     (status) => set({ storageStatus: status }),
