@@ -299,6 +299,51 @@ describe("runtime store", () => {
     expect(useRuntimeStore.getState().characterSaves.map((save) => save.name)).not.toContain("阿青副本");
   });
 
+  it("flushes pending autosave before switching Character Save (#211)", async () => {
+    vi.useFakeTimers();
+    try {
+      renderHook(() => useRuntimeStore());
+
+      await act(async () => {
+        await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+      });
+
+      const firstSaveId = useRuntimeStore.getState().activeCharacterSaveId;
+      expect(firstSaveId).toBeTruthy();
+
+      await act(async () => {
+        await useRuntimeStore.getState().createCharacterSave("第二角色");
+      });
+      const secondSaveId = useRuntimeStore.getState().activeCharacterSaveId;
+      expect(secondSaveId).not.toBe(firstSaveId);
+
+      await act(async () => {
+        await useRuntimeStore.getState().switchCharacterSave(firstSaveId!);
+      });
+
+      act(() => {
+        useRuntimeStore.getState().updateModuleValue("character-name", "未保存的编辑");
+      });
+      expect(useRuntimeStore.getState().storageStatus).toBe("saving");
+
+      // pending autosave timer still scheduled, has not fired yet
+      vi.advanceTimersByTime(0);
+      expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("未保存的编辑");
+
+      await act(async () => {
+        await useRuntimeStore.getState().switchCharacterSave(secondSaveId!);
+      });
+
+      // first save should have been flushed, switching back preserves the edit
+      await act(async () => {
+        await useRuntimeStore.getState().switchCharacterSave(firstSaveId!);
+      });
+      expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("未保存的编辑");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("loads an uploaded System Package without exposing zip details to runtime state", async () => {
     await act(async () => {
       await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());

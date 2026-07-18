@@ -360,6 +360,7 @@ function scheduleAutosave(
 
   setStatus("saving");
   autosaveTimer = setTimeout(() => {
+    autosaveTimer = undefined;
     const snapshot = readSnapshot();
     if (!snapshot) {
       setStatus("error");
@@ -371,6 +372,32 @@ function scheduleAutosave(
       .then(() => setStatus("saved"))
       .catch(() => setStatus("error"));
   }, autosaveDelayMs);
+}
+
+async function flushPendingAutosave(
+  snapshot: CharacterData | null,
+  activeSaveId: string | null,
+  characterSaves: CharacterSaveSummary[],
+) {
+  if (!autosaveTimer) {
+    return;
+  }
+
+  clearTimeout(autosaveTimer);
+  autosaveTimer = undefined;
+
+  if (!snapshot || !activeSaveId) {
+    return;
+  }
+
+  const saveName = characterSaves.find((save) => save.id === activeSaveId)?.name ?? "未命名角色";
+  await runtimeDependencies.storage.saveCharacterSave({
+    id: activeSaveId,
+    packageId: snapshot.systemPackage.id,
+    name: saveName,
+    updatedAt: snapshot.updatedAt,
+    data: { ...snapshot, character: { ...snapshot.character, id: activeSaveId } },
+  });
 }
 
 function saveCharacterDataImmediately(
@@ -793,6 +820,19 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     const currentPackage = get().currentPackage;
     if (!currentPackage) {
       return;
+    }
+
+    if (saveId === get().activeCharacterSaveId) {
+      return;
+    }
+
+    const previousCharacterData = get().characterData;
+    const previousSaveId = get().activeCharacterSaveId;
+    const previousSaves = get().characterSaves;
+    try {
+      await flushPendingAutosave(previousCharacterData, previousSaveId, previousSaves);
+    } catch {
+      set({ storageStatus: "error" });
     }
 
     const characterData = await runtimeDependencies.storage.loadCharacterSave(currentPackage.manifest.ID, saveId);
