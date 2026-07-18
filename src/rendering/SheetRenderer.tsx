@@ -148,9 +148,7 @@ function scopeCssBlock(css: string, scope: string): string {
     const body = css.slice(openIndex + 1, closeIndex);
     if (/^@(media|supports|container|layer)\b/i.test(selector)) {
       result += `${selector} {${scopeCssBlock(body, scope)}}`;
-    } else if (selector.startsWith("@")) {
-      result += `${selector} {${body}}`;
-    } else if (selector) {
+    } else if (selector && !selector.startsWith("@")) {
       result += `${scopeSelectors(selector, scope)} {${body}}`;
     }
 
