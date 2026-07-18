@@ -254,12 +254,12 @@ describe("Module Registry rendering", () => {
     expect(markerModule.querySelector('[data-part="remaining-markers"]')).toHaveTextContent("🖤");
     const styles = readFileSync("src/styles/countable-resource.css", "utf8");
     expect(styles).toMatch(/\.marker-cell\s*\{[^}]*flex:\s*0 0 1\.25em[^}]*width:\s*1\.25em[^}]*justify-content:\s*center/s);
-    expect(styles).toContain('[data-countable-print-strategy="clear-uniform-squares"]');
+    expect(styles).not.toContain('[data-countable-print-strategy="clear-uniform-squares"]');
     expect(styles).not.toContain('[data-countable-print-strategy="clear-current"]');
     expect(styles).not.toContain('[data-countable-print-strategy="uniform-squares"]');
-    expect(styles).toMatch(/flex:\s*0 0 5\.8mm[^}]*width:\s*5\.8mm[^}]*height:\s*5\.8mm/s);
-    expect(styles).toMatch(/\.marker-glyph\s*\{[^}]*display:\s*none/s);
-    expect(styles).toMatch(/\.marker-cell::before\s*\{[^}]*content:\s*"□"[^}]*font-size:\s*5\.5mm[^}]*line-height:\s*1/s);
+    expect(styles).toMatch(/\.print-mode \.marker-cell\s*\{[^}]*flex:\s*0 0 5\.8mm[^}]*width:\s*5\.8mm[^}]*height:\s*5\.8mm/s);
+    expect(styles).not.toMatch(/\.marker-glyph\s*\{[^}]*display:\s*none/s);
+    expect(styles).not.toMatch(/\.marker-cell::before\s*\{[^}]*content:\s*"□"[^}]*/s);
     expect(styles).not.toMatch(/\.marker-cell::before\s*\{[^}]*border:/s);
   });
 

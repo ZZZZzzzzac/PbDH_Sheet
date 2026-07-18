@@ -53,35 +53,14 @@
   text-align: center;
 }
 
-[data-countable-print-strategy="clear-uniform-squares"] .marker-cell .marker-glyph {
-  display: none;
-}
-
-[data-countable-print-strategy="clear-uniform-squares"] .marker-cell {
+.print-mode .marker-cell {
   flex: 0 0 5.8mm;
   width: 5.8mm;
   height: 5.8mm;
 }
 
-[data-countable-print-strategy="clear-uniform-squares"] .marker-cell::before {
-  display: inline-block;
-  flex: 0 0 5.5mm;
-  content: "□";
-  font-family: "Segoe UI Symbol", sans-serif;
-  font-size: 5.5mm;
-  line-height: 1;
-}
-
-[data-countable-print-strategy="clear-uniform-squares"] .marker-group[data-countable-unbounded="true"] .marker-cell {
+.print-mode .marker-group[data-countable-unbounded="true"] .marker-cell {
   display: none;
-}
-
-[data-countable-print-strategy="clear-uniform-squares"] [data-module-type="countableResource"] [data-part="value-group"] > [data-part="input"] {
-  display: none;
-}
-
-[data-countable-print-strategy="clear-uniform-squares"] [data-module-type="countableResource"] [data-part="value-group"]::before {
-  content: "0";
 }
 
 .stepper {
