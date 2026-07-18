@@ -28,8 +28,6 @@ export interface CardInstance {
   scale: number;
   /** Record form is accepted only for saves created by the earlier Author-typed indicator prototype. */
   indicators?: CardIndicatorState;
-  /** @deprecated Kept for Character Data 0.1.0 compatibility. */
-  tokenCount: number;
 }
 
 export interface CreateCardInstanceInput {
@@ -95,14 +93,13 @@ export function createCardInstance(data: CharacterData, input: CreateCardInstanc
     instanceId: input.instanceId,
     tableModuleId: input.tableModuleId,
     definitionRef,
-    state: input.state ?? "default",
+    state: input.state ?? "",
     ...defaultCardPosition(siblingCount),
     zIndex: nextZIndex(data.cards.instances),
     face: "front",
     rotation: 0,
     scale: 1,
     indicators: [],
-    tokenCount: 0,
   };
 
   return updateCardInstances(data, [...data.cards.instances, instance]);
