@@ -34,6 +34,7 @@ describe("Witchy System Package", () => {
     });
     expect(result.package.modules.find((module) => module.ID === "erosion")).toMatchObject({
       类型: "countableResource", 默认值: 0, 最大值: 6,
+      显示方式: "标记", 当前值标记: "🌑", 剩余值标记: "🌕",
     });
     expect(result.package.dependencies).toEqual(expect.arrayContaining([
       expect.objectContaining({
@@ -44,14 +45,19 @@ describe("Witchy System Package", () => {
     for (const id of ["essence-assiah", "essence-yetzirah", "essence-atziluth"]) {
       expect(result.package.modules.find((module) => module.ID === id)).toMatchObject({ 类型: "freeText", 默认值: "0" });
     }
-    for (const id of ["magic-4-name", "magic-4-description", "omen-past", "omen-present", "omen-future", "inventory", "familiar-name", "familiar-portrait", "familiar-type-name", "familiar-type-description"]) {
+    for (const id of ["omen-past", "omen-present", "omen-future", "inventory", "familiar-name", "familiar-portrait", "familiar-type-name", "familiar-type-description"]) {
       expect(result.package.modules.some((module) => module.ID === id)).toBe(true);
     }
+    expect(result.package.modules.some((module) => module.ID === "magic-4-name" || module.ID === "magic-4-description")).toBe(false);
     for (const id of ["omen-past", "omen-present", "omen-future"]) {
       expect(result.package.modules.find((module) => module.ID === id)).toMatchObject({ 类型: "longText", 行数: 6 });
     }
     expect(result.package.modules.some((module) => module.ID === "character-concept" || module.ID === "character-notes")).toBe(false);
     expect(result.package.modules.some((module) => module.ID === "archetype-indicators")).toBe(false);
+
+    const witchingHour = result.package.skins?.find((skin) => skin.ID === "witching-hour");
+    expect(witchingHour).toBeDefined();
+    expect(witchingHour?.cssContent).not.toMatch(/\[data-module-type="longText"\]\s+\[data-part="input"\]/);
   });
 
   it("fills archetype and familiar text from their Resource Libraries", async () => {

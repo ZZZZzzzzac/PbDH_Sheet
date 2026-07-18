@@ -1,8 +1,8 @@
-<main class="witchy-page witch-sheet">
-  <header class="witchy-title">
+<main class="witchy-page witch-sheet witching-hour-sheet">
+  <header class="witchy-title witching-title">
     <p>Witchy</p>
     <h1>巫趣</h1>
-    <small>ω1.0 女巫人物卡</small>
+    <small>ω1.0 女巫人物卡 · 魔女时刻</small>
   </header>
 
   <div class="sheet-content-grid">
@@ -26,10 +26,12 @@
       </section>
 
       <section class="sheet-region archetype-panel">
+        <h2 class="panel-title">原型规则</h2>
         <pb-module id="archetype-description"></pb-module>
       </section>
 
       <section class="sheet-region experience-panel" data-guide-region-id="guide-experiences">
+        <h2 class="panel-title">经历</h2>
         <div class="experience-list">
           <div><pb-module id="experience-1"></pb-module><pb-module id="experience-modifier-1"></pb-module></div>
           <div><pb-module id="experience-2"></pb-module><pb-module id="experience-modifier-2"></pb-module></div>
@@ -40,6 +42,7 @@
       </section>
 
       <section class="sheet-region inventory-panel" data-guide-region-id="guide-inventory">
+        <h2 class="panel-title">行囊道具</h2>
         <pb-module id="inventory"></pb-module>
       </section>
     </div>
@@ -47,6 +50,7 @@
     <div class="sheet-column">
       <section class="sheet-region resource-panel" data-guide-region-id="guide-resources">
         <div class="essence-panel">
+          <h2 class="panel-title">三界本源</h2>
           <div class="essence-grid">
             <pb-module id="essence-assiah"></pb-module>
             <pb-module id="essence-yetzirah"></pb-module>
@@ -60,6 +64,7 @@
       </section>
 
       <section class="sheet-region magic-panel" data-guide-region-id="guide-magic">
+        <h2 class="panel-title">秘传魔法</h2>
         <div class="magic-list">
           <article><pb-module id="magic-1-name"></pb-module><pb-module id="magic-1-description"></pb-module></article>
           <article><pb-module id="magic-2-name"></pb-module><pb-module id="magic-2-description"></pb-module></article>
@@ -68,6 +73,7 @@
       </section>
 
       <section class="sheet-region familiar-panel" data-guide-region-id="guide-familiar">
+        <h2 class="panel-title">契约使魔</h2>
         <div class="familiar-layout">
           <pb-module id="familiar-portrait"></pb-module>
           <div class="familiar-fields">
@@ -85,7 +91,7 @@
   </div>
 
   <section class="sheet-region omen-panel" data-guide-region-id="guide-omens">
-    <h2>命运预兆</h2>
+    <h2 class="panel-title panel-title-night">命运预兆</h2>
     <div class="omen-grid">
       <pb-module id="omen-past"></pb-module>
       <pb-module id="omen-present"></pb-module>

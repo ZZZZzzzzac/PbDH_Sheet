@@ -4,7 +4,7 @@
   {
     "ID": "magic-points",
     "类型": "countableResource",
-    "标签": "魔力点",
+    "标签": "魔力",
     "最小值": 0,
     "最大值": 6,
     "默认值": 6,
@@ -21,7 +21,10 @@
     "最小值": 0,
     "最大值": 6,
     "默认值": 0,
-    "步长": 1
+    "步长": 1,
+    "显示方式": "标记",
+    "当前值标记": "🌑",
+    "剩余值标记": "🌕"
   },
   { "ID": "essence-assiah", "类型": "freeText", "标签": "物质界 Assiah", "默认值": "0" },
   { "ID": "essence-yetzirah", "类型": "freeText", "标签": "精神界 Yetzirah", "默认值": "0" },
@@ -42,7 +45,7 @@
     ]
   },
   { "ID": "archetype-name", "类型": "freeText", "标签": "原型" },
-  { "ID": "archetype-description", "类型": "longText", "标签": "原型规则", "行数": 8 },
+  { "ID": "archetype-description", "类型": "longText", "标签": "", "行数": 8 },
 
   { "ID": "experience-1", "类型": "freeText", "标签": "", "占位文本": "经历 1" },
   { "ID": "experience-modifier-1", "类型": "freeText", "标签": "", "默认值": "+2", "占位文本": "修正" },
@@ -61,15 +64,12 @@
   { "ID": "magic-2-description", "类型": "longText", "标签": "魔法二描述", "隐藏标签": true, "行数": 3, "占位文本": "自由记录意象、表现与用法" },
   { "ID": "magic-3-name", "类型": "freeText", "标签": "魔法三", "占位文本": "字符、词语、短语或施法形式" },
   { "ID": "magic-3-description", "类型": "longText", "标签": "魔法三描述", "隐藏标签": true, "行数": 3, "占位文本": "自由记录意象、表现与用法" },
-  { "ID": "magic-4-name", "类型": "freeText", "标签": "魔法四", "占位文本": "字符、词语、短语或施法形式" },
-  { "ID": "magic-4-description", "类型": "longText", "标签": "魔法四描述", "隐藏标签": true, "行数": 3, "占位文本": "自由记录意象、表现与用法" },
-
-  { "ID": "terminal-condition", "类型": "longText", "标签": "终末条件", "行数": 5, "占位文本": "记录一件物品或一种元素构成的终末条件" },
+  { "ID": "terminal-condition", "类型": "longText", "标签": "终末条件", "行数": 4, "占位文本": "记录一件物品或一种元素构成的终末条件" },
   { "ID": "omen-past", "类型": "longText", "标签": "过去的预兆", "行数": 6 },
   { "ID": "omen-present", "类型": "longText", "标签": "现在的预兆", "行数": 6 },
   { "ID": "omen-future", "类型": "longText", "标签": "未来的预兆", "行数": 6 },
 
-  { "ID": "inventory", "类型": "longText", "标签": "道具", "行数": 5, "占位文本": "记录携带的道具" },
+  { "ID": "inventory", "类型": "longText", "标签": "", "行数": 5, "占位文本": "记录携带的道具" },
 
   { "ID": "familiar-name", "类型": "freeText", "标签": "名字" },
   { "ID": "familiar-portrait", "类型": "imageField", "标签": "使魔头像", "替代文本": "使魔头像" },

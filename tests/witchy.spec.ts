@@ -101,29 +101,27 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
   await page.getByRole("textbox", { name: "魔法一", exact: true }).fill("荆棘");
   await page.getByRole("textbox", { name: "魔法二", exact: true }).fill("月光");
   await page.getByRole("textbox", { name: "魔法三", exact: true }).fill("雨杯");
-  await page.getByRole("textbox", { name: "魔法四", exact: true }).fill("镜门");
   await page.getByLabel("名字", { exact: true }).fill("墨团");
   await page.getByRole("button", { name: "选择使魔类型" }).click();
   await page.getByLabel("选择 警铃").click();
   await expect(page.locator('[data-module-id="familiar-type-name"]')).toContainText("警铃");
   await expect(page.locator('[data-module-id="familiar-type-description"]')).toContainText("每场景一次");
-  await page.getByRole("textbox", { name: "道具", exact: true }).fill("银杯、雨水瓶、旧钟发条");
+  await page.locator('[data-module-id="inventory"] textarea[data-part="input"]').fill("银杯、雨水瓶、旧钟发条");
   await page.waitForTimeout(350);
 
   await page.reload();
   await expect(page.getByText("ω1.0 女巫人物卡")).toBeVisible();
   await expect(page.locator('[data-module-id="archetype-name"]')).toContainText("园丁");
-  await expect(page.locator('[data-module-id="magic-4-name"]')).toContainText("镜门");
   await expect(page.locator('[data-module-id="familiar-type-name"]')).toContainText("警铃");
   await expect(page.locator('[data-module-id="inventory"]')).toContainText("银杯");
   await expect(page.locator('[data-module-id="omen-future"]')).toContainText("银杯破裂");
-  await expect(page.getByRole("img", { name: "魔力点：当前值 5，上限 5" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "魔力：当前值 5，上限 5" })).toBeVisible();
   await page.getByRole("button", { name: "蚀痕增加" }).click();
   await page.getByRole("button", { name: "蚀痕增加" }).click();
-  await expect(page.getByRole("img", { name: "魔力点：当前值 3，上限 3" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "魔力：当前值 3，上限 3" })).toBeVisible();
   await page.waitForTimeout(350);
   await page.reload();
-  await expect(page.getByRole("img", { name: "魔力点：当前值 3，上限 3" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "魔力：当前值 3，上限 3" })).toBeVisible();
 
   const screenPlacement = await page.locator(".sheet-page").evaluate((item) => {
     const rect = item.getBoundingClientRect();
@@ -185,10 +183,10 @@ test("Witchy editable regions remain reachable on a narrow viewport", async ({ p
   await expect(page.getByText("蚀痕", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "选择原型" })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "魔法一", exact: true })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "魔法四", exact: true })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "魔法三", exact: true })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "过去的预兆", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "选择使魔类型" })).toBeVisible();
-  await expect(page.getByRole("textbox", { name: "道具", exact: true })).toBeVisible();
+  await expect(page.locator('[data-module-id="inventory"] textarea[data-part="input"]')).toBeVisible();
 });
 
 async function uploadPackage(page: Page, packagePath: string) {
