@@ -25,47 +25,6 @@ export function warnDependencyIssues(result: DependencyEvaluationResult) {
   }
 }
 
-export function mergeDependencyRuntimeState(
-  state: DependencyMergeState,
-  result: DependencyEvaluationResult,
-): DependencyMergeState {
-  return {
-    derivedReadOnlyDisplayContent: {
-      ...state.derivedReadOnlyDisplayContent,
-      ...result.readOnlyDisplayContent,
-    },
-    moduleVisibility: {
-      ...state.moduleVisibility,
-      ...result.moduleVisibility,
-    },
-    pageVisibility: {
-      ...state.pageVisibility,
-      ...result.pageVisibility,
-    },
-    resourcePickerDefaultQueries: mergeResourcePickerDefaultQueries(state.resourcePickerDefaultQueries, result.resourcePickerDefaultQueries),
-  };
-}
-
-export function mergeResourcePickerDefaultQueries(
-  current: Record<string, ResourceLibraryQuery>,
-  updates: Record<string, ResourceLibraryQuery>,
-): Record<string, ResourceLibraryQuery> {
-  const next = { ...current };
-
-  for (const [moduleId, query] of Object.entries(updates)) {
-    next[moduleId] = {
-      ...next[moduleId],
-      ...query,
-      filters: {
-        ...(next[moduleId]?.filters ?? {}),
-        ...(query.filters ?? {}),
-      },
-    };
-  }
-
-  return next;
-}
-
 export function ensureCardState(data: CharacterData | null, systemPackage?: SystemPackage): CharacterData | null {
   if (!data) {
     return null;
