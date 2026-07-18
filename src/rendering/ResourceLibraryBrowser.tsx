@@ -106,7 +106,7 @@ export function ResourceLibraryBrowser({
   };
 
   return (
-    <div className="resource-dialog-backdrop">
+    <div className="resource-dialog-backdrop" data-output-exclude="true">
       <section className="resource-dialog" role="dialog" aria-modal="true" aria-label={dialogLabel} data-guide-interaction-surface>
         <header className="resource-dialog-header">
           {libraryChoices && libraryChoices.length > 1 ? (

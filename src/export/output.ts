@@ -174,7 +174,7 @@ function stripInteractiveRuntimeState(clone: Element) {
     element.removeAttribute("role");
     element.removeAttribute("tabindex");
   });
-  clone.querySelectorAll("button, input[type='file'], .resource-dialog-backdrop, .validation-dialog-backdrop, .card-context-menu").forEach((element) => {
+  clone.querySelectorAll("button, input[type='file']").forEach((element) => {
     element.remove();
   });
   clone.querySelectorAll("[contenteditable]").forEach((element) => element.removeAttribute("contenteditable"));

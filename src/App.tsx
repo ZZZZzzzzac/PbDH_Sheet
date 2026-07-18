@@ -92,7 +92,7 @@ function ValidationIssueDialog({
   }
 
   return (
-    <div className="validation-dialog-backdrop">
+    <div className="validation-dialog-backdrop" data-output-exclude="true">
       <section className="validation-dialog" role="dialog" aria-modal="true" aria-label="Validation Report">
         <header className="validation-dialog-header">
           <h2>检查报告</h2>
