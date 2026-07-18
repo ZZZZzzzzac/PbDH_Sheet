@@ -74,7 +74,7 @@ const characterDataSchema = z.object({
           ]).optional(),
           libraryId: z.string().min(1).optional(),
           definitionId: z.string().min(1).optional(),
-          state: z.string().min(1),
+          state: z.string(),
           xPct: z.number(),
           yPct: z.number(),
           zIndex: z.number().int(),
@@ -89,7 +89,7 @@ const characterDataSchema = z.object({
             })).max(10),
             z.record(z.string().min(1), z.number().int().min(0)),
           ]).default([]),
-          tokenCount: z.number().int().min(0),
+          tokenCount: z.number().int().min(0).optional(),
         }).refine((instance) => Boolean(instance.definitionRef || (instance.libraryId && instance.definitionId)), {
           message: "Card Instance 必须提供 Definition Reference。",
         }),
