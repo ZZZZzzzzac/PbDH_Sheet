@@ -15,7 +15,7 @@ export interface ResourceSelectedEvent {
 export interface CheckboxChangedEvent {
   type: "checkboxChanged";
   sourceModuleId: string;
-  optionId: string;
+  optionId?: string;
   checked: boolean;
   checkboxState: CheckboxState;
 }
@@ -325,7 +325,7 @@ function resolveDerivedSourceEvent(
   if (sourceModule?.类型 === "checkboxResource") {
     const checkboxState = data.character.values[sourceModuleId];
     if (!isCheckboxState(checkboxState)) return null;
-    return { type: "checkboxChanged", sourceModuleId, optionId: "", checked: false, checkboxState };
+    return { type: "checkboxChanged", sourceModuleId, checked: false, checkboxState };
   }
   if (sourceModule?.类型 === "resourceComposer") {
     const composite = data.compositeResources[sourceModuleId];
