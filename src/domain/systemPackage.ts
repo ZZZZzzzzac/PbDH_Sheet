@@ -691,6 +691,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
   const assetRefs = new Set((systemPackage.assets ?? []).map((asset) => asset.路径));
   const usedAssetRefs = new Set<string>();
 
+  // --- Skins ---
   if (systemPackage.skins?.length) {
     if (!systemPackage.defaultSkin || !systemPackage.skins.some((skin) => skin.ID === systemPackage.defaultSkin)) {
       issues.push({
@@ -725,6 +726,8 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
       path: "defaultSkin",
     });
   }
+
+  // --- Module field references ---
   for (const module of systemPackage.modules) {
     if (module.类型 === "readOnlyDisplay" && !module.内容 && !module.资源路径) {
       issues.push({
@@ -844,6 +847,8 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     }
   }
 
+  // --- Module ID uniqueness & Other Picker ---
+
   const moduleIds = new Set<string>();
 
   for (const module of systemPackage.modules) {
@@ -866,6 +871,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     path: `modules.${module.ID}.资源库`,
   }));
 
+  // --- Guide steps ---
   const moduleById = new Map(systemPackage.modules.map((module) => [module.ID, module]));
   const pageById = new Map(systemPackage.pages.map((page) => [page.ID, page]));
   const guideRegions = [
@@ -927,8 +933,10 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
       });
     }
   }
-  const dependencyIds = new Set<string>();
 
+  // --- Dependencies: structure, actions, write-targets ---
+
+  const dependencyIds = new Set<string>();
   for (const dependency of systemPackage.dependencies ?? []) {
     if (dependencyIds.has(dependency.ID)) {
       issues.push({
@@ -1223,6 +1231,8 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     }
   }
 
+  // --- Card creation references ---
+
   for (const module of systemPackage.modules) {
     if (module.类型 !== "resourcePicker" || !module.创建卡牌) {
       continue;
@@ -1289,6 +1299,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     }
   }
 
+  // --- Card art & reverse references + unused assets ---
   const cardArtFieldsByLibrary = new Map<string, Set<string>>();
   const cardPresentationsByLibrary = new Map<string, Array<{ moduleId: string; presentation?: z.infer<typeof cardPresentationSchema> }>>();
   for (const module of systemPackage.modules) {
@@ -1389,6 +1400,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     });
   }
 
+  // --- HTML page templates & shell ---
   for (const page of systemPackage.pages) {
     const htmlIssues = validateHtmlTemplate(page.layout.htmlContent, `pages.${page.ID}.layout.html`);
     issues.push(...htmlIssues);
@@ -1433,6 +1445,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     if (outletCount !== 1) issues.push({ level: "error", code: "SHELL_PAGE_OUTLET_COUNT_INVALID", text: "Sheet Shell 必须且只能包含一个 pb-page-outlet。", path: "shell.html" });
   }
 
+  // --- Unused asset warnings ---
   for (const assetPath of assetRefs) {
     if (!usedAssetRefs.has(assetPath)) {
       issues.push({
@@ -1444,6 +1457,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     }
   }
 
+  // --- Validation checks syntax ---
   for (const [checkIndex, check] of (systemPackage.validationChecks ?? []).entries()) {
     try {
       parseJavaScript(check.scriptContent, { ecmaVersion: "latest", sourceType: "script", locations: true });
@@ -1614,6 +1628,22 @@ export function validateCachedSystemPackage(input: unknown): CachedPackageValida
     }
   }
   return { ok: true, package: input as SystemPackage };
+}
+
+// --- Validation Context ---
+// Shared state passed to per-entity validators when extracted from validateSystemPackageCore.
+interface ValidationContext {
+  systemPackage: SystemPackage;
+  assetRefs: Set<string>;
+  usedAssetRefs: Set<string>;
+  moduleById: Map<string, SheetModule>;
+  pageById: Map<string, PackagePage>;
+  moduleIds: Set<string>;
+  guideRegions: Array<{ id: string; source: string }>;
+  cardArtFieldsByLibrary: Map<string, Set<string>>;
+  cardPresentationsByLibrary: Map<string, Array<{ moduleId: string; presentation?: z.infer<typeof cardPresentationSchema> }>>;
+  writtenTargets: Map<string, string[]>;
+  issues: PackageIssue[];
 }
 
 export function findModule(systemPackage: SystemPackage, moduleId: string): SheetModule | undefined {
