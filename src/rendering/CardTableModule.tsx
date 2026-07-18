@@ -333,7 +333,7 @@ function CardContextMenu({
   const nextState = nextCardState(stateOptions, instance.state);
 
   return (
-    <div className="card-context-menu" style={{ left: x, top: y }} role="menu" onPointerDown={(event) => event.stopPropagation()}>
+    <div className="card-context-menu" data-output-exclude="true" style={{ left: x, top: y }} role="menu" onPointerDown={(event) => event.stopPropagation()}>
       <button type="button" role="menuitem" onClick={() => onViewDetail(instance.instanceId)}>查看详情</button>
       {canFlip ? (
         <button type="button" role="menuitem" onClick={() => { flipCardInstance(instance.instanceId); onClose(); }}>

@@ -243,17 +243,17 @@ renderModule({
 Dependency Engine 是跨模块联动唯一协调者。
 
 ```text
-evaluateDependencies({
-  characterData,
-  resourceLibraries,
-  cardState,
-  packageMetadata,
-  rules
-})
-  -> viewEffects
-  -> dataPatches
-  -> optionEffects
-  -> dependencyErrors
+evaluateDependencies(
+  characterData,          // CharacterData
+  systemPackage,          // SystemPackage（含 manifest、resourceLibraries、dependencies）
+  event,                  // DependencyEvent（resourceSelected | checkboxChanged）
+)
+  -> dataPatches           // Record<moduleId, SheetValue>
+  -> readOnlyDisplayContent // Record<moduleId, string>
+  -> moduleVisibility      // Record<moduleId, boolean>
+  -> pageVisibility        // Record<pageId, boolean>
+  -> resourcePickerDefaultQueries // Record<moduleId, ResourceLibraryQuery>
+  -> warnings              // string[]
 ```
 
 约束：
