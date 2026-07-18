@@ -573,6 +573,14 @@ describe("Module Registry rendering", () => {
     expect(screen.getByRole("button", { name: "领域名" })).toHaveTextContent("烈焰、幽影");
   });
 
+  it("makes the Resource Picker button fill the available module row height by default", () => {
+    const styles = readFileSync("src/styles/resource-browser.css", "utf8");
+
+    expect(styles).toMatch(/\.resource-picker-module\s*\{[^}]*min-height:\s*32px[^}]*padding:\s*0 10px/s);
+    expect(styles).toMatch(/\.resource-picker-button\s*\{[^}]*width:\s*100%[^}]*min-height:\s*30px/s);
+    expect(styles).not.toMatch(/\.resource-picker-button\s*\{[^}]*height:\s*100%/s);
+  });
+
   it("applies runtime Resource Picker default filters while leaving them editable", () => {
     renderModuleDemo(createResourcePickerPackage({ defaultFilters: { 领域: ["骸骨"] } }));
 
