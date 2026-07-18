@@ -31,7 +31,7 @@
   overflow-wrap: anywhere;
 }
 
-.marker-group[data-marker-fit="overflow"] {
+.marker-group[data-text-fit="overflow"] {
   flex-wrap: nowrap;
   justify-content: flex-start;
   overflow-x: auto;

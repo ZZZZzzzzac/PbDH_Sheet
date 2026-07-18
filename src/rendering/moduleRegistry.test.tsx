@@ -348,10 +348,10 @@ describe("Module Registry rendering", () => {
     const result = renderModuleDemo(markerPackage);
     await act(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
 
-    expect(result.container.querySelector('[data-part="marker-group"]')).toHaveAttribute("data-marker-fit", "overflow");
+    expect(result.container.querySelector('[data-part="marker-group"]')).toHaveAttribute("data-text-fit", "overflow");
     const styles = readFileSync("src/styles/countable-resource.css", "utf8");
     expect(styles).toMatch(/\.marker-group\s*\{[^}]*align-content:\s*center[^}]*align-items:\s*center[^}]*justify-content:\s*center[^}]*height:\s*28px[^}]*overflow:\s*hidden/s);
-    expect(styles).toMatch(/\[data-marker-fit="overflow"\]\s*\{[^}]*overflow-x:\s*auto[^}]*white-space:\s*nowrap/s);
+    expect(styles).toMatch(/\[data-text-fit="overflow"\]\s*\{[^}]*overflow-x:\s*auto[^}]*white-space:\s*nowrap/s);
   });
 
   it("renders grouped checkbox options as multiple independent inputs with one visible description", () => {

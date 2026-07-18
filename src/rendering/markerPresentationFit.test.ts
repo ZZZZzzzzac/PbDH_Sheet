@@ -20,7 +20,7 @@ describe("Marker Presentation fitting", () => {
     expect(minimumMarkerFontSizePx).toBe(5);
     expect(result).toEqual({ fontSizePx: 5, fitted: true, overflowing: true });
     expect(element.style.fontSize).toBe("5px");
-    expect(element).toHaveAttribute("data-marker-fit", "overflow");
+    expect(element).toHaveAttribute("data-text-fit", "overflow");
     element.remove();
   });
 });

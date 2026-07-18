@@ -19,7 +19,7 @@ import type { PackageDirectoryHandle } from "./loaders/packageVfs";
 import type { ValidationIssue } from "./domain/validationRunner";
 import { buildReadonlyHtmlSnapshot, waitForVisibleImages } from "./export/output";
 import { collectFrameworkValidationIssues } from "./rendering/frameworkChecks";
-import { waitForMarkerPresentationFits } from "./rendering/markerPresentationFit";
+
 import { SheetRenderer } from "./rendering/SheetRenderer";
 import { printablePages } from "./rendering/pagePresentation";
 import { waitForTextFits } from "./rendering/textFit";
@@ -283,7 +283,6 @@ export default function App() {
     await nextFrame();
     const root = document.querySelector(".sheet-tool") ?? document;
     await waitForTextFits(root);
-    await waitForMarkerPresentationFits(root);
     return true;
   };
 

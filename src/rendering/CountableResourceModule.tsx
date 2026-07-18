@@ -2,7 +2,7 @@ import type { CountableResourceModule as CountableResourceModuleConfig } from ".
 import { canTransitionCountableState, transitionCountableState, type CountableDirection } from "../domain/countableState";
 import { useRuntimeStore } from "../store/runtimeStore";
 import { readCountableState } from "./moduleState";
-import { useMarkerPresentationFit } from "./markerPresentationFit";
+import { useTextFit } from "./textFit";
 import { usePointerActions } from "./usePointerActions";
 import { clampInt } from "../utils";
 import { useRef } from "react";
@@ -54,7 +54,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
     () => applyMarkerAction("maximum", "increment"),
     markerPresentation,
   );
-  useMarkerPresentationFit(markerGroupRef, `${module.当前值标记}:${current}:${module.剩余值标记}:${max}`, markerPresentation);
+  useTextFit(markerGroupRef, `${module.当前值标记}:${current}:${module.剩余值标记}:${max}`, markerPresentation);
 
   return (
     <div className="container" data-module-id={module.ID} data-module-type={module.类型} data-part="container">
