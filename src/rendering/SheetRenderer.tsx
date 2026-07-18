@@ -1,4 +1,4 @@
-import { createElement, useEffect, useState, type ReactNode } from "react";
+import { createElement, useEffect, useRef, useState, type ReactNode } from "react";
 import type { SystemPackage } from "../domain/systemPackage";
 import { allowedHtmlTags, findModule } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
@@ -85,8 +85,15 @@ function createTemplateElement(tagName: string, key: string, props: Record<strin
   return createElement(tagName, { key, ...props }, ...children);
 }
 
+const templateCache = new Map<string, Document>();
+
 function renderHtmlTemplate(systemPackage: SystemPackage, html: string, moduleVisibility: Record<string, boolean>, assetUrls: Record<string, string>, pageOutlet?: ReactNode) {
-  const document = new DOMParser().parseFromString(html, "text/html");
+  let document = templateCache.get(html);
+  if (!document) {
+    document = new DOMParser().parseFromString(html, "text/html");
+    if (templateCache.size > 20) templateCache.clear();
+    templateCache.set(html, document);
+  }
   return [...document.body.childNodes].map((node, index) => renderTemplateNode(systemPackage, node, String(index), moduleVisibility, assetUrls, pageOutlet));
 }
 

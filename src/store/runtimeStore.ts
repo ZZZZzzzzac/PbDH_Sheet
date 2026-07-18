@@ -174,7 +174,8 @@ async function loadPreviewPackage(handle: PackageDirectoryHandle, set: (partial:
   let storageStatus: StorageStatus = "idle";
   try {
     await runtimeDependencies.storage.saveCurrentSystemPackage(validation.package, validation.packageAssets ?? []);
-  } catch {
+  } catch (error) {
+    console.error("saveCurrentSystemPackage failed", error);
     storageStatus = "error";
   }
   await loadPackageIntoState(validation.package, validation.issues, set, storageStatus, validation.packageAssets ?? []);
@@ -299,7 +300,8 @@ function resolveSkinPreference(systemPackage: SystemPackage): { skinId: string |
   let preferred: string | null = null;
   try {
     preferred = runtimeDependencies.storage.loadSystemPackageSkinPreference(systemPackage.manifest.ID);
-  } catch {
+  } catch (error) {
+    console.error("loadSystemPackageSkinPreference failed", error);
     preferred = null;
   }
   if (preferred && skins.some((skin) => skin.ID === preferred)) return { skinId: preferred, fellBack: false };
@@ -309,7 +311,8 @@ function resolveSkinPreference(systemPackage: SystemPackage): { skinId: string |
 function loadFrameworkColorSchemePreference(): FrameworkColorSchemePreference {
   try {
     return runtimeDependencies.storage.loadFrameworkColorSchemePreference();
-  } catch {
+  } catch (error) {
+    console.error("loadFrameworkColorSchemePreference failed", error);
     return "follow-skin";
   }
 }
@@ -321,7 +324,8 @@ async function clearCachedPackageAndResetState(set: (partial: Partial<RuntimeSta
 
   try {
     await runtimeDependencies.storage.clearCurrentSystemPackage();
-  } catch {
+  } catch (error) {
+    console.error("clearCurrentSystemPackage failed", error);
     storageStatus = "error";
   }
 
@@ -579,7 +583,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     let packageCacheStatus: StorageStatus = "idle";
     try {
       await runtimeDependencies.storage.saveCurrentSystemPackage(validation.package, validation.packageAssets ?? []);
-    } catch {
+    } catch (error) {
+      console.error("saveCurrentSystemPackage (extension) failed", error);
       packageCacheStatus = "error";
     }
 
@@ -596,7 +601,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     let packageCacheStatus: StorageStatus = "idle";
     try {
       await runtimeDependencies.storage.saveCurrentSystemPackage(validation.package, validation.packageAssets ?? []);
-    } catch {
+    } catch (error) {
+      console.error("saveCurrentSystemPackage (upload) failed", error);
       packageCacheStatus = "error";
     }
     await loadPackageIntoState(validation.package, validation.issues, set, packageCacheStatus, validation.packageAssets ?? []);
@@ -852,7 +858,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     const previousSaves = get().characterSaves;
     try {
       await flushPendingAutosave(previousCharacterData, previousSaveId, previousSaves);
-    } catch {
+    } catch (error) {
+      console.error("flushPendingAutosave failed before switchCharacterSave", error);
       set({ storageStatus: "error" });
     }
 
