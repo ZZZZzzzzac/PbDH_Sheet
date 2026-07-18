@@ -491,6 +491,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   importNotice: null,
   authorPreviewActive: false,
 
+  // ========== Package lifecycle & boot ==========
+
   async initialize() {
     set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null, frameworkColorSchemePreference: loadFrameworkColorSchemePreference() });
 
@@ -814,6 +816,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     set({ authorPreviewActive: false, importNotice: "已退出预览；当前 System Package 保持不变。" });
   },
 
+  // ========== Character Save CRUD ==========
+
   async createCharacterSave(name = "未命名角色") {
     const currentPackage = get().currentPackage;
     if (!currentPackage) {
@@ -968,6 +972,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     });
   },
 
+  // ========== Character data & dependency orchestration ==========
+
   updateModuleValue(moduleId, value) {
     if (!get().characterData) {
       return;
@@ -1097,6 +1103,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       (status) => set({ storageStatus: status }),
     );
   },
+
+  // ========== Card operations ==========
 
   updateCardInstancePosition(instanceId, xPct, yPct) {
     if (!get().characterData) {
@@ -1297,6 +1305,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   transitionCardIndicator(instanceId, indicatorId, direction) {
     updateCardStateAndAutosave(get, set, (data) => transitionCardIndicatorDomain(data, instanceId, indicatorId, direction));
   },
+
+  // ========== Image & import/export ==========
 
   async removePlayerImage(moduleId) {
     const characterData = get().characterData;
