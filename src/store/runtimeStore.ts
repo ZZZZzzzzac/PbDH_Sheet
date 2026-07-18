@@ -47,7 +47,6 @@ import {
   fileToDataUrl,
   hasCardCreationTarget,
   loadActiveCharacterForPackage,
-  saveImportedPlayerImages,
   warnDependencyIssues,
 } from "./runtimeHelpers";
 
@@ -1260,19 +1259,6 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       dataUrl,
     };
 
-    try {
-      await runtimeDependencies.storage.savePlayerImageBlob({
-        id: image.id,
-        name: image.name,
-        mimeType: image.mimeType,
-        blob: file,
-      });
-      if (previousImageId) await runtimeDependencies.storage.deletePlayerImageBlob(previousImageId);
-    } catch {
-      set({ storageStatus: "error" });
-      return;
-    }
-
     set((state) => ({
       characterData: state.characterData ? updatePlayerImage(state.characterData, moduleId, image) : null,
       importError: null,
@@ -1309,13 +1295,6 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     const characterData = get().characterData;
     const value = characterData?.character.values[moduleId];
     if (!characterData || !isPlayerImageValue(value)) return;
-
-    try {
-      await runtimeDependencies.storage.deletePlayerImageBlob(value.imageId);
-    } catch {
-      set({ storageStatus: "error" });
-      return;
-    }
 
     set((state) => ({ characterData: state.characterData ? removePlayerImageData(state.characterData, moduleId) : null }));
     scheduleAutosave(
@@ -1355,7 +1334,6 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       resourceReferenceIssues: get().resourceCatalog ? collectStaleResourceReferenceIssues(result.data, get().resourceCatalog!) : [],
     });
 
-    await saveImportedPlayerImages(result.data.playerImages, runtimeDependencies.storage);
     await runtimeDependencies.storage.saveCharacterSave({
       id: result.data.character.id,
       packageId: result.data.systemPackage.id,

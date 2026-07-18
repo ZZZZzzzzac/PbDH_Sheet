@@ -31,13 +31,6 @@ interface ResourceExtensionRecord {
   assets?: RuntimePackageAsset[];
 }
 
-export interface StoredPlayerImageBlob {
-  id: string;
-  name?: string;
-  mimeType: string;
-  blob: Blob;
-}
-
 export interface CharacterSaveSummary {
   id: string;
   packageId: string;
@@ -67,9 +60,6 @@ export interface StorageService {
   setSystemPackageSkinPreference(packageId: string, skinId: string): void;
   loadFrameworkColorSchemePreference(): "follow-skin" | "light" | "dark";
   setFrameworkColorSchemePreference(preference: "follow-skin" | "light" | "dark"): void;
-  savePlayerImageBlob(image: StoredPlayerImageBlob): Promise<void>;
-  loadPlayerImageBlob(imageId: string): Promise<StoredPlayerImageBlob | null>;
-  deletePlayerImageBlob(imageId: string): Promise<void>;
   listResourceExtensions(targetSystemPackageId: string): Promise<ResourceExtension[]>;
   loadResourceExtensionAssets(targetSystemPackageId: string): Promise<RuntimePackageAsset[]>;
   saveResourceExtension(extension: ResourceExtension, assets?: RuntimePackageAsset[]): Promise<void>;
@@ -79,7 +69,7 @@ export interface StorageService {
 export class PbDHDatabase extends Dexie {
   characterSaves!: Table<CharacterDataRecord, string>;
   systemPackages!: Table<SystemPackageRecord, string>;
-  playerImages!: Table<StoredPlayerImageBlob, string>;
+  playerImages!: Table<{id: string; name?: string; mimeType: string; blob: Blob}, string>;
   authorPreviewHandles!: Table<AuthorPreviewHandleRecord, string>;
   resourceExtensions!: Table<ResourceExtensionRecord, string>;
 
@@ -254,23 +244,6 @@ export const storageService: StorageService = {
 
   setFrameworkColorSchemePreference(preference: "follow-skin" | "light" | "dark"): void {
     localStorage.setItem(frameworkColorSchemeKey, preference);
-  },
-
-  async savePlayerImageBlob(image: StoredPlayerImageBlob): Promise<void> {
-    await db.playerImages.put({
-      id: image.id,
-      name: image.name,
-      mimeType: image.mimeType,
-      blob: image.blob,
-    });
-  },
-
-  async loadPlayerImageBlob(imageId: string): Promise<StoredPlayerImageBlob | null> {
-    return (await db.playerImages.get(imageId)) ?? null;
-  },
-
-  async deletePlayerImageBlob(imageId: string): Promise<void> {
-    await db.playerImages.delete(imageId);
   },
 
   async listResourceExtensions(targetSystemPackageId: string): Promise<ResourceExtension[]> {
