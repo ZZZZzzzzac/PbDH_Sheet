@@ -28,7 +28,13 @@ export interface CheckboxChangedEvent {
   checkboxState: CheckboxState;
 }
 
-export type DependencyEvent = ResourceSelectedEvent | CheckboxChangedEvent;
+export interface CountableChangedEvent {
+  type: "countableChanged";
+  sourceModuleId: string;
+  countableState: CountableState;
+}
+
+export type DependencyEvent = ResourceSelectedEvent | CheckboxChangedEvent | CountableChangedEvent;
 
 export interface DependencyEvaluationResult {
   dataPatches: Record<string, SheetValue>;
@@ -103,7 +109,14 @@ export function hasRebuildableDependencies(systemPackage: SystemPackage, sourceM
     rule.触发.类型 === "resourceSelected"
     && rule.触发.来源模块ID === sourceModuleId
     && rule.动作.some((action) => isRebuildableAction(action, systemPackage)),
-  );
+  ) || (systemPackage.dependencies ?? []).some((rule) => rule.动作.some((action) =>
+    action.类型 === "fillCountable"
+    && [action.当前值, action.最大值].some((content) => content && typeof content === "object"
+      && content.类型 === "integerCalculation"
+      && content.运算.some((operation) => typeof operation.值 === "object"
+        && operation.值.类型 === "resourceSelectionCount"
+        && operation.值.模块ID === sourceModuleId)),
+  ));
 }
 
 export function rebuildDerivedDependencies(
@@ -224,10 +237,10 @@ function applyAction({
       const initial: CountableState = isCountableState(existingValue)
         ? existingValue
         : { current: clampInt(targetModule.默认值 ?? min, min, targetModule.最大值 ?? null), max: targetModule.最大值 ?? null };
-      const current = resolveCountableValue(action.当前值, event, result, ruleId, "current");
+      const current = resolveCountableValue(action.当前值, data, systemPackage, event, result, ruleId, "current");
       const maximum = action.最大值 === null
         ? null
-        : resolveCountableValue(action.最大值, event, result, ruleId, "maximum");
+        : resolveCountableValue(action.最大值, data, systemPackage, event, result, ruleId, "maximum");
 
       if (action.当前值 !== undefined && current !== undefined) {
         recordWrite(result, writtenTargets, `countable:${action.目标模块ID}:current`, `countable current ${action.目标模块ID}`, ruleId, String(current));
@@ -290,6 +303,8 @@ function applyAction({
 
 function resolveCountableValue(
   content: Extract<DependencyAction, { 类型: "fillCountable" }>["当前值"] | Extract<DependencyAction, { 类型: "fillCountable" }>["最大值"],
+  data: CharacterData,
+  systemPackage: SystemPackage,
   event: DependencyEvent,
   result: DependencyEvaluationResult,
   ruleId: string,
@@ -297,6 +312,21 @@ function resolveCountableValue(
 ): number | null | undefined {
   if (content === undefined || content === null || typeof content === "number") {
     return content;
+  }
+  if (content.类型 === "integerCalculation") {
+    let value = content.初始值;
+    for (const operation of content.运算) {
+      const operand = resolveIntegerOperand(operation.值, data, systemPackage);
+      const nextValue = operation.操作 === "add" ? value + operand : value - operand;
+      if (!Number.isSafeInteger(nextValue)) {
+        result.warnings.push(`Dependency ${ruleId} skipped unsafe countable ${field} integer calculation.`);
+        return undefined;
+      }
+      value = nextValue;
+    }
+    if (content.最小值 !== undefined) value = Math.max(content.最小值, value);
+    if (content.最大值 !== undefined) value = Math.min(content.最大值, value);
+    return value;
   }
   if (event.type !== "resourceSelected") {
     return undefined;
@@ -313,6 +343,21 @@ function resolveCountableValue(
     return undefined;
   }
   return value;
+}
+
+function resolveIntegerOperand(
+  operand: number | { 类型: "countableCurrent"; 模块ID: string } | { 类型: "resourceSelectionCount"; 模块ID: string },
+  data: CharacterData,
+  systemPackage: SystemPackage,
+): number {
+  if (typeof operand === "number") return operand;
+  if (operand.类型 === "resourceSelectionCount") {
+    return data.resourceSelections?.[operand.模块ID]?.entryIds.length ?? 0;
+  }
+  const stored = data.character.values[operand.模块ID];
+  if (isCountableState(stored)) return stored.current;
+  const module = findModule(systemPackage, operand.模块ID);
+  return module?.类型 === "countableResource" ? module.默认值 ?? module.最小值 ?? 0 : 0;
 }
 
 function isCountableState(value: SheetValue | undefined): value is CountableState {

@@ -15,6 +15,7 @@ import {
 } from "../domain/cardEngine";
 import {
   type CheckboxState,
+  type CountableState,
   createEmptyCharacterData,
   updateCharacterValue,
   updatePlayerImage,
@@ -151,6 +152,10 @@ const defaultRuntimeDependencies: RuntimeDependencies = {
 
 let runtimeDependencies = defaultRuntimeDependencies;
 const authorPreviewSessionKey = "pbdh-author-preview";
+
+function isCountableStateValue(value: SheetValue): value is CountableState {
+  return typeof value === "object" && value !== null && "current" in value && "max" in value;
+}
 
 async function loadPreviewPackage(handle: PackageDirectoryHandle, set: (partial: Partial<RuntimeState>) => void) {
   set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null, authorPreviewActive: true });
@@ -975,15 +980,37 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   // ========== Character data & dependency orchestration ==========
 
   updateModuleValue(moduleId, value) {
-    if (!get().characterData) {
+    const characterData = get().characterData;
+    const currentPackage = get().currentPackage;
+    if (!characterData) {
       return;
     }
 
-    set((state) => ({
-      characterData: state.characterData ? updateCharacterValue(state.characterData, moduleId, value) : null,
-      importError: null,
-      importNotice: null,
-    }));
+    const dataWithValue = updateCharacterValue(characterData, moduleId, value);
+    const module = currentPackage?.modules.find((candidate) => candidate.ID === moduleId);
+    if (currentPackage && module?.类型 === "countableResource" && isCountableStateValue(value)) {
+      const result = evaluateDependencies(dataWithValue, currentPackage, {
+        type: "countableChanged",
+        sourceModuleId: moduleId,
+        countableState: value,
+      });
+      warnDependencyIssues(result);
+      const nextData = applyDependencyResultToCharacterData(dataWithValue, result);
+      const derivedResult = rebuildDerivedDependencies(nextData, currentPackage);
+      warnDependencyIssues(derivedResult);
+      set({
+        characterData: nextData,
+        ...dependencyRuntimeStateFromResult(derivedResult),
+        importError: null,
+        importNotice: null,
+      });
+    } else {
+      set({
+        characterData: dataWithValue,
+        importError: null,
+        importNotice: null,
+      });
+    }
 
     scheduleAutosave(
       () => get().characterData,

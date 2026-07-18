@@ -238,6 +238,46 @@ describe("runtime store", () => {
     expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("阿青");
   });
 
+  it("evaluates countableChanged dependencies after updating a Countable Resource", async () => {
+    const countablePackage = {
+      ...minimalSystemPackage,
+      modules: [
+        ...minimalSystemPackage.modules,
+        { ID: "erosion", 类型: "countableResource", 标签: "蚀痕", 最小值: 0, 最大值: 6, 默认值: 0 },
+        { ID: "magic", 类型: "countableResource", 标签: "魔法点", 最小值: 0, 最大值: 6, 默认值: 6 },
+      ],
+      pages: [{
+        ...minimalSystemPackage.pages[0],
+        layout: {
+          ...minimalSystemPackage.pages[0].layout,
+          htmlContent: `${minimalSystemPackage.pages[0].layout.htmlContent}<pb-module id="erosion"></pb-module><pb-module id="magic"></pb-module>`,
+        },
+      }],
+      dependencies: [{
+        ID: "derive-magic",
+        sources: [{ 类型: "countableResource", 模块ID: "erosion" }],
+        targets: [{ 类型: "module", 模块ID: "magic" }],
+        触发: { 类型: "countableChanged", 来源模块ID: "erosion" },
+        条件: { 类型: "always" },
+        动作: [{
+          类型: "fillCountable", 目标模块ID: "magic", 最大值: {
+            类型: "integerCalculation", 初始值: 6,
+            运算: [{ 操作: "subtract", 值: { 类型: "countableCurrent", 模块ID: "erosion" } }],
+          },
+        }],
+      }],
+    } as unknown as SystemPackage;
+    configureRuntimeDependencies({
+      storage: memoryStorage,
+      loadSystemPackageFromFile: async () => ({ ok: true, package: countablePackage, issues: [] }),
+    });
+    await act(async () => useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob()));
+
+    act(() => useRuntimeStore.getState().updateModuleValue("erosion", { current: 2, max: 6 }));
+
+    expect(useRuntimeStore.getState().characterData?.character.values.magic).toEqual({ current: 4, max: 4 });
+  });
+
   it("removes a player image from Character Data", async () => {
     renderHook(() => useRuntimeStore());
     await act(async () => {

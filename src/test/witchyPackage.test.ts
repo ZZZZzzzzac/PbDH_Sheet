@@ -30,8 +30,17 @@ describe("Witchy System Package", () => {
     expect(result.package.modules.some((module) => module.类型 === "cardTable")).toBe(false);
     expect(result.package.modules.find((module) => module.ID === "pick-archetype")).not.toHaveProperty("创建卡牌");
     expect(result.package.modules.find((module) => module.ID === "magic-points")).toMatchObject({
-      类型: "countableResource", 默认值: 6, 最大值: 6, 最大值可改: true,
+      类型: "countableResource", 默认值: 6, 最大值: 6, 最大值可改: false,
     });
+    expect(result.package.modules.find((module) => module.ID === "erosion")).toMatchObject({
+      类型: "countableResource", 默认值: 0, 最大值: 6,
+    });
+    expect(result.package.dependencies).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        ID: "apply-erosion-to-magic-points",
+        触发: { 类型: "countableChanged", 来源模块ID: "erosion" },
+      }),
+    ]));
     for (const id of ["essence-assiah", "essence-yetzirah", "essence-atziluth"]) {
       expect(result.package.modules.find((module) => module.ID === id)).toMatchObject({ 类型: "freeText", 默认值: "0" });
     }

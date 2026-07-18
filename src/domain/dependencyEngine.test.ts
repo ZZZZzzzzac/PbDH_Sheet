@@ -335,6 +335,50 @@ describe("Dependency Engine v1", () => {
     });
     expect(applyDependencyResultToCharacterData(data, validResult).character.values.hope).toEqual({ current: 4, max: 4 });
   });
+
+  it("calculates a Countable maximum from Countable current and persisted Resource selection count", () => {
+    const basePackage = createDependencyPackage();
+    const systemPackage = {
+      ...basePackage,
+      modules: [
+        ...basePackage.modules,
+        { ID: "erosion", 类型: "countableResource", 标签: "蚀痕", 最小值: 0, 最大值: 6, 默认值: 0 },
+        { ID: "magic", 类型: "countableResource", 标签: "魔法点", 最小值: 0, 最大值: 6, 默认值: 6 },
+      ],
+      dependencies: [{
+        ID: "derive-magic-max",
+        sources: [
+          { 类型: "countableResource", 模块ID: "erosion" },
+          { 类型: "resourcePicker", 模块ID: "pick-class" },
+        ],
+        targets: [{ 类型: "module", 模块ID: "magic" }],
+        触发: { 类型: "countableChanged", 来源模块ID: "erosion" },
+        条件: { 类型: "always" },
+        动作: [{
+          类型: "fillCountable", 目标模块ID: "magic", 最大值: {
+            类型: "integerCalculation", 初始值: 6, 最小值: 0,
+            运算: [
+              { 操作: "subtract", 值: { 类型: "countableCurrent", 模块ID: "erosion" } },
+              { 操作: "subtract", 值: { 类型: "resourceSelectionCount", 模块ID: "pick-class" } },
+            ],
+          },
+        }],
+      }],
+    } as unknown as SystemPackage;
+    let data = createEmptyCharacterData(systemPackage);
+    data.character.values.erosion = { current: 2, max: 6 };
+    data.character.values.magic = { current: 6, max: 6 };
+    data.resourceSelections = { "pick-class": { libraryId: "classes", entryIds: ["class:test"] } };
+
+    const result = evaluateDependencies(data, systemPackage, {
+      type: "countableChanged", sourceModuleId: "erosion", countableState: { current: 2, max: 6 },
+    });
+    const next = applyDependencyResultToCharacterData(data, result);
+
+    expect(next.character.values.magic).toEqual({ current: 3, max: 3 });
+    expect(result.warnings).toEqual([]);
+    expect(hasRebuildableDependencies(systemPackage, "pick-class")).toBe(true);
+  });
 });
 
 function createDependencyPackage(options: { dependencies?: SystemPackage["dependencies"] } = {}): SystemPackage {

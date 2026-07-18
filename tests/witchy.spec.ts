@@ -22,14 +22,14 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
   expect(magicPointsBox).not.toBeNull();
   expect(identityBox!.x).toBeLessThan(resourceBox!.x);
   expect(portraitBox!.x).toBeLessThan(nameBox!.x);
-  const archetypePanelBox = await page.locator(".archetype-panel").boundingBox();
-  expect(archetypePanelBox).not.toBeNull();
-  expect(Math.abs(portraitBox!.y - archetypePanelBox!.y)).toBeLessThanOrEqual(2);
-  expect(nameBox!.y).toBeGreaterThan(archetypePanelBox!.y);
+  const identityTerminalPanelBox = await page.locator(".identity-terminal-panel").boundingBox();
+  expect(identityTerminalPanelBox).not.toBeNull();
+  expect(Math.abs(portraitBox!.y - identityTerminalPanelBox!.y)).toBeLessThanOrEqual(2);
+  expect(nameBox!.y).toBeGreaterThan(identityTerminalPanelBox!.y);
   const archetypeRulesBox = await page.locator('[data-module-slot-id="archetype-description"]').boundingBox();
   expect(archetypeRulesBox).not.toBeNull();
-  expect(Math.abs(portraitBox!.y + portraitBox!.height - (archetypePanelBox!.y + archetypePanelBox!.height))).toBeLessThanOrEqual(2);
-  const identityContainerClass = await page.locator('[data-module-slot-id="character-name"]').evaluate((node) => node.closest(".archetype-panel")?.className);
+  expect(Math.abs(portraitBox!.y + portraitBox!.height - (identityTerminalPanelBox!.y + identityTerminalPanelBox!.height))).toBeLessThanOrEqual(2);
+  const identityContainerClass = await page.locator('[data-module-slot-id="character-name"]').evaluate((node) => node.closest(".identity-terminal-panel")?.className);
   expect(identityContainerClass).toContain("sheet-region");
   await expect(page.getByRole("heading", { name: "创造你的魔法" })).toHaveCount(0);
   await expect(page.locator(".resource-panel")).toHaveClass(/sheet-region/);
@@ -58,19 +58,25 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
   expect(experienceRows.every((row, index) => index === 0 || row.y > experienceRows[index - 1].y)).toBe(true);
   const contentGrid = await page.locator(".sheet-content-grid").boundingBox();
   const inventoryPanel = await page.locator(".inventory-panel").boundingBox();
-  const terminalPanel = await page.locator(".terminal-panel").boundingBox();
+  const terminalPanel = await page.locator('[data-module-slot-id="terminal-condition"]').boundingBox();
+  const archetypePanel = await page.locator(".archetype-panel").boundingBox();
+  const experiencePanel = await page.locator(".experience-panel").boundingBox();
   const leftColumn = await page.locator(".sheet-column").first().boundingBox();
   const omenPanel = await page.locator(".omen-panel").boundingBox();
   expect(contentGrid).not.toBeNull();
   expect(inventoryPanel).not.toBeNull();
   expect(terminalPanel).not.toBeNull();
+  expect(archetypePanel).not.toBeNull();
+  expect(experiencePanel).not.toBeNull();
   expect(leftColumn).not.toBeNull();
   expect(omenPanel).not.toBeNull();
   const omenInput = await page.locator('[data-module-id="omen-past"] textarea[data-part="input"]').boundingBox();
   expect(omenInput).not.toBeNull();
   expect(Math.abs(inventoryPanel!.x - leftColumn!.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(inventoryPanel!.width - leftColumn!.width)).toBeLessThanOrEqual(1);
-  expect(inventoryPanel!.y).toBeGreaterThanOrEqual(terminalPanel!.y + terminalPanel!.height);
+  expect(archetypePanel!.y).toBeGreaterThanOrEqual(portraitBox!.y + portraitBox!.height);
+  expect(experiencePanel!.y).toBeGreaterThanOrEqual(archetypePanel!.y + archetypePanel!.height);
+  expect(inventoryPanel!.y).toBeGreaterThanOrEqual(experiencePanel!.y + experiencePanel!.height);
   expect(Math.abs(omenPanel!.x - contentGrid!.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(omenPanel!.width - contentGrid!.width)).toBeLessThanOrEqual(1);
   expect(omenPanel!.y).toBeGreaterThanOrEqual(contentGrid!.y + contentGrid!.height);
@@ -110,6 +116,13 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
   await expect(page.locator('[data-module-id="familiar-type-name"]')).toContainText("警铃");
   await expect(page.locator('[data-module-id="inventory"]')).toContainText("银杯");
   await expect(page.locator('[data-module-id="omen-future"]')).toContainText("银杯破裂");
+  await expect(page.getByRole("img", { name: "魔力点：当前值 5，上限 5" })).toBeVisible();
+  await page.getByRole("button", { name: "蚀痕增加" }).click();
+  await page.getByRole("button", { name: "蚀痕增加" }).click();
+  await expect(page.getByRole("img", { name: "魔力点：当前值 3，上限 3" })).toBeVisible();
+  await page.waitForTimeout(350);
+  await page.reload();
+  await expect(page.getByRole("img", { name: "魔力点：当前值 3，上限 3" })).toBeVisible();
 
   const screenPlacement = await page.locator(".sheet-page").evaluate((item) => {
     const rect = item.getBoundingClientRect();
@@ -142,6 +155,14 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
     };
   });
   await printButton.evaluate((button) => (button as HTMLButtonElement).click());
+  await expect.poll(() => page.evaluate(() => Boolean(
+    document.documentElement.dataset.witchyPrintProbe
+      || document.querySelector('button[aria-label="继续输出"]'),
+  ))).toBe(true);
+  const continueButton = page.locator('button[aria-label="继续输出"]');
+  if (await continueButton.count()) {
+    await continueButton.evaluate((button) => (button as HTMLButtonElement).click());
+  }
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.witchyPrintProbe)).not.toBeUndefined();
   const printProbe = JSON.parse(await page.evaluate(() => document.documentElement.dataset.witchyPrintProbe!));
   expect(printProbe).toHaveLength(1);
@@ -156,6 +177,7 @@ test("Witchy editable regions remain reachable on a narrow viewport", async ({ p
 
   await expect(page.getByLabel("姓名", { exact: true })).toBeVisible();
   await expect(page.getByLabel("物质界 Assiah")).toBeVisible();
+  await expect(page.getByText("蚀痕", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "选择原型" })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "魔法一", exact: true })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "魔法四", exact: true })).toBeVisible();

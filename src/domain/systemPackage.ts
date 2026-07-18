@@ -213,6 +213,10 @@ const dependencySourceSchema = z.discriminatedUnion("类型", [
     类型: z.literal("checkboxResource"),
     模块ID: z.string().min(1),
   }),
+  z.object({
+    类型: z.literal("countableResource"),
+    模块ID: z.string().min(1),
+  }),
 ]);
 
 const dependencyTargetSchema = z.discriminatedUnion("类型", [
@@ -233,6 +237,10 @@ const dependencyTriggerSchema = z.discriminatedUnion("类型", [
   }),
   z.object({
     类型: z.literal("checkboxChanged"),
+    来源模块ID: z.string().min(1),
+  }),
+  z.object({
+    类型: z.literal("countableChanged"),
     来源模块ID: z.string().min(1),
   }),
 ]);
@@ -282,6 +290,25 @@ const fillTextContentSchema = z.union([
   }),
 ]);
 
+const integerCalculationOperandSchema = z.union([
+  z.number().int(),
+  z.object({ 类型: z.literal("countableCurrent"), 模块ID: z.string().min(1) }),
+  z.object({ 类型: z.literal("resourceSelectionCount"), 模块ID: z.string().min(1) }),
+]);
+
+const integerCalculationSchema = z.object({
+  类型: z.literal("integerCalculation"),
+  初始值: z.number().int(),
+  运算: z.array(z.object({
+    操作: z.enum(["add", "subtract"]),
+    值: integerCalculationOperandSchema,
+  })).min(1),
+  最小值: z.number().int().optional(),
+  最大值: z.number().int().optional(),
+}).refine((value) => value.最小值 === undefined || value.最大值 === undefined || value.最小值 <= value.最大值, {
+  message: "integerCalculation 最小值不能大于最大值。",
+});
+
 const fillCountableContentSchema = z.union([
   z.number().int(),
   z.object({
@@ -289,6 +316,7 @@ const fillCountableContentSchema = z.union([
     字段: z.string().min(1),
     选择索引: z.number().int().min(0).optional(),
   }),
+  integerCalculationSchema,
 ]);
 
 const fillCountableActionSchema = z.object({
@@ -578,7 +606,7 @@ function detectUnsupportedDependencySource(input: unknown, index: number): Packa
 }
 
 function isUnsupportedCounterType(value: unknown): boolean {
-  return value === "countableResource" || value === "countableChanged" || value === "counter" || value === "counterChanged";
+  return value === "counter" || value === "counterChanged";
 }
 
 export function validateSystemPackage(input: unknown, sourceMap: PackageSourceMap = {}): PackageValidationResult {
@@ -1012,6 +1040,13 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
         text: `checkboxChanged 触发源必须是 Checkbox Resource：${dependency.触发.来源模块ID}`,
         path: `dependencies.${dependency.ID}.触发.来源模块ID`,
       });
+    } else if (dependency.触发.类型 === "countableChanged" && sourceModule.类型 !== "countableResource") {
+      issues.push({
+        level: "error",
+        code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE",
+        text: `countableChanged 触发源必须是 Countable Resource：${dependency.触发.来源模块ID}`,
+        path: `dependencies.${dependency.ID}.触发.来源模块ID`,
+      });
     }
 
     const hasDeclaredTriggerSource = dependency.sources.some((source) => source.模块ID === dependency.触发.来源模块ID);
@@ -1133,6 +1168,38 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
 
         for (const [fieldName, content] of [["当前值", action.当前值], ["最大值", action.最大值]] as const) {
           if (!content || typeof content === "number") {
+            continue;
+          }
+          if (content.类型 === "integerCalculation") {
+            content.运算.forEach((operation, operationIndex) => {
+              if (typeof operation.值 === "number") return;
+              const operand = operation.值;
+              const referencedModule = moduleById.get(operand.模块ID);
+              const expectedType = operand.类型 === "countableCurrent" ? "countableResource" : "resourcePicker";
+              if (!referencedModule) {
+                issues.push({
+                  level: "error",
+                  code: "MISSING_DEPENDENCY_SOURCE_MODULE",
+                  text: `integerCalculation 引用了不存在的模块：${operand.模块ID}`,
+                  path: `dependencies.${dependency.ID}.动作.${actionIndex}.${fieldName}.运算.${operationIndex}.值.模块ID`,
+                });
+              } else if (referencedModule.类型 !== expectedType) {
+                issues.push({
+                  level: "error",
+                  code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE",
+                  text: `integerCalculation ${operand.类型} 引用必须指向 ${expectedType}：${operand.模块ID}`,
+                  path: `dependencies.${dependency.ID}.动作.${actionIndex}.${fieldName}.运算.${operationIndex}.值.模块ID`,
+                });
+              }
+              if (!dependency.sources.some((source) => source.模块ID === operand.模块ID)) {
+                issues.push({
+                  level: "error",
+                  code: "MISSING_DEPENDENCY_SOURCE_DECLARATION",
+                  text: `Dependency Rule sources 必须声明 integerCalculation 来源模块：${operand.模块ID}`,
+                  path: `dependencies.${dependency.ID}.sources`,
+                });
+              }
+            });
             continue;
           }
           if (dependency.触发.类型 !== "resourceSelected") {

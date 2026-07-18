@@ -101,6 +101,13 @@
   align-items: stretch;
 }
 
+.magic-resource-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 1.5mm;
+  min-width: 0;
+}
+
 .essence-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -144,7 +151,7 @@
 
 .sheet-content-grid {
   display: grid;
-  grid-template-columns: 155mm minmax(0, 1fr);
+  grid-template-columns: repeat(2, calc(50% - 1.5mm));
   gap: 3mm;
   align-items: start;
   min-width: 0;

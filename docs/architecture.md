@@ -246,7 +246,7 @@ Dependency Engine 是跨模块联动唯一协调者。
 evaluateDependencies(
   characterData,          // CharacterData
   systemPackage,          // SystemPackage（含 manifest、resourceLibraries、dependencies）
-  event,                  // DependencyEvent（resourceSelected | checkboxChanged）
+  event,                  // DependencyEvent（resourceSelected | checkboxChanged | countableChanged）
 )
   -> dataPatches           // Record<moduleId, SheetValue>
   -> readOnlyDisplayContent // Record<moduleId, string>

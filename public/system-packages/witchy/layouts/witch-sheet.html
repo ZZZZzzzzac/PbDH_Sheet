@@ -10,7 +10,7 @@
       <section class="character-summary" data-guide-region-id="guide-identity">
         <pb-module id="character-portrait"></pb-module>
         <div class="character-summary-details">
-          <section class="sheet-region archetype-panel">
+          <section class="sheet-region identity-terminal-panel">
             <div class="identity-fields">
               <pb-module id="character-name"></pb-module>
               <div class="picker-field" data-guide-region-id="guide-archetype">
@@ -18,9 +18,15 @@
                 <pb-module id="pick-archetype"></pb-module>
               </div>
             </div>
-            <pb-module id="archetype-description"></pb-module>
+            <div data-guide-region-id="guide-terminal">
+              <pb-module id="terminal-condition"></pb-module>
+            </div>
           </section>
         </div>
+      </section>
+
+      <section class="sheet-region archetype-panel">
+        <pb-module id="archetype-description"></pb-module>
       </section>
 
       <section class="sheet-region experience-panel" data-guide-region-id="guide-experiences">
@@ -31,10 +37,6 @@
           <div><pb-module id="experience-4"></pb-module><pb-module id="experience-modifier-4"></pb-module></div>
           <div><pb-module id="experience-5"></pb-module><pb-module id="experience-modifier-5"></pb-module></div>
         </div>
-      </section>
-
-      <section class="sheet-region terminal-panel" data-guide-region-id="guide-terminal">
-        <pb-module id="terminal-condition"></pb-module>
       </section>
 
       <section class="sheet-region inventory-panel" data-guide-region-id="guide-inventory">
@@ -51,7 +53,10 @@
             <pb-module id="essence-atziluth"></pb-module>
           </div>
         </div>
-        <pb-module id="magic-points"></pb-module>
+        <div class="magic-resource-grid">
+          <pb-module id="magic-points"></pb-module>
+          <pb-module id="erosion"></pb-module>
+        </div>
       </section>
 
       <section class="sheet-region magic-panel" data-guide-region-id="guide-magic">

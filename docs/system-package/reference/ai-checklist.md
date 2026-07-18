@@ -12,7 +12,7 @@
 8. Guide 只生成 Restricted Markdown 线性说明和单个 Page、Module 或 Layout Region 目标，不生成目标数组、任意 selector、完成条件、动作或 Character Data 访问。Layout Region 使用 package-wide unique `data-guide-region-id`；跨页目标由框架切换 Current Page。
 9. Validation Script 只读输入并返回 issues；不访问 DOM、网络或框架状态。
 10. 所有路径安全相对，所有 ID 唯一，所有引用存在。
-11. `fillCountable` 只使用整数常量或可严格解析为整数的 Resource 字段；多选 Picker 声明 `选择索引`。
+11. `fillCountable` 只使用整数常量、可严格解析的 Resource 字段或受限 `integerCalculation`；计算引用的 Countable/Picker 均列入规则 `sources`，多选 Picker 字段声明 `选择索引`。
 12. Card Definition 只有在被 Card Table 消费时才要求 name/description；按 Module 配置字段检查。
 13. 运行 Validator 后按 `location/entities/evidence` 修复；不要要求或虚构 suggestion，不要尝试关闭规则。
 14. 只在 freeText/longText value 与 Card name/description/tags 中生成 Restricted Markdown；只用批准语法和七个命名颜色，不格式化框架 UI 文本。

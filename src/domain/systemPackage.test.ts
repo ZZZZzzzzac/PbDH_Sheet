@@ -856,8 +856,8 @@ it("reports missing Card artwork asset references", () => {
     );
   });
 
-  it("reports unsupported countableResource dependency triggers clearly", () => {
-    const invalidPackage = {
+  it("accepts countableResource dependency triggers", () => {
+    const countablePackage = {
       ...minimalSystemPackage,
       modules: [
         ...minimalSystemPackage.modules,
@@ -893,17 +893,9 @@ it("reports missing Card artwork asset references", () => {
       ],
     };
 
-    const result = validateSystemPackage(invalidPackage);
+    const result = validateSystemPackage(countablePackage);
 
-    expect(result.ok).toBe(false);
-    expect(result.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          code: "UNSUPPORTED_DEPENDENCY_TRIGGER",
-          level: "error",
-        }),
-      ]),
-    );
+    expect(result.ok).toBe(true);
   });
 
   it("reports a clear error for unsupported Sheet Module types", () => {
