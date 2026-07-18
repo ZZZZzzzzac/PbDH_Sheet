@@ -282,6 +282,7 @@
 .card-indicator-badge[data-color-index="6"] { --card-indicator-color: #9b416d; }
 .card-indicator-badge[data-color-index="7"] { --card-indicator-color: #58656b; }
 .card-indicator-badge[data-color-index="8"] { --card-indicator-color: #a35118; }
+.card-indicator-badge[data-color-index="9"] { --card-indicator-color: #3d7b8a; }
 .card-indicator-badge[data-color-index="9"] { --card-indicator-color: #217a78; }
 
 .card-indicator-count {
