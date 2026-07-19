@@ -4,7 +4,7 @@ Sheet Module 是框架提供的交互或展示部件。共同字段是唯一 `ID
 
 当前类型：
 
-- `freeText`：单行自由文本；需要 `标签`，可写 `默认值`、`隐藏标签`、`占位文本`。
+- `freeText`：单行文本；需要 `标签`，可写 `默认值`、`隐藏标签`、`占位文本`。声明非空、无重复的字符串`选项`列表后改用单选下拉框；其默认值必须属于选项。
 - `longText`：多行文本；需要 `标签`，可写 `默认值`、`行数`（2–20）、`隐藏标签`、`占位文本`。
 - `checkboxResource`：离散勾选项；需要 `标签` 和非空 `选项`，每项含唯一 `ID`、`标签`，`默认选中` 默认 false；相同 `分组` 可让多个独立 checkbox 共用一份说明文字。
 - `countableResource`：当前值/上下限；需要 `标签`，支持整数 `最小值`、`最大值`、`默认值`、正整数 `步长`、`最大值可改`。可选 `显示方式: "标记"`，并用两个不同的单一 Unicode 字素 `当前值标记` / `剩余值标记`（常用 emoji）显示当前值与剩余容量；此时最小值不得为负。`标识字号`与`加减号字号`可分别声明数字/emoji 和 `-` / `+` 的 CSS 像素字号，均为 5–96。
@@ -16,9 +16,9 @@ Sheet Module 是框架提供的交互或展示部件。共同字段是唯一 `ID
 
 普通 Sheet Value 默认按文本保存，不要因为看起来像数字就假设 Validator 会做数值校验。模块完整字段见[Sheet Module Reference](../reference/sheet-modules.md)。
 
-`标签` 字段仍然必填，但可以写成空字符串来隐藏视觉标题，效果等同于 `隐藏标签: true`。隐藏时输入框依次使用非空 `标签`、`占位文本`、Module `ID` 作为无障碍名称。`占位文本` 只在空输入框中提示 Player，不是默认值，也不会进入 Character Data。
+`标签` 字段仍然必填，但可以写成空字符串来隐藏视觉标题，效果等同于 `隐藏标签: true`。隐藏时输入框或下拉框依次使用非空 `标签`、`占位文本`、Module `ID` 作为无障碍名称。`占位文本`只在空输入框或下拉空提示中提醒 Player，不是默认值，也不会进入 Character Data。
 
-freeText/longText value 支持[Restricted Markdown](../reference/restricted-markdown.md)。空或聚焦字段显示原始文本，非空失焦字段显示渲染结果；Character Data 始终保存原字符串。freeText 仍是单行，长列表应放 longText。标签、placeholder 与无障碍名称不解析 Markdown。
+自由输入 freeText 与 longText value 支持[Restricted Markdown](../reference/restricted-markdown.md)。空或聚焦字段显示原始文本，非空失焦字段显示渲染结果；Character Data 始终保存原字符串。下拉 Free Text 的选项按纯文本显示，但选择结果仍保存为同一种字符串。freeText 仍是单行，长列表应放 longText。标签、placeholder 与无障碍名称不解析 Markdown。
 
 `imageField` 的图片区域本身就是上传/替换入口，支持点击和键盘操作；已有图片可通过右上角移除按钮清除，不需要 Author 另放上传按钮。
 

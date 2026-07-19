@@ -8,6 +8,9 @@
   </header>
 
   <section class="overview-grid">
+    <div class="overview-portrait">
+      <pb-module id="survivor-portrait"></pb-module>
+    </div>
     <div class="overview-left">
       <pb-module id="survivor-name"></pb-module>
       <pb-module id="survivor-alias"></pb-module>
@@ -17,9 +20,11 @@
     <div class="overview-right">
       <pb-module id="hope-points"></pb-module>
       <pb-module id="wounds"></pb-module>
-      <pb-module id="hope-die"></pb-module>
-      <div class="fear-noise-row">
-        <pb-module id="fear-die"></pb-module>
+      <div class="dice-noise-row">
+        <div class="dice-stack">
+          <pb-module id="hope-die"></pb-module>
+          <pb-module id="fear-die"></pb-module>
+        </div>
         <pb-module id="noise"></pb-module>
       </div>
     </div>
@@ -62,9 +67,21 @@
   </section>
 
   <section class="core-hurt-phases">
-    <article><pb-module id="core-hurt-phase-opening"></pb-module></article>
-    <article><pb-module id="core-hurt-phase-development"></pb-module></article>
-    <article><pb-module id="core-hurt-phase-turn"></pb-module></article>
-    <article><pb-module id="core-hurt-phase-conclusion"></pb-module></article>
+    <article>
+      <pb-module id="core-hurt-phase-opening"></pb-module>
+      <pb-module id="core-hurt-opening-note"></pb-module>
+    </article>
+    <article>
+      <pb-module id="core-hurt-phase-development"></pb-module>
+      <pb-module id="core-hurt-development-note"></pb-module>
+    </article>
+    <article>
+      <pb-module id="core-hurt-phase-turn"></pb-module>
+      <pb-module id="core-hurt-turn-note"></pb-module>
+    </article>
+    <article>
+      <pb-module id="core-hurt-phase-conclusion"></pb-module>
+      <pb-module id="core-hurt-conclusion-note"></pb-module>
+    </article>
   </section>
 </main>

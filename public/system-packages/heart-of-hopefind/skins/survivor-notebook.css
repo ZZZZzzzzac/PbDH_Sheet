@@ -12,9 +12,13 @@
   width: 210mm;
   height: 297mm;
   margin: 0 auto 16px;
-  padding: 5mm 4mm;
+  padding: 0 !important;
   overflow: hidden;
   border: 0;
+}
+
+:scope .character-sheet {
+  padding: 12px;
 }
 
 :scope .hopefind-page {
@@ -78,7 +82,7 @@
 
 :scope .hopefind-page > * {
   position: relative;
-  z-index: 1;
+  z-index: auto;
 }
 
 :scope .sheet-title,
@@ -109,6 +113,28 @@
 
 :scope [data-module-type="countableResource"] {
   --restricted-markdown-black: var(--hopefind-ink);
+}
+
+:scope [data-module-id="noise"] {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+:scope [data-module-id="noise"] > [data-part="label"] {
+  display: none;
+}
+
+:scope [data-module-id="noise"] [data-part="options"] {
+  height: 100%;
+  padding: 0;
+  place-content: center;
+}
+
+:scope [data-module-id="noise"] [data-part="option"] {
+  min-height: 0;
+  justify-content: center;
 }
 
 :scope [data-module-id="pick-survivor-style"] {

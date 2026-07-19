@@ -125,6 +125,41 @@ describe("validateSystemPackage", () => {
     expect(result.ok).toBe(true);
   });
 
+  it("accepts a Free Text dropdown with unique string options and an in-list default", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: minimalSystemPackage.modules.map((module) => module.ID === "character-name"
+        ? { ...module, 选项: ["战士", "法师", "游侠"], 默认值: "法师" }
+        : module),
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(findModule(result.package, "character-name")).toEqual(expect.objectContaining({
+        选项: ["战士", "法师", "游侠"],
+        默认值: "法师",
+      }));
+    }
+  });
+
+  it.each([
+    ["empty list", { 选项: [] }],
+    ["blank option", { 选项: ["战士", " "] }],
+    ["duplicate option", { 选项: ["战士", "战士"] }],
+    ["non-string option", { 选项: ["战士", 2] }],
+    ["out-of-list default", { 选项: ["战士", "法师"], 默认值: "游侠" }],
+  ])("rejects a Free Text dropdown with %s", (_case, dropdownConfig) => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: minimalSystemPackage.modules.map((module) => module.ID === "character-name"
+        ? { ...module, ...dropdownConfig }
+        : module),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "PACKAGE_SHAPE_INVALID" })]));
+  });
+
   it.each([
     ["隐藏标签", "yes"],
     ["占位文本", 123],
@@ -136,6 +171,33 @@ describe("validateSystemPackage", () => {
 
     expect(result.ok).toBe(false);
     expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "PACKAGE_SHAPE_INVALID" })]));
+  });
+
+  it("rejects fillText append targeting a dropdown-backed Free Text", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: [
+        { ID: "source", 类型: "checkboxResource", 标签: "来源", 选项: [{ ID: "enabled", 标签: "启用" }] },
+        { ID: "target", 类型: "freeText", 标签: "职业", 选项: ["战士", "法师"] },
+      ],
+      pages: [{
+        ...minimalSystemPackage.pages[0],
+        layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<pb-module id="source"></pb-module><pb-module id="target"></pb-module>' },
+      }],
+      dependencies: [{
+        ID: "append-choice",
+        sources: [{ 类型: "checkboxResource", 模块ID: "source" }],
+        targets: [{ 类型: "module", 模块ID: "target" }],
+        触发: { 类型: "checkboxChanged", 来源模块ID: "source" },
+        条件: { 类型: "always" },
+        动作: [{ 类型: "fillText", 目标模块ID: "target", 写入方式: "追加", 内容: "游侠" }],
+      }],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "UNSUPPORTED_APPEND_TARGET_MODULE" }),
+    ]));
   });
 
   it.each([
