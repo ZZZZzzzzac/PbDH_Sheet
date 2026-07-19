@@ -193,6 +193,8 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
     "显示方式": "标记",
     "当前值标记": "❤️",
     "剩余值标记": "🖤",
+    "标识字号": 20,
+    "加减号字号": 18,
     "默认隐藏": false
   },
   {
@@ -315,7 +317,7 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
 | freeText | `默认值`、`隐藏标签`、`占位文本` |
 | longText | `默认值`、`行数`（2–20）、`隐藏标签`、`占位文本` |
 | checkboxResource option | `默认选中` |
-| countableResource | `最小值`、`最大值`、`默认值`、`步长`、`最大值可改`、`显示方式`、`当前值标记`、`剩余值标记`；标记展示要求两个不同的单一 Unicode 字素且最小值非负 |
+| countableResource | `最小值`、`最大值`、`默认值`、`步长`、`最大值可改`、`显示方式`、`当前值标记`、`剩余值标记`、`标识字号`、`加减号字号`；字号为 5–96 CSS px，标记展示要求两个不同的单一 Unicode 字素且最小值非负 |
 | readOnlyDisplay | `内容`、`资源路径`、`替代文本`；内容/资源至少一个 |
 | imageField | `替代文本` |
 | resourcePicker | `字段模板`、`多选`、`默认查询`、`创建卡牌` |

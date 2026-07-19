@@ -414,6 +414,49 @@ describe("validateSystemPackage", () => {
     }
   });
 
+  it.each([5, 96])("accepts Countable Resource font sizes at the %spx boundary", (fontSize) => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: [{
+        ID: "character-name",
+        类型: "countableResource",
+        标签: "生命",
+        标识字号: fontSize,
+        加减号字号: fontSize,
+      }],
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(findModule(result.package, "character-name")).toEqual(expect.objectContaining({
+        标识字号: fontSize,
+        加减号字号: fontSize,
+      }));
+    }
+  });
+
+  it.each([
+    ["identifier below minimum", { 标识字号: 4.9 }],
+    ["identifier above maximum", { 标识字号: 96.1 }],
+    ["stepper below minimum", { 加减号字号: 4.9 }],
+    ["stepper above maximum", { 加减号字号: 96.1 }],
+  ])("rejects Countable Resource font size when %s", (_case, fontConfig) => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: [{
+        ID: "character-name",
+        类型: "countableResource",
+        标签: "生命",
+        ...fontConfig,
+      }],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "PACKAGE_SHAPE_INVALID" }),
+    ]));
+  });
+
   it("rejects a Countable Resource Marker Presentation without both marker graphemes", () => {
     const result = validateSystemPackage({
       ...minimalSystemPackage,

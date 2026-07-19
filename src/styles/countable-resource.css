@@ -29,6 +29,7 @@
   text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
+  font-size: var(--countable-identifier-font-size, inherit);
 }
 
 .marker-group[data-text-fit="overflow"] {
@@ -67,6 +68,7 @@
   display: inline-grid;
   place-items: center;
   width: auto;
+  min-width: 28px;
   height: 28px;
   padding-inline: 2px;
   border: 0;
@@ -74,6 +76,7 @@
   color: var(--framework-text-strong);
   cursor: pointer;
   font-weight: 700;
+  font-size: var(--countable-stepper-font-size, inherit);
 }
 
 .stepper:disabled {
@@ -95,10 +98,12 @@
   border: 0;
   padding-inline: 2px;
   text-align: center;
+  font-size: var(--countable-identifier-font-size, inherit);
 }
 
 .counter .value {
   color: var(--framework-text-muted);
+  font-size: var(--countable-identifier-font-size, inherit);
   white-space: nowrap;
 }
 
@@ -107,5 +112,6 @@
   min-height: 24px;
   border: 1px solid var(--framework-border-subtle);
   text-align: center;
+  font-size: var(--countable-identifier-font-size, inherit);
 }
 

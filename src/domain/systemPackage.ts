@@ -72,6 +72,8 @@ const countableResourceModuleSchema = sheetModuleBaseSchema.extend({
   显示方式: z.enum(["数值", "标记"]).optional(),
   当前值标记: z.string().optional(),
   剩余值标记: z.string().optional(),
+  标识字号: z.number().min(5).max(96).optional(),
+  加减号字号: z.number().min(5).max(96).optional(),
 }).superRefine((module, context) => {
   if (module.显示方式 !== "标记") return;
   if (module.当前值标记 === undefined) {

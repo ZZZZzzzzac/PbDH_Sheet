@@ -1,0 +1,167 @@
+[
+  { "ID": "survivor-name", "类型": "freeText", "标签": "姓名" },
+  { "ID": "survivor-alias", "类型": "freeText", "标签": "代称" },
+  { "ID": "hope-die", "类型": "freeText", "标签": "希望骰", "默认值": "D12", "占位文本": "D12" },
+  {
+    "ID": "hope-points",
+    "类型": "countableResource",
+    "标签": "希望点",
+    "最小值": 0,
+    "最大值": 6,
+    "默认值": 2,
+    "步长": 1,
+    "最大值可改": false,
+    "显示方式": "标记",
+    "当前值标记": "●",
+    "剩余值标记": "○"
+  },
+  {
+    "ID": "wounds",
+    "类型": "countableResource",
+    "标签": "受伤",
+    "最小值": 0,
+    "最大值": 5,
+    "默认值": 0,
+    "步长": 1,
+    "最大值可改": false,
+    "显示方式": "标记",
+    "当前值标记": "☠",
+    "剩余值标记": "○"
+  },
+  {
+    "ID": "noise",
+    "类型": "checkboxResource",
+    "标签": "噪音",
+    "选项": [
+      { "ID": "active", "标签": "噪音状态" }
+    ]
+  },
+  { "ID": "fear-die", "类型": "readOnlyDisplay", "标签": "恐惧骰", "内容": "D12" },
+  {
+    "ID": "life",
+    "类型": "countableResource",
+    "标签": "生命",
+    "最小值": 0,
+    "最大值": 5,
+    "默认值": 0,
+    "步长": 1,
+    "最大值可改": true,
+    "显示方式": "标记",
+    "当前值标记": "●",
+    "剩余值标记": "○"
+  },
+  {
+    "ID": "stress",
+    "类型": "countableResource",
+    "标签": "压力",
+    "最小值": 0,
+    "最大值": 5,
+    "默认值": 0,
+    "步长": 1,
+    "最大值可改": true,
+    "显示方式": "标记",
+    "当前值标记": "●",
+    "剩余值标记": "○"
+  },
+  {
+    "ID": "pick-survivor-style",
+    "类型": "resourceComposer",
+    "按钮文本": "选择求生者风格",
+    "来源槽位": [
+      {
+        "ID": "first-feature",
+        "标签": "第一特性来源",
+        "资源库ID": "survivor-styles"
+      },
+      {
+        "ID": "second-feature",
+        "标签": "第二特性来源",
+        "资源库ID": "survivor-styles"
+      }
+    ],
+    "输出字段": [
+      { "字段": "第一风格", "来源槽位ID": "first-feature", "来源字段": "名称" },
+      { "字段": "第二风格", "来源槽位ID": "second-feature", "来源字段": "名称" },
+      { "字段": "第一特性名称", "来源槽位ID": "first-feature", "来源字段": "第一特性名称" },
+      { "字段": "第一特性规则", "来源槽位ID": "first-feature", "来源字段": "第一特性规则" },
+      { "字段": "第二特性名称", "来源槽位ID": "second-feature", "来源字段": "第二特性名称" },
+      { "字段": "第二特性规则", "来源槽位ID": "second-feature", "来源字段": "第二特性规则" }
+    ]
+  },
+  { "ID": "survivor-style-name", "类型": "freeText", "标签": "求生者风格" },
+  { "ID": "survivor-style-features", "类型": "longText", "标签": "特性", "行数": 6 },
+  { "ID": "character-trait-name", "类型": "freeText", "标签": "人物特质" },
+  { "ID": "character-trait-description", "类型": "longText", "标签": "特质说明", "行数": 4 },
+  { "ID": "profession-name", "类型": "freeText", "标签": "职业" },
+  { "ID": "profession-keyword-1", "类型": "freeText", "标签": "职业关键词1", "隐藏标签": true, "占位文本": "职业关键词1" },
+  { "ID": "profession-modifier-1", "类型": "freeText", "标签": "关键词1加值", "隐藏标签": true, "占位文本": "+0" },
+  { "ID": "profession-keyword-2", "类型": "freeText", "标签": "职业关键词2", "隐藏标签": true, "占位文本": "职业关键词2" },
+  { "ID": "profession-modifier-2", "类型": "freeText", "标签": "关键词2加值", "隐藏标签": true, "占位文本": "+0" },
+  { "ID": "profession-keyword-3", "类型": "freeText", "标签": "职业关键词3", "隐藏标签": true, "占位文本": "职业关键词3" },
+  { "ID": "profession-modifier-3", "类型": "freeText", "标签": "关键词3加值", "隐藏标签": true, "占位文本": "+0" },
+  { "ID": "profession-keyword-4", "类型": "freeText", "标签": "职业关键词4", "隐藏标签": true, "占位文本": "职业关键词4" },
+  { "ID": "profession-modifier-4", "类型": "freeText", "标签": "关键词4加值", "隐藏标签": true, "占位文本": "+0" },
+  { "ID": "arc-1-description", "类型": "freeText", "标签": "弧光1", "隐藏标签": true, "占位文本": "弧光1" },
+  { "ID": "arc-1-intensity", "类型": "freeText", "标签": "弧光1强度", "隐藏标签": true, "默认值": "1", "占位文本": "1" },
+  { "ID": "arc-2-description", "类型": "freeText", "标签": "弧光2", "隐藏标签": true, "占位文本": "弧光2" },
+  { "ID": "arc-2-intensity", "类型": "freeText", "标签": "弧光2强度", "隐藏标签": true, "占位文本": "强度" },
+  { "ID": "arc-3-description", "类型": "freeText", "标签": "弧光3", "隐藏标签": true, "占位文本": "弧光3" },
+  { "ID": "arc-3-intensity", "类型": "freeText", "标签": "弧光3强度", "隐藏标签": true, "占位文本": "强度" },
+  { "ID": "arc-4-description", "类型": "freeText", "标签": "弧光4", "隐藏标签": true, "占位文本": "弧光4" },
+  { "ID": "arc-4-intensity", "类型": "freeText", "标签": "弧光4强度", "隐藏标签": true, "占位文本": "强度" },
+  { "ID": "arc-5-description", "类型": "freeText", "标签": "弧光5", "隐藏标签": true, "占位文本": "弧光5" },
+  { "ID": "arc-5-intensity", "类型": "freeText", "标签": "弧光5强度", "隐藏标签": true, "占位文本": "强度" },
+  { "ID": "core-hurt", "类型": "longText", "标签": "核心伤痛", "行数": 10 },
+  {
+    "ID": "core-hurt-phase-opening",
+    "类型": "countableResource",
+    "标签": "起",
+    "最小值": 0,
+    "最大值": 3,
+    "默认值": 0,
+    "步长": 1,
+    "最大值可改": true,
+    "显示方式": "标记",
+    "当前值标记": "●",
+    "剩余值标记": "○"
+  },
+  {
+    "ID": "core-hurt-phase-development",
+    "类型": "countableResource",
+    "标签": "承",
+    "最小值": 0,
+    "最大值": 3,
+    "默认值": 0,
+    "步长": 1,
+    "最大值可改": true,
+    "显示方式": "标记",
+    "当前值标记": "●",
+    "剩余值标记": "○"
+  },
+  {
+    "ID": "core-hurt-phase-turn",
+    "类型": "countableResource",
+    "标签": "转",
+    "最小值": 0,
+    "最大值": 3,
+    "默认值": 0,
+    "步长": 1,
+    "最大值可改": true,
+    "显示方式": "标记",
+    "当前值标记": "●",
+    "剩余值标记": "○"
+  },
+  {
+    "ID": "core-hurt-phase-conclusion",
+    "类型": "countableResource",
+    "标签": "合",
+    "最小值": 0,
+    "最大值": 3,
+    "默认值": 0,
+    "步长": 1,
+    "最大值可改": true,
+    "显示方式": "标记",
+    "当前值标记": "●",
+    "剩余值标记": "○"
+  }
+]
