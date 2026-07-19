@@ -362,7 +362,7 @@ function CardContextMenu({
   const nextState = nextCardState(stateOptions, instance.state);
 
   return (
-    <div className="card-context-menu" data-output-exclude="true" style={{ left: x, top: y }} role="menu" onPointerDown={(event) => event.stopPropagation()}>
+    <div className="card-context-menu" data-guide-interaction-surface="true" data-output-exclude="true" style={{ left: x, top: y }} role="menu" onPointerDown={(event) => event.stopPropagation()}>
       <button type="button" role="menuitem" onClick={() => onViewDetail(instance.instanceId)}>查看详情</button>
       {canFlip ? (
         <button type="button" role="menuitem" onClick={() => { flipCardInstance(instance.instanceId); onClose(); }}>
@@ -452,7 +452,7 @@ function CardDetailOverlay({ instance, definition, module, presentation, onClose
   if (!instance) return null;
   const name = resolvePresentation(definition, module, presentation).name || definitionReferenceId(instance);
   return (
-    <div className="card-detail-backdrop" data-output-exclude="true" onClick={onClose}>
+    <div className="card-detail-backdrop" data-guide-interaction-surface="true" data-output-exclude="true" onClick={onClose}>
       <section className="card-detail-dialog" role="dialog" aria-modal="true" aria-label={`${name}详情`} onClick={(event) => event.stopPropagation()}>
         <button className="card-detail-close" type="button" onClick={onClose} aria-label="关闭卡牌详情"><X aria-hidden="true" size={20} /></button>
         <div

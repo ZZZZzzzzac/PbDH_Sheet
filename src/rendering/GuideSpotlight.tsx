@@ -182,6 +182,9 @@ function findGuideTarget(step: GuideStep): HTMLElement | null {
   }
 
   const { id, attribute } = step.目标.类型 === "module"
+    // Uses data-module-slot-id (on the layout slot wrapper from SheetRenderer) over data-module-id
+    // (on the module's internal container) because the slot wrapper is the stable layout boundary
+    // for spotlight geometry.
     ? { id: step.目标.模块ID, attribute: "data-module-slot-id" }
     : step.目标.类型 === "page"
       ? { id: step.目标.页面ID, attribute: "data-template-page-id" }
