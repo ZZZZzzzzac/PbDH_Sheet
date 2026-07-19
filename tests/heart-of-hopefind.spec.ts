@@ -13,12 +13,12 @@ test("Heart of Hopefind exposes the confirmed core character state workflow", as
   await expect(hopeDie).toHaveValue("d12");
   await expect(fearDie).toHaveValue("d12");
   await hopeDie.selectOption("d10");
-  await fearDie.selectOption("d20");
+  await fearDie.selectOption("d8");
   await expect(page.getByRole("img", { name: "希望点：当前值 2，上限 6" })).toBeVisible();
   await page.getByRole("checkbox", { name: "噪音", exact: true }).check();
   await expect(fearDie).toHaveValue("d20");
   await page.getByRole("checkbox", { name: "噪音", exact: true }).uncheck();
-  await expect(fearDie).toHaveValue("d20");
+  await expect(fearDie).toHaveValue("d12");
 
   await page.getByRole("button", { name: "选择求生者风格", exact: true }).click();
   for (const selector of [".profession-panel", ".core-hurt-block"]) {

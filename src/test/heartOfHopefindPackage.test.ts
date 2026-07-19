@@ -74,7 +74,7 @@ describe("Heart of Hopefind System Package", () => {
     expect(new Set(markerPairs).size).toBe(4);
   });
 
-  it("uses independent Free Text dropdowns for both dice", async () => {
+  it("uses Free Text dropdowns for both dice and derives the Fear Die from Noise", async () => {
     const result = await loadHeartOfHopefindPackage();
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -87,7 +87,24 @@ describe("Heart of Hopefind System Package", () => {
         选项: ["d4", "d6", "d8", "d10", "d12", "d20"],
       });
     }
-    expect(result.package.dependencies?.some((dependency) => dependency.触发.类型 === "checkboxChanged")).toBe(false);
+    const data = createEmptyCharacterData(result.package, "hopefind-test");
+    const noisy = evaluateDependencies(data, result.package, {
+      type: "checkboxChanged",
+      sourceModuleId: "noise",
+      optionId: "active",
+      checked: true,
+      checkboxState: { active: true },
+    });
+    expect(noisy.dataPatches["fear-die"]).toBe("d20");
+
+    const quiet = evaluateDependencies(data, result.package, {
+      type: "checkboxChanged",
+      sourceModuleId: "noise",
+      optionId: "active",
+      checked: false,
+      checkboxState: { active: false },
+    });
+    expect(quiet.dataPatches["fear-die"]).toBe("d12");
   });
 
   it("reports Life and Stress maxima that do not total ten without changing them", async () => {
@@ -227,7 +244,7 @@ describe("Heart of Hopefind System Package", () => {
     expect(result.package.modules.find((module) => module.ID === "core-hurt")).toMatchObject({
       类型: "longText",
       标签: "核心伤痛",
-      行数: 6,
+      行数: 8,
     });
     for (const [id, label] of [
       ["core-hurt-opening-note", "起·记录"],
@@ -239,7 +256,7 @@ describe("Heart of Hopefind System Package", () => {
         类型: "longText",
         标签: label,
         隐藏标签: true,
-        行数: 2,
+        行数: 4,
       });
     }
     const characterPage = result.package.pages[0];
@@ -277,7 +294,7 @@ describe("Heart of Hopefind System Package", () => {
     const layout = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
 
     expect(skin).toMatch(/\.sheet-page\s*\{[^}]*width:\s*210mm;[^}]*height:\s*297mm;[^}]*padding:\s*0\s*!important;/s);
-    expect(skin).toMatch(/\.character-sheet\s*\{[^}]*padding:\s*0;/s);
+    expect(skin).toMatch(/\.character-sheet\s*\{[^}]*padding:\s*12px;/s);
     expect(skin).not.toContain("repeating-linear-gradient");
     expect(skin).toMatch(/\.hopefind-page::before\s*\{[^}]*box-shadow:/s);
     expect(skin).not.toContain("@media print");

@@ -1,0 +1,337 @@
+/* dawn-survey 「晨光勘测」— 浅色系：天亮后摊开在桌上的求生勘测图。
+   雾白晨光纸面 + 淡方格地图底纹，晨曦金点题（希望），雾蓝勾线（恐惧），
+   与「求生者手记」的牛皮纸粗框形成明暗对照。布局沿用 Base Layout，仅做视觉微调。 */
+
+:scope {
+  color-scheme: light;
+
+  /* Skin 私有令牌 */
+  --dawn-paper: #faf7ee;
+  --dawn-field: #fdfcf5;
+  --dawn-panel: rgba(255, 254, 248, 0.74);
+  --dawn-ink: #37454e;
+  --dawn-ink-soft: #5d7079;
+  --dawn-line: #aebec2;
+  --dawn-line-soft: #d3dcd8;
+  --dawn-gold: #c9962e;
+  --dawn-gold-deep: #9c741f;
+  --dawn-blue: #5e7c8a;
+  --dawn-rust: #a85a41;
+
+  color: var(--dawn-ink);
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+
+  /* Restricted Markdown palette：与晨光色系协调 */
+  --restricted-markdown-red: #b04a2f;
+  --restricted-markdown-orange: #b0701f;
+  --restricted-markdown-yellow: #9c8222;
+  --restricted-markdown-green: #4d7a52;
+  --restricted-markdown-blue: #4f7285;
+  --restricted-markdown-purple: #7a5f92;
+  --restricted-markdown-gray: #72808a;
+}
+
+/* 网页与打印共用真实 A4 页盒（与 survivor-notebook 相同的硬合同） */
+:scope .sheet-page {
+  box-sizing: border-box;
+  width: 210mm;
+  height: 297mm;
+  margin: 0 auto 16px;
+  padding: 0 !important;
+  overflow: hidden;
+  border: 0;
+}
+
+:scope .character-sheet {
+  padding: 12px;
+}
+
+/* 纸面：晨光自左上泻下 + 淡方格勘测底纹；外缘一道雾蓝细边 */
+:scope .hopefind-page {
+  position: relative;
+  border: 1px solid rgba(94, 124, 138, 0.45);
+  background:
+    linear-gradient(165deg, rgba(234, 199, 110, 0.22), rgba(250, 247, 238, 0) 36%),
+    repeating-linear-gradient(0deg, rgba(94, 124, 138, 0.05) 0, rgba(94, 124, 138, 0.05) 1px, transparent 1px, transparent 10mm),
+    repeating-linear-gradient(90deg, rgba(94, 124, 138, 0.05) 0, rgba(94, 124, 138, 0.05) 1px, transparent 1px, transparent 10mm),
+    var(--dawn-paper);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+/* 内图廓：地图式细线框 */
+:scope .hopefind-page::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 2mm;
+  border: 1px solid rgba(94, 124, 138, 0.3);
+  pointer-events: none;
+}
+
+:scope .hopefind-page > * {
+  position: relative;
+  z-index: auto;
+}
+
+/* 题眉：无重框，收尾一道晨曦地平线 */
+:scope .sheet-title {
+  padding: 0 1mm;
+}
+
+:scope .sheet-title h1 {
+  font-family: "STKaiti", "KaiTi", serif;
+  font-size: 2rem;
+  letter-spacing: 0.1em;
+}
+
+:scope .sheet-title p,
+:scope .sheet-title small {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+:scope .sheet-title p {
+  color: var(--dawn-blue);
+}
+
+/* 「求生者人物卡」—— 勘测印章式题签 */
+:scope .sheet-title small {
+  padding: 0.8mm 2mm;
+  border: 1px dashed rgba(94, 124, 138, 0.65);
+  border-radius: 1mm;
+  color: var(--dawn-blue);
+  white-space: nowrap;
+}
+
+/* 晨曦地平线饰带（Skin override HTML 新增的装饰节点） */
+:scope .dawn-horizon {
+  grid-column: 1 / -1;
+  position: relative;
+  height: 2.6mm;
+}
+
+:scope .dawn-horizon::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.8mm;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(201, 150, 46, 0), rgba(201, 150, 46, 0.75) 16%, rgba(201, 150, 46, 0.75) 84%, rgba(201, 150, 46, 0));
+}
+
+:scope .dawn-sun {
+  position: absolute;
+  left: 14%;
+  bottom: 0.8mm;
+  width: 2.4mm;
+  height: 2.4mm;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 38%, #f2cd7c, #d9a63f);
+  box-shadow: 0 0 5px rgba(217, 166, 63, 0.55);
+  transform: translateY(50%);
+}
+
+/* 分区面板：半透雾白卡纸，隐约透出地图底纹 */
+:scope .style-panel,
+:scope .trait-panel,
+:scope .profession-panel,
+:scope .arc-panel,
+:scope .core-hurt-block,
+:scope .core-hurt-phases article {
+  padding: 2mm;
+  border: 1px solid var(--dawn-line);
+  border-radius: 1.6mm;
+  background: var(--dawn-panel);
+  box-shadow: 0 1px 3px rgba(55, 69, 78, 0.1);
+}
+
+/* 字段容器：雾白底 + 雾蓝描边 */
+:scope [data-part="container"] {
+  border-color: var(--dawn-line);
+  background: var(--dawn-field);
+  color: var(--dawn-ink);
+}
+
+:scope [data-part="label"] {
+  border-color: var(--dawn-line-soft);
+  color: var(--dawn-ink-soft);
+}
+
+:scope [data-module-type="freeText"] [data-part="input"],
+:scope [data-module-type="longText"] [data-part="input"],
+:scope [data-module-type="countableResource"] [data-part="input"],
+:scope [data-module-type="countableResource"] [data-part="maximum-input"] {
+  background: transparent;
+  color: var(--dawn-ink);
+}
+
+:scope [data-module-type="countableResource"] [data-part="maximum-input"] {
+  border-color: var(--dawn-line-soft);
+}
+
+:scope [data-part="maximum"] {
+  color: var(--dawn-ink-soft);
+}
+
+:scope [data-part="decrement-button"],
+:scope [data-part="increment-button"] {
+  background: transparent;
+  color: var(--dawn-ink-soft);
+}
+
+/* 立绘框：薄雾鼠尾草色 */
+:scope [data-module-type="imageField"] [data-part="surface"],
+:scope [data-module-type="imageField"] [data-part="image"] {
+  background: #e9ede6;
+}
+
+:scope [data-module-type="imageField"] [data-part="image-fallback"] {
+  color: var(--dawn-ink-soft);
+}
+
+:scope [data-module-type="imageField"] [data-part="remove-button"] {
+  border-color: var(--dawn-line);
+  background: var(--dawn-field);
+  color: var(--dawn-ink);
+}
+
+/* 二元骰：希望骰沐晨曦金，恐惧骰沉雾蓝 */
+:scope [data-module-id="hope-die"] {
+  border-color: rgba(201, 150, 46, 0.6);
+  background: linear-gradient(180deg, rgba(234, 199, 110, 0.3), rgba(253, 250, 238, 0.92));
+}
+
+:scope [data-module-id="hope-die"] [data-part="label"] {
+  border-color: rgba(201, 150, 46, 0.4);
+  color: var(--dawn-gold-deep);
+}
+
+:scope [data-module-id="fear-die"] {
+  border-color: rgba(94, 124, 138, 0.6);
+  background: linear-gradient(180deg, rgba(148, 172, 184, 0.26), rgba(246, 249, 249, 0.92));
+}
+
+:scope [data-module-id="fear-die"] [data-part="label"] {
+  border-color: rgba(94, 124, 138, 0.4);
+  color: var(--dawn-blue);
+}
+
+/* 资源标签的情绪色：希望金、受伤锈、压力蓝 */
+:scope [data-module-id="hope-points"] [data-part="label"] {
+  color: var(--dawn-gold-deep);
+}
+
+:scope [data-module-id="wounds"] [data-part="label"] {
+  color: var(--dawn-rust);
+}
+
+:scope [data-module-id="stress"] [data-part="label"] {
+  color: var(--dawn-blue);
+}
+
+/* 噪音：平时隐入图面，亮起时如警报（保持 Base 排版的紧凑处理） */
+:scope [data-module-id="noise"] {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+:scope [data-module-id="noise"] > [data-part="label"] {
+  display: none;
+}
+
+:scope [data-module-id="noise"] [data-part="options"] {
+  height: 100%;
+  padding: 0;
+  place-content: center;
+}
+
+:scope [data-module-id="noise"] [data-part="option"] {
+  min-height: 0;
+  justify-content: center;
+}
+
+:scope [data-module-id="noise"] [data-part="input"] {
+  accent-color: var(--dawn-gold-deep);
+}
+
+:scope [data-module-id="noise"] [data-part="option-label"] {
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--dawn-ink-soft);
+}
+
+:scope [data-module-id="noise"]:has([data-part="input"]:checked) {
+  border-radius: 1.2mm;
+  background: rgba(176, 74, 47, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(176, 74, 47, 0.45);
+}
+
+:scope [data-module-id="noise"]:has([data-part="input"]:checked) [data-part="input"] {
+  accent-color: var(--dawn-rust);
+}
+
+:scope [data-module-id="noise"]:has([data-part="input"]:checked) [data-part="option-label"] {
+  color: var(--dawn-rust);
+}
+
+/* 风格选择按钮：收成一枚小图标按钮，避免挤压排版 */
+:scope [data-module-id="pick-survivor-style"] {
+  display: flex;
+  align-self: center;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+:scope [data-module-id="pick-survivor-style"] [data-part="button"] {
+  width: 2.375rem;
+  min-width: 2.375rem;
+  height: 1.65rem;
+  min-height: 0;
+  padding: 0;
+  border-color: var(--dawn-line);
+  background: var(--dawn-field);
+  color: var(--dawn-ink-soft);
+  font-size: 0;
+  line-height: 1;
+}
+
+/* 行分隔：细雾线 */
+:scope .profession-row + .profession-row,
+:scope .arc-row + .arc-row {
+  border-top: 1px solid var(--dawn-line-soft);
+}
+
+:scope .profession-title-row > span,
+:scope .arc-title-row > span {
+  color: var(--dawn-ink-soft);
+  letter-spacing: 0.1em;
+}
+
+/* 弧光栏题（Skin override HTML 新增的题行，对齐职业栏的“加值”题） */
+:scope .arc-title-row {
+  align-items: end;
+}
+
+:scope .arc-title-row > span {
+  padding-block-end: 2mm;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+:scope .arc-title-row > span:first-child {
+  padding-left: 1mm;
+  text-align: left;
+}
+
+/* 核心伤痛 起承转合：楷体金字的四幕题 */
+:scope .core-hurt-phases [data-module-type="countableResource"] [data-part="label"] {
+  font-family: "STKaiti", "KaiTi", serif;
+  color: var(--dawn-gold-deep);
+}

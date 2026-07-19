@@ -90,9 +90,9 @@
     ]
   },
   { "ID": "survivor-style-name", "类型": "freeText", "标签": "求生者风格" },
-  { "ID": "survivor-style-features", "类型": "longText", "标签": "特性", "行数": 6 },
+  { "ID": "survivor-style-features", "类型": "longText", "标签": "特性", "行数": 8 },
   { "ID": "character-trait-name", "类型": "freeText", "标签": "人物特质" },
-  { "ID": "character-trait-description", "类型": "longText", "标签": "特质说明", "行数": 6 },
+  { "ID": "character-trait-description", "类型": "longText", "标签": "特质说明", "行数": 8 },
   { "ID": "profession-name", "类型": "freeText", "标签": "职业" },
   { "ID": "profession-keyword-1", "类型": "freeText", "标签": "职业关键词1", "隐藏标签": true, "占位文本": "职业关键词1" },
   { "ID": "profession-modifier-1", "类型": "freeText", "标签": "关键词1加值", "隐藏标签": true, "占位文本": "+0" },

@@ -20,6 +20,17 @@
       "名称": "求生者手记",
       "css": "skins/survivor-notebook.css",
       "推荐框架配色": "light"
+    },
+    {
+      "ID": "dawn-survey",
+      "名称": "晨光勘测",
+      "css": "skins/dawn-survey/skin.css",
+      "推荐框架配色": "light",
+      "layoutOverrides": {
+        "pages": [
+          { "ID": "character-sheet", "html": "skins/dawn-survey/character-sheet.html" }
+        ]
+      }
     }
   ],
   "defaultSkin": "survivor-notebook"
