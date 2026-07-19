@@ -4,6 +4,7 @@ import type { SystemPackage } from "../domain/systemPackage";
 import type { ResourceExtension } from "../domain/resourceExtension";
 import type { RuntimePackageAsset } from "../loaders/assetResolver";
 import type { PackageDirectoryHandle } from "../loaders/packageVfs";
+import { currentCharacterKey, currentSystemPackageKey, characterSaveIdKeyPrefix, systemPackageSkinPreferenceKeyPrefix, frameworkColorSchemeKey } from "./storageKeys";
 
 interface CharacterDataRecord {
   id: string;
@@ -28,13 +29,6 @@ interface ResourceExtensionRecord {
   targetSystemPackageId: string;
   data: ResourceExtension;
   assets?: RuntimePackageAsset[];
-}
-
-export interface StoredPlayerImageBlob {
-  id: string;
-  name?: string;
-  mimeType: string;
-  blob: Blob;
 }
 
 export interface CharacterSaveSummary {
@@ -66,9 +60,6 @@ export interface StorageService {
   setSystemPackageSkinPreference(packageId: string, skinId: string): void;
   loadFrameworkColorSchemePreference(): "follow-skin" | "light" | "dark";
   setFrameworkColorSchemePreference(preference: "follow-skin" | "light" | "dark"): void;
-  savePlayerImageBlob(image: StoredPlayerImageBlob): Promise<void>;
-  loadPlayerImageBlob(imageId: string): Promise<StoredPlayerImageBlob | null>;
-  deletePlayerImageBlob(imageId: string): Promise<void>;
   listResourceExtensions(targetSystemPackageId: string): Promise<ResourceExtension[]>;
   loadResourceExtensionAssets(targetSystemPackageId: string): Promise<RuntimePackageAsset[]>;
   saveResourceExtension(extension: ResourceExtension, assets?: RuntimePackageAsset[]): Promise<void>;
@@ -78,7 +69,7 @@ export interface StorageService {
 export class PbDHDatabase extends Dexie {
   characterSaves!: Table<CharacterDataRecord, string>;
   systemPackages!: Table<SystemPackageRecord, string>;
-  playerImages!: Table<StoredPlayerImageBlob, string>;
+  playerImages!: Table<{id: string; name?: string; mimeType: string; blob: Blob}, string>;
   authorPreviewHandles!: Table<AuthorPreviewHandleRecord, string>;
   resourceExtensions!: Table<ResourceExtensionRecord, string>;
 
@@ -122,21 +113,16 @@ export class PbDHDatabase extends Dexie {
 }
 
 const db = new PbDHDatabase();
-const currentCharacterRecordId = "current-character";
-const currentSystemPackageRecordId = "current-system-package";
-const currentCharacterPointerPrefix = "pbdh-current-character:";
-const systemPackageSkinPreferencePrefix = "pbdh-system-package-skin:";
-const frameworkColorSchemePreferenceKey = "pbdh-framework-color-scheme";
 
 export const storageService: StorageService = {
   async loadCurrentSystemPackage(): Promise<SystemPackage | null> {
-    const record = await db.systemPackages.get(currentSystemPackageRecordId);
+    const record = await db.systemPackages.get(currentSystemPackageKey);
     return record?.data ?? null;
   },
 
   async saveCurrentSystemPackage(systemPackage: SystemPackage, packageAssets: RuntimePackageAsset[] = []): Promise<void> {
     await db.systemPackages.put({
-      id: currentSystemPackageRecordId,
+      id: currentSystemPackageKey,
       packageId: systemPackage.manifest.ID,
       data: systemPackage,
       packageAssets,
@@ -144,11 +130,11 @@ export const storageService: StorageService = {
   },
 
   async clearCurrentSystemPackage(): Promise<void> {
-    await db.systemPackages.delete(currentSystemPackageRecordId);
+    await db.systemPackages.delete(currentSystemPackageKey);
   },
 
   async loadCurrentPackageAssets(packageId: string): Promise<RuntimePackageAsset[]> {
-    const record = await db.systemPackages.get(currentSystemPackageRecordId);
+    const record = await db.systemPackages.get(currentSystemPackageKey);
     if (!record || record.packageId !== packageId) {
       return [];
     }
@@ -159,7 +145,7 @@ export const storageService: StorageService = {
     const activeId = await this.loadActiveCharacterSaveId(packageId);
     const record = activeId
       ? await db.characterSaves.get(activeId)
-      : (await db.characterSaves.where("packageId").equals(packageId).first()) ?? (await db.characterSaves.get(currentCharacterRecordId));
+      : (await db.characterSaves.where("packageId").equals(packageId).first()) ?? (await db.characterSaves.get(currentCharacterKey));
     if (!record || record.packageId !== packageId) {
       return null;
     }
@@ -236,45 +222,28 @@ export const storageService: StorageService = {
   },
 
   async loadActiveCharacterSaveId(packageId: string): Promise<string | null> {
-    return localStorage.getItem(`${currentCharacterPointerPrefix}${packageId}`);
+    return localStorage.getItem(`${characterSaveIdKeyPrefix}${packageId}`);
   },
 
   async setActiveCharacterSaveId(packageId: string, saveId: string): Promise<void> {
-    localStorage.setItem(`${currentCharacterPointerPrefix}${packageId}`, saveId);
+    localStorage.setItem(`${characterSaveIdKeyPrefix}${packageId}`, saveId);
   },
 
   loadSystemPackageSkinPreference(packageId: string): string | null {
-    return localStorage.getItem(`${systemPackageSkinPreferencePrefix}${packageId}`);
+    return localStorage.getItem(`${systemPackageSkinPreferenceKeyPrefix}${packageId}`);
   },
 
   setSystemPackageSkinPreference(packageId: string, skinId: string): void {
-    localStorage.setItem(`${systemPackageSkinPreferencePrefix}${packageId}`, skinId);
+    localStorage.setItem(`${systemPackageSkinPreferenceKeyPrefix}${packageId}`, skinId);
   },
 
   loadFrameworkColorSchemePreference(): "follow-skin" | "light" | "dark" {
-    const value = localStorage.getItem(frameworkColorSchemePreferenceKey);
+    const value = localStorage.getItem(frameworkColorSchemeKey);
     return value === "light" || value === "dark" ? value : "follow-skin";
   },
 
   setFrameworkColorSchemePreference(preference: "follow-skin" | "light" | "dark"): void {
-    localStorage.setItem(frameworkColorSchemePreferenceKey, preference);
-  },
-
-  async savePlayerImageBlob(image: StoredPlayerImageBlob): Promise<void> {
-    await db.playerImages.put({
-      id: image.id,
-      name: image.name,
-      mimeType: image.mimeType,
-      blob: image.blob,
-    });
-  },
-
-  async loadPlayerImageBlob(imageId: string): Promise<StoredPlayerImageBlob | null> {
-    return (await db.playerImages.get(imageId)) ?? null;
-  },
-
-  async deletePlayerImageBlob(imageId: string): Promise<void> {
-    await db.playerImages.delete(imageId);
+    localStorage.setItem(frameworkColorSchemeKey, preference);
   },
 
   async listResourceExtensions(targetSystemPackageId: string): Promise<ResourceExtension[]> {

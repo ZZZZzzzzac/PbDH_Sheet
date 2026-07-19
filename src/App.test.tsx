@@ -374,7 +374,7 @@ describe("App Validation Checks", () => {
       runValidationChecks: async () => [],
     });
     const printSpy = vi.fn(() => {
-      expect(screen.getByLabelText("Sheet Tool")).toHaveAttribute("data-countable-print-strategy", "clear-uniform-squares");
+      expect(screen.getByLabelText("Sheet Tool")).not.toHaveAttribute("data-countable-print-strategy");
     });
     Object.defineProperty(window, "print", { value: printSpy, configurable: true });
     const user = userEvent.setup();

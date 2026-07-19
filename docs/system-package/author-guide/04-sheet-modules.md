@@ -7,7 +7,7 @@ Sheet Module 是框架提供的交互或展示部件。共同字段是唯一 `ID
 - `freeText`：单行自由文本；需要 `标签`，可写 `默认值`、`隐藏标签`、`占位文本`。
 - `longText`：多行文本；需要 `标签`，可写 `默认值`、`行数`（2–20）、`隐藏标签`、`占位文本`。
 - `checkboxResource`：离散勾选项；需要 `标签` 和非空 `选项`，每项含唯一 `ID`、`标签`，`默认选中` 默认 false；相同 `分组` 可让多个独立 checkbox 共用一份说明文字。
-- `countableResource`：当前值/上下限；需要 `标签`，支持整数 `最小值`、`最大值`、`默认值`、正整数 `步长`、`最大值可改`。可选 `显示方式: "标记"`，并用两个不同的单一 Unicode 字素 `当前值标记` / `剩余值标记`（常用 emoji）显示当前值与剩余容量；此时最小值不得为负。
+- `countableResource`：当前值/上下限；需要 `标签`，支持整数 `最小值`、`最大值`、`默认值`、正整数 `步长`、`最大值可改`。可选 `显示方式: "标记"`，并用两个不同的单一 Unicode 字素 `当前值标记` / `剩余值标记`（常用 emoji）显示当前值与剩余容量；此时最小值不得为负。`标识字号`与`加减号字号`可分别声明数字/emoji 和 `-` / `+` 的 CSS 像素字号，均为 5–96。
 - `readOnlyDisplay`：只读文本或图片；需要 `标签`，`内容` 与 `资源路径` 至少一个，可写 `替代文本`。
 - `imageField`：Player 上传头像/立绘；需要 `标签`，可写 `替代文本`。
 - `resourcePicker`：`资源库` 使用非空链接数组或字面值 `"其他"`。普通 Picker 可链接多个 Library；Browser 用左上角下拉切换表，每个链接独立定义 `字段模板` 与 `默认查询`。Other Picker 自动显示 Extension 新建且未被普通 Picker 或 Composer 使用的独立 Library；合并到既有库的资源仍由原 Picker/Composer 接收。两者都只发出临时选择事件，不保存选择本身；Other Picker 若创建 Card，目标 Card Table 用 `otherResourceLibraries` 动态来源接收，无需枚举扩展库 ID。
@@ -22,4 +22,4 @@ freeText/longText value 支持[Restricted Markdown](../reference/restricted-mark
 
 `imageField` 的图片区域本身就是上传/替换入口，支持点击和键盘操作；已有图片可通过右上角移除按钮清除，不需要 Author 另放上传按钮。
 
-Countable Resource 的标记展示仍保存 `{current,max}`，也继续接受 `fillCountable`。普通点击 `-` / `+` 修改当前值；仅当有限上限且 `最大值可改: true` 时，右键或触屏长按修改上限。无上限只显示当前值 emoji。标记区保持固定高度，自动换行并缩到最低 5px，极端数量改为内部横向滚动，不会撑高页面布局。完整约束与稳定 parts 见 Reference。
+Countable Resource 的标记展示仍保存 `{current,max}`，也继续接受 `fillCountable`。普通点击 `-` / `+` 修改当前值；仅当有限上限且 `最大值可改: true` 时，右键或触屏长按修改上限。无上限只显示当前值 emoji。标记区以配置的`标识字号`为自然字号，保持固定高度，自动换行并缩到最低 5px，极端数量改为内部横向滚动，不会撑高页面布局。省略字号字段时保留框架/Skin/Page CSS 默认值。完整约束与稳定 parts 见 Reference。

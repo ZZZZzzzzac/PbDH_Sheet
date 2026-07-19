@@ -1,4 +1,4 @@
-import { createElement, useEffect, useState, type ReactNode } from "react";
+import { createElement, useEffect, useRef, useState, type ReactNode } from "react";
 import type { SystemPackage } from "../domain/systemPackage";
 import { allowedHtmlTags, findModule } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
@@ -85,8 +85,15 @@ function createTemplateElement(tagName: string, key: string, props: Record<strin
   return createElement(tagName, { key, ...props }, ...children);
 }
 
+const templateCache = new Map<string, Document>();
+
 function renderHtmlTemplate(systemPackage: SystemPackage, html: string, moduleVisibility: Record<string, boolean>, assetUrls: Record<string, string>, pageOutlet?: ReactNode) {
-  const document = new DOMParser().parseFromString(html, "text/html");
+  let document = templateCache.get(html);
+  if (!document) {
+    document = new DOMParser().parseFromString(html, "text/html");
+    if (templateCache.size > 20) templateCache.clear();
+    templateCache.set(html, document);
+  }
   return [...document.body.childNodes].map((node, index) => renderTemplateNode(systemPackage, node, String(index), moduleVisibility, assetUrls, pageOutlet));
 }
 
@@ -148,9 +155,7 @@ function scopeCssBlock(css: string, scope: string): string {
     const body = css.slice(openIndex + 1, closeIndex);
     if (/^@(media|supports|container|layer)\b/i.test(selector)) {
       result += `${selector} {${scopeCssBlock(body, scope)}}`;
-    } else if (selector.startsWith("@")) {
-      result += `${selector} {${body}}`;
-    } else if (selector) {
+    } else if (selector && !selector.startsWith("@")) {
       result += `${scopeSelectors(selector, scope)} {${body}}`;
     }
 
@@ -262,7 +267,6 @@ export function SheetRenderer({ systemPackage, outputMode = false, requestedPage
       className="sheet-tool"
       aria-label="Sheet Tool"
       data-system-package-id={systemPackage.manifest.ID}
-      data-countable-print-strategy={outputMode ? "clear-uniform-squares" : undefined}
     >
       {systemPackage.shell ? <div className="sheet-shell" data-template-shell="true"><style>{scopeCssBlock(resolveTemplateCssAssets(systemPackage.shell.cssContent ?? "", packageAssetUrls), '[data-template-shell="true"]')}</style>{renderHtmlTemplate(systemPackage, effectiveShellHtml(systemPackage, selectedSkinId)!, moduleVisibility, packageAssetUrls, outlet)}</div> : outlet}
       {skinCss ? <style data-system-package-skin={resolvedSkinId}>{skinCss}</style> : null}

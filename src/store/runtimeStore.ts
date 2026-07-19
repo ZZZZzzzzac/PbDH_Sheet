@@ -15,6 +15,7 @@ import {
 } from "../domain/cardEngine";
 import {
   type CheckboxState,
+  type CountableState,
   createEmptyCharacterData,
   updateCharacterValue,
   updatePlayerImage,
@@ -47,7 +48,6 @@ import {
   fileToDataUrl,
   hasCardCreationTarget,
   loadActiveCharacterForPackage,
-  saveImportedPlayerImages,
   warnDependencyIssues,
 } from "./runtimeHelpers";
 
@@ -153,6 +153,10 @@ const defaultRuntimeDependencies: RuntimeDependencies = {
 let runtimeDependencies = defaultRuntimeDependencies;
 const authorPreviewSessionKey = "pbdh-author-preview";
 
+function isCountableStateValue(value: SheetValue): value is CountableState {
+  return typeof value === "object" && value !== null && "current" in value && "max" in value;
+}
+
 async function loadPreviewPackage(handle: PackageDirectoryHandle, set: (partial: Partial<RuntimeState>) => void) {
   set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null, authorPreviewActive: true });
   const validation = await runtimeDependencies.loadSystemPackageFromDirectoryHandle(handle);
@@ -175,7 +179,8 @@ async function loadPreviewPackage(handle: PackageDirectoryHandle, set: (partial:
   let storageStatus: StorageStatus = "idle";
   try {
     await runtimeDependencies.storage.saveCurrentSystemPackage(validation.package, validation.packageAssets ?? []);
-  } catch {
+  } catch (error) {
+    console.error("saveCurrentSystemPackage failed", error);
     storageStatus = "error";
   }
   await loadPackageIntoState(validation.package, validation.issues, set, storageStatus, validation.packageAssets ?? []);
@@ -268,28 +273,28 @@ async function loadPackageIntoState(
       storageStatus,
       ...(skinPreference.fellBack ? { importNotice: `此前选择的 Skin 已不存在，已回退到默认 Skin：${skinPreference.skinId}` } : {}),
     });
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     activePackageAssetResolver = createRuntimeAssetResolver(packageAssets ?? []);
-    const skinPreference = resolveSkinPreference(systemPackage);
     set({
       basePackage: systemPackage,
       currentPackage: systemPackage,
-      selectedSkinId: skinPreference.skinId,
-      resourceCatalog: createEffectiveResourceCatalog(systemPackage, []),
+      resourceCatalog: null,
       installedResourceExtensions: [],
       resourceExtensionImport: null,
       pendingResourceExtensionReplacement: null,
       pendingResourceExtensionRemoval: null,
       resourceReferenceIssues: [],
-      packageAssetUrls: activePackageAssetResolver.urls,
-      characterData: createEmptyCharacterData(systemPackage),
+      packageAssetUrls: {},
+      characterData: null,
       characterSaves: [],
       activeCharacterSaveId: null,
       ...emptyDerivedState(),
-      packageIssues: issues,
-      bootStatus: "ready",
+      packageIssues: [...issues, { level: "error", code: "PACKAGE_LOAD_FAILED", text: `加载 System Package 时出错：${message}`, path: "boot" }],
+      bootStatus: "error",
       storageStatus: "error",
-      ...(skinPreference.fellBack ? { importNotice: `此前选择的 Skin 已不存在，已回退到默认 Skin：${skinPreference.skinId}` } : {}),
+      importError: message,
+      importNotice: null,
     });
   }
 }
@@ -300,7 +305,8 @@ function resolveSkinPreference(systemPackage: SystemPackage): { skinId: string |
   let preferred: string | null = null;
   try {
     preferred = runtimeDependencies.storage.loadSystemPackageSkinPreference(systemPackage.manifest.ID);
-  } catch {
+  } catch (error) {
+    console.error("loadSystemPackageSkinPreference failed", error);
     preferred = null;
   }
   if (preferred && skins.some((skin) => skin.ID === preferred)) return { skinId: preferred, fellBack: false };
@@ -310,7 +316,8 @@ function resolveSkinPreference(systemPackage: SystemPackage): { skinId: string |
 function loadFrameworkColorSchemePreference(): FrameworkColorSchemePreference {
   try {
     return runtimeDependencies.storage.loadFrameworkColorSchemePreference();
-  } catch {
+  } catch (error) {
+    console.error("loadFrameworkColorSchemePreference failed", error);
     return "follow-skin";
   }
 }
@@ -322,7 +329,8 @@ async function clearCachedPackageAndResetState(set: (partial: Partial<RuntimeSta
 
   try {
     await runtimeDependencies.storage.clearCurrentSystemPackage();
-  } catch {
+  } catch (error) {
+    console.error("clearCurrentSystemPackage failed", error);
     storageStatus = "error";
   }
 
@@ -488,6 +496,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   importNotice: null,
   authorPreviewActive: false,
 
+  // ========== Package lifecycle & boot ==========
+
   async initialize() {
     set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null, frameworkColorSchemePreference: loadFrameworkColorSchemePreference() });
 
@@ -538,8 +548,30 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       }
 
       await loadPackageIntoState(cachedValidation.package, [], set);
-    } catch {
-      await clearCachedPackageAndResetState(set);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      activePackageAssetResolver?.revokeAll();
+      activePackageAssetResolver = undefined;
+      set({
+        basePackage: null,
+        currentPackage: null,
+        resourceCatalog: null,
+        installedResourceExtensions: [],
+        resourceExtensionImport: null,
+        pendingResourceExtensionReplacement: null,
+        pendingResourceExtensionRemoval: null,
+        resourceReferenceIssues: [],
+        packageAssetUrls: {},
+        characterData: null,
+        characterSaves: [],
+        activeCharacterSaveId: null,
+        ...emptyDerivedState(),
+        packageIssues: [{ level: "error", code: "INITIALIZE_FAILED", text: `初始化时出错：${message}，请检查浏览器存储或重新上传系统包。`, path: "boot" }],
+        bootStatus: "error",
+        storageStatus: "error",
+        importError: message,
+        importNotice: null,
+      });
     }
   },
 
@@ -558,7 +590,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     let packageCacheStatus: StorageStatus = "idle";
     try {
       await runtimeDependencies.storage.saveCurrentSystemPackage(validation.package, validation.packageAssets ?? []);
-    } catch {
+    } catch (error) {
+      console.error("saveCurrentSystemPackage (extension) failed", error);
       packageCacheStatus = "error";
     }
 
@@ -575,7 +608,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     let packageCacheStatus: StorageStatus = "idle";
     try {
       await runtimeDependencies.storage.saveCurrentSystemPackage(validation.package, validation.packageAssets ?? []);
-    } catch {
+    } catch (error) {
+      console.error("saveCurrentSystemPackage (upload) failed", error);
       packageCacheStatus = "error";
     }
     await loadPackageIntoState(validation.package, validation.issues, set, packageCacheStatus, validation.packageAssets ?? []);
@@ -787,6 +821,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     set({ authorPreviewActive: false, importNotice: "已退出预览；当前 System Package 保持不变。" });
   },
 
+  // ========== Character Save CRUD ==========
+
   async createCharacterSave(name = "未命名角色") {
     const currentPackage = get().currentPackage;
     if (!currentPackage) {
@@ -831,7 +867,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     const previousSaves = get().characterSaves;
     try {
       await flushPendingAutosave(previousCharacterData, previousSaveId, previousSaves);
-    } catch {
+    } catch (error) {
+      console.error("flushPendingAutosave failed before switchCharacterSave", error);
       set({ storageStatus: "error" });
     }
 
@@ -940,16 +977,40 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     });
   },
 
+  // ========== Character data & dependency orchestration ==========
+
   updateModuleValue(moduleId, value) {
-    if (!get().characterData) {
+    const characterData = get().characterData;
+    const currentPackage = get().currentPackage;
+    if (!characterData) {
       return;
     }
 
-    set((state) => ({
-      characterData: state.characterData ? updateCharacterValue(state.characterData, moduleId, value) : null,
-      importError: null,
-      importNotice: null,
-    }));
+    const dataWithValue = updateCharacterValue(characterData, moduleId, value);
+    const module = currentPackage?.modules.find((candidate) => candidate.ID === moduleId);
+    if (currentPackage && module?.类型 === "countableResource" && isCountableStateValue(value)) {
+      const result = evaluateDependencies(dataWithValue, currentPackage, {
+        type: "countableChanged",
+        sourceModuleId: moduleId,
+        countableState: value,
+      });
+      warnDependencyIssues(result);
+      const nextData = applyDependencyResultToCharacterData(dataWithValue, result);
+      const derivedResult = rebuildDerivedDependencies(nextData, currentPackage);
+      warnDependencyIssues(derivedResult);
+      set({
+        characterData: nextData,
+        ...dependencyRuntimeStateFromResult(derivedResult),
+        importError: null,
+        importNotice: null,
+      });
+    } else {
+      set({
+        characterData: dataWithValue,
+        importError: null,
+        importNotice: null,
+      });
+    }
 
     scheduleAutosave(
       () => get().characterData,
@@ -976,13 +1037,12 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     });
     warnDependencyIssues(result);
 
-    const nextData = createCardInstancesFromSelection(
-      applyDependencyResultToCharacterData(dataWithSnapshot, result),
-      currentPackage,
-      moduleId,
-      libraryId,
-      entries,
-    );
+    let nextData = applyDependencyResultToCharacterData(dataWithSnapshot, result);
+    for (const instruction of result.cardCreationInstructions) {
+      if (instruction.libraryId) {
+        nextData = createCardInstancesFromSelection(nextData, currentPackage, instruction.moduleId, instruction.libraryId, instruction.entries);
+      }
+    }
     const derivedResult = rebuildDerivedDependencies(nextData, currentPackage);
     warnDependencyIssues(derivedResult);
 
@@ -1019,7 +1079,10 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       selectedEntries: [composite],
     });
     warnDependencyIssues(result);
-    const nextData = createCardInstanceFromComposite(applyDependencyResultToCharacterData(withComposite, result), currentPackage, moduleId, composite);
+    let nextData = applyDependencyResultToCharacterData(withComposite, result);
+    if (result.cardCreationInstructions.length > 0) {
+      nextData = createCardInstanceFromComposite(nextData, currentPackage, moduleId, composite);
+    }
     const derivedResult = rebuildDerivedDependencies(nextData, currentPackage);
     warnDependencyIssues(derivedResult);
     set(() => ({
@@ -1070,16 +1133,19 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     );
   },
 
+  // ========== Card operations ==========
+
   updateCardInstancePosition(instanceId, xPct, yPct) {
-    if (!get().characterData) {
+    const data = get().characterData;
+    if (!data) {
       return;
     }
 
-    set((state) => ({
-      characterData: state.characterData ? updateCardInstancePositionDomain(state.characterData, instanceId, xPct, yPct) : null,
+    set({
+      characterData: updateCardInstancePositionDomain(data, instanceId, xPct, yPct),
       importError: null,
       importNotice: null,
-    }));
+    });
 
     scheduleAutosave(
       () => get().characterData,
@@ -1088,15 +1154,16 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   },
 
   bringCardInstanceToFront(instanceId) {
-    if (!get().characterData) {
+    const data = get().characterData;
+    if (!data) {
       return;
     }
 
-    set((state) => ({
-      characterData: state.characterData ? bringCardInstanceToFrontDomain(state.characterData, instanceId) : null,
+    set({
+      characterData: bringCardInstanceToFrontDomain(data, instanceId),
       importError: null,
       importNotice: null,
-    }));
+    });
 
     scheduleAutosave(
       () => get().characterData,
@@ -1105,15 +1172,16 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   },
 
   updateCardInstanceState(instanceId, cardState) {
-    if (!get().characterData) {
+    const data = get().characterData;
+    if (!data) {
       return;
     }
 
-    set((state) => ({
-      characterData: state.characterData ? updateCardInstanceStateDomain(state.characterData, instanceId, cardState) : null,
+    set({
+      characterData: updateCardInstanceStateDomain(data, instanceId, cardState),
       importError: null,
       importNotice: null,
-    }));
+    });
 
     scheduleAutosave(
       () => get().characterData,
@@ -1122,15 +1190,16 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   },
 
   tidyCardTable(tableModuleId, layout) {
-    if (!get().characterData) {
+    const data = get().characterData;
+    if (!data) {
       return;
     }
 
-    set((state) => ({
-      characterData: state.characterData ? tidyCardTableDomain(state.characterData, tableModuleId, layout) : null,
+    set({
+      characterData: tidyCardTableDomain(data, tableModuleId, layout),
       importError: null,
       importNotice: null,
-    }));
+    });
 
     scheduleAutosave(
       () => get().characterData,
@@ -1148,15 +1217,16 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   },
 
   deleteCardInstance(instanceId) {
-    if (!get().characterData) {
+    const data = get().characterData;
+    if (!data) {
       return;
     }
 
-    set((state) => ({
-      characterData: state.characterData ? deleteCardInstanceDomain(state.characterData, instanceId) : null,
+    set({
+      characterData: deleteCardInstanceDomain(data, instanceId),
       importError: null,
       importNotice: null,
-    }));
+    });
 
     scheduleAutosave(
       () => get().characterData,
@@ -1238,19 +1308,6 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       dataUrl,
     };
 
-    try {
-      await runtimeDependencies.storage.savePlayerImageBlob({
-        id: image.id,
-        name: image.name,
-        mimeType: image.mimeType,
-        blob: file,
-      });
-      if (previousImageId) await runtimeDependencies.storage.deletePlayerImageBlob(previousImageId);
-    } catch {
-      set({ storageStatus: "error" });
-      return;
-    }
-
     set((state) => ({
       characterData: state.characterData ? updatePlayerImage(state.characterData, moduleId, image) : null,
       importError: null,
@@ -1283,19 +1340,14 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     updateCardStateAndAutosave(get, set, (data) => transitionCardIndicatorDomain(data, instanceId, indicatorId, direction));
   },
 
+  // ========== Image & import/export ==========
+
   async removePlayerImage(moduleId) {
-    const characterData = get().characterData;
-    const value = characterData?.character.values[moduleId];
-    if (!characterData || !isPlayerImageValue(value)) return;
+    const data = get().characterData;
+    const value = data?.character.values[moduleId];
+    if (!data || !isPlayerImageValue(value)) return;
 
-    try {
-      await runtimeDependencies.storage.deletePlayerImageBlob(value.imageId);
-    } catch {
-      set({ storageStatus: "error" });
-      return;
-    }
-
-    set((state) => ({ characterData: state.characterData ? removePlayerImageData(state.characterData, moduleId) : null }));
+    set({ characterData: removePlayerImageData(data, moduleId) });
     scheduleAutosave(
       () => get().characterData,
       (status) => set({ storageStatus: status }),
@@ -1333,7 +1385,6 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       resourceReferenceIssues: get().resourceCatalog ? collectStaleResourceReferenceIssues(result.data, get().resourceCatalog!) : [],
     });
 
-    await saveImportedPlayerImages(result.data.playerImages, runtimeDependencies.storage);
     await runtimeDependencies.storage.saveCharacterSave({
       id: result.data.character.id,
       packageId: result.data.systemPackage.id,
@@ -1371,14 +1422,15 @@ function updateCardStateAndAutosave(
   set: (partial: Partial<RuntimeState> | ((state: RuntimeState) => Partial<RuntimeState>)) => void,
   update: (data: CharacterData) => CharacterData,
 ) {
-  if (!get().characterData) {
+  const data = get().characterData;
+  if (!data) {
     return;
   }
-  set((state) => ({
-    characterData: state.characterData ? update(state.characterData) : null,
+  set({
+    characterData: update(data),
     importError: null,
     importNotice: null,
-  }));
+  });
   scheduleAutosave(
     () => get().characterData,
     (status) => set({ storageStatus: status }),

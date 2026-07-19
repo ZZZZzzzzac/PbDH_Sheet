@@ -41,6 +41,64 @@ manifest.json 中该 Skin 的注册项
 
 Skin 可以覆盖控件尺寸、spacing 和 Grid/Flex。只有 CSS 无法表达时才使用 HTML override。
 
+人物卡 Page 的内部主布局必须相对于 A4 内容区定义。列宽、立绘栏、正文栏等优先使用 `%`、`fr` 和 `minmax(0, …)`，让网页预览与打印保持相同占比；不要用固定 `mm` 或 `px` 定义这些子栏。`mm` 只用于纸张外盒、打印边距等确实需要物理尺寸的地方。例如：
+
+```css
+.character-summary {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+}
+```
+
+不要把立绘栏写成 `55mm minmax(0, 1fr)`：网页较宽时看似正常，进入 A4 后固定列会占据更高比例并挤压相邻字段。Author Preview 与打印验收应比较关键区域的相对宽度，而不只检查是否溢出。
+
+## 所见即所得打印工作流
+
+先把网页预览做成可信的纸面预览，再处理打印输出。若 Page 在网页中可扩展到 1100px、打印时才变成约 210mm，文字换行和模块高度必然可能变化；不要用打印专属 CSS 隐藏问题。
+
+推荐顺序：
+
+1. 让目标 Skin 的网页 Page 使用真实 A4 宽高比和与打印一致的页盒 padding。
+2. 用 Skin variables 声明可调主栏比例，并在 Grid 中通过 `fr` 使用：
+
+   ```css
+   :scope {
+     --skin-left-column: 65fr;
+     --skin-right-column: 35fr;
+   }
+
+   .sheet-content-grid {
+     grid-template-columns:
+       minmax(0, var(--skin-left-column))
+       minmax(0, var(--skin-right-column));
+   }
+   ```
+
+3. 在网页 A4 预览中解决内容容量问题。优先调整共享的 Grid/Flex、gap 和装饰 padding；不要先写 `@media print` 压缩内容。
+4. 保留 Module 的尺寸所有权。longText 高度由 `modules.json` 的 `行数`决定；需要更多或更少书写空间时修改 Module 配置，不要在 Skin 中固定输入高度。
+5. 最后处理“输出时必然消失”的交互控件。Resource Picker 被隐藏后，把它所在的两列 Grid 改成单列，使相邻 freeText 占满宽度；除此之外，打印布局应与网页布局一致。
+6. 分别检查普通网页、输出准备态、HTML snapshot 和浏览器打印预览。确保颜色、字段宽度、标题、栏宽比例与 A4 单页容量一致。
+
+### 常见错误与修复
+
+| 症状 | 根因 | 正确修复 |
+| --- | --- | --- |
+| 网页正常，打印时字段变窄或换行 | 网页 Page 比 A4 宽，打印时才固定为 A4 | 网页预览也使用真实 A4 页盒；内部轨道使用比例单位 |
+| 打印能放进一页，但标题或装饰消失 | `@media print` 维护了第二套压缩布局 | 删除打印专属重排，收紧网页/打印共享的结构间距 |
+| longText 行数改了却高度不变 | Skin 直接覆盖了输入的 `height/max-height` | 删除 Skin 高度规则，让 `行数`继续控制 Module |
+| Picker 隐藏后 freeText 右侧留白 | Grid 仍保留 Picker 的固定轨道 | 只在输出时把该局部 Grid 改成一列 |
+| 测试说单页通过，但底部内容缺失 | Page 使用 `overflow: hidden`，只测了纸张数量 | 同时断言 `scrollWidth/clientWidth`、`scrollHeight/clientHeight` |
+
+打印颜色需要保真时，可在 Skin Page 根声明：
+
+```css
+.skin-sheet {
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+```
+
+完整规范和自动化验收信号见 [Skin Reference](../reference/skins.md#网页与打印的所见即所得合同)。
+
 ## 可选 HTML override
 
 Skin 可以只覆盖一个 Page，其他位置继续使用 Base HTML，并仍应用同一 Skin CSS：

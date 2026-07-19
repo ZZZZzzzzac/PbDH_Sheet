@@ -33,6 +33,8 @@ interface DragState {
   pointerId: number;
   offsetXPct: number;
   offsetYPct: number;
+  pendingXPct: number;
+  pendingYPct: number;
 }
 
 interface CardMenuState {
@@ -129,6 +131,8 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
       pointerId: event.pointerId,
       offsetXPct: point.xPct - instance.xPct,
       offsetYPct: point.yPct - instance.yPct,
+      pendingXPct: instance.xPct,
+      pendingYPct: instance.yPct,
     });
   };
 
@@ -141,18 +145,26 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
     const nextXPct = point.xPct - dragState.offsetXPct;
     const nextYPct = point.yPct - dragState.offsetYPct;
     const moved =
-      Math.abs(nextXPct - getDraggingInstanceX(visibleInstances, dragState.instanceId)) > 0.8 ||
-      Math.abs(nextYPct - getDraggingInstanceY(visibleInstances, dragState.instanceId)) > 0.8;
+      Math.abs(nextXPct - dragState.pendingXPct) > 0.8 ||
+      Math.abs(nextYPct - dragState.pendingYPct) > 0.8;
     if (moved) {
       clearLongPressTimer();
     }
     const nextPosition = clampCardTablePosition(tableLayout, nextXPct, nextYPct);
-    updateCardInstancePosition(event.currentTarget.dataset.cardInstanceId ?? dragState.instanceId, nextPosition.xPct, nextPosition.yPct);
+    setDragState({
+      ...dragState,
+      pendingXPct: nextPosition.xPct,
+      pendingYPct: nextPosition.yPct,
+    });
   };
 
   const endDrag = (event: PointerEvent<HTMLElement>) => {
     if (dragState?.pointerId === event.pointerId) {
       clearLongPressTimer();
+      if (dragState.pendingXPct !== getDraggingInstanceX(visibleInstances, dragState.instanceId) ||
+          dragState.pendingYPct !== getDraggingInstanceY(visibleInstances, dragState.instanceId)) {
+        updateCardInstancePosition(dragState.instanceId, dragState.pendingXPct, dragState.pendingYPct);
+      }
       setDragState(null);
     }
   };
@@ -206,6 +218,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
         {visibleInstances.map((instance) => (
           <CardView
             instance={instance}
+            dragState={dragState}
             definition={resolveVisibleCardDefinition(systemPackage, characterData, module, instance)}
             module={module}
             presentation={findCardPresentation(systemPackage, module, instance)}
@@ -242,8 +255,20 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
   );
 }
 
+const cardDefaults = {
+  卡图字段: "卡图",
+  卡背字段: "卡背",
+  背面卡牌ID字段: "背面卡牌ID",
+  显示方式字段: "卡牌显示方式",
+} as const;
+
+function cardField(module: CardTableModuleConfig, key: keyof typeof cardDefaults): string {
+  return module[key] ?? cardDefaults[key];
+}
+
 function CardView({
   instance,
+  dragState,
   definition,
   module: moduleConfig,
   presentation,
@@ -253,6 +278,7 @@ function CardView({
   onContextMenu,
 }: {
   instance: CardInstance;
+  dragState: DragState | null;
   definition?: ResourceLibraryEntry;
   module: CardTableModuleConfig;
   presentation?: CardPresentation;
@@ -264,14 +290,17 @@ function CardView({
   const deleteCardInstance = useRuntimeStore((state) => state.deleteCardInstance);
   const resolvedPresentation = resolvePresentation(definition, moduleConfig, presentation);
   const name = resolvedPresentation.name || definitionReferenceId(instance);
+  const isDragging = dragState?.instanceId === instance.instanceId;
+  const positionXPct = isDragging ? dragState.pendingXPct : instance.xPct;
+  const positionYPct = isDragging ? dragState.pendingYPct : instance.yPct;
 
   return (
     <article
       className="play-card"
       data-card-instance-id={instance.instanceId}
       style={{
-        left: `${instance.xPct}%`,
-        top: `${instance.yPct}%`,
+        left: `${positionXPct}%`,
+        top: `${positionYPct}%`,
         zIndex: instance.zIndex,
         transform: `rotate(${instance.rotation}deg) scale(${instance.scale})`,
         "--card-control-counter-rotation": `${-instance.rotation}deg`,
@@ -333,7 +362,7 @@ function CardContextMenu({
   const nextState = nextCardState(stateOptions, instance.state);
 
   return (
-    <div className="card-context-menu" data-guide-interaction-surface="true" style={{ left: x, top: y }} role="menu" onPointerDown={(event) => event.stopPropagation()}>
+    <div className="card-context-menu" data-guide-interaction-surface="true" data-output-exclude="true" style={{ left: x, top: y }} role="menu" onPointerDown={(event) => event.stopPropagation()}>
       <button type="button" role="menuitem" onClick={() => onViewDetail(instance.instanceId)}>查看详情</button>
       {canFlip ? (
         <button type="button" role="menuitem" onClick={() => { flipCardInstance(instance.instanceId); onClose(); }}>
@@ -403,7 +432,7 @@ function CardFace({
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   const resourceCatalog = useRuntimeStore((state) => state.resourceCatalog);
-  const artField = moduleConfig.卡图字段 ?? "卡图";
+  const artField = cardField(moduleConfig, "卡图字段");
   const cardArtRef = definition?.fields[artField] ?? "";
   const libraryId = definitionRef?.type === "resourceLibrary" ? definitionRef.libraryId : undefined;
   const provenance = findResourceEntryProvenance(resourceCatalog, libraryId, definition?.ID);
@@ -479,25 +508,27 @@ function resolveVisibleCardDefinition(
   if (!front || !instance || instance.face === "front") {
     return front;
   }
-  const backArt = front.fields[module.卡背字段 ?? "卡背"]?.trim();
+  const backArt = front.fields[cardField(module, "卡背字段")]?.trim();
   if (backArt) {
-    return { ...front, fields: { ...front.fields, [module.卡图字段 ?? "卡图"]: backArt } };
+    return { ...front, fields: { ...front.fields, [cardField(module, "卡图字段")]: backArt } };
   }
-  const reverseId = front.fields[module.背面卡牌ID字段 ?? "背面卡牌ID"]?.trim();
+  const reverseId = front.fields[cardField(module, "背面卡牌ID字段")]?.trim();
   const libraryId = instance.definitionRef.type === "resourceLibrary" ? instance.definitionRef.libraryId : undefined;
+  if (!libraryId) return front;
   return reverseId
-    ? findResourceLibrary(systemPackage, libraryId ?? "")?.entries.find((entry) => entry.ID === reverseId) ?? front
+    ? findResourceLibrary(systemPackage, libraryId)?.entries.find((entry) => entry.ID === reverseId) ?? front
     : front;
 }
 
 function hasReverseCardDefinition(systemPackage: SystemPackage, characterData: ReturnType<typeof useRuntimeStore.getState>["characterData"], module: CardTableModuleConfig, instance: CardInstance | undefined): boolean {
   const front = resolveFrontCardDefinition(systemPackage, characterData, instance);
-  const backArt = front?.fields[module.卡背字段 ?? "卡背"]?.trim();
+  const backArt = front?.fields[cardField(module, "卡背字段")]?.trim();
   if (backArt) return true;
-  const reverseId = front?.fields[module.背面卡牌ID字段 ?? "背面卡牌ID"]?.trim();
+  const reverseId = front?.fields[cardField(module, "背面卡牌ID字段")]?.trim();
   const libraryId = instance?.definitionRef.type === "resourceLibrary" ? instance.definitionRef.libraryId : undefined;
+  if (!libraryId) return false;
   return Boolean(reverseId && reverseId !== front?.ID
-    && findResourceLibrary(systemPackage, libraryId ?? "")?.entries.some((entry) => entry.ID === reverseId));
+    && findResourceLibrary(systemPackage, libraryId)?.entries.some((entry) => entry.ID === reverseId));
 }
 
 const cardIndicatorColorNames = ["青色", "红色", "金色", "绿色", "蓝色", "紫色", "粉色", "灰色", "橙色", "湖蓝色"] as const;
@@ -589,7 +620,7 @@ function CardDescription({ value, autoFit }: { value: string; autoFit: boolean }
 }
 
 function resolveCardDisplayMode(definition: ResourceLibraryEntry | undefined, moduleConfig: CardTableModuleConfig): "image" | "text" {
-  const displayModeField = moduleConfig.显示方式字段 ?? "卡牌显示方式";
+  const displayModeField = cardField(moduleConfig, "显示方式字段");
   const entryMode = definition?.fields[displayModeField];
   if (entryMode === "image" || entryMode === "text") {
     return entryMode;
@@ -602,10 +633,10 @@ function resolvePresentation(
   moduleConfig: CardTableModuleConfig,
   presentation?: CardPresentation,
 ) {
-  const artField = moduleConfig.卡图字段 ?? "卡图";
-  const backArtField = moduleConfig.卡背字段 ?? "卡背";
-  const displayModeField = moduleConfig.显示方式字段 ?? "卡牌显示方式";
-  const reverseIdField = moduleConfig.背面卡牌ID字段 ?? "背面卡牌ID";
+  const artField = cardField(moduleConfig, "卡图字段");
+  const backArtField = cardField(moduleConfig, "卡背字段");
+  const displayModeField = cardField(moduleConfig, "显示方式字段");
+  const reverseIdField = cardField(moduleConfig, "背面卡牌ID字段");
   return resolveCardPresentation(definition, presentation, [artField, backArtField, displayModeField, reverseIdField]);
 }
 

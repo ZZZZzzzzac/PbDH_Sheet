@@ -29,9 +29,10 @@
   text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
+  font-size: var(--countable-identifier-font-size, inherit);
 }
 
-.marker-group[data-marker-fit="overflow"] {
+.marker-group[data-text-fit="overflow"] {
   flex-wrap: nowrap;
   justify-content: flex-start;
   overflow-x: auto;
@@ -53,41 +54,21 @@
   text-align: center;
 }
 
-[data-countable-print-strategy="clear-uniform-squares"] .marker-cell .marker-glyph {
-  display: none;
-}
-
-[data-countable-print-strategy="clear-uniform-squares"] .marker-cell {
+.print-mode .marker-cell {
   flex: 0 0 5.8mm;
   width: 5.8mm;
   height: 5.8mm;
 }
 
-[data-countable-print-strategy="clear-uniform-squares"] .marker-cell::before {
-  display: inline-block;
-  flex: 0 0 5.5mm;
-  content: "□";
-  font-family: "Segoe UI Symbol", sans-serif;
-  font-size: 5.5mm;
-  line-height: 1;
-}
-
-[data-countable-print-strategy="clear-uniform-squares"] .marker-group[data-countable-unbounded="true"] .marker-cell {
+.print-mode .marker-group[data-countable-unbounded="true"] .marker-cell {
   display: none;
-}
-
-[data-countable-print-strategy="clear-uniform-squares"] [data-module-type="countableResource"] [data-part="value-group"] > [data-part="input"] {
-  display: none;
-}
-
-[data-countable-print-strategy="clear-uniform-squares"] [data-module-type="countableResource"] [data-part="value-group"]::before {
-  content: "0";
 }
 
 .stepper {
   display: inline-grid;
   place-items: center;
   width: auto;
+  min-width: 28px;
   height: 28px;
   padding-inline: 2px;
   border: 0;
@@ -95,6 +76,7 @@
   color: var(--framework-text-strong);
   cursor: pointer;
   font-weight: 700;
+  font-size: var(--countable-stepper-font-size, inherit);
 }
 
 .stepper:disabled {
@@ -116,10 +98,12 @@
   border: 0;
   padding-inline: 2px;
   text-align: center;
+  font-size: var(--countable-identifier-font-size, inherit);
 }
 
 .counter .value {
   color: var(--framework-text-muted);
+  font-size: var(--countable-identifier-font-size, inherit);
   white-space: nowrap;
 }
 
@@ -128,5 +112,6 @@
   min-height: 24px;
   border: 1px solid var(--framework-border-subtle);
   text-align: center;
+  font-size: var(--countable-identifier-font-size, inherit);
 }
 

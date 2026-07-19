@@ -26,7 +26,9 @@ Player value 作为原始文本写 Character Data，并按[Restricted Markdown](
 
 ## countableResource
 
-`标签` 必填。可选整数：`最小值`、`最大值`、`默认值`；`步长` 必须为正整数；`最大值可改?: boolean = false`。省略上下限表示框架不施加对应边界。该模块当前不是 Dependency source，但可作为 `fillCountable` target；Dependency 可持久化修改 current 和 max，不受 `最大值可改` 限制（该字段只控制 Player UI）。
+`标签` 必填。可选整数：`最小值`、`最大值`、`默认值`；`步长` 必须为正整数；`最大值可改?: boolean = false`。省略上下限表示框架不施加对应边界。该模块可作为 `countableChanged` Dependency source，也可作为 `fillCountable` target；Dependency 可持久化修改 current 和 max，不受 `最大值可改` 限制（该字段只控制 Player UI）。
+
+`标识字号?: number` 与 `加减号字号?: number` 均使用 CSS 像素，范围 5–96。`标识字号`控制数值展示的当前值/上限数字，以及标记展示的 Unicode/emoji 标记；`加减号字号`只控制 `-` / `+` 字形。省略时保持 Base Framework 与 Author CSS 的 computed font size。Base Framework 的加减按钮默认至少为 `28px × 28px`，按钮宽高不由这两个字号字段控制。
 
 `显示方式?: "数值" | "标记"` 省略时为 `数值`，保持当前值/最大值输入形式。`标记`仍是同一个 Countable Resource，并要求：
 
@@ -42,7 +44,9 @@ Player value 作为原始文本写 Character Data，并按[Restricted Markdown](
   "最大值": 6,
   "默认值": 3,
   "步长": 1,
-  "最大值可改": true
+  "最大值可改": true,
+  "标识字号": 20,
+  "加减号字号": 18
 }
 ```
 
@@ -50,7 +54,7 @@ Player value 作为原始文本写 Character Data，并按[Restricted Markdown](
 - 标记展示的 `最小值` 不得为负，省略仍为 `0`。显示 `current` 个当前值标记，再显示 `max - current` 个剩余值标记；无上限时只显示当前值标记。
 - 普通点击 `-` / `+` 按 `步长` 修改 current。有限上限且 `最大值可改: true` 时，右键或触屏长按按 `步长` 修改 max；降低 max 会同时把 current 收缩到新 max。无上限时上限操作无效。
 - 标记展示没有数字输入框，也不提供上限键盘快捷键或可见操作提示。按钮只在当前值与上限操作都不能生效时禁用。
-- 标记区高度固定，允许换行并自动缩小到最低 `5px`；仍溢出时内部横向滚动，不增加 Module 高度。拟合状态不写入 Character Data。
+- 标记区高度固定，以 `标识字号`或 computed font size 作为自然字号，允许换行并自动缩小到最低 `5px`；仍溢出时内部横向滚动，不增加 Module 高度。拟合状态不写入 Character Data。
 - 标记展示额外公开稳定 parts：`marker-group`、`current-markers`、`remaining-markers`、单个等宽标记格 `marker`。现有 `container`、`label`、`counter`、`decrement-button`、`increment-button` 继续可用。
 - 浏览器打印/PDF 与 HTML snapshot 使用固定的 Countable Resource 输出策略，不提供 Player 选择：视觉清零 current；有限 Marker Presentation 按 max 把所有槽位临时替换为字号约 5.5mm 的 Unicode 空心方块 `□`；无上限 Marker Presentation 不显示槽位；数值展示把 current 显示为 `0` 并保留 max。输出不使用 Author 配置的 marker 字形，便于 Player 在纸面用笔涂写。该策略只改变输出视觉结果，不修改 Character Data。
 

@@ -32,7 +32,7 @@ export function resolveCardPresentation(
     ...getResourceTextTemplateFields(nameTemplate),
     ...getResourceTextTemplateFields(descriptionTemplate),
   ])];
-  const excluded = new Set(["ID", "原名", "旧ID", ...excludedFields, ...consumedFields]);
+  const excluded = new Set(["ID", ...excludedFields, ...consumedFields]);
   const tagFields = presentation?.标签字段
     ?? Object.keys(entry.fields).filter((field) => !excluded.has(field));
 

@@ -102,7 +102,7 @@ describe("The Void Resource Extension", () => {
     for (const contribution of result.extension.resourceLibraries) {
       const originalNameField = contribution.library.fields.find((field) => field.key === "原名");
       if (originalNameField) {
-        expect(originalNameField).toMatchObject({ visible: false, filterable: false, sortable: false, searchable: false });
+        expect(originalNameField.visible).not.toBe(false);
       }
     }
     expect(entries.find((entry) => entry.fields.名称 === "土裔")?.fields.原名).toBe("EARTHKIN");

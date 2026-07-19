@@ -24,6 +24,7 @@ interface PanelPosition {
 }
 
 const spotlightPadding = 6;
+const guideMobileBreakpoint = "(max-width: 640px)";
 
 export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, onExit }: GuideSpotlightProps) {
   const step = guide.步骤[session.stepIndex];
@@ -33,7 +34,7 @@ export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, o
   const [interactionSurface, setInteractionSurface] = useState<HTMLElement | null>(() => findGuideInteractionSurface());
   const [targetState, setTargetState] = useState<TargetState>(() => resolveTargetState(step));
   const [panelPosition, setPanelPosition] = useState<PanelPosition | null>(null);
-  const isMobile = useMediaQuery("(max-width: 640px)");
+  const isMobile = useMediaQuery(guideMobileBreakpoint);
 
   useEffect(() => {
     const updateInteractionSurface = () => {
@@ -70,7 +71,6 @@ export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, o
       setTargetState(next);
       if (next.unavailable && step.目标 && warnedUnavailableStepRef.current !== step.ID) {
         warnedUnavailableStepRef.current = step.ID;
-        console.warn("guideTargetUnavailable", { stepId: step.ID, target: step.目标 });
       }
     };
 

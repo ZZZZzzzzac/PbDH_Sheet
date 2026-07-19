@@ -2,10 +2,10 @@ import type { CountableResourceModule as CountableResourceModuleConfig } from ".
 import { canTransitionCountableState, transitionCountableState, type CountableDirection } from "../domain/countableState";
 import { useRuntimeStore } from "../store/runtimeStore";
 import { readCountableState } from "./moduleState";
-import { useMarkerPresentationFit } from "./markerPresentationFit";
+import { useTextFit } from "./textFit";
 import { usePointerActions } from "./usePointerActions";
 import { clampInt } from "../utils";
-import { useRef } from "react";
+import { useRef, type CSSProperties } from "react";
 
 interface CountableResourceModuleProps {
   module: CountableResourceModuleConfig;
@@ -54,10 +54,25 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
     () => applyMarkerAction("maximum", "increment"),
     markerPresentation,
   );
-  useMarkerPresentationFit(markerGroupRef, `${module.当前值标记}:${current}:${module.剩余值标记}:${max}`, markerPresentation);
+  useTextFit(
+    markerGroupRef,
+    `${module.标识字号 ?? ""}:${module.当前值标记}:${current}:${module.剩余值标记}:${max}`,
+    markerPresentation,
+  );
+
+  const configuredStyles = {
+    ...(module.标识字号 === undefined ? {} : { "--countable-identifier-font-size": `${module.标识字号}px` }),
+    ...(module.加减号字号 === undefined ? {} : { "--countable-stepper-font-size": `${module.加减号字号}px` }),
+  } as CSSProperties;
 
   return (
-    <div className="container" data-module-id={module.ID} data-module-type={module.类型} data-part="container">
+    <div
+      className="container"
+      data-module-id={module.ID}
+      data-module-type={module.类型}
+      data-part="container"
+      style={configuredStyles}
+    >
       <div className="label" data-part="label">{module.标签}</div>
       <div className="counter" data-part="counter">
         <button

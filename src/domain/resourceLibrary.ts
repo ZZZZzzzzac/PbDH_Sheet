@@ -231,7 +231,7 @@ function normalizeResourceLibrary(
 }
 
 function buildFieldMetadata(key: string, isComplex: boolean, values: string[]): ResourceLibraryField {
-  const hiddenAuthorField = key === "ID" || key === "原名" || key === "旧ID";
+  const hiddenAuthorField = key === "ID";
   return {
     key,
     label: key,

@@ -39,14 +39,6 @@ const validIssueLevels = new Set<ValidationIssueLevel>(["error", "warning", "inf
 export function buildScriptBody(scriptContent: string): string {
   return [
     '"use strict";',
-    "const document = undefined;",
-    "const window = undefined;",
-    "const self = undefined;",
-    "const globalThis = undefined;",
-    "const fetch = undefined;",
-    "const XMLHttpRequest = undefined;",
-    "const importScripts = undefined;",
-    "const Worker = undefined;",
     scriptContent,
     "const validationCheck = module.exports && (module.exports.default || module.exports.run || module.exports);",
     'if (typeof validationCheck !== "function") {',

@@ -340,6 +340,7 @@ _Avoid_: Script plugin
 - **Display Content**, adventure notes, names, and rule reference pages are all uses of **Sheet Modules**, not separate base features.
 - An **HTML Layout Template** may include **Static Layout Content** and module placeholders, but editable Character Data still belongs to **Sheet Modules**.
 - A **Countable Resource** uses the same `{current, max}` Character Data and `fillCountable` Dependency Logic contract in both Numeric Presentation and Marker Presentation; presentation choice does not create a new Sheet Module type.
+- A **Countable Resource** may emit `countableChanged` after Player edits. Dependency Logic may use a bounded declarative integer calculation over Countable current values and persisted Resource Selection counts; it does not execute arbitrary formulas or scripts.
 - A **Marker Presentation** renders `current` current-value markers followed by `max - current` remaining-capacity markers. When `max` is absent, it renders only the current-value markers.
 - An **HTML Layout Template** must not define interactive form controls or custom behavior; all Player interaction that reads or writes state must use Base Framework **Sheet Modules** or other framework-provided interactive surfaces.
 - **Dependency Logic** helps Players avoid table lookup and text copying, but should not imply full automation of game rules.

@@ -19,7 +19,7 @@ import type { PackageDirectoryHandle } from "./loaders/packageVfs";
 import type { ValidationIssue } from "./domain/validationRunner";
 import { buildReadonlyHtmlSnapshot, waitForVisibleImages } from "./export/output";
 import { collectFrameworkValidationIssues } from "./rendering/frameworkChecks";
-import { waitForMarkerPresentationFits } from "./rendering/markerPresentationFit";
+
 import { SheetRenderer } from "./rendering/SheetRenderer";
 import { printablePages } from "./rendering/pagePresentation";
 import { waitForTextFits } from "./rendering/textFit";
@@ -92,7 +92,7 @@ function ValidationIssueDialog({
   }
 
   return (
-    <div className="validation-dialog-backdrop">
+    <div className="validation-dialog-backdrop" data-output-exclude="true">
       <section className="validation-dialog" role="dialog" aria-modal="true" aria-label="Validation Report">
         <header className="validation-dialog-header">
           <h2>检查报告</h2>
@@ -283,7 +283,6 @@ export default function App() {
     await nextFrame();
     const root = document.querySelector(".sheet-tool") ?? document;
     await waitForTextFits(root);
-    await waitForMarkerPresentationFits(root);
     return true;
   };
 
@@ -639,7 +638,7 @@ export default function App() {
             : undefined
         }
       />
-      {currentPackage ? (
+      {!importError && currentPackage ? (
         <SheetRenderer
           systemPackage={currentPackage}
           outputMode={printMode}

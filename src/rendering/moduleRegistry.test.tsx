@@ -208,8 +208,11 @@ describe("Module Registry rendering", () => {
   it("lets the player edit the countable resource max when configured", () => {
     const result = renderModuleDemo();
 
+    const countableModule = result.container.querySelector<HTMLElement>('[data-module-id="vitality"]')!;
     const maxInput = screen.getByLabelText("气力上限");
     expect(maxInput).toHaveValue("6");
+    expect(countableModule.style.getPropertyValue("--countable-identifier-font-size")).toBe("18px");
+    expect(countableModule.style.getPropertyValue("--countable-stepper-font-size")).toBe("20px");
 
     fireEvent.change(maxInput, { target: { value: "10" } });
     expect(screen.getByRole("button", { name: "气力增加" })).not.toBeDisabled();
@@ -246,6 +249,8 @@ describe("Module Registry rendering", () => {
     expect(markerModule.querySelector('[data-part="remaining-markers"]')).toHaveTextContent("🖤🖤🖤");
     expect(markerModule.querySelectorAll('[data-part="marker"]')).toHaveLength(6);
     expect(markerModule.querySelector('[data-part="marker-group"]')).toHaveAccessibleName("气力：当前值 3，上限 6");
+    expect((markerModule as HTMLElement).style.getPropertyValue("--countable-identifier-font-size")).toBe("18px");
+    expect((markerModule as HTMLElement).style.getPropertyValue("--countable-stepper-font-size")).toBe("20px");
 
     fireEvent.click(within(markerModule as HTMLElement).getByRole("button", { name: "气力增加" }));
 
@@ -253,14 +258,31 @@ describe("Module Registry rendering", () => {
     expect(markerModule.querySelector('[data-part="current-markers"]')).toHaveTextContent("❤️❤️❤️❤️❤️");
     expect(markerModule.querySelector('[data-part="remaining-markers"]')).toHaveTextContent("🖤");
     const styles = readFileSync("src/styles/countable-resource.css", "utf8");
+    expect(styles).toMatch(/\.marker-group\s*\{[^}]*font-size:\s*var\(--countable-identifier-font-size, inherit\)/s);
+    expect(styles).toMatch(/\.stepper\s*\{[^}]*min-width:\s*28px[^}]*height:\s*28px[^}]*font-size:\s*var\(--countable-stepper-font-size, inherit\)/s);
     expect(styles).toMatch(/\.marker-cell\s*\{[^}]*flex:\s*0 0 1\.25em[^}]*width:\s*1\.25em[^}]*justify-content:\s*center/s);
-    expect(styles).toContain('[data-countable-print-strategy="clear-uniform-squares"]');
+    expect(styles).not.toContain('[data-countable-print-strategy="clear-uniform-squares"]');
     expect(styles).not.toContain('[data-countable-print-strategy="clear-current"]');
     expect(styles).not.toContain('[data-countable-print-strategy="uniform-squares"]');
-    expect(styles).toMatch(/flex:\s*0 0 5\.8mm[^}]*width:\s*5\.8mm[^}]*height:\s*5\.8mm/s);
-    expect(styles).toMatch(/\.marker-glyph\s*\{[^}]*display:\s*none/s);
-    expect(styles).toMatch(/\.marker-cell::before\s*\{[^}]*content:\s*"□"[^}]*font-size:\s*5\.5mm[^}]*line-height:\s*1/s);
+    expect(styles).toMatch(/\.print-mode \.marker-cell\s*\{[^}]*flex:\s*0 0 5\.8mm[^}]*width:\s*5\.8mm[^}]*height:\s*5\.8mm/s);
+    expect(styles).not.toMatch(/\.marker-glyph\s*\{[^}]*display:\s*none/s);
+    expect(styles).not.toMatch(/\.marker-cell::before\s*\{[^}]*content:\s*"□"[^}]*/s);
     expect(styles).not.toMatch(/\.marker-cell::before\s*\{[^}]*border:/s);
+  });
+
+  it("preserves stylesheet font defaults when Countable Resource sizes are omitted", () => {
+    const packageWithoutFontSizes: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "vitality" && module.类型 === "countableResource"
+        ? { ...module, 标识字号: undefined, 加减号字号: undefined }
+        : module),
+    };
+
+    const result = renderModuleDemo(packageWithoutFontSizes);
+    const countableModule = result.container.querySelector<HTMLElement>('[data-module-id="vitality"]')!;
+
+    expect(countableModule.style.getPropertyValue("--countable-identifier-font-size")).toBe("");
+    expect(countableModule.style.getPropertyValue("--countable-stepper-font-size")).toBe("");
   });
 
   it("edits a finite Marker Presentation maximum with right-click and keeps state valid", () => {
@@ -348,10 +370,10 @@ describe("Module Registry rendering", () => {
     const result = renderModuleDemo(markerPackage);
     await act(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
 
-    expect(result.container.querySelector('[data-part="marker-group"]')).toHaveAttribute("data-marker-fit", "overflow");
+    expect(result.container.querySelector('[data-part="marker-group"]')).toHaveAttribute("data-text-fit", "overflow");
     const styles = readFileSync("src/styles/countable-resource.css", "utf8");
     expect(styles).toMatch(/\.marker-group\s*\{[^}]*align-content:\s*center[^}]*align-items:\s*center[^}]*justify-content:\s*center[^}]*height:\s*28px[^}]*overflow:\s*hidden/s);
-    expect(styles).toMatch(/\[data-marker-fit="overflow"\]\s*\{[^}]*overflow-x:\s*auto[^}]*white-space:\s*nowrap/s);
+    expect(styles).toMatch(/\[data-text-fit="overflow"\]\s*\{[^}]*overflow-x:\s*auto[^}]*white-space:\s*nowrap/s);
   });
 
   it("renders grouped checkbox options as multiple independent inputs with one visible description", () => {
@@ -571,6 +593,14 @@ describe("Module Registry rendering", () => {
     const values = useRuntimeStore.getState().characterData?.character.values;
     expect(values?.["domain-name"]).toBe("烈焰、幽影");
     expect(screen.getByRole("button", { name: "领域名" })).toHaveTextContent("烈焰、幽影");
+  });
+
+  it("makes the Resource Picker button fill the available module row height by default", () => {
+    const styles = readFileSync("src/styles/resource-browser.css", "utf8");
+
+    expect(styles).toMatch(/\.resource-picker-module\s*\{[^}]*min-height:\s*32px[^}]*padding:\s*0 10px/s);
+    expect(styles).toMatch(/\.resource-picker-button\s*\{[^}]*width:\s*100%[^}]*min-height:\s*30px/s);
+    expect(styles).not.toMatch(/\.resource-picker-button\s*\{[^}]*height:\s*100%/s);
   });
 
   it("applies runtime Resource Picker default filters while leaving them editable", () => {

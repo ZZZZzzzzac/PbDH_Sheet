@@ -72,6 +72,8 @@ const countableResourceModuleSchema = sheetModuleBaseSchema.extend({
   显示方式: z.enum(["数值", "标记"]).optional(),
   当前值标记: z.string().optional(),
   剩余值标记: z.string().optional(),
+  标识字号: z.number().min(5).max(96).optional(),
+  加减号字号: z.number().min(5).max(96).optional(),
 }).superRefine((module, context) => {
   if (module.显示方式 !== "标记") return;
   if (module.当前值标记 === undefined) {
@@ -213,6 +215,10 @@ const dependencySourceSchema = z.discriminatedUnion("类型", [
     类型: z.literal("checkboxResource"),
     模块ID: z.string().min(1),
   }),
+  z.object({
+    类型: z.literal("countableResource"),
+    模块ID: z.string().min(1),
+  }),
 ]);
 
 const dependencyTargetSchema = z.discriminatedUnion("类型", [
@@ -233,6 +239,10 @@ const dependencyTriggerSchema = z.discriminatedUnion("类型", [
   }),
   z.object({
     类型: z.literal("checkboxChanged"),
+    来源模块ID: z.string().min(1),
+  }),
+  z.object({
+    类型: z.literal("countableChanged"),
     来源模块ID: z.string().min(1),
   }),
 ]);
@@ -282,6 +292,25 @@ const fillTextContentSchema = z.union([
   }),
 ]);
 
+const integerCalculationOperandSchema = z.union([
+  z.number().int(),
+  z.object({ 类型: z.literal("countableCurrent"), 模块ID: z.string().min(1) }),
+  z.object({ 类型: z.literal("resourceSelectionCount"), 模块ID: z.string().min(1) }),
+]);
+
+const integerCalculationSchema = z.object({
+  类型: z.literal("integerCalculation"),
+  初始值: z.number().int(),
+  运算: z.array(z.object({
+    操作: z.enum(["add", "subtract"]),
+    值: integerCalculationOperandSchema,
+  })).min(1),
+  最小值: z.number().int().optional(),
+  最大值: z.number().int().optional(),
+}).refine((value) => value.最小值 === undefined || value.最大值 === undefined || value.最小值 <= value.最大值, {
+  message: "integerCalculation 最小值不能大于最大值。",
+});
+
 const fillCountableContentSchema = z.union([
   z.number().int(),
   z.object({
@@ -289,6 +318,7 @@ const fillCountableContentSchema = z.union([
     字段: z.string().min(1),
     选择索引: z.number().int().min(0).optional(),
   }),
+  integerCalculationSchema,
 ]);
 
 const fillCountableActionSchema = z.object({
@@ -578,7 +608,7 @@ function detectUnsupportedDependencySource(input: unknown, index: number): Packa
 }
 
 function isUnsupportedCounterType(value: unknown): boolean {
-  return value === "countableResource" || value === "countableChanged" || value === "counter" || value === "counterChanged";
+  return value === "counter" || value === "counterChanged";
 }
 
 export function validateSystemPackage(input: unknown, sourceMap: PackageSourceMap = {}): PackageValidationResult {
@@ -691,6 +721,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
   const assetRefs = new Set((systemPackage.assets ?? []).map((asset) => asset.路径));
   const usedAssetRefs = new Set<string>();
 
+  // --- Skins ---
   if (systemPackage.skins?.length) {
     if (!systemPackage.defaultSkin || !systemPackage.skins.some((skin) => skin.ID === systemPackage.defaultSkin)) {
       issues.push({
@@ -725,6 +756,8 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
       path: "defaultSkin",
     });
   }
+
+  // --- Module field references ---
   for (const module of systemPackage.modules) {
     if (module.类型 === "readOnlyDisplay" && !module.内容 && !module.资源路径) {
       issues.push({
@@ -844,6 +877,8 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     }
   }
 
+  // --- Module ID uniqueness & Other Picker ---
+
   const moduleIds = new Set<string>();
 
   for (const module of systemPackage.modules) {
@@ -866,6 +901,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     path: `modules.${module.ID}.资源库`,
   }));
 
+  // --- Guide steps ---
   const moduleById = new Map(systemPackage.modules.map((module) => [module.ID, module]));
   const pageById = new Map(systemPackage.pages.map((page) => [page.ID, page]));
   const guideRegions = [
@@ -927,8 +963,10 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
       });
     }
   }
-  const dependencyIds = new Set<string>();
 
+  // --- Dependencies: structure, actions, write-targets ---
+
+  const dependencyIds = new Set<string>();
   for (const dependency of systemPackage.dependencies ?? []) {
     if (dependencyIds.has(dependency.ID)) {
       issues.push({
@@ -1002,6 +1040,13 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
         level: "error",
         code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE",
         text: `checkboxChanged 触发源必须是 Checkbox Resource：${dependency.触发.来源模块ID}`,
+        path: `dependencies.${dependency.ID}.触发.来源模块ID`,
+      });
+    } else if (dependency.触发.类型 === "countableChanged" && sourceModule.类型 !== "countableResource") {
+      issues.push({
+        level: "error",
+        code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE",
+        text: `countableChanged 触发源必须是 Countable Resource：${dependency.触发.来源模块ID}`,
         path: `dependencies.${dependency.ID}.触发.来源模块ID`,
       });
     }
@@ -1127,6 +1172,38 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
           if (!content || typeof content === "number") {
             continue;
           }
+          if (content.类型 === "integerCalculation") {
+            content.运算.forEach((operation, operationIndex) => {
+              if (typeof operation.值 === "number") return;
+              const operand = operation.值;
+              const referencedModule = moduleById.get(operand.模块ID);
+              const expectedType = operand.类型 === "countableCurrent" ? "countableResource" : "resourcePicker";
+              if (!referencedModule) {
+                issues.push({
+                  level: "error",
+                  code: "MISSING_DEPENDENCY_SOURCE_MODULE",
+                  text: `integerCalculation 引用了不存在的模块：${operand.模块ID}`,
+                  path: `dependencies.${dependency.ID}.动作.${actionIndex}.${fieldName}.运算.${operationIndex}.值.模块ID`,
+                });
+              } else if (referencedModule.类型 !== expectedType) {
+                issues.push({
+                  level: "error",
+                  code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE",
+                  text: `integerCalculation ${operand.类型} 引用必须指向 ${expectedType}：${operand.模块ID}`,
+                  path: `dependencies.${dependency.ID}.动作.${actionIndex}.${fieldName}.运算.${operationIndex}.值.模块ID`,
+                });
+              }
+              if (!dependency.sources.some((source) => source.模块ID === operand.模块ID)) {
+                issues.push({
+                  level: "error",
+                  code: "MISSING_DEPENDENCY_SOURCE_DECLARATION",
+                  text: `Dependency Rule sources 必须声明 integerCalculation 来源模块：${operand.模块ID}`,
+                  path: `dependencies.${dependency.ID}.sources`,
+                });
+              }
+            });
+            continue;
+          }
           if (dependency.触发.类型 !== "resourceSelected") {
             issues.push({
               level: "error",
@@ -1206,6 +1283,8 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     });
   }
 
+  // --- Card creation references ---
+
   for (const module of systemPackage.modules) {
     if (module.类型 !== "resourcePicker" || !module.创建卡牌) {
       continue;
@@ -1272,6 +1351,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     }
   }
 
+  // --- Card art & reverse references + unused assets ---
   const cardArtFieldsByLibrary = new Map<string, Set<string>>();
   const cardPresentationsByLibrary = new Map<string, Array<{ moduleId: string; presentation?: z.infer<typeof cardPresentationSchema> }>>();
   for (const module of systemPackage.modules) {
@@ -1372,6 +1452,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     });
   }
 
+  // --- HTML page templates & shell ---
   for (const page of systemPackage.pages) {
     const htmlIssues = validateHtmlTemplate(page.layout.htmlContent, `pages.${page.ID}.layout.html`);
     issues.push(...htmlIssues);
@@ -1416,6 +1497,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     if (outletCount !== 1) issues.push({ level: "error", code: "SHELL_PAGE_OUTLET_COUNT_INVALID", text: "Sheet Shell 必须且只能包含一个 pb-page-outlet。", path: "shell.html" });
   }
 
+  // --- Unused asset warnings ---
   for (const assetPath of assetRefs) {
     if (!usedAssetRefs.has(assetPath)) {
       issues.push({
@@ -1427,6 +1509,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     }
   }
 
+  // --- Validation checks syntax ---
   for (const [checkIndex, check] of (systemPackage.validationChecks ?? []).entries()) {
     try {
       parseJavaScript(check.scriptContent, { ecmaVersion: "latest", sourceType: "script", locations: true });
@@ -1575,27 +1658,43 @@ function inferDiagnosticEntities(pointer: Array<string | number>): PackageIssueE
   return [{ kind, ...(typeof identity === "number" ? { index: identity } : typeof identity === "string" ? { id: identity } : {}) }];
 }
 
-export function validateCachedSystemPackage(input: unknown): CachedPackageValidationResult {
-  const cached = systemPackageEnvelopeSchema.safeParse(input);
-  const denormalizedInput = cached.success
-    ? {
-        ...cached.data,
-        resourceLibraries: cached.data.resourceLibraries?.map((library) => ({
-          ...library,
-          entries: Array.isArray(library.entries)
-            ? library.entries.map((entry) =>
-                isPlainObject(entry) && isPlainObject(entry.fields) ? { ...entry.fields, ID: entry.ID } : entry,
-              )
-            : library.entries,
-        })),
-      }
-    : input;
-  const result = validateSystemPackage(denormalizedInput);
-  if (result.ok) {
-    return { ok: true, package: result.package };
-  }
+const cachedValidModuleTypes = new Set(["freeText", "longText", "countableResource", "checkboxResource", "readOnlyDisplay", "imageField", "cardTable", "resourcePicker", "resourceComposer", "selectionGroup"]);
 
-  return { ok: false, issues: result.issues.map((issue) => ({ ...issue, code: issue.code === "PACKAGE_SHAPE_INVALID" ? "CACHED_PACKAGE_INVALID" : issue.code })) };
+export function validateCachedSystemPackage(input: unknown): CachedPackageValidationResult {
+  if (typeof input !== "object" || input === null) {
+    return { ok: false, issues: [{ level: "fatal", code: "CACHED_PACKAGE_INVALID", text: "缓存的 System Package 数据格式不正确。" }] };
+  }
+  const obj = input as Record<string, unknown>;
+  if (!obj.manifest || typeof obj.manifest !== "object" || !(obj.manifest as Record<string, unknown>).ID) {
+    return { ok: false, issues: [{ level: "fatal", code: "CACHED_PACKAGE_INCOMPLETE", text: "缓存的 System Package 缺少 manifest.ID。" }] };
+  }
+  if (!Array.isArray(obj.modules) || obj.modules.length === 0) {
+    return { ok: false, issues: [{ level: "fatal", code: "CACHED_PACKAGE_INCOMPLETE", text: "缓存的 System Package 缺少 modules。" }] };
+  }
+  for (const [index, module] of obj.modules.entries()) {
+    if (typeof module !== "object" || module === null || !(module as Record<string, unknown>).类型) {
+      return { ok: false, issues: [{ level: "fatal", code: "CACHED_PACKAGE_INVALID_MODULE", text: `缓存的 System Package 第 ${index} 个模块缺少 类型 字段。` }] };
+    }
+    if (!cachedValidModuleTypes.has((module as Record<string, unknown>).类型 as string)) {
+      return { ok: false, issues: [{ level: "fatal", code: "CACHED_PACKAGE_INVALID_MODULE_TYPE", text: `缓存的 System Package 第 ${index} 个模块类型 ${(module as Record<string, unknown>).类型} 无效。` }] };
+    }
+  }
+  return { ok: true, package: input as SystemPackage };
+}
+
+// --- Validation Context ---
+// Shared state passed to per-entity validators when extracted from validateSystemPackageCore.
+interface ValidationContext {
+  systemPackage: SystemPackage;
+  assetRefs: Set<string>;
+  usedAssetRefs: Set<string>;
+  moduleById: Map<string, SheetModule>;
+  pageById: Map<string, PackagePage>;
+  moduleIds: Set<string>;
+  guideRegions: Array<{ id: string; source: string }>;
+  cardArtFieldsByLibrary: Map<string, Set<string>>;
+  cardPresentationsByLibrary: Map<string, Array<{ moduleId: string; presentation?: z.infer<typeof cardPresentationSchema> }>>;
+  issues: PackageIssue[];
 }
 
 export function findModule(systemPackage: SystemPackage, moduleId: string): SheetModule | undefined {

@@ -167,30 +167,4 @@ export function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-export async function saveImportedPlayerImages(
-  images: Record<string, PlayerImageData>,
-  storage: StorageService,
-) {
-  await Promise.all(
-    Object.values(images).map(async (image) => {
-      const blob = dataUrlToBlob(image.dataUrl, image.mimeType);
-      await storage.savePlayerImageBlob({
-        id: image.id,
-        name: image.name,
-        mimeType: image.mimeType,
-        blob,
-      });
-    }),
-  );
-}
 
-export function dataUrlToBlob(dataUrl: string, fallbackMimeType: string): Blob {
-  const [header, payload] = dataUrl.split(",", 2);
-  const mimeType = /data:([^;]+)/.exec(header)?.[1] ?? fallbackMimeType;
-  const binary = atob(payload ?? "");
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-  return new Blob([bytes], { type: mimeType });
-}

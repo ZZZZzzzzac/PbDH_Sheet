@@ -30,6 +30,7 @@ Dependency Engine 是独立核心模块：
 - 每条 dependency rule 应声明 `sources` 和 `targets`，用于校验、冲突检测和未来性能优化。
 - 依赖冲突是 System Package 错误，由 Validator 或运行时依赖检查报 error，Author 负责修复。
 - MVP 不支持链式触发。规则基于当前已提交 Character Data 单轮计算，产生 patch 后提交，不继续用本轮结果触发下一轮。
+- Card 实例创建也通过 Dependency Engine 统一管道：`resourceSelected` 事件触发 `evaluateDependencies`，Engine 检测 source 模块的 `创建卡牌` 配置后，在 `cardCreationInstructions` 中返回创建指令，由 Store 的 `applyDependencyResult` 统一执行。Card 创建不再是 Dependency Engine 之外的独立写通道。
 
 ## 理由
 
@@ -63,3 +64,11 @@ Dependency Engine 是独立核心模块：
 Resource Library 选择不再建模为可见的 `selectionText` Sheet Module。资源选择是一次交互事件：`resourcePicker` 负责打开 Resource Library Browser 并发出临时 `resourceSelected` 事件，Dependency Engine 根据 Author 声明的 dependency rules 生成 data patches，例如把选中条目的字段填入 `freeText` 或 `longText` 模块。
 
 默认情况下，`resourceSelected` 事件不写入 Character Data，也不保存隐藏的资源引用。Character Data 只保存 Dependency Engine 最终写入的 Sheet Values。这样资源选择更接近“帮玩家抄表”的操作，而不是角色数据本身。
+
+## 追加说明（2026-07-18）：Countable 触发与受限整数计算
+
+真实 System Package 已出现“一个 Countable 的 current 改变另一个 Countable 的 max”的需求，因此 Dependency Engine 接受 `countableChanged` 事件。Countable Module 仍只提交自身状态；跨模块写入继续由 Store 调用 Dependency Engine 完成，不把依赖逻辑放入 Module。
+
+`fillCountable` 可使用受限 `integerCalculation`：从整数初值出发，按顺序加减整数常量、Countable current 或持久 Resource Selection 数量，并可声明结果上下界。该能力不开放任意表达式、脚本、DOM 或 Validation 结果读取，仍符合纯函数和有限 data patch 边界。
+
+当计算引用 Resource Selection 数量时，框架保存对应 Picker 的最小 Derived Source Snapshot。它只提供稳定引用与数量，不把 Resource Picker 变成普通 Sheet Value；计算结果作为 Countable State 正常持久化，加载时不重放 `fillCountable`。
