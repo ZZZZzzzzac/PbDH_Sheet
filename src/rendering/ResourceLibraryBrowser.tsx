@@ -137,11 +137,11 @@ export function ResourceLibraryBrowser({
                   {tableColumnFields.map((field) => (
                     <th scope="col" key={field.key}>
                       <div className="resource-column-header">
-                        <span>{field.label}</span>
                         <div className="resource-column-tools">
                           {field.sortable ? <button type="button" className="column-tool-button" onClick={() => cycleSort(field.key)} aria-label={`${field.label}${sort?.field === field.key ? (sort.direction === "desc" ? "降序" : "升序") : "不排序"}`}>{sort?.field === field.key ? (sort.direction === "desc" ? <ArrowDown size={14} /> : <ArrowUp size={14} />) : <ArrowUp className="inactive-sort" size={14} />}</button> : <span className="column-tool-placeholder" />}
                           {field.filterable ? <button type="button" data-filter-ui className={`column-tool-button${(filters[field.key]?.length ?? 0) > 0 ? " active" : ""}`} onClick={() => setOpenFilterField((current) => current === field.key ? null : field.key)} aria-label={`筛选${field.label}`} aria-expanded={openFilterField === field.key}><Filter size={14} /></button> : <span className="column-tool-placeholder" />}
                         </div>
+                        <span>{field.label}</span>
                         {openFilterField === field.key ? (
                           <div className="column-filter-menu" data-filter-ui onClick={(event) => event.stopPropagation()}>
                             {uniqueResourceFieldValues(library, field.key).map((value) => <label className="checkbox-row" key={value}><input type="checkbox" checked={(filters[field.key] ?? []).includes(value)} onChange={() => toggleFilter(field.key, value)} /><span>{value}</span></label>)}

@@ -29,6 +29,7 @@ describe("Heart of Hopefind System Package", () => {
     expect(result.package.modules.map((module) => module.ID)).toEqual(expect.arrayContaining([
       "survivor-name",
       "survivor-alias",
+      "survivor-portrait",
       "hope-die",
       "hope-points",
       "wounds",
@@ -46,7 +47,8 @@ describe("Heart of Hopefind System Package", () => {
 
     const data = createEmptyCharacterData(result.package, "hopefind-test");
     expect(data.character.values).toMatchObject({
-      "hope-die": "D12",
+      "hope-die": "d12",
+      "fear-die": "d12",
       "hope-points": { current: 2, max: 6 },
       wounds: { current: 0, max: 5 },
       life: { current: 0, max: 5 },
@@ -54,16 +56,38 @@ describe("Heart of Hopefind System Package", () => {
     });
     expect(result.package.modules.find((module) => module.ID === "hope-die")).toMatchObject({
       类型: "freeText",
-      默认值: "D12",
+      默认值: "d12",
+      选项: ["d4", "d6", "d8", "d10", "d12", "d20"],
     });
+    expect(result.package.modules.find((module) => module.ID === "noise")).toMatchObject({
+      标签: "噪音",
+      选项: [{ ID: "active", 标签: "噪音" }],
+    });
+    const countables = result.package.modules.filter((module) => ["hope-points", "wounds", "life", "stress"].includes(module.ID));
+    expect(countables).toHaveLength(4);
+    const markerPairs = countables.map((module) => {
+      expect(module.类型).toBe("countableResource");
+      if (module.类型 !== "countableResource") return "";
+      expect(module.当前值标记).not.toBe(module.剩余值标记);
+      return `${module.当前值标记}/${module.剩余值标记}`;
+    });
+    expect(new Set(markerPairs).size).toBe(4);
   });
 
-  it("derives the Fear Die presentation from Noise", async () => {
+  it("uses Free Text dropdowns for both dice and derives the Fear Die from Noise", async () => {
     const result = await loadHeartOfHopefindPackage();
     expect(result.ok).toBe(true);
     if (!result.ok) return;
+    const dice = result.package.modules.filter((module) => module.ID === "hope-die" || module.ID === "fear-die");
+    expect(dice).toHaveLength(2);
+    for (const die of dice) {
+      expect(die).toMatchObject({
+        类型: "freeText",
+        默认值: "d12",
+        选项: ["d4", "d6", "d8", "d10", "d12", "d20"],
+      });
+    }
     const data = createEmptyCharacterData(result.package, "hopefind-test");
-
     const noisy = evaluateDependencies(data, result.package, {
       type: "checkboxChanged",
       sourceModuleId: "noise",
@@ -71,7 +95,7 @@ describe("Heart of Hopefind System Package", () => {
       checked: true,
       checkboxState: { active: true },
     });
-    expect(noisy.readOnlyDisplayContent["fear-die"]).toBe("D20");
+    expect(noisy.dataPatches["fear-die"]).toBe("d20");
 
     const quiet = evaluateDependencies(data, result.package, {
       type: "checkboxChanged",
@@ -80,7 +104,7 @@ describe("Heart of Hopefind System Package", () => {
       checked: false,
       checkboxState: { active: false },
     });
-    expect(quiet.readOnlyDisplayContent["fear-die"]).toBe("D12");
+    expect(quiet.dataPatches["fear-die"]).toBe("d12");
   });
 
   it("reports Life and Stress maxima that do not total ten without changing them", async () => {
@@ -107,16 +131,20 @@ describe("Heart of Hopefind System Package", () => {
     expect(invalid.character.values.stress).toEqual({ current: 0, max: 5 });
   });
 
-  it("accepts only the confirmed Hope Die text values", async () => {
+  it("accepts only the dropdown values for both dice", async () => {
     const result = await loadHeartOfHopefindPackage();
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const initial = createEmptyCharacterData(result.package, "hopefind-test");
 
     expect(await validate(result.package, initial)).toEqual([]);
-    expect(await validate(result.package, updateCharacterValue(initial, "hope-die", "D8"))).toEqual([]);
-    expect(await validate(result.package, updateCharacterValue(initial, "hope-die", "D7"))).toEqual(expect.arrayContaining([
+    expect(await validate(result.package, updateCharacterValue(initial, "hope-die", "d8"))).toEqual([]);
+    expect(await validate(result.package, updateCharacterValue(initial, "hope-die", "d20"))).toEqual([]);
+    expect(await validate(result.package, updateCharacterValue(initial, "hope-die", "d7"))).toEqual(expect.arrayContaining([
       expect.objectContaining({ code: "HOPEFIND_HOPE_DIE_INVALID" }),
+    ]));
+    expect(await validate(result.package, updateCharacterValue(initial, "fear-die", "d7"))).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "HOPEFIND_FEAR_DIE_INVALID" }),
     ]));
   });
 
@@ -216,10 +244,27 @@ describe("Heart of Hopefind System Package", () => {
     expect(result.package.modules.find((module) => module.ID === "core-hurt")).toMatchObject({
       类型: "longText",
       标签: "核心伤痛",
+      行数: 8,
     });
+    for (const [id, label] of [
+      ["core-hurt-opening-note", "起·记录"],
+      ["core-hurt-development-note", "承·记录"],
+      ["core-hurt-turn-note", "转·记录"],
+      ["core-hurt-conclusion-note", "合·记录"],
+    ]) {
+      expect(result.package.modules.find((module) => module.ID === id)).toMatchObject({
+        类型: "longText",
+        标签: label,
+        隐藏标签: true,
+        行数: 4,
+      });
+    }
     const characterPage = result.package.pages[0];
     expect(characterPage.layout.htmlContent.indexOf('<pb-module id="core-hurt"></pb-module>')).toBeLessThan(
       characterPage.layout.htmlContent.indexOf('<pb-module id="core-hurt-phase-opening"></pb-module>'),
+    );
+    expect(characterPage.layout.htmlContent.indexOf('<pb-module id="core-hurt-phase-opening"></pb-module>')).toBeLessThan(
+      characterPage.layout.htmlContent.indexOf('<pb-module id="core-hurt-opening-note"></pb-module>'),
     );
     const data = createEmptyCharacterData(result.package, "hopefind-test");
     expect(data.character.values).toMatchObject({
@@ -248,7 +293,8 @@ describe("Heart of Hopefind System Package", () => {
     const skin = readFileSync(join(packageRoot, "skins", "survivor-notebook.css"), "utf8");
     const layout = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
 
-    expect(skin).toMatch(/\.sheet-page\s*\{[^}]*width:\s*210mm;[^}]*height:\s*297mm;[^}]*padding:\s*5mm 4mm;/s);
+    expect(skin).toMatch(/\.sheet-page\s*\{[^}]*width:\s*210mm;[^}]*height:\s*297mm;[^}]*padding:\s*0\s*!important;/s);
+    expect(skin).toMatch(/\.character-sheet\s*\{[^}]*padding:\s*12px;/s);
     expect(skin).not.toContain("repeating-linear-gradient");
     expect(skin).toMatch(/\.hopefind-page::before\s*\{[^}]*box-shadow:/s);
     expect(skin).not.toContain("@media print");

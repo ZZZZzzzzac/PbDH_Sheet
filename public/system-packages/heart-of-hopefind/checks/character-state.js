@@ -6,14 +6,20 @@ module.exports = async (input) => {
   const stress = values.stress;
   const issues = [];
 
-  const hopeDie = typeof values["hope-die"] === "string" ? values["hope-die"].trim().toUpperCase() : "";
-  if (!["D12", "D10", "D8", "D6", "D4"].includes(hopeDie)) {
-    issues.push({
-      level: "error",
-      code: "HOPEFIND_HOPE_DIE_INVALID",
-      path: "character.values.hope-die",
-      text: "希望骰必须填写为D12、D10、D8、D6或D4。",
-    });
+  const dice = [
+    { id: "hope-die", label: "希望骰", code: "HOPEFIND_HOPE_DIE_INVALID" },
+    { id: "fear-die", label: "恐惧骰", code: "HOPEFIND_FEAR_DIE_INVALID" },
+  ];
+  for (const die of dice) {
+    const value = typeof values[die.id] === "string" ? values[die.id].trim().toUpperCase() : "";
+    if (!["D4", "D6", "D8", "D10", "D12", "D20"].includes(value)) {
+      issues.push({
+        level: "error",
+        code: die.code,
+        path: `character.values.${die.id}`,
+        text: `${die.label}必须选择d4、d6、d8、d10、d12或d20。`,
+      });
+    }
   }
 
   if (life && stress && typeof life === "object" && typeof stress === "object") {

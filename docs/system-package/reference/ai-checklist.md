@@ -15,7 +15,7 @@
 11. `fillCountable` 只使用整数常量、可严格解析的 Resource 字段或受限 `integerCalculation`；计算引用的 Countable/Picker 均列入规则 `sources`，多选 Picker 字段声明 `选择索引`。
 12. Card Definition 只有在被 Card Table 消费时才要求 name/description；按 Module 配置字段检查。
 13. 运行 Validator 后按 `location/entities/evidence` 修复；不要要求或虚构 suggestion，不要尝试关闭规则。
-14. 只在 freeText/longText value 与 Card name/description/tags 中生成 Restricted Markdown；只用批准语法和七个命名颜色，不格式化框架 UI 文本。
+14. 只在自由输入 freeText/longText value 与 Card name/description/tags 中生成 Restricted Markdown；只用批准语法和七个命名颜色，不格式化框架 UI 文本。Free Text `选项`必须是非空、无重复的纯文本字符串列表，`默认值`必须属于列表，且下拉模式不能作为`fillText`追加目标。
 15. Countable Resource 标记展示仍用 `countableResource`；生成 `显示方式:"标记"` 时同时提供两个不同的单一可见 Unicode 字素 `当前值标记` / `剩余值标记`，并保证 `最小值 >= 0`。可用 5–96 的 `标识字号` / `加减号字号`分别声明数字或 emoji / 加减号的 CSS 像素字号；不要写单位字符串，也不要创建新的 counter Module 或 Character Data shape。
 16. Resource Composer 只声明固定单选槽位和一对一字段路由；需要区分全部同源与异源组合时，可额外声明受限的 `选择关系输出`。不保存来源，不生成其他模板、条件或脚本。
 17. Card Table 只用 `资源来源`；每个来源可选声明 `卡牌展示.名称模板`、`描述模板` 与 `标签字段`。

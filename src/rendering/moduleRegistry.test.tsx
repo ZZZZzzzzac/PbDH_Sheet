@@ -480,6 +480,69 @@ describe("Module Registry rendering", () => {
     expect(result.container.querySelector('[data-module-id="character-name"] input')).toHaveAttribute("placeholder", "请输入姓名");
   });
 
+  it("renders Free Text string options as a dropdown and stores one selected string", () => {
+    const dropdownPackage: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "character-name" && module.类型 === "freeText"
+        ? { ...module, 选项: ["战士", "法师", "游侠"], 占位文本: "请选择职业" }
+        : module),
+    };
+
+    const result = renderModuleDemo(dropdownPackage);
+    const select = screen.getByRole("combobox", { name: "姓名" });
+    const options = within(select).getAllByRole("option");
+
+    expect(select).toHaveValue("");
+    expect(options.map((option) => option.textContent)).toEqual(["请选择职业", "战士", "法师", "游侠"]);
+    expect(options[0]).toBeDisabled();
+    expect(select).toHaveAttribute("data-part", "input");
+    expect(select.closest('[data-module-type="freeText"]')).toHaveAttribute("data-free-text-mode", "select");
+    expect(result.container.querySelector('[data-module-id="character-name"] [data-markdown-preview]')).toBeNull();
+
+    fireEvent.change(select, { target: { value: "法师" } });
+
+    expect(select).toHaveValue("法师");
+    expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("法师");
+  });
+
+  it("uses the Free Text dropdown default and hidden-label accessible fallback", () => {
+    const dropdownPackage: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "character-name" && module.类型 === "freeText"
+        ? { ...module, 标签: "", 占位文本: "选择职业", 选项: ["战士", "法师"], 默认值: "战士" }
+        : module),
+    };
+
+    const result = renderModuleDemo(dropdownPackage);
+    const select = screen.getByRole("combobox", { name: "选择职业" });
+
+    expect(select).toHaveValue("战士");
+    expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("战士");
+    expect(select.closest('[data-module-id="character-name"]')?.querySelector('[data-part="label"]')).toBeNull();
+    expect(result.container.querySelector('[data-module-id="character-name"] input')).toBeNull();
+  });
+
+  it("preserves and displays a Free Text dropdown value outside the current option list", () => {
+    const dropdownPackage: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "character-name" && module.类型 === "freeText"
+        ? { ...module, 选项: ["战士", "法师"] }
+        : module),
+    };
+
+    renderModuleDemo(dropdownPackage);
+    act(() => useRuntimeStore.getState().updateModuleValue("character-name", "旧版职业"));
+    const select = screen.getByRole("combobox", { name: "姓名" });
+    const legacyOption = within(select).getByRole("option", { name: "旧版职业" });
+
+    expect(select).toHaveValue("旧版职业");
+    expect(legacyOption).toBeDisabled();
+    expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("旧版职业");
+
+    fireEvent.change(select, { target: { value: "法师" } });
+    expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("法师");
+  });
+
   it("gives Long Text a fixed row height and automatically fits its Markdown preview", async () => {
     vi.spyOn(window, "getComputedStyle").mockReturnValue({ fontSize: "16px" } as CSSStyleDeclaration);
     vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
@@ -575,6 +638,21 @@ describe("Module Registry rendering", () => {
 
     expect(screen.getByText("烈焰").tagName).toBe("STRONG");
     expect(screen.getByText("利刃")).toHaveAttribute("data-markdown-color", "red");
+  });
+
+  it("places each Resource Library column's sort and filter controls before its field label", () => {
+    renderModuleDemo(createResourcePickerPackage());
+    fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
+
+    const filterButton = screen.getByRole("button", { name: "筛选领域" });
+    const header = filterButton.closest(".resource-column-header");
+    const label = header?.querySelector(":scope > span");
+    expect(header?.firstElementChild).toHaveClass("resource-column-tools");
+    expect(label).toHaveTextContent("领域");
+    expect(filterButton.compareDocumentPosition(label!) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+
+    const styles = readFileSync("src/styles/resource-browser.css", "utf8");
+    expect(styles).toMatch(/\.column-filter-menu\s*\{[^}]*left:\s*0;[^}]*right:\s*auto;/s);
   });
 
   it("supports Resource Picker multi-select and default Resource Library filters", () => {

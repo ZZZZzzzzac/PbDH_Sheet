@@ -10,7 +10,8 @@
 
 :scope .sheet-title,
 :scope .overview-left,
-:scope .overview-right {
+:scope .overview-right,
+:scope .dice-stack {
   display: grid;
   gap: 2mm;
 }
@@ -27,15 +28,32 @@
 
 :scope .overview-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
-  gap: 14mm;
-  align-items: start;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 0.82fr) minmax(0, 1fr);
+  gap: 3mm;
+  align-items: stretch;
 }
 
-:scope .fear-noise-row {
+:scope .overview-portrait,
+:scope .overview-portrait > [data-module-slot-id],
+:scope .overview-portrait [data-module-type="imageField"] {
+  min-height: 0;
+  height: 100%;
+}
+
+:scope .overview-portrait [data-part="surface-frame"] {
+  min-height: 0;
+}
+
+:scope .dice-noise-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+  grid-template-columns: minmax(0, 1fr) minmax(24mm, 0.58fr);
   gap: 2mm;
+  align-items: stretch;
+}
+
+:scope .dice-noise-row > [data-module-slot-id="noise"],
+:scope .dice-noise-row > [data-module-slot-id="noise"] > [data-module-type] {
+  height: 100%;
 }
 
 :scope .style-name-row {

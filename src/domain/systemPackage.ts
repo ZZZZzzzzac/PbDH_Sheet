@@ -35,6 +35,19 @@ const freeTextModuleSchema = sheetModuleBaseSchema.extend({
   默认值: z.string().optional(),
   隐藏标签: z.boolean().optional(),
   占位文本: z.string().optional(),
+  选项: z.array(z.string().refine((value) => value.trim().length > 0, {
+    message: "Free Text 下拉选项不能为空白字符串。",
+  })).min(1).refine((options) => new Set(options).size === options.length, {
+    message: "Free Text 下拉选项不能重复。",
+  }).optional(),
+}).superRefine((module, context) => {
+  if (module.选项 !== undefined && module.默认值 !== undefined && !module.选项.includes(module.默认值)) {
+    context.addIssue({
+      code: "custom",
+      path: ["默认值"],
+      message: "Free Text 下拉模式的默认值必须属于选项。",
+    });
+  }
 });
 
 const longTextModuleSchema = sheetModuleBaseSchema.extend({
@@ -1115,11 +1128,14 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
           });
         }
 
-        if (action.写入方式 === "追加" && targetModule.类型 === "readOnlyDisplay") {
+        if (action.写入方式 === "追加" && (
+          targetModule.类型 === "readOnlyDisplay"
+          || (targetModule.类型 === "freeText" && targetModule.选项 !== undefined)
+        )) {
           issues.push({
             level: "error",
             code: "UNSUPPORTED_APPEND_TARGET_MODULE",
-            text: `fillText 追加目标必须是 Free Text 或 Long Text：${action.目标模块ID}`,
+            text: `fillText 追加目标必须是自由输入 Free Text 或 Long Text：${action.目标模块ID}`,
             path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
           });
         }

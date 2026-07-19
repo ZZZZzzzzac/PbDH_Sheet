@@ -162,6 +162,14 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
     "默认隐藏": false
   },
   {
+    "ID": "pronouns",
+    "类型": "freeText",
+    "标签": "称谓",
+    "选项": ["她/她", "他/他", "其/其"],
+    "占位文本": "请选择称谓",
+    "默认隐藏": false
+  },
+  {
     "ID": "biography",
     "类型": "longText",
     "标签": "角色背景",
@@ -314,7 +322,7 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
 | 类型 | 可选字段 |
 | --- | --- |
 | 所有 Module | `默认隐藏`，省略为 `false` |
-| freeText | `默认值`、`隐藏标签`、`占位文本` |
+| freeText | `默认值`、`隐藏标签`、`占位文本`、`选项`；选项是非空、无重复的纯文本字符串列表，默认值必须属于选项 |
 | longText | `默认值`、`行数`（2–20）、`隐藏标签`、`占位文本` |
 | checkboxResource option | `默认选中` |
 | countableResource | `最小值`、`最大值`、`默认值`、`步长`、`最大值可改`、`显示方式`、`当前值标记`、`剩余值标记`、`标识字号`、`加减号字号`；字号为 5–96 CSS px，标记展示要求两个不同的单一 Unicode 字素且最小值非负 |
@@ -399,6 +407,7 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
   </header>
   <section class="identity" aria-label="身份" data-guide-region-id="identity">
     <pb-module id="name"></pb-module>
+    <pb-module id="pronouns"></pb-module>
     <pb-module id="portrait"></pb-module>
     <pb-module id="pick-class"></pb-module>
     <pb-module id="class-summary"></pb-module>
@@ -517,7 +526,7 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
 
 补充形态：
 
-- `fillText.内容` 可是常量字符串、`selectedResourceField`，或用 `{{字段}}` 组合多个字段的 `selectedResourceTemplate`；多选时可加 `选择索引` 或 `分隔符`。`写入方式`省略时替换，设为`追加`时保留 freeText/longText 旧值，并可用`追加分隔符`控制新旧内容间隔。
+- `fillText.内容` 可是常量字符串、`selectedResourceField`，或用 `{{字段}}` 组合多个字段的 `selectedResourceTemplate`；多选时可加 `选择索引` 或 `分隔符`。`写入方式`省略时替换，设为`追加`时保留自由输入 freeText/longText 旧值，并可用`追加分隔符`控制新旧内容间隔；下拉 Free Text 只允许替换。
 - `fillCountable.当前值/最大值` 可是整数常量或 `selectedResourceField`；`最大值: null` 移除动态上限；两项至少声明一个。
 - `setVisibility.目标类型` 可为 `page | module`。
 - `checkboxOptionChecked/Unchecked` 只用于 checkboxChanged。

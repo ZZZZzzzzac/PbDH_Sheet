@@ -36,7 +36,7 @@ Dependency Logic 是唯一允许跨模块联动的声明式规则。每条规则
 }
 ```
 
-`{{字段}}`必须是来源 Resource Library 的字段。多选 Picker 会逐条套用格式；可用`内容.分隔符`控制本次多条结果之间的连接。追加只支持 freeText/longText；它生成普通可编辑文本，不保存资源引用，也不会在 Player 修改后自动同步。
+`{{字段}}`必须是来源 Resource Library 的字段。多选 Picker 会逐条套用格式；可用`内容.分隔符`控制本次多条结果之间的连接。追加只支持自由输入 freeText/longText；声明了`选项`的下拉 Free Text 只能替换。替换结果即使不在当前选项中也会保留并显示，直到 Player 改选。Dependency 生成的值不保存资源引用，也不会在 Player 修改后自动同步。
 
 `fillCountable` 可从整数常量或选中 Resource 的文本字段写入 `countableResource` 的当前值、上限值或两者：
 

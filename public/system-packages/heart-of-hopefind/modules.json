@@ -1,7 +1,8 @@
 [
+  { "ID": "survivor-portrait", "类型": "imageField", "标签": "头像", "替代文本": "求生者头像" },
   { "ID": "survivor-name", "类型": "freeText", "标签": "姓名" },
   { "ID": "survivor-alias", "类型": "freeText", "标签": "代称" },
-  { "ID": "hope-die", "类型": "freeText", "标签": "希望骰", "默认值": "D12", "占位文本": "D12" },
+  { "ID": "hope-die", "类型": "freeText", "标签": "希望骰", "默认值": "d12", "选项": ["d4", "d6", "d8", "d10", "d12", "d20"] },
   {
     "ID": "hope-points",
     "类型": "countableResource",
@@ -12,31 +13,31 @@
     "步长": 1,
     "最大值可改": false,
     "显示方式": "标记",
-    "当前值标记": "●",
-    "剩余值标记": "○"
+    "当前值标记": "✨",
+    "剩余值标记": "☆"
   },
   {
     "ID": "wounds",
     "类型": "countableResource",
-    "标签": "受伤",
+    "标签": "受伤点",
     "最小值": 0,
     "最大值": 5,
     "默认值": 0,
     "步长": 1,
     "最大值可改": false,
     "显示方式": "标记",
-    "当前值标记": "☠",
-    "剩余值标记": "○"
+    "当前值标记": "🧟",
+    "剩余值标记": "🙎‍♂️"
   },
   {
     "ID": "noise",
     "类型": "checkboxResource",
     "标签": "噪音",
     "选项": [
-      { "ID": "active", "标签": "噪音状态" }
+      { "ID": "active", "标签": "噪音" }
     ]
   },
-  { "ID": "fear-die", "类型": "readOnlyDisplay", "标签": "恐惧骰", "内容": "D12" },
+  { "ID": "fear-die", "类型": "freeText", "标签": "恐惧骰", "默认值": "d12", "选项": ["d4", "d6", "d8", "d10", "d12", "d20"] },
   {
     "ID": "life",
     "类型": "countableResource",
@@ -47,8 +48,8 @@
     "步长": 1,
     "最大值可改": true,
     "显示方式": "标记",
-    "当前值标记": "●",
-    "剩余值标记": "○"
+    "当前值标记": "🖤",
+    "剩余值标记": "❤️"
   },
   {
     "ID": "stress",
@@ -60,8 +61,8 @@
     "步长": 1,
     "最大值可改": true,
     "显示方式": "标记",
-    "当前值标记": "●",
-    "剩余值标记": "○"
+    "当前值标记": "⚡",
+    "剩余值标记": "◇"
   },
   {
     "ID": "pick-survivor-style",
@@ -89,9 +90,9 @@
     ]
   },
   { "ID": "survivor-style-name", "类型": "freeText", "标签": "求生者风格" },
-  { "ID": "survivor-style-features", "类型": "longText", "标签": "特性", "行数": 6 },
+  { "ID": "survivor-style-features", "类型": "longText", "标签": "特性", "行数": 8 },
   { "ID": "character-trait-name", "类型": "freeText", "标签": "人物特质" },
-  { "ID": "character-trait-description", "类型": "longText", "标签": "特质说明", "行数": 4 },
+  { "ID": "character-trait-description", "类型": "longText", "标签": "特质说明", "行数": 8 },
   { "ID": "profession-name", "类型": "freeText", "标签": "职业" },
   { "ID": "profession-keyword-1", "类型": "freeText", "标签": "职业关键词1", "隐藏标签": true, "占位文本": "职业关键词1" },
   { "ID": "profession-modifier-1", "类型": "freeText", "标签": "关键词1加值", "隐藏标签": true, "占位文本": "+0" },
@@ -111,7 +112,11 @@
   { "ID": "arc-4-intensity", "类型": "freeText", "标签": "弧光4强度", "隐藏标签": true, "占位文本": "强度" },
   { "ID": "arc-5-description", "类型": "freeText", "标签": "弧光5", "隐藏标签": true, "占位文本": "弧光5" },
   { "ID": "arc-5-intensity", "类型": "freeText", "标签": "弧光5强度", "隐藏标签": true, "占位文本": "强度" },
-  { "ID": "core-hurt", "类型": "longText", "标签": "核心伤痛", "行数": 10 },
+  { "ID": "core-hurt", "类型": "longText", "标签": "核心伤痛", "行数": 8 },
+  { "ID": "core-hurt-opening-note", "类型": "longText", "标签": "起·记录", "隐藏标签": true, "占位文本": "起的记录", "行数": 4 },
+  { "ID": "core-hurt-development-note", "类型": "longText", "标签": "承·记录", "隐藏标签": true, "占位文本": "承的记录", "行数": 4 },
+  { "ID": "core-hurt-turn-note", "类型": "longText", "标签": "转·记录", "隐藏标签": true, "占位文本": "转的记录", "行数": 4 },
+  { "ID": "core-hurt-conclusion-note", "类型": "longText", "标签": "合·记录", "隐藏标签": true, "占位文本": "合的记录", "行数": 4 },
   {
     "ID": "core-hurt-phase-opening",
     "类型": "countableResource",
