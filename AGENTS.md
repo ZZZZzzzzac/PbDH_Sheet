@@ -36,3 +36,11 @@ Developing new feature / debug and any other non-trivial task, use /to-prd /to-i
 
 - Sandboxed `gh` cannot access the host authentication and returns `HTTP 401: Requires authentication`.
 - Run `gh` commands outside the sandbox with the required escalation. Do not run `gh auth login`; the host is already authenticated.
+
+## Release & Deployment
+
+- `.github/workflows/release.yml` owns tag validation, verification, artifact packaging, and GitHub Release creation.
+- `.github/workflows/deploy.yml` only promotes an existing Release after manual dispatch through the `production` environment; it never builds source.
+- `scripts/release-tools.mjs` owns release-version and built-output validation shared by local checks and workflows.
+- `scripts/deploy-release.sh` owns remote immutable-release staging and atomic activation; it must not contain hostnames, usernames, credentials, or destructive cleanup commands.
+- `docs/release.md` is the maintainer runbook for versioning, GitHub Secrets, first deployment, promotion, health checks, and rollback.

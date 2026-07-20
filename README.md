@@ -8,3 +8,7 @@
 - [AI 协作提示词模板](docs/system-package/examples/ai-prompt-template.md)
 
 Author 制作、预览和调试 System Package 时应从文档中心开始。AI 在生成、修改或诊断 System Package 前必须先阅读接口参考，并以当前示例包和 Validator 结果为准。
+
+## Release 与生产部署
+
+- [Release、GitHub Secrets、首次部署与回滚手册](docs/release.md)

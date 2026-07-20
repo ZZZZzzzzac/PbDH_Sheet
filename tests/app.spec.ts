@@ -3,6 +3,21 @@ import { strToU8, zipSync } from "fflate";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+test("production preview serves the versioned app below /pbdh/", async ({ page }) => {
+  await page.goto("/pbdh/");
+
+  const { version } = JSON.parse(await readFile(path.join(process.cwd(), "package.json"), "utf8")) as { version: string };
+  await expect(page.locator('meta[name="pbdh-version"]')).toHaveAttribute("content", version);
+  await expect(page.getByRole("heading", { name: "Sheet Tool" })).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/pbdh/");
+
+  const entrySources = await page.locator('script[type="module"][src], link[rel="stylesheet"][href]').evaluateAll((elements) =>
+    elements.map((element) => element.getAttribute("src") ?? element.getAttribute("href")),
+  );
+  expect(entrySources.length).toBeGreaterThan(0);
+  expect(entrySources.every((source) => source?.startsWith("/pbdh/assets/"))).toBe(true);
+});
+
 test("minimal loop edits, autosaves, exports and imports Character JSON", async ({ page }, testInfo) => {
   await page.goto("/");
   await expect(page.getByText("未加载")).toBeVisible();

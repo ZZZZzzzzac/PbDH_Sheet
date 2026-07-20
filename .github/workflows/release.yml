@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify tag and project
+        run: |
+          npm run check:release-version -- "$GITHUB_REF_NAME"
+          npm run test:release
+          npm test
+          npm run build
+          npm run verify:release-build
+
+      - name: Package immutable artifact
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          ARCHIVE="pbdh-sheet-$VERSION.tar.gz"
+          tar -C dist -czf "$ARCHIVE" .
+          sha256sum "$ARCHIVE" > "$ARCHIVE.sha256"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          ARCHIVE="pbdh-sheet-$VERSION.tar.gz"
+          gh release create "$TAG" "$ARCHIVE" "$ARCHIVE.sha256" \
+            --verify-tag \
+            --generate-notes \
+            --title "$TAG"
