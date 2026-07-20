@@ -90,7 +90,11 @@ export function ResourceLibraryBrowser({
   };
 
   const commitDraftSelection = () => {
-    onCommit(library.entries.filter((entry) => draftSelectedIds.includes(entry.ID)));
+    const entriesById = new Map(library.entries.map((entry) => [entry.ID, entry]));
+    onCommit(draftSelectedIds.flatMap((entryId) => {
+      const entry = entriesById.get(entryId);
+      return entry ? [entry] : [];
+    }));
   };
 
   const handleRowSelect = (entry: ResourceLibraryEntry) => {

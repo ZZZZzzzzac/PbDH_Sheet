@@ -1,3 +1,8 @@
+:scope {
+  width: min(100%, 210mm);
+  margin-inline: auto;
+}
+
 .companion-page {
   box-sizing: border-box;
   display: grid;

@@ -30,6 +30,12 @@
 :scope [data-part="input"] {
   background: rgba(255, 252, 239, 0.78);
   border-color: var(--hmd-line);
+  color: var(--hmd-ink);
+}
+
+:scope [data-module-type="countableResource"] [data-part="input"] {
+  background: transparent;
+  color: var(--framework-text);
 }
 
 :scope [data-part="button"] {

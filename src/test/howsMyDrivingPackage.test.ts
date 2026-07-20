@@ -33,6 +33,102 @@ describe("HOW'S MY DRIVING System Package", () => {
     expect(result.package.pages.map((page) => page.ID)).toEqual(["passenger-sheet", "ride-sheet"]);
   });
 
+  it("keeps editable Markdown and Free Text dropdown values black on the light input surface", () => {
+    const skin = readFileSync(join(packageRoot, "skins", "night-drive.css"), "utf8");
+
+    expect(skin).toMatch(/:scope \[data-part="input"\]\s*\{[^}]*color:\s*var\(--hmd-ink\)/s);
+  });
+
+  it("uses enlarged section headings on both Pages", () => {
+    const styles = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
+
+    expect(styles).toMatch(/\.panel h2\s*\{[^}]*font-size:\s*18px/s);
+  });
+
+  it("owns its content inset without a framework-padding workaround", () => {
+    const styles = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
+
+    expect(styles).toMatch(/\.hmd-page\s*\{[^}]*padding:\s*6mm/s);
+    expect(styles).not.toMatch(/\.print-mode :scope/);
+    expect(styles).not.toMatch(/@media print\s*\{[\s\S]*?:scope\s*\{[^}]*padding/s);
+  });
+
+  it("keeps Countable Resource numbers theme-aware without a light input background", () => {
+    const skin = readFileSync(join(packageRoot, "skins", "night-drive.css"), "utf8");
+
+    expect(skin).toMatch(/:scope \[data-module-type="countableResource"\] \[data-part="input"\]\s*\{[^}]*background:\s*transparent;[^}]*color:\s*var\(--framework-text\)/s);
+  });
+
+  it("lays out each Memento with a compact unavailable checkbox and a three-row Experience", async () => {
+    const systemPackage = await requirePackage();
+    const layout = readFileSync(join(packageRoot, "layouts", "passenger-sheet.html"), "utf8");
+    const styles = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
+
+    for (let index = 1; index <= 3; index += 1) {
+      expect(systemPackage.modules.find((module) => module.ID === `memento-${index}`)).toMatchObject({
+        类型: "freeText",
+        标签: "纪念物",
+      });
+      expect(systemPackage.modules.find((module) => module.ID === `experience-${index}`)).toMatchObject({
+        类型: "longText",
+        行数: 3,
+      });
+      expect(systemPackage.modules.find((module) => module.ID === `memento-status-${index}`)).toMatchObject({
+        类型: "checkboxResource",
+        选项: [{ ID: "unavailable", 标签: "不可用" }],
+      });
+      expect(layout).toMatch(new RegExp(`<div class="memento-heading">\\s*<pb-module id="memento-${index}"></pb-module>\\s*<pb-module id="memento-status-${index}"></pb-module>\\s*</div>\\s*<pb-module id="experience-${index}"></pb-module>`));
+    }
+    expect(styles).toMatch(/\.memento-heading \[data-module-type="checkboxResource"\]\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent/s);
+    expect(styles).toMatch(/\.memento-heading \[data-module-type="checkboxResource"\] \[data-part="label"\]\s*\{[^}]*display:\s*none/s);
+    expect(styles).not.toMatch(/\.memento-heading \[data-part="label"\]\s*\{/s);
+    expect(styles).toMatch(/\.memento-heading \[data-module-type="freeText"\] \[data-markdown-editor="true"\]\s*\{[^}]*width:\s*100%/s);
+    expect(styles).toMatch(/\.memento-heading \[data-module-type="freeText"\] \[data-part="input"\]\s*\{[^}]*height:\s*30px/s);
+  });
+
+  it("removes the outer container and horizontal gutters from the Approaches Picker", () => {
+    const styles = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
+
+    expect(styles).toMatch(/\.approaches-panel > \[data-module-slot-id="pick-approaches"\] \[data-module-type="resourcePicker"\]\s*\{[^}]*padding:\s*0;[^}]*border:\s*0;[^}]*background:\s*transparent/s);
+  });
+
+  it("places Approaches in the left column and Fuel in the right column", () => {
+    const layout = readFileSync(join(packageRoot, "layouts", "passenger-sheet.html"), "utf8");
+    const firstColumn = layout.indexOf('<div class="page-column">');
+    const secondColumn = layout.indexOf('<div class="page-column">', firstColumn + 1);
+    const approaches = layout.indexOf('<section class="panel approaches-panel">');
+    const fuel = layout.indexOf('<section class="panel fuel-panel">');
+
+    expect(approaches).toBeGreaterThan(firstColumn);
+    expect(approaches).toBeLessThan(secondColumn);
+    expect(fuel).toBeGreaterThan(secondColumn);
+  });
+
+  it("uses three-row Gear fields, compact unavailable checkboxes, and no Ride condition", async () => {
+    const systemPackage = await requirePackage();
+    const layout = readFileSync(join(packageRoot, "layouts", "ride-sheet.html"), "utf8");
+    const styles = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
+
+    for (let index = 1; index <= 3; index += 1) {
+      expect(systemPackage.modules.find((module) => module.ID === `gear-${index}`)).toMatchObject({
+        类型: "longText",
+        标签: "",
+        行数: 3,
+      });
+      expect(systemPackage.modules.find((module) => module.ID === `gear-status-${index}`)).toMatchObject({
+        类型: "checkboxResource",
+        选项: [{ ID: "unavailable", 标签: "不可用" }],
+      });
+      expect(layout).toMatch(new RegExp(`<article>\\s*<div class="gear-heading">\\s*<span>0${index}</span>\\s*<pb-module id="gear-status-${index}"></pb-module>\\s*</div>\\s*<pb-module id="gear-${index}"></pb-module>\\s*</article>`));
+    }
+    expect(systemPackage.modules.some((module) => module.ID === "ride-condition")).toBe(false);
+    expect(layout).not.toContain('<pb-module id="ride-condition"></pb-module>');
+    expect(styles).toMatch(/\.damage-note p,\s*\.gear-panel > \.instruction\s*\{[^}]*font-size:\s*14px/s);
+    expect(styles).toMatch(/\.gear-heading\s*\{[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)/s);
+    expect(styles).toMatch(/\.gear-list \[data-module-type="checkboxResource"\]\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent/s);
+    expect(styles).toMatch(/\.gear-list \[data-module-type="checkboxResource"\] \[data-part="label"\]\s*\{[^}]*display:\s*none/s);
+  });
+
   it("provides ten archetypes and twenty-four approaches with readable stable IDs", async () => {
     const systemPackage = await requirePackage();
     const archetypes = library(systemPackage, "archetypes").entries;
@@ -171,7 +267,6 @@ describe("HOW'S MY DRIVING System Package", () => {
       "gear-status-3": { unavailable: true },
       "ride-current-die": "D6",
       "ride-damage": { current: 2, max: null },
-      "ride-condition": "抛锚故障",
       "finish-line": "海边的旧汽车旅馆",
     };
     for (const [id, value] of Object.entries(values)) data = updateCharacterValue(data, id, value);

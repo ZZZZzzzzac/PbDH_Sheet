@@ -17,7 +17,6 @@
       <pb-module id="ride-starting-die"></pb-module>
       <pb-module id="ride-current-die"></pb-module>
       <pb-module id="ride-damage"></pb-module>
-      <pb-module id="ride-condition"></pb-module>
     </div>
     <pb-module id="ride-trait"></pb-module>
   </section>
@@ -32,19 +31,25 @@
     <p class="instruction">每位乘客拥有 3 个装备栏位。装备损坏、弹药耗尽或因其他原因无法使用时，手动标记状态。</p>
     <div class="gear-list">
       <article>
-        <span>01</span>
+        <div class="gear-heading">
+          <span>01</span>
+          <pb-module id="gear-status-1"></pb-module>
+        </div>
         <pb-module id="gear-1"></pb-module>
-        <pb-module id="gear-status-1"></pb-module>
       </article>
       <article>
-        <span>02</span>
+        <div class="gear-heading">
+          <span>02</span>
+          <pb-module id="gear-status-2"></pb-module>
+        </div>
         <pb-module id="gear-2"></pb-module>
-        <pb-module id="gear-status-2"></pb-module>
       </article>
       <article>
-        <span>03</span>
+        <div class="gear-heading">
+          <span>03</span>
+          <pb-module id="gear-status-3"></pb-module>
+        </div>
         <pb-module id="gear-3"></pb-module>
-        <pb-module id="gear-status-3"></pb-module>
       </article>
     </div>
   </section>

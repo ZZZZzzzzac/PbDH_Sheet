@@ -1,5 +1,5 @@
 :scope {
-  width: min(100%, 1100px);
+  width: min(100%, 210mm);
   margin-inline: auto;
 }
 
@@ -243,12 +243,5 @@
 
   .resource-panel {
     grid-template-columns: 1fr;
-  }
-
-}
-
-@media print {
-  .witchy-page {
-    padding: 5mm;
   }
 }

@@ -91,11 +91,14 @@ describe("HTML snapshot export/import", () => {
     expect(html).toContain("box-shadow: none !important");
     expect(html).toContain(".snapshot-shell .play-card *");
     expect(html).toContain("-webkit-print-color-adjust: exact");
-    expect(html).toContain("padding: 3mm");
+    expect(html).toMatch(/\.snapshot-shell \.sheet-page,\s*\.snapshot-shell \[data-print-page="true"\]\s*\{[^}]*padding:\s*0/s);
+    expect(html).not.toContain("padding: 3mm");
   });
 
-  it("uses the same A4 page box while preparing output and browser printing", () => {
-    expect(printCss).toMatch(/\.print-mode \.sheet-page,\s*\.print-mode \[data-print-page="true"\]\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*210mm[^}]*height:\s*297mm[^}]*padding:\s*5mm 4mm 5mm/s);
+  it("uses the same padding-free A4 page box while preparing output and browser printing", () => {
+    expect(printCss).toMatch(/\.print-mode \.sheet-page,\s*\.print-mode \[data-print-page="true"\]\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*210mm[^}]*height:\s*297mm[^}]*padding:\s*0/s);
+    expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\.sheet-page,\s*\[data-print-page="true"\]\s*\{[^}]*padding:\s*0\s*!important/s);
+    expect(printCss).not.toContain("padding: 3mm");
     expect(printCss).toMatch(/@page\s*\{[^}]*size:\s*A4 portrait[^}]*margin:\s*0/s);
     expect(printCss).not.toContain("zoom:");
     expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\.play-card\s*\{[^}]*width:\s*var\(--play-card-width\) !important/s);

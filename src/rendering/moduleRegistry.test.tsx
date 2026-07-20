@@ -640,6 +640,12 @@ describe("Module Registry rendering", () => {
     expect(screen.getByText("利刃")).toHaveAttribute("data-markdown-color", "red");
   });
 
+  it("keeps Resource Library dialog text on the Framework color scheme", () => {
+    const styles = readFileSync("src/styles/resource-browser.css", "utf8");
+
+    expect(styles).toMatch(/\.resource-dialog\s*\{[^}]*color:\s*var\(--framework-text\)/s);
+  });
+
   it("places each Resource Library column's sort and filter controls before its field label", () => {
     renderModuleDemo(createResourcePickerPackage());
     fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
@@ -664,13 +670,13 @@ describe("Module Registry rendering", () => {
     expect(screen.getByLabelText("选择 幽影")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "筛选领域" }));
     fireEvent.click(screen.getByLabelText("骸骨"));
-    fireEvent.click(screen.getByLabelText("选择 烈焰"));
     fireEvent.click(screen.getByLabelText("选择 幽影"));
+    fireEvent.click(screen.getByLabelText("选择 烈焰"));
     fireEvent.click(screen.getByRole("button", { name: "确认选择" }));
 
     const values = useRuntimeStore.getState().characterData?.character.values;
-    expect(values?.["domain-name"]).toBe("烈焰、幽影");
-    expect(screen.getByRole("button", { name: "领域名" })).toHaveTextContent("烈焰、幽影");
+    expect(values?.["domain-name"]).toBe("幽影、烈焰");
+    expect(screen.getByRole("button", { name: "领域名" })).toHaveTextContent("幽影、烈焰");
   });
 
   it("makes the Resource Picker button fill the available module row height by default", () => {

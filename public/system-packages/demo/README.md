@@ -19,7 +19,7 @@
 ## 非 Module 合同
 
 - Sheet Shell：`layouts/shell.*`，含唯一 `<pb-page-outlet>`。
-- Page：网页与打印共用 `210mm × 297mm` A4 外盒和框架打印内边距，保持所见即所得。
+- Page：网页与打印共用 `210mm × 297mm` A4 外盒，`layouts/demo.css` 自行声明内容边距，保持所见即所得。
 - Character Creation Guide：13 步，覆盖无目标、Page、Module、Layout Region。
 - Validation Check：A/B/C 等式、职业/子职 Resource 关系、Card state。
 - Dependency Logic：Resource 复制、Countable 填充、动态筛选、显隐与 Checkbox 触发。

@@ -1,8 +1,16 @@
+:scope {
+  width: min(100%, 210mm);
+  margin-inline: auto;
+}
+
 .minimal-sheet {
+  box-sizing: border-box;
   display: grid;
   gap: 16px;
-  max-width: 720px;
+  width: 100%;
+  min-height: 100%;
   margin: 0 auto;
+  padding: 5mm 4mm;
 }
 
 .minimal-identity {

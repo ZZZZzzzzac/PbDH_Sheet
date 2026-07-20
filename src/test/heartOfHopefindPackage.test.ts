@@ -293,7 +293,9 @@ describe("Heart of Hopefind System Package", () => {
     const skin = readFileSync(join(packageRoot, "skins", "survivor-notebook.css"), "utf8");
     const layout = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
 
-    expect(skin).toMatch(/\.sheet-page\s*\{[^}]*width:\s*210mm;[^}]*height:\s*297mm;[^}]*padding:\s*0\s*!important;/s);
+    expect(layout).toMatch(/:scope\s*\{[^}]*width:\s*min\(100%,\s*210mm\)/s);
+    expect(layout).toMatch(/\.hopefind-page\s*\{[^}]*padding:\s*6mm/s);
+    expect(skin).not.toMatch(/\.sheet-page\s*\{/);
     expect(skin).toMatch(/\.character-sheet\s*\{[^}]*padding:\s*12px;/s);
     expect(skin).not.toContain("repeating-linear-gradient");
     expect(skin).toMatch(/\.hopefind-page::before\s*\{[^}]*box-shadow:/s);

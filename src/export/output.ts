@@ -249,12 +249,9 @@ body.snapshot-body {
   width: 210mm;
   height: 297mm;
   margin: 0 auto 16px;
-  padding: 5mm 4mm 5mm;
+  padding: 0;
   overflow: hidden;
   background: #ffffff;
-}
-.snapshot-shell [data-print-page="true"] {
-  padding: 3mm;
 }
 .snapshot-shell .sheet-page,
 .snapshot-shell .module-slot,
@@ -330,13 +327,12 @@ body.snapshot-body {
     width: 210mm;
     height: 297mm;
     margin: 0;
-    padding: 5mm 4mm 5mm;
+    padding: 0;
     overflow: hidden;
     break-after: page;
   }
   .snapshot-shell [data-print-page="true"],
   [data-print-page="true"] {
-    padding: 3mm;
     break-after: auto;
     page-break-after: auto;
   }

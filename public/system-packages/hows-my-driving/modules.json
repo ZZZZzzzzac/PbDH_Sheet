@@ -62,17 +62,17 @@
     "显示方式": "数值"
   },
 
-  { "ID": "memento-1", "类型": "freeText", "标签": "纪念物 1" },
-  { "ID": "experience-1", "类型": "freeText", "标签": "经历 1" },
-  { "ID": "memento-status-1", "类型": "checkboxResource", "标签": "状态", "选项": [{ "ID": "unavailable", "标签": "已丢失 / 不可用" }] },
-  { "ID": "memento-2", "类型": "freeText", "标签": "纪念物 2" },
-  { "ID": "experience-2", "类型": "freeText", "标签": "经历 2" },
-  { "ID": "memento-status-2", "类型": "checkboxResource", "标签": "状态", "选项": [{ "ID": "unavailable", "标签": "已丢失 / 不可用" }] },
-  { "ID": "memento-3", "类型": "freeText", "标签": "纪念物 3" },
-  { "ID": "experience-3", "类型": "freeText", "标签": "经历 3" },
-  { "ID": "memento-status-3", "类型": "checkboxResource", "标签": "状态", "选项": [{ "ID": "unavailable", "标签": "已丢失 / 不可用" }] },
+  { "ID": "memento-1", "类型": "freeText", "标签": "纪念物" },
+  { "ID": "experience-1", "类型": "longText", "标签": "经历 1", "行数": 3 },
+  { "ID": "memento-status-1", "类型": "checkboxResource", "标签": "纪念物 1 状态", "选项": [{ "ID": "unavailable", "标签": "不可用" }] },
+  { "ID": "memento-2", "类型": "freeText", "标签": "纪念物" },
+  { "ID": "experience-2", "类型": "longText", "标签": "经历 2", "行数": 3 },
+  { "ID": "memento-status-2", "类型": "checkboxResource", "标签": "纪念物 2 状态", "选项": [{ "ID": "unavailable", "标签": "不可用" }] },
+  { "ID": "memento-3", "类型": "freeText", "标签": "纪念物" },
+  { "ID": "experience-3", "类型": "longText", "标签": "经历 3", "行数": 3 },
+  { "ID": "memento-status-3", "类型": "checkboxResource", "标签": "纪念物 3 状态", "选项": [{ "ID": "unavailable", "标签": "不可用" }] },
 
-  { "ID": "finish-line", "类型": "longText", "标签": "最终线", "行数": 3, "占位文本": "团队竞速前往的终点或避风港" },
+  { "ID": "finish-line", "类型": "longText", "标签": "", "行数": 5, "占位文本": "团队竞速前往的终点或避风港" },
 
   {
     "ID": "pick-ride",
@@ -103,18 +103,10 @@
     "步长": 1,
     "显示方式": "数值"
   },
-  {
-    "ID": "ride-condition",
-    "类型": "freeText",
-    "标签": "座驾状态",
-    "默认值": "可驾驶",
-    "选项": ["可驾驶", "抛锚故障", "彻底报废"]
-  },
-
-  { "ID": "gear-1", "类型": "freeText", "标签": "装备 1" },
-  { "ID": "gear-status-1", "类型": "checkboxResource", "标签": "状态", "选项": [{ "ID": "unavailable", "标签": "损坏 / 耗尽 / 不可用" }] },
-  { "ID": "gear-2", "类型": "freeText", "标签": "装备 2" },
-  { "ID": "gear-status-2", "类型": "checkboxResource", "标签": "状态", "选项": [{ "ID": "unavailable", "标签": "损坏 / 耗尽 / 不可用" }] },
-  { "ID": "gear-3", "类型": "freeText", "标签": "装备 3" },
-  { "ID": "gear-status-3", "类型": "checkboxResource", "标签": "状态", "选项": [{ "ID": "unavailable", "标签": "损坏 / 耗尽 / 不可用" }] }
+  { "ID": "gear-1", "类型": "longText", "标签": "", "行数": 3 },
+  { "ID": "gear-status-1", "类型": "checkboxResource", "标签": "装备 1 状态", "选项": [{ "ID": "unavailable", "标签": "不可用" }] },
+  { "ID": "gear-2", "类型": "longText", "标签": "", "行数": 3 },
+  { "ID": "gear-status-2", "类型": "checkboxResource", "标签": "装备 2 状态", "选项": [{ "ID": "unavailable", "标签": "不可用" }] },
+  { "ID": "gear-3", "类型": "longText", "标签": "", "行数": 3 },
+  { "ID": "gear-status-3", "类型": "checkboxResource", "标签": "装备 3 状态", "选项": [{ "ID": "unavailable", "标签": "不可用" }] }
 ]

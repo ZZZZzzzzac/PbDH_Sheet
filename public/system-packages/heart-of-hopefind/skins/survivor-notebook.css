@@ -7,16 +7,6 @@
   font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
 }
 
-:scope .sheet-page {
-  box-sizing: border-box;
-  width: 210mm;
-  height: 297mm;
-  margin: 0 auto 16px;
-  padding: 0 !important;
-  overflow: hidden;
-  border: 0;
-}
-
 :scope .character-sheet {
   padding: 12px;
 }

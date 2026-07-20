@@ -1,4 +1,4 @@
-:scope { width: 210mm; height: 297mm; margin: 0 auto; padding: 5mm 4mm; }
+:scope { width: min(100%, 210mm); height: 297mm; margin: 0 auto; padding: 5mm 4mm; }
 .demo-page { display: grid; gap: 18px; padding: 22px; margin: 0 auto; }
 .demo-page-header { display: grid; gap: 6px; padding-bottom: 14px; border-bottom: 1px solid #d6dfe1; }
 .demo-page-header h2, .demo-page-header p, .demo-card h3, .demo-card p { margin: 0; }

@@ -24,14 +24,6 @@
   --witching-right-column: 50fr;
 }
 
-/* 网页预览与打印共用真实 A4 页盒，避免打印时从 1100px 突然收窄。 */
-:scope .sheet-page {
-  box-sizing: border-box;
-  width: min(100%, 210mm);
-  padding: 5mm 4mm;
-  border: 0;
-}
-
 /* Restricted Markdown  palette：与沉紫协调 */
 :scope [data-module-type="freeText"],
 :scope [data-module-type="longText"],
@@ -43,7 +35,7 @@
 
 /* 页面：烛光自左上角泻下，夜色沉在右下角。 */
 .witching-hour-sheet {
-  padding: 0;
+  padding: 5mm 4mm;
   gap: 0;
   background:
     radial-gradient(circle at 10% 3%, rgba(217, 185, 92, 0.18), transparent 28%),

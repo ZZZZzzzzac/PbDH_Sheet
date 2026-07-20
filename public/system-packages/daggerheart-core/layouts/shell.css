@@ -68,6 +68,11 @@
   }
 }
 
+.print-mode :scope .daggerheart-card-pane {
+  box-sizing: border-box;
+  padding: 3mm;
+}
+
 @media print {
   .daggerheart-workspace {
     display: block;
@@ -83,6 +88,8 @@
 
   .daggerheart-card-pane {
     display: block;
+    box-sizing: border-box;
+    padding: 3mm;
   }
 
   .daggerheart-card-pane > .card-picker-grid {

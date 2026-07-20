@@ -44,9 +44,9 @@ describe("canonical demo System Package", () => {
     expect(moduleTypes.filter((type) => !readme.includes(`\`${type}\``))).toEqual([]);
   });
 
-  it("uses the framework A4 page box in both screen and print layouts", () => {
+  it("owns its content inset inside the framework A4 page box", () => {
     const css = readFileSync(join(demoRoot, "layouts", "demo.css"), "utf8");
-    expect(css).toContain(":scope { width: 210mm; height: 297mm;");
+    expect(css).toContain(":scope { width: min(100%, 210mm); height: 297mm;");
     expect(css).toContain("padding: 5mm 4mm;");
   });
 
