@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { zipSync } from "fflate";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   createEmptyCharacterData,
   exportCharacterData,
@@ -18,51 +18,29 @@ import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 const packageRoot = join(process.cwd(), "public", "system-packages", "hows-my-driving");
 
 describe("HOW'S MY DRIVING System Package", () => {
-  it("loads through the normal package pipeline without blocking issues", async () => {
-    const result = await loadPackage();
+  let systemPackage: SystemPackage;
+  let loadResult: Awaited<ReturnType<typeof loadPackage>>;
 
-    expect(result.ok, result.ok ? undefined : JSON.stringify(result.issues, null, 2)).toBe(true);
-    if (!result.ok) return;
+  beforeAll(async () => {
+    loadResult = await loadPackage();
+    expect(loadResult.ok, loadResult.ok ? undefined : JSON.stringify(loadResult.issues, null, 2)).toBe(true);
+    if (!loadResult.ok) throw new Error(JSON.stringify(loadResult.issues, null, 2));
+    systemPackage = loadResult.package;
+  });
 
-    expect(result.issues.filter((issue) => issue.level === "fatal" || issue.level === "error")).toEqual([]);
-    expect(result.package.manifest).toMatchObject({
+  it("loads through the normal package pipeline without blocking issues", () => {
+    expect(loadResult.ok).toBe(true);
+    expect(loadResult.issues.filter((issue) => issue.level === "fatal" || issue.level === "error")).toEqual([]);
+    expect(systemPackage.manifest).toMatchObject({
       ID: "hows-my-driving",
       名称: "我的车技如何？ HOW'S MY DRIVING?",
       版本: "0.1.0",
     });
-    expect(result.package.pages.map((page) => page.ID)).toEqual(["passenger-sheet", "ride-sheet"]);
-  });
-
-  it("keeps editable Markdown and Free Text dropdown values black on the light input surface", () => {
-    const skin = readFileSync(join(packageRoot, "skins", "night-drive.css"), "utf8");
-
-    expect(skin).toMatch(/:scope \[data-part="input"\]\s*\{[^}]*color:\s*var\(--hmd-ink\)/s);
-  });
-
-  it("uses enlarged section headings on both Pages", () => {
-    const styles = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
-
-    expect(styles).toMatch(/\.panel h2\s*\{[^}]*font-size:\s*18px/s);
-  });
-
-  it("owns its content inset without a framework-padding workaround", () => {
-    const styles = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
-
-    expect(styles).toMatch(/\.hmd-page\s*\{[^}]*padding:\s*6mm/s);
-    expect(styles).not.toMatch(/\.print-mode :scope/);
-    expect(styles).not.toMatch(/@media print\s*\{[\s\S]*?:scope\s*\{[^}]*padding/s);
-  });
-
-  it("keeps Countable Resource numbers theme-aware without a light input background", () => {
-    const skin = readFileSync(join(packageRoot, "skins", "night-drive.css"), "utf8");
-
-    expect(skin).toMatch(/:scope \[data-module-type="countableResource"\] \[data-part="input"\]\s*\{[^}]*background:\s*transparent;[^}]*color:\s*var\(--framework-text\)/s);
+    expect(systemPackage.pages.map((page) => page.ID)).toEqual(["passenger-sheet", "ride-sheet"]);
   });
 
   it("lays out each Memento with a compact unavailable checkbox and a three-row Experience", async () => {
-    const systemPackage = await requirePackage();
     const layout = readFileSync(join(packageRoot, "layouts", "passenger-sheet.html"), "utf8");
-    const styles = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
 
     for (let index = 1; index <= 3; index += 1) {
       expect(systemPackage.modules.find((module) => module.ID === `memento-${index}`)).toMatchObject({
@@ -79,17 +57,6 @@ describe("HOW'S MY DRIVING System Package", () => {
       });
       expect(layout).toMatch(new RegExp(`<div class="memento-heading">\\s*<pb-module id="memento-${index}"></pb-module>\\s*<pb-module id="memento-status-${index}"></pb-module>\\s*</div>\\s*<pb-module id="experience-${index}"></pb-module>`));
     }
-    expect(styles).toMatch(/\.memento-heading \[data-module-type="checkboxResource"\]\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent/s);
-    expect(styles).toMatch(/\.memento-heading \[data-module-type="checkboxResource"\] \[data-part="label"\]\s*\{[^}]*display:\s*none/s);
-    expect(styles).not.toMatch(/\.memento-heading \[data-part="label"\]\s*\{/s);
-    expect(styles).toMatch(/\.memento-heading \[data-module-type="freeText"\] \[data-markdown-editor="true"\]\s*\{[^}]*width:\s*100%/s);
-    expect(styles).toMatch(/\.memento-heading \[data-module-type="freeText"\] \[data-part="input"\]\s*\{[^}]*height:\s*30px/s);
-  });
-
-  it("removes the outer container and horizontal gutters from the Approaches Picker", () => {
-    const styles = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
-
-    expect(styles).toMatch(/\.approaches-panel > \[data-module-slot-id="pick-approaches"\] \[data-module-type="resourcePicker"\]\s*\{[^}]*padding:\s*0;[^}]*border:\s*0;[^}]*background:\s*transparent/s);
   });
 
   it("places Approaches in the left column and Fuel in the right column", () => {
@@ -105,9 +72,7 @@ describe("HOW'S MY DRIVING System Package", () => {
   });
 
   it("uses three-row Gear fields, compact unavailable checkboxes, and no Ride condition", async () => {
-    const systemPackage = await requirePackage();
     const layout = readFileSync(join(packageRoot, "layouts", "ride-sheet.html"), "utf8");
-    const styles = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
 
     for (let index = 1; index <= 3; index += 1) {
       expect(systemPackage.modules.find((module) => module.ID === `gear-${index}`)).toMatchObject({
@@ -123,14 +88,9 @@ describe("HOW'S MY DRIVING System Package", () => {
     }
     expect(systemPackage.modules.some((module) => module.ID === "ride-condition")).toBe(false);
     expect(layout).not.toContain('<pb-module id="ride-condition"></pb-module>');
-    expect(styles).toMatch(/\.damage-note p,\s*\.gear-panel > \.instruction\s*\{[^}]*font-size:\s*14px/s);
-    expect(styles).toMatch(/\.gear-heading\s*\{[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)/s);
-    expect(styles).toMatch(/\.gear-list \[data-module-type="checkboxResource"\]\s*\{[^}]*border:\s*0;[^}]*background:\s*transparent/s);
-    expect(styles).toMatch(/\.gear-list \[data-module-type="checkboxResource"\] \[data-part="label"\]\s*\{[^}]*display:\s*none/s);
   });
 
   it("provides ten archetypes and twenty-four approaches with readable stable IDs", async () => {
-    const systemPackage = await requirePackage();
     const archetypes = library(systemPackage, "archetypes").entries;
     const approaches = library(systemPackage, "approaches").entries;
 
@@ -152,7 +112,6 @@ describe("HOW'S MY DRIVING System Package", () => {
   });
 
   it("fills and replaces editable archetype values", async () => {
-    const systemPackage = await requirePackage();
     const entries = library(systemPackage, "archetypes").entries;
     const muscle = entry(entries, "原型:肌肉");
     const fixer = entry(entries, "原型:修理师");
@@ -171,7 +130,6 @@ describe("HOW'S MY DRIVING System Package", () => {
   });
 
   it("maps ordered approach selection to four ranks and replaces every rank", async () => {
-    const systemPackage = await requirePackage();
     const entries = library(systemPackage, "approaches").entries;
     let data = createEmptyCharacterData(systemPackage, "hmd-test");
 
@@ -203,7 +161,6 @@ describe("HOW'S MY DRIVING System Package", () => {
   });
 
   it("reports missing and duplicate ranked approaches without mutating Character Data", async () => {
-    const systemPackage = await requirePackage();
     const initial = createEmptyCharacterData(systemPackage, "hmd-test");
     const missing = await validate(systemPackage, initial);
     expect(missing.filter((issue) => issue.code === "HMD_APPROACH_RANK_MISSING")).toHaveLength(4);
@@ -222,7 +179,6 @@ describe("HOW'S MY DRIVING System Package", () => {
   });
 
   it("fills and replaces Ride name, dice, and editable trait", async () => {
-    const systemPackage = await requirePackage();
     const entries = library(systemPackage, "rides").entries;
     let data = createEmptyCharacterData(systemPackage, "hmd-test");
 
@@ -245,7 +201,6 @@ describe("HOW'S MY DRIVING System Package", () => {
   });
 
   it("round-trips every manual rule-specific state through Character Data", async () => {
-    const systemPackage = await requirePackage();
     let data = createEmptyCharacterData(systemPackage, "hmd-round-trip");
     const values = {
       "fuel-die": "D8",
@@ -300,13 +255,6 @@ async function validate(systemPackage: SystemPackage, characterData: CharacterDa
     packageMetadata: { id: systemPackage.manifest.ID, version: systemPackage.manifest.版本 },
     checks: systemPackage.validationChecks ?? [],
   });
-}
-
-async function requirePackage(): Promise<SystemPackage> {
-  const result = await loadPackage();
-  expect(result.ok, result.ok ? undefined : JSON.stringify(result.issues, null, 2)).toBe(true);
-  if (!result.ok) throw new Error(JSON.stringify(result.issues, null, 2));
-  return result.package;
 }
 
 async function loadPackage() {

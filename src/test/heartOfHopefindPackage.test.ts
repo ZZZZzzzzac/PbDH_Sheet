@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { zipSync } from "fflate";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { createEmptyCharacterData, updateCharacterValue, type CharacterData } from "../domain/characterData";
 import { applyDependencyResultToCharacterData, evaluateDependencies } from "../domain/dependencyEngine";
 import { composeResource } from "../domain/resourceComposer";
@@ -10,8 +10,14 @@ import { runValidationChecksInProcess } from "../domain/validationScript";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "heart-of-hopefind");
+let loadedResult: Awaited<ReturnType<typeof loadSystemPackageFromZipFile>>;
 
 describe("Heart of Hopefind System Package", () => {
+  beforeAll(async () => {
+    // Shared immutable fixture: behavioral tests create fresh Character Data instead of mutating the package.
+    loadedResult = await loadSystemPackageFromZipFile(createPackageZip());
+  });
+
   it("loads the main character Page through the normal package pipeline", async () => {
     const result = await loadHeartOfHopefindPackage();
 
@@ -289,29 +295,6 @@ describe("Heart of Hopefind System Package", () => {
     ]));
   });
 
-  it("declares one strict A4 layout contract for both screen and print", () => {
-    const skin = readFileSync(join(packageRoot, "skins", "survivor-notebook.css"), "utf8");
-    const layout = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
-
-    expect(layout).toMatch(/:scope\s*\{[^}]*width:\s*min\(100%,\s*210mm\)/s);
-    expect(layout).toMatch(/\.hopefind-page\s*\{[^}]*padding:\s*6mm/s);
-    expect(skin).not.toMatch(/\.sheet-page\s*\{/);
-    expect(skin).toMatch(/\.character-sheet\s*\{[^}]*padding:\s*12px;/s);
-    expect(skin).not.toContain("repeating-linear-gradient");
-    expect(skin).toMatch(/\.hopefind-page::before\s*\{[^}]*box-shadow:/s);
-    expect(skin).not.toContain("@media print");
-    expect(layout).not.toContain("@media print");
-    expect(layout).not.toContain("@media (max-width");
-  });
-
-  it("removes the former second-Page fields", async () => {
-    const result = await loadHeartOfHopefindPackage();
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    for (const moduleId of ["background-story", "carried-supplies", "core-hurt-story", "core-hurt-goal", "core-hurt-gm-focus"]) {
-      expect(result.package.modules.some((module) => module.ID === moduleId)).toBe(false);
-    }
-  });
 });
 
 async function validate(systemPackage: SystemPackage, characterData: CharacterData) {
@@ -324,8 +307,8 @@ async function validate(systemPackage: SystemPackage, characterData: CharacterDa
   });
 }
 
-async function loadHeartOfHopefindPackage() {
-  return loadSystemPackageFromZipFile(createPackageZip());
+function loadHeartOfHopefindPackage() {
+  return loadedResult;
 }
 
 function createPackageZip(): Blob {

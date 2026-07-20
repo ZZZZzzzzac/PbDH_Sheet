@@ -1,5 +1,6 @@
 :scope {
-  width: min(100%, 210mm);
+  width: 210mm;
+  max-width: none;
   margin-inline: auto;
 }
 

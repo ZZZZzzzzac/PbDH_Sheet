@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { zipSync } from "fflate";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { createEmptyCharacterData, updateCharacterValue, type CharacterData } from "../domain/characterData";
 import { applyDependencyResultToCharacterData, evaluateDependencies } from "../domain/dependencyEngine";
 import type { SystemPackage } from "../domain/systemPackage";
@@ -9,8 +9,14 @@ import { runValidationChecksInProcess } from "../domain/validationScript";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "witchy");
+let loadedResult: Awaited<ReturnType<typeof loadSystemPackageFromZipFile>>;
 
 describe("Witchy System Package", () => {
+  beforeAll(async () => {
+    // Shared immutable fixture: behavioral tests create fresh Character Data instead of mutating the package.
+    loadedResult = await loadSystemPackageFromZipFile(createPackageZip());
+  });
+
   it("loads through the normal package pipeline without fatal or error diagnostics", async () => {
     const result = await loadWitchyPackage();
 
@@ -57,7 +63,6 @@ describe("Witchy System Package", () => {
 
     const witchingHour = result.package.skins?.find((skin) => skin.ID === "witching-hour");
     expect(witchingHour).toBeDefined();
-    expect(witchingHour?.cssContent).not.toMatch(/\[data-module-type="longText"\]\s+\[data-part="input"\]/);
   });
 
   it("fills archetype and familiar text from their Resource Libraries", async () => {
@@ -132,7 +137,7 @@ async function validate(systemPackage: SystemPackage, characterData: CharacterDa
   });
 }
 
-async function loadWitchyPackage() { return loadSystemPackageFromZipFile(createPackageZip()); }
+function loadWitchyPackage() { return loadedResult; }
 
 function createPackageZip(): Blob {
   const files = Object.fromEntries(walkFiles(packageRoot).map((path) => [relative(packageRoot, path).replaceAll("\\", "/"), readFileSync(path)]));

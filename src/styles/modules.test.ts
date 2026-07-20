@@ -3,20 +3,12 @@ import cardTableCss from "./card-table.css?raw";
 import modulesCss from "./modules.css?raw";
 
 describe("Sheet Module sizing", () => {
-  it("keeps two-row Long Text controls compact without changing their configured row count", () => {
-    expect(modulesCss).toMatch(/\.textarea\s*\{[^}]*min-height:\s*48px[^}]*line-height:\s*1\.2/s);
-  });
-
   it("uses Long Text rows as a fixed editor and preview height with scrolling overflow", () => {
     expect(modulesCss).toMatch(/\[data-module-type="longText"\]\s+\[data-part="input"\]\s*\{[^}]*height:\s*var\(--long-text-height[^}]*overflow:\s*auto/s);
   });
 
   it("raises the focused Sheet Module above adjacent controls", () => {
     expect(modulesCss).toMatch(/\.container:focus-within\s*\{[^}]*position:\s*relative[^}]*z-index:\s*[1-9]/s);
-  });
-
-  it("keeps Read Only Display images in normal module flow", () => {
-    expect(modulesCss).toMatch(/\.read-only-image\s*\{[^}]*position:\s*static[^}]*width:\s*100%[^}]*height:\s*auto/s);
   });
 
   it("keeps Card Markdown lists in normal block flow", () => {

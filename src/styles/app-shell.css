@@ -244,7 +244,8 @@
   aspect-ratio: 210 / 297;
   overflow: hidden;
   background: var(--framework-surface);
-  border: 1px solid var(--framework-border);
+  border: 0;
+  outline: 1px solid var(--framework-border);
 }
 .page-navigation { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 14px; }
 .page-navigation button { flex: 0 0 auto; border: 1px solid var(--framework-border-strong); padding: 8px 14px; background: var(--framework-surface); color: var(--framework-text-strong); cursor: pointer; }

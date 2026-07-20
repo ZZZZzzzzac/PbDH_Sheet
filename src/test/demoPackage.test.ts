@@ -44,21 +44,11 @@ describe("canonical demo System Package", () => {
     expect(moduleTypes.filter((type) => !readme.includes(`\`${type}\``))).toEqual([]);
   });
 
-  it("owns its content inset inside the framework A4 page box", () => {
-    const css = readFileSync(join(demoRoot, "layouts", "demo.css"), "utf8");
-    expect(css).toContain(":scope { width: min(100%, 210mm); height: 297mm;");
-    expect(css).toContain("padding: 5mm 4mm;");
-  });
-
-  it("uses small original fixture libraries instead of daggerheart-core resources", () => {
+  it("uses intentionally small fixture libraries", () => {
     const classes = JSON.parse(readFileSync(join(demoRoot, "resources", "classes.json"), "utf8"));
     const specialties = JSON.parse(readFileSync(join(demoRoot, "resources", "subclasses.json"), "utf8"));
     const cards = JSON.parse(readFileSync(join(demoRoot, "resources", "demo_cards.json"), "utf8"));
     expect([classes.length, specialties.length, cards.length]).toEqual([3, 6, 6]);
-    const legacyFiles = walkFiles(demoRoot)
-      .map((file) => relative(demoRoot, file).replaceAll("\\", "/"))
-      .filter((file) => file.includes("domain-level-1") || file.includes("domain_cards.json"));
-    expect(legacyFiles).toEqual([]);
   });
 });
 

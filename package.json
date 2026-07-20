@@ -1,12 +1,13 @@
 {
   "name": "pbdh-sheet",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "test": "vitest run",
+    "test": "npm run test:health && vitest run",
+    "test:health": "node --test scripts/test-health.test.mjs && node scripts/test-health.mjs",
     "test:release": "node --test scripts/release-tools.test.mjs",
     "test:e2e": "playwright test",
     "check:release-version": "node scripts/release-tools.mjs check-tag",

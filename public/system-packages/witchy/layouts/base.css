@@ -236,6 +236,12 @@
   min-width: 0;
 }
 
+@media print {
+  .magic-resource-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media screen and (max-width: 760px) {
   .witchy-page {
     padding: 5mm;

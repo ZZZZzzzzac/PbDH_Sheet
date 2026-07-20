@@ -36,7 +36,8 @@ describe("built-in System Package print layout contract", () => {
     const demo = examplePackageCss("demo", "layouts/demo.css");
     const minimal = examplePackageCss("demo-minimal", "layouts/main.css");
 
-    expect(demo).toMatch(/:scope\s*\{[^}]*width:\s*min\(100%,\s*210mm\);[^}]*padding:\s*5mm 4mm/s);
+    expectA4PreviewScope(demo);
+    expect(demo).toMatch(/\.demo-page\s*\{[^}]*padding:\s*5mm 4mm/s);
     expectA4PreviewScope(minimal);
     expect(minimal).toMatch(/\.minimal-sheet\s*\{[^}]*padding:\s*5mm 4mm/s);
   });
@@ -48,7 +49,7 @@ describe("built-in System Package print layout contract", () => {
       packageCss("heart-of-hopefind", "skins/dawn-survey/skin.css"),
     ];
 
-    expectA4PreviewScope(layout);
+    expect(layout).toMatch(/:scope\s*\{[^}]*width:\s*210mm;[^}]*max-width:\s*none;[^}]*margin-inline:\s*auto/s);
     expect(layout).toMatch(/\.hopefind-page\s*\{[^}]*padding:\s*6mm/s);
     for (const skin of skins) {
       expect(skin).not.toMatch(/\.sheet-page\s*\{/);
@@ -70,7 +71,8 @@ describe("built-in System Package print layout contract", () => {
 
     expectA4PreviewScope(layout);
     expect(layout).toMatch(/\.witchy-page\s*\{[^}]*padding:\s*7mm/s);
-    expect(layout).not.toMatch(/@media print\s*\{[\s\S]*?\.witchy-page\s*\{[^}]*padding/s);
+    const printBlock = layout.match(/@media print\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    expect(printBlock).not.toMatch(/\.witchy-page\s*\{[^}]*padding/s);
     expect(skin).not.toMatch(/\.sheet-page\s*\{/);
     expect(skin).toMatch(/\.witching-hour-sheet\s*\{[^}]*padding:\s*5mm 4mm/s);
   });

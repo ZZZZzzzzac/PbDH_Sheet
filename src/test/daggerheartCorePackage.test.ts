@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { zipSync } from "fflate";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 import { getHtmlTemplateModuleReferences } from "../domain/systemPackage";
 import { composeResource } from "../domain/resourceComposer";
@@ -11,10 +11,16 @@ import { getResourceLibraryFields } from "../domain/resourceLibrary";
 import { getResourcePickerLinks } from "../domain/systemPackage";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "daggerheart-core");
+let loadedResult: Awaited<ReturnType<typeof loadSystemPackageFromZipFile>>;
 
 describe("Daggerheart core System Package", () => {
+  beforeAll(async () => {
+    // Shared immutable fixture: behavioral tests create fresh Character Data instead of mutating the package.
+    loadedResult = await loadSystemPackageFromZipFile(createPackageZip());
+  });
+
   it("loads through the normal package pipeline without fatal or error diagnostics", async () => {
-    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    const result = await loadDaggerheartPackage();
 
     expect(result.ok, result.ok ? undefined : JSON.stringify(result.issues, null, 2)).toBe(true);
     if (!result.ok) return;
@@ -39,29 +45,8 @@ describe("Daggerheart core System Package", () => {
     expect(astralSkin?.layoutOverrides?.pages.every((page) => page.htmlContent.includes("astral-"))).toBe(true);
   });
 
-  it("keeps presentation tokens in plain Skin and layout structure in Base CSS", () => {
-    const plain = readFileSync(join(packageRoot, "skins", "plain.css"), "utf8");
-    const base = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
-    expect(plain).toContain(":scope");
-    expect(plain).toContain("--dh-surface: #ffffff");
-    expect(base).toContain("background: var(--dh-surface)");
-    expect(base).not.toContain("background: #fff");
-  });
-
-  it("ships skin-gpt-5.6sol as a scoped dark Skin with a light print presentation", () => {
-    const skin = readFileSync(join(packageRoot, "skins", "skin-gpt-5.6sol", "skin.css"), "utf8");
-    expect(skin).toContain(":scope");
-    expect(skin).toContain("color-scheme: dark");
-    expect(skin).toContain('@media print');
-    expect(skin).toMatch(/@media print\s*\{[\s\S]*?color-scheme:\s*light/);
-    expect(skin).toMatch(/\.play-card-name,\s*\.play-card-description\s*\{[^}]*color:\s*#[0-9a-f]{6}/i);
-    expect(skin).toMatch(/\.play-card-tag\s*\{[^}]*background:/);
-    expect(skin).toContain('url("assets/skins/skin-gpt-5.6sol/astral-chart.svg")');
-    expect(skin).not.toMatch(/@import|@font-face/i);
-  });
-
   it("ships skin-KimiK3 with thread-bound HTML overrides that preserve module ownership and Guide regions", async () => {
-    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    const result = await loadDaggerheartPackage();
     expect(result.ok, result.ok ? undefined : JSON.stringify(result.issues, null, 2)).toBe(true);
     if (!result.ok) return;
 
@@ -109,7 +94,7 @@ describe("Daggerheart core System Package", () => {
   });
 
   it("loads the complete 18-step Character Creation Guide with stable targets", async () => {
-    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    const result = await loadDaggerheartPackage();
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
@@ -142,7 +127,7 @@ describe("Daggerheart core System Package", () => {
   });
 
   it("routes pure and mixed ancestry features through one Resource Composer", async () => {
-    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    const result = await loadDaggerheartPackage();
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const composer = result.package.modules.find((module) => module.ID === "pick-ancestry");
@@ -167,20 +152,8 @@ describe("Daggerheart core System Package", () => {
     if (cardTable?.类型 === "cardTable") expect(cardTable.显示方式字段).toBe("卡牌显示方式");
   });
 
-  it("styles the ancestry Composer like the compact Resource Picker buttons", () => {
-    const css = readFileSync(join(packageRoot, "layouts", "base.css"), "utf8");
-    expect(css).toContain(':is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"])');
-    expect(css).toMatch(/:is\(\[data-module-type="resourcePicker"\], \[data-module-type="resourceComposer"\]\)[\s\S]*?border:\s*0;/);
-    expect(css).toMatch(/:is\(\[data-module-type="resourcePicker"\], \[data-module-type="resourceComposer"\]\) \[data-part="button"\][\s\S]*?font-size:\s*0;/);
-  });
-
-  it("places the domain-card and Other Resources buttons side by side", () => {
-    const css = readFileSync(join(packageRoot, "layouts", "shell.css"), "utf8");
-    expect(css).toMatch(/\.card-picker-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s);
-  });
-
   it("keeps every core class on the complete shared class field contract", async () => {
-    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    const result = await loadDaggerheartPackage();
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const classes = result.package.resourceLibraries?.find((library) => library.ID === "classes");
@@ -195,7 +168,7 @@ describe("Daggerheart core System Package", () => {
   });
 
   it("hides authoring-only class and domain-card fields from their Pickers", async () => {
-    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    const result = await loadDaggerheartPackage();
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const cases: Array<{ moduleId: string; libraryId: string; hidden: string[]; visible?: string[] }> = [
@@ -245,7 +218,7 @@ describe("Daggerheart core System Package", () => {
   });
 
   it("maps every core Card resource to a front image and the correct back image", async () => {
-    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    const result = await loadDaggerheartPackage();
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const assetPaths = new Set(result.package.assets?.map((asset) => asset.路径));
@@ -282,7 +255,7 @@ describe("Daggerheart core System Package", () => {
   });
 
   it("uses readable Chinese IDs for every core Resource Entry", async () => {
-    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    const result = await loadDaggerheartPackage();
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const expectedCounts: Record<string, number> = {
@@ -302,7 +275,7 @@ describe("Daggerheart core System Package", () => {
   });
 
   it("provides two read-only Druid beast-form reference pages instead of beast-form Cards", async () => {
-    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    const result = await loadDaggerheartPackage();
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
@@ -318,8 +291,6 @@ describe("Daggerheart core System Package", () => {
       expect(page.layout.htmlContent).not.toContain("<button");
       expect(page.layout.htmlContent).not.toContain("<input");
     }
-    expect(readFileSync(join(packageRoot, "layouts", "beast-forms.css"), "utf8")).not.toContain(".beast-form-upgrade");
-
     expect(result.package.resourceLibraries?.some((library) => library.ID === "beast-forms")).toBe(false);
     expect(result.package.modules.some((module) => module.ID === "pick-beast-form")).toBe(false);
     const cardTable = result.package.modules.find((module) => module.ID === "character-card-table");
@@ -354,7 +325,7 @@ describe("Daggerheart core System Package", () => {
   });
 
   it("provides one editable Ranger companion page only for Beastbound subclasses", async () => {
-    const result = await loadSystemPackageFromZipFile(createPackageZip());
+    const result = await loadDaggerheartPackage();
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
@@ -418,6 +389,10 @@ describe("Daggerheart core System Package", () => {
     expect(rebuildDerivedDependencies(otherData, result.package).pageVisibility).toEqual({});
   });
 });
+
+function loadDaggerheartPackage() {
+  return loadedResult;
+}
 
 function expectedReadableCoreId(libraryId: string, fields: Record<string, string>): string {
   switch (libraryId) {

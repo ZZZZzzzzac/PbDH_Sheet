@@ -1,11 +1,8 @@
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
-import { zipSync } from "fflate";
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { expect, test, type Page } from "@playwright/test";
 
-test("Witchy creates, saves, reloads, and prints one centered A4 character sheet", async ({ page }, testInfo) => {
+test("Witchy creates, saves, reloads, and prints one centered A4 character sheet", async ({ page }) => {
   await page.goto("/");
-  await uploadPackage(page, await createWitchyPackage(testInfo));
+  await selectWitchyPreset(page);
 
   await expect(page.getByText("ω1.0 女巫人物卡")).toBeVisible();
   const identityBox = await page.locator(".character-summary").boundingBox();
@@ -107,7 +104,7 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
   await expect(page.locator('[data-module-id="familiar-type-name"]')).toContainText("警铃");
   await expect(page.locator('[data-module-id="familiar-type-description"]')).toContainText("每场景一次");
   await page.locator('[data-module-id="inventory"] textarea[data-part="input"]').fill("银杯、雨水瓶、旧钟发条");
-  await page.waitForTimeout(350);
+  await waitForStoredValue(page, "inventory", "银杯、雨水瓶、旧钟发条");
 
   await page.reload();
   await expect(page.getByText("ω1.0 女巫人物卡")).toBeVisible();
@@ -119,7 +116,7 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
   await page.getByRole("button", { name: "蚀痕增加" }).click();
   await page.getByRole("button", { name: "蚀痕增加" }).click();
   await expect(page.getByRole("img", { name: "魔力：当前值 3，上限 3" })).toBeVisible();
-  await page.waitForTimeout(350);
+  await waitForStoredValue(page, "erosion", { current: 2, max: 6 });
   await page.reload();
   await expect(page.getByRole("img", { name: "魔力：当前值 3，上限 3" })).toBeVisible();
 
@@ -173,10 +170,10 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
   expect(Math.abs(printProbe[0].portraitShare - screenPortraitShare)).toBeLessThanOrEqual(0.03);
 });
 
-test("Witchy editable regions remain reachable on a narrow viewport", async ({ page }, testInfo) => {
+test("Witchy editable regions remain reachable on a narrow viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await uploadPackage(page, await createWitchyPackage(testInfo));
+  await selectWitchyPreset(page);
 
   await expect(page.getByLabel("姓名", { exact: true })).toBeVisible();
   await expect(page.getByLabel("物质界 Assiah")).toBeVisible();
@@ -189,12 +186,30 @@ test("Witchy editable regions remain reachable on a narrow viewport", async ({ p
   await expect(page.locator('[data-module-id="inventory"] textarea[data-part="input"]')).toBeVisible();
 });
 
-async function uploadPackage(page: Page, packagePath: string) {
+async function selectWitchyPreset(page: Page) {
   await page.getByRole("button", { name: "系统包", exact: true }).click();
-  const chooserPromise = page.waitForEvent("filechooser");
-  await page.getByRole("button", { name: /System Package zip/ }).click();
-  const chooser = await chooserPromise;
-  await chooser.setFiles(packagePath);
+  await page.getByRole("combobox", { name: "预制系统包" }).selectOption("witchy-omega-1");
+  await expect(page.locator('[data-system-package-id="witchy-omega-1"]')).toBeVisible();
+}
+
+async function waitForStoredValue(page: Page, moduleId: string, expected: unknown) {
+  await expect.poll(() => page.evaluate(async ({ moduleId, expected }) => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("pbdh-sheet");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      const records = await new Promise<Array<{ data?: { character?: { values?: Record<string, unknown> } } }>>((resolve, reject) => {
+        const request = db.transaction("characterSaves", "readonly").objectStore("characterSaves").getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      return records.some((record) => JSON.stringify(record.data?.character?.values?.[moduleId]) === JSON.stringify(expected));
+    } finally {
+      db.close();
+    }
+  }, { moduleId, expected })).toBe(true);
 }
 
 async function openExportMenu(page: Page) { await page.getByRole("button", { name: "导入导出", exact: true }).click(); }
@@ -221,23 +236,4 @@ async function expectPickerAfterField(page: Page, fieldId: string, pickerId: str
     Math.abs(button!.y + button!.height - (field!.y + field!.height)),
     JSON.stringify({ field, picker, pickerContainer, button }),
   ).toBeLessThanOrEqual(1);
-}
-
-async function createWitchyPackage(testInfo: TestInfo): Promise<string> {
-  const packageRoot = path.join(process.cwd(), "public", "system-packages", "witchy");
-  const files = Object.fromEntries(await Promise.all((await walkPackageFiles(packageRoot)).map(async (file) => [
-    path.relative(packageRoot, file).replaceAll("\\", "/"), await readFile(file),
-  ])));
-  const packagePath = path.join(testInfo.outputDir, "witchy.zip");
-  await mkdir(testInfo.outputDir, { recursive: true });
-  await writeFile(packagePath, zipSync(files));
-  return packagePath;
-}
-
-async function walkPackageFiles(directory: string): Promise<string[]> {
-  const entries = await readdir(directory, { withFileTypes: true });
-  return (await Promise.all(entries.map((entry) => {
-    const entryPath = path.join(directory, entry.name);
-    return entry.isDirectory() ? walkPackageFiles(entryPath) : [entryPath];
-  }))).flat();
 }
