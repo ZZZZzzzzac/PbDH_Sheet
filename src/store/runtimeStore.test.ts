@@ -392,6 +392,31 @@ describe("runtime store", () => {
     expect(memoryStorage.getCachedPackage()?.manifest.ID).toBe("demo-minimal");
   });
 
+  it("keeps the Current System Package when a preset cannot be loaded", async () => {
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    const previousPackage = useRuntimeStore.getState().currentPackage;
+    configureRuntimeDependencies({
+      storage: memoryStorage,
+      loadPresetSystemPackage: async () => ({
+        ok: false,
+        issues: [{ level: "fatal", code: "PRESET_PACKAGE_FETCH_FAILED", text: "offline" }],
+      }),
+    });
+
+    await useRuntimeStore.getState().switchToPresetSystemPackage({
+      id: "unavailable",
+      name: "不可用预制包",
+      version: "1",
+      directory: "unavailable",
+      files: ["manifest.json"],
+    });
+
+    expect(useRuntimeStore.getState().currentPackage).toBe(previousPackage);
+    expect(useRuntimeStore.getState().bootStatus).toBe("ready");
+    expect(useRuntimeStore.getState().packageIssues[0]?.code).toBe("PRESET_PACKAGE_FETCH_FAILED");
+    expect(memoryStorage.getCachedPackage()?.manifest.ID).toBe("demo-minimal");
+  });
+
   it("switches and persists Skin per System Package without changing Character Data", async () => {
     const skinnedPackage: SystemPackage = {
       ...minimalSystemPackage,

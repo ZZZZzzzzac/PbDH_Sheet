@@ -37,6 +37,7 @@ import { parseCharacterDataText } from "../export/output";
 import { createRuntimeAssetResolver, type RuntimeAssetResolver, type RuntimePackageAsset } from "../loaders/assetResolver";
 import type { PackageDirectoryHandle } from "../loaders/packageVfs";
 import { loadSystemPackageFromDirectoryFiles, loadSystemPackageFromDirectoryHandle, loadSystemPackageFromZipFile, type PackageLoadResult } from "../loaders/systemPackageLoader";
+import { loadPresetSystemPackage, type PresetSystemPackage } from "../loaders/presetSystemPackageLoader";
 import { loadResourceExtensionFromJsonText, loadResourceExtensionFromZipFile, type NormalizedResourceExtensionArtifact } from "../loaders/resourceExtensionLoader";
 import { loadAuthorPreviewDirectoryHandle, saveAuthorPreviewDirectoryHandle, storageService, type CharacterSaveSummary, type StorageService } from "../storage/storageService";
 import { generateId } from "../utils";
@@ -89,6 +90,7 @@ interface RuntimeState {
   initialize: () => Promise<void>;
   uploadSystemPackageFromFile: (file: Blob) => Promise<void>;
   uploadSystemPackageFromDirectory: (files: Iterable<File>) => Promise<void>;
+  switchToPresetSystemPackage: (preset: PresetSystemPackage) => Promise<void>;
   selectSystemPackageSkin: (skinId: string) => void;
   setFrameworkColorSchemePreference: (preference: FrameworkColorSchemePreference) => void;
   uploadResourceExtensionFromFile: (file: Blob) => Promise<void>;
@@ -134,6 +136,7 @@ interface RuntimeDependencies {
   loadSystemPackageFromFile: (file: Blob) => Promise<PackageLoadResult>;
   loadSystemPackageFromDirectory: (files: Iterable<File>) => Promise<PackageLoadResult>;
   loadSystemPackageFromDirectoryHandle: (handle: PackageDirectoryHandle) => Promise<PackageLoadResult>;
+  loadPresetSystemPackage: (preset: PresetSystemPackage) => Promise<PackageLoadResult>;
   loadPreviewDirectoryHandle: () => Promise<PackageDirectoryHandle | null>;
   savePreviewDirectoryHandle: (handle: PackageDirectoryHandle) => Promise<void>;
   storage: StorageService;
@@ -144,6 +147,7 @@ const defaultRuntimeDependencies: RuntimeDependencies = {
   loadSystemPackageFromFile: (file) => loadSystemPackageFromZipFile(file),
   loadSystemPackageFromDirectory: (files) => loadSystemPackageFromDirectoryFiles(files),
   loadSystemPackageFromDirectoryHandle: (handle) => loadSystemPackageFromDirectoryHandle(handle),
+  loadPresetSystemPackage: (preset) => loadPresetSystemPackage(preset),
   loadPreviewDirectoryHandle: () => loadAuthorPreviewDirectoryHandle(),
   savePreviewDirectoryHandle: (handle) => saveAuthorPreviewDirectoryHandle(handle),
   storage: storageService,
@@ -240,14 +244,13 @@ async function loadPackageIntoState(
   set: (partial: Partial<RuntimeState>) => void,
   storageStatus: StorageStatus = "idle",
   packageAssets?: RuntimePackageAsset[],
-) {
-  activePackageAssetResolver?.revokeAll();
-
+) : Promise<boolean> {
+  let nextAssetResolver: RuntimeAssetResolver | undefined;
   try {
     const assets = packageAssets ?? (await runtimeDependencies.storage.loadCurrentPackageAssets(systemPackage.manifest.ID));
     const installedResourceExtensions = await runtimeDependencies.storage.listResourceExtensions(systemPackage.manifest.ID);
     const extensionAssets = await runtimeDependencies.storage.loadResourceExtensionAssets(systemPackage.manifest.ID);
-    activePackageAssetResolver = createRuntimeAssetResolver([...assets, ...extensionAssets]);
+    nextAssetResolver = createRuntimeAssetResolver([...assets, ...extensionAssets]);
     const resourceCatalog = createEffectiveResourceCatalog(systemPackage, installedResourceExtensions);
     const effectivePackage = applyEffectiveResourceCatalog(systemPackage, resourceCatalog);
     const loaded = await loadActiveCharacterForPackage(effectivePackage, runtimeDependencies.storage);
@@ -262,7 +265,7 @@ async function loadPackageIntoState(
       pendingResourceExtensionReplacement: null,
       pendingResourceExtensionRemoval: null,
       resourceReferenceIssues: collectStaleResourceReferenceIssues(loaded.characterData, resourceCatalog),
-      packageAssetUrls: activePackageAssetResolver.urls,
+      packageAssetUrls: nextAssetResolver.urls,
       characterData: loaded.characterData,
       characterSaves: loaded.characterSaves,
       activeCharacterSaveId: loaded.activeCharacterSaveId,
@@ -273,29 +276,20 @@ async function loadPackageIntoState(
       storageStatus,
       ...(skinPreference.fellBack ? { importNotice: `此前选择的 Skin 已不存在，已回退到默认 Skin：${skinPreference.skinId}` } : {}),
     });
+    activePackageAssetResolver?.revokeAll();
+    activePackageAssetResolver = nextAssetResolver;
+    return true;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    activePackageAssetResolver = createRuntimeAssetResolver(packageAssets ?? []);
+    nextAssetResolver?.revokeAll();
     set({
-      basePackage: systemPackage,
-      currentPackage: systemPackage,
-      resourceCatalog: null,
-      installedResourceExtensions: [],
-      resourceExtensionImport: null,
-      pendingResourceExtensionReplacement: null,
-      pendingResourceExtensionRemoval: null,
-      resourceReferenceIssues: [],
-      packageAssetUrls: {},
-      characterData: null,
-      characterSaves: [],
-      activeCharacterSaveId: null,
-      ...emptyDerivedState(),
       packageIssues: [...issues, { level: "error", code: "PACKAGE_LOAD_FAILED", text: `加载 System Package 时出错：${message}`, path: "boot" }],
-      bootStatus: "error",
+      bootStatus: activePackageAssetResolver ? "ready" : "error",
       storageStatus: "error",
       importError: message,
       importNotice: null,
     });
+    return false;
   }
 }
 
@@ -613,6 +607,25 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       packageCacheStatus = "error";
     }
     await loadPackageIntoState(validation.package, validation.issues, set, packageCacheStatus, validation.packageAssets ?? []);
+  },
+
+  async switchToPresetSystemPackage(preset) {
+    if (get().currentPackage?.manifest.ID === preset.id) return;
+    set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null });
+    const validation = await runtimeDependencies.loadPresetSystemPackage(preset);
+    if (!validation.ok) {
+      set((state) => ({ bootStatus: state.currentPackage ? "ready" : "error", packageIssues: validation.issues }));
+      return;
+    }
+    const loaded = await loadPackageIntoState(validation.package, validation.issues, set, "idle", validation.packageAssets ?? []);
+    if (!loaded) return;
+    try {
+      await runtimeDependencies.storage.saveCurrentSystemPackage(validation.package, validation.packageAssets ?? []);
+      set({ storageStatus: "saved" });
+    } catch (error) {
+      console.error("saveCurrentSystemPackage (preset) failed", error);
+      set({ storageStatus: "error", importNotice: "预制系统包已切换，但浏览器无法缓存该系统包。" });
+    }
   },
 
   selectSystemPackageSkin(skinId) {

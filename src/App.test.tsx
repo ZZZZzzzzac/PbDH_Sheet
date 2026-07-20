@@ -6,6 +6,7 @@ import type { StorageService } from "./storage/storageService";
 import { configureRuntimeDependencies, resetRuntimeDependencies, useRuntimeStore } from "./store/runtimeStore";
 import { minimalSystemPackage } from "./test/fixtures";
 import type { SystemPackage } from "./domain/systemPackage";
+import presetSystemPackages from "virtual:preset-system-packages";
 
 function createEmptyStorage(): StorageService {
   const saves = new Map<string, Parameters<StorageService["saveCharacterSave"]>[0]>();
@@ -853,6 +854,36 @@ describe("App System Package Skin", () => {
 
     await user.selectOptions(screen.getByLabelText("框架配色"), "light");
     expect(document.querySelector(".app-shell")).toHaveAttribute("data-framework-color-scheme", "light");
+  });
+});
+
+describe("App preset System Packages", () => {
+  afterEach(() => resetRuntimeDependencies());
+
+  it("lists every built-in package and switches without an upload", async () => {
+    configureRuntimeDependencies({
+      storage: createEmptyStorage(),
+      loadPresetSystemPackage: async (preset) => ({
+        ok: true,
+        package: {
+          ...minimalSystemPackage,
+          manifest: { ...minimalSystemPackage.manifest, ID: preset.id, 名称: preset.name, 版本: preset.version },
+        },
+        issues: [],
+      }),
+    });
+    useRuntimeStore.setState({ currentPackage: null, characterData: null, bootStatus: "idle", packageIssues: [] });
+    const user = userEvent.setup();
+    render(<App />);
+
+    const select = await screen.findByRole("combobox", { name: "预制系统包" });
+    expect(select.querySelectorAll("option")).toHaveLength(presetSystemPackages.length);
+    expect(select).toHaveValue("daggerheart-core");
+    expect(screen.queryByRole("option", { name: "选择预制系统包" })).not.toBeInTheDocument();
+    await user.selectOptions(select, "daggerheart-core");
+
+    await waitFor(() => expect(useRuntimeStore.getState().currentPackage?.manifest.ID).toBe("daggerheart-core"));
+    expect(select).toHaveValue("daggerheart-core");
   });
 });
 

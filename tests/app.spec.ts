@@ -18,6 +18,24 @@ test("production preview serves the versioned app below /pbdh/", async ({ page }
   expect(entrySources.every((source) => source?.startsWith("/pbdh/assets/"))).toBe(true);
 });
 
+test("switches between built-in System Packages without upload", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "系统包", exact: true }).click();
+  const presets = page.getByRole("combobox", { name: "预制系统包" });
+  const presetDirectories = (await readdir(path.join(process.cwd(), "public", "system-packages"), { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory());
+  await expect(presets.locator("option")).toHaveCount(presetDirectories.length);
+  await expect(presets).toHaveValue("daggerheart-core");
+  await expect(page.locator('[data-system-package-id="daggerheart-core"]')).toBeVisible();
+
+  await presets.selectOption("hows-my-driving");
+  await expect(page.locator('[data-system-package-id="hows-my-driving"]')).toBeVisible();
+
+  await page.getByRole("button", { name: "系统包", exact: true }).click();
+  await presets.selectOption("heart-of-hopefind");
+  await expect(page.locator('[data-system-package-id="heart-of-hopefind"]')).toBeVisible();
+});
+
 test("minimal loop edits, autosaves, exports and imports Character JSON", async ({ page }, testInfo) => {
   await page.goto("/");
   await expect(page.getByText("未加载")).toBeVisible();
@@ -1194,7 +1212,7 @@ async function putInvalidCachedPackage(page: Page) {
 }
 
 function demoPackagePath(testInfo: TestInfo) {
-  return createPublicPackageArchive(testInfo, "demo-minimal");
+  return createExamplePackageArchive(testInfo, "demo-minimal");
 }
 
 async function pageBoxMetrics(pageBox: Locator) {
@@ -1215,7 +1233,15 @@ async function pageBoxMetrics(pageBox: Locator) {
 }
 
 function completeDemoPackagePath(testInfo: TestInfo) {
-  return createPublicPackageArchive(testInfo, "demo");
+  return createExamplePackageArchive(testInfo, "demo");
+}
+
+function createExamplePackageArchive(testInfo: TestInfo, packageName: string) {
+  return createPackageArchive(
+    testInfo,
+    path.join(process.cwd(), "docs", "system-package", "examples", packageName),
+    `${packageName}.zip`,
+  );
 }
 
 function createPublicPackageArchive(testInfo: TestInfo, packageName: string) {

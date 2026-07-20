@@ -4,7 +4,7 @@ import { zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 
-const demoRoot = join(process.cwd(), "public", "system-packages", "demo");
+const demoRoot = join(process.cwd(), "docs", "system-package", "examples", "demo");
 const moduleTypes = [
   "freeText",
   "longText",

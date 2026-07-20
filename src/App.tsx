@@ -26,8 +26,10 @@ import { waitForTextFits } from "./rendering/textFit";
 import { GuideSpotlight } from "./rendering/GuideSpotlight";
 import { ResourceManager } from "./rendering/ResourceManager";
 import { useRuntimeStore } from "./store/runtimeStore";
+import presetSystemPackages from "virtual:preset-system-packages";
 
 type OutputKind = "json" | "html" | "print";
+const defaultPresetSystemPackage = presetSystemPackages.find((preset) => preset.id === "daggerheart-core");
 
 function downloadText(text: string, fileName: string, type: string) {
   const blob = new Blob([text], { type });
@@ -167,6 +169,7 @@ export default function App() {
   const importCharacterDataFromText = useRuntimeStore((state) => state.importCharacterDataFromText);
   const uploadSystemPackageFromFile = useRuntimeStore((state) => state.uploadSystemPackageFromFile);
   const uploadSystemPackageFromDirectory = useRuntimeStore((state) => state.uploadSystemPackageFromDirectory);
+  const switchToPresetSystemPackage = useRuntimeStore((state) => state.switchToPresetSystemPackage);
   const selectSystemPackageSkin = useRuntimeStore((state) => state.selectSystemPackageSkin);
   const setFrameworkColorSchemePreference = useRuntimeStore((state) => state.setFrameworkColorSchemePreference);
   const uploadResourceExtensionFromFile = useRuntimeStore((state) => state.uploadResourceExtensionFromFile);
@@ -183,7 +186,12 @@ export default function App() {
   const tidyCardTable = useRuntimeStore((state) => state.tidyCardTable);
 
   useEffect(() => {
-    void initialize();
+    void initialize().then(async () => {
+      const state = useRuntimeStore.getState();
+      if (!state.currentPackage && state.bootStatus === "ready" && defaultPresetSystemPackage) {
+        await state.switchToPresetSystemPackage(defaultPresetSystemPackage);
+      }
+    });
   }, [initialize]);
 
   useEffect(() => {
@@ -353,6 +361,11 @@ export default function App() {
     const files = event.target.files ? [...event.target.files] : [];
     if (files.length > 0) await uploadSystemPackageFromDirectory(files);
     event.target.value = "";
+  };
+
+  const handlePresetSystemPackage = async (event: ChangeEvent<HTMLSelectElement>) => {
+    const preset = presetSystemPackages.find((candidate) => candidate.id === event.target.value);
+    if (preset) await switchToPresetSystemPackage(preset);
   };
 
   const handleEnterAuthorPreview = async () => {
@@ -533,6 +546,22 @@ export default function App() {
             </button>
             <div className="menu-panel menu-panel-right" role="menu">
               <div className="menu-field menu-field-compact" title={systemPackageLabel}>{systemPackageLabel}</div>
+              <label className="menu-field">
+                <span>预制系统包</span>
+                <select
+                  className="menu-select"
+                  aria-label="预制系统包"
+                  value={presetSystemPackages.some((preset) => preset.id === currentPackage?.manifest.ID)
+                    ? currentPackage?.manifest.ID
+                    : currentPackage ? "" : defaultPresetSystemPackage?.id ?? ""}
+                  onChange={(event) => void handlePresetSystemPackage(event)}
+                  disabled={bootStatus === "loading"}
+                >
+                  {presetSystemPackages.map((preset) => (
+                    <option value={preset.id} key={preset.id}>{preset.name} · v{preset.version}</option>
+                  ))}
+                </select>
+              </label>
               {currentPackage?.skins && currentPackage.skins.length > 1 ? (
                 <label className="menu-field">
                   <span>人物卡皮肤</span>

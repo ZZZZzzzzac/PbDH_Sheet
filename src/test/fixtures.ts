@@ -1,9 +1,9 @@
 import type { SystemPackage } from "../domain/systemPackage";
-import manifest from "../../public/system-packages/demo-minimal/manifest.json";
-import pages from "../../public/system-packages/demo-minimal/pages.json";
-import modules from "../../public/system-packages/demo-minimal/modules.json";
-import minimalLayoutCss from "../../public/system-packages/demo-minimal/layouts/main.css?raw";
-import minimalLayoutHtml from "../../public/system-packages/demo-minimal/layouts/main.html?raw";
+import manifest from "../../docs/system-package/examples/demo-minimal/manifest.json";
+import pages from "../../docs/system-package/examples/demo-minimal/pages.json";
+import modules from "../../docs/system-package/examples/demo-minimal/modules.json";
+import minimalLayoutCss from "../../docs/system-package/examples/demo-minimal/layouts/main.css?raw";
+import minimalLayoutHtml from "../../docs/system-package/examples/demo-minimal/layouts/main.html?raw";
 
 function withHtmlTemplateContent<TPage extends { layout: { 类型: string; html: string; css?: string } }>(
   pagesInput: TPage[],

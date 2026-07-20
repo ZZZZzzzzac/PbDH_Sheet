@@ -1,6 +1,6 @@
 # 快速开始：制作第一个 System Package
 
-复制 `public/system-packages/demo-minimal` 为新目录，保留以下结构：
+复制 `docs/system-package/examples/demo-minimal` 为新目录，保留以下结构：
 
 ```text
 my-system/

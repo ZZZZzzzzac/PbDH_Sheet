@@ -54,7 +54,9 @@ describe("System Package documentation", () => {
 
   it("keeps example documents self-contained instead of redirecting to demo packages", () => {
     const examplesRoot = join(docsRoot, "examples");
-    const examples = walk(examplesRoot, ".md").map((file) => ({ file, markdown: readFileSync(file, "utf8") }));
+    const examples = walk(examplesRoot, ".md")
+      .filter((file) => file.slice(examplesRoot.length + 1).split(/[\\/]/).length === 1)
+      .map((file) => ({ file, markdown: readFileSync(file, "utf8") }));
     const externalPackageReferences = examples.filter(({ markdown }) =>
       /public\/system-packages|error-fixtures|demo-(?:minimal|modules|selection)/.test(markdown),
     );
