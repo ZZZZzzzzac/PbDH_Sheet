@@ -1,0 +1,17 @@
+{
+  "步骤": [
+    { "ID": "guide-intro", "标题": "Guide 是什么", "说明": "Guide 是线性聚光灯说明。它只负责导航、滚动和高亮，不填写数据、不判断规则。" },
+    { "ID": "guide-shell", "标题": "高亮 Layout Region", "说明": "这一整块来自 Sheet Shell，并用 `data-guide-region-id` 暴露为稳定区域。", "目标": { "类型": "region", "区域ID": "shell-overview" } },
+    { "ID": "guide-home", "标题": "导航到 Page", "说明": "Page target 会切换 Current Page，但不会改变 Character Data。", "目标": { "类型": "page", "页面ID": "home" } },
+    { "ID": "guide-free-text", "标题": "高亮 Sheet Module", "说明": "Module target 高亮一个可交互模块。你仍可在 Guide 打开时操作它。", "目标": { "类型": "module", "模块ID": "free-basic" } },
+    { "ID": "guide-validation", "标题": "Validation 练习", "说明": "填写 A、B、C，然后在工具栏执行检查。Guide 本身不会读取或验证这些值。", "目标": { "类型": "region", "区域ID": "validation-equation" } },
+    { "ID": "guide-countable", "标题": "跨页寻找 Module", "说明": "目标位于另一 Page 时，Guide 自动切换页面并滚动到目标。", "目标": { "类型": "module", "模块ID": "count-marker-editable" } },
+    { "ID": "guide-display", "标题": "静态与派生展示", "说明": "Read Only Display 展示 Author 内容或 Dependency 派生内容，不直接写 Character Data。", "目标": { "类型": "page", "页面ID": "read-only-display" } },
+    { "ID": "guide-image", "标题": "Player 图片", "说明": "Image Field 保存 Player 上传图片；System Package 图片则通过包内 Assets 引用。", "目标": { "类型": "module", "模块ID": "portrait" } },
+    { "ID": "guide-picker", "标题": "Resource Picker", "说明": "Picker 产生瞬时 Resource Output，可驱动 Dependency 或创建 Card。", "目标": { "类型": "module", "模块ID": "pick-class" } },
+    { "ID": "guide-composer", "标题": "Resource Composer", "说明": "Composer 从多个槽位组合一个稳定 Composite Resource。", "目标": { "类型": "module", "模块ID": "compose-card" } },
+    { "ID": "guide-card-table", "标题": "Card Table", "说明": "Card Table 解析 Library、Composer 与 Extension 来源，并保存 Player 拥有的 Card Instance 状态。", "目标": { "类型": "module", "模块ID": "demo-card-table" } },
+    { "ID": "guide-integration", "标题": "集成流程", "说明": "最后查看 Resource、Dependency 与普通 Sheet Modules 的组合。", "目标": { "类型": "region", "区域ID": "integration-output" } },
+    { "ID": "guide-finish", "标题": "完成", "说明": "退出 Guide 后会保留最后选择的 Current Page；Guide 进度不会写入 Character Data。" }
+  ]
+}

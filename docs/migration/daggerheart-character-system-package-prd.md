@@ -74,7 +74,7 @@
 - Test representative Picker Dependencies: class text fill, class HP maximum, armor text/max fill, subclass/domain filters, equipment fields and five item slots.
 - Test that all configured card-producing Pickers can create cards on the shared multi-Library Card Table.
 - Test Validation Check behavior with valid thresholds, incorrect thresholds, missing/non-numeric values and relevant boundary cases.
-- Use existing dependency-engine, package-validator, Card Table rendering and demo-selection Validation Check tests as prior art.
+- Use existing dependency-engine, package-validator, Card Table rendering and canonical demo Validation Check tests as prior art.
 - Perform an Author Preview smoke test covering page rendering, one selection from each major Library, Character Save reload, shared card interactions and output mode.
 
 ## Out of Scope

@@ -1,0 +1,16 @@
+:scope { width: 210mm; height: 297mm; margin: 0 auto; padding: 5mm 4mm; }
+.demo-page { display: grid; gap: 18px; padding: 22px; margin: 0 auto; }
+.demo-page-header { display: grid; gap: 6px; padding-bottom: 14px; border-bottom: 1px solid #d6dfe1; }
+.demo-page-header h2, .demo-page-header p, .demo-card h3, .demo-card p { margin: 0; }
+.demo-page-header p, .demo-note { color: #52656a; }
+.demo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.demo-grid.single { grid-template-columns: minmax(0, 1fr); }
+.demo-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.demo-card { display: grid; gap: 10px; min-width: 0; padding: 14px; border: 1px solid #d6dfe1; border-radius: 10px; background: #fbfcfc; }
+.demo-card.wide { grid-column: 1 / -1; }
+.demo-card code { overflow-wrap: anywhere; }
+.demo-page [data-module-type="readOnlyDisplay"] [data-part="image"] { display: block; position: static; width: 100%; height: auto; max-height: 240px; object-fit: contain; }
+.demo-steps { margin: 0; padding-left: 20px; }
+.demo-equation { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.demo-page [data-module-id="demo-card-table"], .demo-page [data-module-id="text-card-table"] { min-height: 480px; }
+@media (max-width: 760px) { .demo-grid, .demo-grid.three, .demo-equation { grid-template-columns: 1fr; } .demo-page { padding: 14px; } }

@@ -15,6 +15,10 @@ describe("Sheet Module sizing", () => {
     expect(modulesCss).toMatch(/\.container:focus-within\s*\{[^}]*position:\s*relative[^}]*z-index:\s*[1-9]/s);
   });
 
+  it("keeps Read Only Display images in normal module flow", () => {
+    expect(modulesCss).toMatch(/\.read-only-image\s*\{[^}]*position:\s*static[^}]*width:\s*100%[^}]*height:\s*auto/s);
+  });
+
   it("keeps Card Markdown lists in normal block flow", () => {
     expect(cardTableCss).not.toMatch(/\.play-card-description\s*\{[^}]*display:\s*-webkit-box/s);
     expect(cardTableCss).toMatch(/\.play-card-description\s*\{[^}]*white-space:\s*normal/s);

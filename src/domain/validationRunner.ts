@@ -10,6 +10,7 @@ export async function runValidationChecks(input: ValidationInput): Promise<Valid
     const scriptInput = cloneAndFreeze({
       characterData: input.characterData,
       resourceLibraries: input.resourceLibraries,
+      cardState: input.cardState,
       packageMetadata: input.packageMetadata,
     });
 

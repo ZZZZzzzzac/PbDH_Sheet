@@ -638,7 +638,7 @@ export default function App() {
             : undefined
         }
       />
-      {!importError && currentPackage ? (
+      {currentPackage ? (
         <SheetRenderer
           systemPackage={currentPackage}
           outputMode={printMode}

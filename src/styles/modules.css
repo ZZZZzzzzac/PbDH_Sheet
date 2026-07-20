@@ -81,6 +81,16 @@ fieldset.container {
   white-space: pre-wrap;
 }
 
+.read-only-image {
+  position: static;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  background: var(--framework-disabled-surface);
+}
+
 .container:focus-within {
   position: relative;
   z-index: 2;

@@ -1,8 +1,0 @@
-{
-  "ID": "demo-modules",
-  "名称": "阶段5模块示例系统包",
-  "版本": "0.1.0",
-  "schemaVersion": "0.1.0",
-  "pages": "pages.json",
-  "modules": "modules.json"
-}

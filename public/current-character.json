@@ -2,20 +2,19 @@
   "kind": "pbdh-character-data",
   "schemaVersion": "0.1.0",
   "systemPackage": {
-    "id": "demo-modules",
+    "id": "demo",
     "version": "0.1.0"
   },
   "character": {
     "id": "current-character",
     "values": {
-      "character-name": "123",
-      "background": "写下角色的来历。3231",
-      "conditions": {
-        "wounded": true,
-        "exhausted": true,
-        "inspired": false
+      "free-basic": "123",
+      "long-basic": "写下角色的来历。3231",
+      "checkbox-basic": {
+        "unchecked": true,
+        "checked": false
       },
-      "vitality": {
+      "count-numeric-bounded": {
         "current": 5,
         "max": 6
       },

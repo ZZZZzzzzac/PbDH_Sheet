@@ -1252,6 +1252,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     const validationIssues = await runtimeDependencies.runValidationChecks({
       characterData,
       resourceLibraries: currentPackage.resourceLibraries ?? [],
+      cardState: characterData.cards,
       packageMetadata: {
         id: currentPackage.manifest.ID,
         version: currentPackage.manifest.版本,
@@ -1279,6 +1280,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     const validationIssues = await runtimeDependencies.runValidationChecks({
       characterData,
       resourceLibraries: currentPackage.resourceLibraries ?? [],
+      cardState: characterData.cards,
       packageMetadata: {
         id: currentPackage.manifest.ID,
         version: currentPackage.manifest.版本,

@@ -152,12 +152,12 @@ describe("loadSystemPackageFromZipFile", () => {
     );
   });
 
-  it("loads the phase 5 module demo zip and keeps asset bytes outside System Package", async () => {
+  it("loads the focused module fixture zip and keeps asset bytes outside System Package", async () => {
     const result = await loadSystemPackageFromZipFile(createModuleDemoZip());
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.package.manifest.ID).toBe("demo-modules");
+      expect(result.package.manifest.ID).toBe("demo");
       expect(result.package.modules.map((module) => module.类型)).toEqual([
         "freeText",
         "longText",

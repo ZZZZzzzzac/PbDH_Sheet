@@ -1,0 +1,155 @@
+[
+  { "ID": "free-basic", "类型": "freeText", "标签": "普通单行文本", "占位文本": "输入文本或 Restricted Markdown" },
+  { "ID": "free-hidden-label", "类型": "freeText", "标签": "隐藏标签示例", "隐藏标签": true, "占位文本": "视觉标签隐藏，无障碍名称仍保留" },
+  { "ID": "free-select", "类型": "freeText", "标签": "下拉单选", "占位文本": "请选择状态", "选项": ["准备中", "进行中", "已完成"] },
+  { "ID": "validation-a", "类型": "freeText", "标签": "A", "占位文本": "例如 2" },
+  { "ID": "validation-b", "类型": "freeText", "标签": "B", "占位文本": "例如 3" },
+  { "ID": "validation-c", "类型": "freeText", "标签": "C = A + B", "占位文本": "例如 5" },
+
+  { "ID": "long-basic", "类型": "longText", "标签": "默认四行", "占位文本": "支持 Restricted Markdown" },
+  { "ID": "long-two-rows", "类型": "longText", "标签": "固定两行", "行数": 2, "默认值": "较短的固定高度编辑区。" },
+  { "ID": "long-hidden-label", "类型": "longText", "标签": "隐藏标签长文本", "隐藏标签": true, "行数": 6, "占位文本": "六行且隐藏视觉标签" },
+
+  {
+    "ID": "checkbox-basic",
+    "类型": "checkboxResource",
+    "标签": "独立选项",
+    "选项": [
+      { "ID": "unchecked", "标签": "默认未选" },
+      { "ID": "checked", "标签": "默认选中", "默认选中": true }
+    ]
+  },
+  {
+    "ID": "checkbox-grouped",
+    "类型": "checkboxResource",
+    "标签": "分组选项",
+    "选项": [
+      { "ID": "fire-low", "标签": "低", "分组": "火焰抗性" },
+      { "ID": "fire-high", "标签": "高", "分组": "火焰抗性" },
+      { "ID": "ice-low", "标签": "低", "分组": "寒冰抗性" },
+      { "ID": "ice-high", "标签": "高", "分组": "寒冰抗性" }
+    ]
+  },
+
+  { "ID": "count-numeric-bounded", "类型": "countableResource", "标签": "有限数值", "最小值": 0, "最大值": 6, "默认值": 3, "步长": 1 },
+  { "ID": "count-numeric-editable", "类型": "countableResource", "标签": "可改上限数值", "最小值": 0, "最大值": 5, "默认值": 2, "步长": 1, "最大值可改": true },
+  { "ID": "count-numeric-unbounded", "类型": "countableResource", "标签": "无上限数值（步长 2）", "最小值": 0, "默认值": 2, "步长": 2 },
+  { "ID": "count-marker-fixed", "类型": "countableResource", "标签": "固定上限标记", "最小值": 0, "最大值": 6, "默认值": 3, "显示方式": "标记", "当前值标记": "❤️", "剩余值标记": "◇" },
+  { "ID": "count-marker-editable", "类型": "countableResource", "标签": "可改上限标记", "最小值": 0, "最大值": 5, "默认值": 2, "最大值可改": true, "显示方式": "标记", "当前值标记": "●", "剩余值标记": "○", "标识字号": 22, "加减号字号": 18 },
+  { "ID": "count-marker-unbounded", "类型": "countableResource", "标签": "无上限标记", "最小值": 0, "默认值": 2, "显示方式": "标记", "当前值标记": "⭐", "剩余值标记": "☆" },
+
+  { "ID": "display-text", "类型": "readOnlyDisplay", "标签": "纯文本", "内容": "只读内容可由 Author 提供，也可由 Dependency Logic 派生更新。" },
+  { "ID": "display-image", "类型": "readOnlyDisplay", "标签": "纯图片", "资源路径": "assets/demo-emblem.svg", "替代文本": "Demo 徽记" },
+  { "ID": "display-both", "类型": "readOnlyDisplay", "标签": "文字与图片", "内容": "同一模块同时展示说明和包内图片。", "资源路径": "assets/flame-card.svg", "替代文本": "火焰示例图" },
+
+  { "ID": "portrait", "类型": "imageField", "标签": "Player 图片", "替代文本": "Player 上传的角色头像" },
+
+  {
+    "ID": "pick-class",
+    "类型": "resourcePicker",
+    "按钮文本": "单库：选择职业",
+    "资源库": [{
+      "ID": "classes",
+      "字段模板": [
+        { "键": "名称", "标签": "职业", "默认显示": true, "可筛选": false, "可排序": true, "列宽": "normal" },
+        { "键": "主题1", "默认显示": true, "可筛选": true, "可排序": true, "列宽": "compact" },
+        { "键": "主题2", "默认显示": true, "可筛选": true, "可排序": true, "列宽": "compact" },
+        { "键": "希望特性", "默认显示": true, "可筛选": false, "可排序": false, "列宽": "wide" },
+        { "键": "职业特性", "默认显示": true, "可筛选": false, "可排序": false, "列宽": "fill" }
+      ],
+      "默认查询": { "sort": { "field": "名称", "direction": "asc" } }
+    }]
+  },
+  {
+    "ID": "pick-subclass",
+    "类型": "resourcePicker",
+    "按钮文本": "单库：选择子职",
+    "资源库": [{
+      "ID": "subclasses",
+      "字段模板": [
+        { "键": "名称", "标签": "子职", "默认显示": true, "可筛选": false, "可排序": true, "列宽": "normal" },
+        { "键": "主职", "默认显示": true, "可筛选": true, "可排序": true, "列宽": "compact" },
+        { "键": "等级", "默认显示": true, "可筛选": true, "可排序": true, "列宽": "compact" },
+        { "键": "描述", "默认显示": true, "可筛选": false, "可排序": false, "列宽": "fill" }
+      ]
+    }]
+  },
+  {
+    "ID": "pick-card-single",
+    "类型": "resourcePicker",
+    "按钮文本": "单选演示卡并创建卡牌",
+    "资源库": [{ "ID": "demo-cards", "默认查询": { "filters": { "主题": ["行动"] }, "sort": { "field": "名称", "direction": "asc" } } }],
+    "创建卡牌": { "卡牌桌面模块ID": "demo-card-table", "默认状态": "当前" }
+  },
+  { "ID": "pick-cards-multiple", "类型": "resourcePicker", "按钮文本": "多选演示卡", "资源库": [{ "ID": "demo-cards" }], "多选": true },
+  { "ID": "pick-multi-library", "类型": "resourcePicker", "按钮文本": "多库选择", "资源库": [{ "ID": "demo-cards" }, { "ID": "bonus-cards" }] },
+  { "ID": "pick-other-resources", "类型": "resourcePicker", "按钮文本": "选择 Extension 其他资源", "资源库": "其他", "创建卡牌": { "卡牌桌面模块ID": "demo-card-table", "默认状态": "当前" } },
+
+  { "ID": "class-name", "类型": "freeText", "标签": "职业" },
+  { "ID": "class-domains", "类型": "freeText", "标签": "主题组合" },
+  { "ID": "class-evasion", "类型": "freeText", "标签": "闪避" },
+  { "ID": "class-hp", "类型": "countableResource", "标签": "生命", "最小值": 0, "最大值": 6, "默认值": 6, "最大值可改": true, "显示方式": "标记", "当前值标记": "❤️", "剩余值标记": "◇" },
+  { "ID": "class-feature", "类型": "longText", "标签": "职业特性", "行数": 6 },
+  { "ID": "class-background-questions", "类型": "readOnlyDisplay", "标签": "职业背景问题", "内容": "选择职业后由 Dependency Logic 派生更新。" },
+  { "ID": "subclass-name", "类型": "freeText", "标签": "子职" },
+  { "ID": "subclass-feature", "类型": "longText", "标签": "子职特性", "行数": 5 },
+  { "ID": "selected-card-name", "类型": "freeText", "标签": "单选演示卡" },
+  { "ID": "selected-card-list", "类型": "longText", "标签": "多选演示卡", "行数": 4 },
+
+  {
+    "ID": "compose-basic",
+    "类型": "resourceComposer",
+    "按钮文本": "基础 Composer",
+    "来源槽位": [
+      { "ID": "first", "标签": "第一张演示卡", "资源库ID": "demo-cards" },
+      { "ID": "second", "标签": "第二张演示卡", "资源库ID": "demo-cards" }
+    ],
+    "输出字段": [
+      { "字段": "名称A", "来源槽位ID": "first", "来源字段": "名称" },
+      { "字段": "名称B", "来源槽位ID": "second", "来源字段": "名称" },
+      { "字段": "描述", "来源槽位ID": "first", "来源字段": "描述" }
+    ]
+  },
+  {
+    "ID": "compose-card",
+    "类型": "resourceComposer",
+    "按钮文本": "Composer 并创建卡牌",
+    "来源槽位": [
+      { "ID": "front", "标签": "正面来源", "资源库ID": "demo-cards" },
+      { "ID": "feature", "标签": "特性来源", "资源库ID": "demo-cards" }
+    ],
+    "输出字段": [
+      { "字段": "名称", "来源槽位ID": "front", "来源字段": "名称" },
+      { "字段": "描述", "来源槽位ID": "feature", "来源字段": "描述" },
+      { "字段": "卡图", "来源槽位ID": "front", "来源字段": "卡图" }
+    ],
+    "选择关系输出": { "字段": "卡牌显示方式", "全部相同时": "image", "不全相同时": "text" },
+    "创建卡牌": { "卡牌桌面模块ID": "demo-card-table", "默认状态": "当前" }
+  },
+
+  { "ID": "text-card-table", "类型": "cardTable", "标签": "固定文字卡牌桌面", "资源来源": [{ "类型": "resourceLibrary", "ID": "bonus-cards" }], "显示方式": "text" },
+  {
+    "ID": "demo-card-table",
+    "类型": "cardTable",
+    "标签": "多来源卡牌桌面",
+    "资源来源": [
+      { "类型": "resourceLibrary", "ID": "demo-cards" },
+      { "类型": "resourceLibrary", "ID": "bonus-cards" },
+      { "类型": "resourceComposer", "ID": "compose-card", "卡牌展示": { "名称模板": "{{名称}}", "描述模板": "{{描述}}", "标签字段": [] } },
+      { "类型": "otherResourceLibraries", "ID": "其他" }
+    ],
+    "状态选项": ["当前", "宝库", "已消耗"],
+    "状态背景色": { "宝库": "#385f71", "已消耗": "#6b4f4f" },
+    "显示方式": "image",
+    "显示方式字段": "卡牌显示方式"
+  },
+
+  {
+    "ID": "creation-toggles",
+    "类型": "checkboxResource",
+    "标签": "Dependency 显示控制",
+    "选项": [{ "ID": "show-background-helper", "标签": "显示背景提示" }]
+  },
+  { "ID": "background-helper", "类型": "longText", "标签": "Dependency 目标", "行数": 4, "默认隐藏": true },
+  { "ID": "lantern-note", "类型": "readOnlyDisplay", "标签": "条件派生提示", "内容": "选择守灯人后显示；选择其他角色原型后隐藏。", "默认隐藏": true }
+]

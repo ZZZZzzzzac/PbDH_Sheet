@@ -8,7 +8,7 @@ test("minimal loop edits, autosaves, exports and imports Character JSON", async 
   await expect(page.getByText("未加载")).toBeVisible();
   await expect(page.getByLabel("Sheet Tool", { exact: true })).not.toBeVisible();
 
-  await uploadPackage(page, demoPackagePath());
+  await uploadPackage(page, await demoPackagePath(testInfo));
 
   const nameInput = page.getByLabel("姓名");
   await expect(nameInput).toBeVisible();
@@ -20,17 +20,18 @@ test("minimal loop edits, autosaves, exports and imports Character JSON", async 
   await htmlDownload.saveAs(htmlExportPath);
   const htmlExport = await readFile(htmlExportPath, "utf8");
   expect(htmlExport).toContain('class="sheet-tool"');
-  expect(htmlExport).toContain('value="阿青"');
+  expect(htmlExport).toContain("<p>阿青</p>");
   expect(htmlExport).toContain("break-inside: avoid");
 
   await page.reload();
   await expect(page.getByText("最小示例系统包")).toBeVisible();
-  await expect(page.getByLabel("姓名")).toHaveValue("阿青");
+  await expect(page.locator('[data-module-id="character-name"]')).toContainText("阿青");
 
   const download = await downloadCharacterJson(page);
   const exportPath = path.join(testInfo.outputDir, "character.json");
   await download.saveAs(exportPath);
 
+  await page.locator('[data-module-id="character-name"] [role="button"]').click();
   await page.getByLabel("姓名").fill("改坏的名字");
   await waitForAutosave(page);
 
@@ -40,13 +41,13 @@ test("minimal loop edits, autosaves, exports and imports Character JSON", async 
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles(exportPath);
 
-  await expect(page.getByLabel("姓名")).toHaveValue("阿青");
+  await expect(page.locator('[data-module-id="character-name"]')).toContainText("阿青");
   await expect(page.getByText("Character Data 已导入为 Character Save。")).toBeVisible();
 });
 
 test("malformed import shows an error and keeps current Character Data", async ({ page }, testInfo) => {
   await page.goto("/");
-  await uploadPackage(page, demoPackagePath());
+  await uploadPackage(page, await demoPackagePath(testInfo));
   await page.getByLabel("姓名").fill("阿青");
   await waitForAutosave(page);
 
@@ -61,12 +62,12 @@ test("malformed import shows an error and keeps current Character Data", async (
   await fileChooser.setFiles(badJsonPath);
 
   await expect(page.getByRole("alert")).toContainText("JSON 格式错误");
-  await expect(page.getByLabel("姓名")).toHaveValue("阿青");
+  await expect(page.locator('[data-module-id="character-name"]')).toContainText("阿青");
 });
 
 test("uploads a minimal System Package zip and keeps the Character JSON loop", async ({ page }, testInfo) => {
   await page.goto("/");
-  await uploadPackage(page, demoPackagePath());
+  await uploadPackage(page, await demoPackagePath(testInfo));
 
   await expect(page.getByText("最小示例系统包")).toBeVisible();
   await page.getByLabel("姓名").fill("Zip阿青");
@@ -76,6 +77,7 @@ test("uploads a minimal System Package zip and keeps the Character JSON loop", a
   const exportPath = path.join(testInfo.outputDir, "zip-character.json");
   await download.saveAs(exportPath);
 
+  await page.locator('[data-module-id="character-name"] [role="button"]').click();
   await page.getByLabel("姓名").fill("临时名字");
   await waitForAutosave(page);
 
@@ -84,137 +86,123 @@ test("uploads a minimal System Package zip and keeps the Character JSON loop", a
   await page.getByRole("button", { name: "导入 Character JSON" }).click();
   const characterChooser = await characterChooserPromise;
   await characterChooser.setFiles(exportPath);
-  await expect(page.getByLabel("姓名")).toHaveValue("Zip阿青");
+  await expect(page.locator('[data-module-id="character-name"]')).toContainText("Zip阿青");
   await page.waitForTimeout(400);
 
   await page.reload();
   await expect(page.getByText("最小示例系统包")).toBeVisible();
-  await expect(page.getByLabel("姓名")).toHaveValue("Zip阿青");
+  await expect(page.locator('[data-module-id="character-name"]')).toContainText("Zip阿青");
 });
 
-test("uploads the phase 5 module demo package and persists simple module state", async ({ page }, testInfo) => {
+test("uploads the complete demo package and persists module variants", async ({ page }, testInfo) => {
   await page.goto("/");
-  await uploadPackage(page, moduleDemoPackagePath());
+  await uploadPackage(page, await completeDemoPackagePath(testInfo));
 
-  await expect(page.getByText("阶段5模块示例系统包", { exact: true })).toBeVisible();
-  await expect(page.locator(".demo-sheet")).toBeVisible();
-  await expect(page.locator(".identity")).toBeVisible();
-  await expect(page.locator('[data-module-slot-id="background"]')).toBeVisible();
-  await expect(page.getByAltText("阶段5示例徽记")).toBeVisible();
-  await expect(page.getByRole("img", { name: "角色头像" })).toContainText("图片不可用");
+  await expect(page.getByRole("heading", { name: "System Package 完整演示" })).toBeVisible();
+  await page.getByRole("button", { name: "Free Text", exact: true }).click();
+  await page.getByLabel("普通单行文本").fill("陆青");
+  await page.getByRole("button", { name: "Long Text", exact: true }).click();
+  await page.getByLabel("默认四行").fill("第一行\n第二行");
+  await page.getByRole("button", { name: "Checkbox Resource", exact: true }).click();
+  await page.getByLabel("默认未选").check();
+  await page.getByRole("button", { name: "Countable Resource", exact: true }).click();
+  await page.getByRole("button", { name: "有限数值增加" }).click();
+  await page.getByRole("button", { name: "有限数值增加" }).click();
+  await expect(page.getByRole("textbox", { name: "有限数值", exact: true })).toHaveValue("5");
+  await page.getByRole("button", { name: "Image Field", exact: true }).click();
+  await expect(page.getByRole("button", { name: "上传Player 图片" })).toContainText("点击上传图片");
 
   const avatarPath = path.join(testInfo.outputDir, "avatar.png");
   await mkdir(testInfo.outputDir, { recursive: true });
   await writeFile(avatarPath, Buffer.from(tinyPngBase64, "base64"));
   const imageChooserPromise = page.waitForEvent("filechooser");
-  await page.getByRole("button", { name: "上传图片" }).click();
+  await page.getByRole("button", { name: "上传Player 图片" }).click();
   const imageChooser = await imageChooserPromise;
   await imageChooser.setFiles(avatarPath);
-  await expect(page.getByAltText("角色头像")).toBeVisible();
-
-  await page.getByLabel("姓名").fill("陆青");
-  await page.getByLabel("背景").fill("第一行\n第二行");
-  await page.getByLabel("受伤").check();
-  await page.getByRole("button", { name: "气力增加" }).click();
-  await page.getByRole("button", { name: "气力增加" }).click();
-  await expect(page.getByRole("textbox", { name: "气力", exact: true })).toHaveValue("5");
+  await expect(page.getByAltText("Player 上传的角色头像")).toBeVisible();
   await waitForAutosave(page);
 
   await page.reload();
-  await expect(page.getByText("阶段5模块示例系统包", { exact: true })).toBeVisible();
-  await expect(page.getByLabel("姓名")).toHaveValue("陆青");
-  await expect(page.getByLabel("背景")).toHaveValue("第一行\n第二行");
-  await expect(page.getByLabel("受伤")).toBeChecked();
-  await expect(page.getByRole("textbox", { name: "气力", exact: true })).toHaveValue("5");
+  await page.getByRole("button", { name: "Free Text", exact: true }).click();
+  await expect(page.locator('[data-module-id="free-basic"]')).toContainText("陆青");
+  await page.getByRole("button", { name: "Long Text", exact: true }).click();
+  await expect(page.locator('[data-module-id="long-basic"]')).toContainText("第一行");
+  await page.getByRole("button", { name: "Checkbox Resource", exact: true }).click();
+  await expect(page.getByLabel("默认未选")).toBeChecked();
+  await page.getByRole("button", { name: "Countable Resource", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "有限数值", exact: true })).toHaveValue("5");
+  await page.getByRole("button", { name: "Image Field", exact: true }).click();
+  await expect(page.getByAltText("Player 上传的角色头像")).toBeVisible();
 
   const download = await downloadCharacterJson(page);
   const exportPath = path.join(testInfo.outputDir, "module-character.json");
   await download.saveAs(exportPath);
 
   const exported = JSON.parse(await readFile(exportPath, "utf8"));
-  expect(exported.character.values.background).toBe("第一行\n第二行");
-  expect(exported.character.values.conditions).toMatchObject({ wounded: true, inspired: true });
-  expect(exported.character.values.vitality).toEqual({ current: 5, max: 6 });
-  expect(exported.character.values["rule-note"]).toBeUndefined();
-  expect(exported.character.values["sect-emblem"]).toBeUndefined();
+  expect(exported.character.values["free-basic"]).toBe("陆青");
+  expect(exported.character.values["long-basic"]).toBe("第一行\n第二行");
+  expect(exported.character.values["checkbox-basic"]).toMatchObject({ unchecked: true, checked: true });
+  expect(exported.character.values["count-numeric-bounded"]).toEqual({ current: 5, max: 6 });
+  expect(exported.character.values["display-text"]).toBeUndefined();
   expect(exported.character.values.portrait).toMatchObject({ kind: "player-image" });
   expect(exported.playerImages[exported.character.values.portrait.imageId].dataUrl).toMatch(/^data:image\/png;base64,/);
 
-  await page.getByLabel("姓名").fill("改坏");
+  await page.getByRole("button", { name: "Free Text", exact: true }).click();
+  await page.locator('[data-module-id="free-basic"] [role="button"]').click();
+  await page.getByLabel("普通单行文本").fill("改坏");
   const characterChooserPromise = page.waitForEvent("filechooser");
   await openExportMenu(page);
   await page.getByRole("button", { name: "导入 Character JSON" }).click();
   const characterChooser = await characterChooserPromise;
   await characterChooser.setFiles(exportPath);
 
-  await expect(page.getByLabel("姓名")).toHaveValue("陆青");
-  await expect(page.getByLabel("背景")).toHaveValue("第一行\n第二行");
-  await expect(page.getByAltText("角色头像")).toBeVisible();
+  await expect(page.locator('[data-module-id="free-basic"]')).toContainText("陆青");
 });
 
 test("uploads Resource Picker demo and restores filled text through export/import", async ({ page }, testInfo) => {
   await page.goto("/");
   await expect(page.getByText("未加载")).toBeVisible();
-  await uploadPackage(page, selectionDemoPackagePath());
+  await uploadPackage(page, await completeDemoPackagePath(testInfo));
 
-  await expect(page.getByText("资源库选择示例系统包")).toBeVisible();
+  await page.getByRole("button", { name: "Resource Picker", exact: true }).click();
   const classPicker = page.locator('[data-module-id="pick-class"]');
-  await classPicker.getByRole("button", { name: "选择职业" }).click();
-  const classDialog = page.getByRole("dialog", { name: "职业资源库" });
+  await classPicker.getByRole("button", { name: "单库：选择职业" }).click();
+  const classDialog = page.getByRole("dialog", { name: "演示角色原型资源库" });
   await expect(classDialog).toBeVisible();
-  await expect(classDialog.getByRole("columnheader", { name: "ID" })).toHaveCount(0);
-  await expect(classDialog.getByRole("columnheader", { name: "原名" })).toHaveCount(0);
-  await expect.poll(() => resourceDialogWidth(classDialog)).toBeGreaterThan(1120);
-  await expect.poll(() => resourceControlsWidth(classDialog)).toBeLessThan(190);
-  await expect.poll(() => resourceTableHasHorizontalOverflow(classDialog)).toBe(false);
-  expect(await resourceTableCellPadding(classDialog)).toEqual({
-    paddingTop: "8px",
-    paddingRight: "4px",
-    paddingBottom: "8px",
-    paddingLeft: "4px",
-  });
-  const classColumnWidths = await tableColumnWidths(classDialog);
-  expect(classColumnWidths["领域1"]).toBeLessThan(classColumnWidths["希望特性"]);
-  expect(classColumnWidths["职业特性"]).toBeGreaterThan(classColumnWidths["希望特性"]);
-  await page.getByLabel("选择 德鲁伊").click();
-  await expect(page.locator('[data-module-id="class-name"]').getByRole("textbox", { name: "职业", exact: true })).toHaveValue("德鲁伊");
-  await expect(page.locator('[data-module-id="class-domains"]').getByRole("textbox", { name: "领域", exact: true })).toHaveValue("贤者+奥术");
-  await expect(page.getByText(/你成长的社群为何如此依赖自然/)).toBeVisible();
-  await expect(page.locator('[data-module-id="druid-shape-note"]')).toBeVisible();
-  await expect(page.locator('[data-template-page-id="druid-shape-page"]')).toBeVisible();
+  await page.getByLabel("选择 守灯人").click();
+  await page.getByRole("button", { name: "集成流程", exact: true }).click();
+  await expect(page.locator('[data-module-id="class-name"]')).toContainText("守灯人");
+  await expect(page.locator('[data-module-id="class-domains"]')).toContainText("星辉+守护");
+  await expect(page.getByText(/谁把第一盏灯交给了你/)).toBeVisible();
+  await expect(page.locator('[data-module-id="lantern-note"]')).toBeVisible();
 
-  await page.locator('[data-module-id="pick-subclass"]').getByRole("button", { name: "选择子职" }).click();
-  const subclassDialog = page.getByRole("dialog", { name: "子职资源库" });
+  await page.getByRole("button", { name: "Resource Picker", exact: true }).click();
+  await page.locator('[data-module-id="pick-subclass"]').getByRole("button", { name: "单库：选择子职" }).click();
+  const subclassDialog = page.getByRole("dialog", { name: "演示专长资源库" });
   await expect(subclassDialog).toBeVisible();
-  await expect(page.getByLabel("选择 元素结社-基础")).toBeVisible();
-  await expect(page.getByLabel("选择 勇气呼唤-基础")).not.toBeVisible();
-  await subclassDialog.getByRole("checkbox", { name: "德鲁伊" }).uncheck();
-  await expect(page.getByLabel("选择 勇气呼唤-基础")).toBeVisible();
+  await expect(page.getByLabel("选择 晨光记录员")).toBeVisible();
+  await expect(page.getByLabel("选择 苔痕向导")).not.toBeVisible();
+  await subclassDialog.getByRole("button", { name: "筛选主职" }).click();
+  await subclassDialog.getByRole("checkbox", { name: "守灯人" }).uncheck();
+  await expect(page.getByLabel("选择 苔痕向导")).toBeVisible();
   await page.getByRole("button", { name: "关闭资源库" }).click();
 
-  await page.getByLabel("显示背景提示").check();
-  await expect(page.locator('[data-module-id="background-helper"]').getByRole("textbox", { name: "背景提示", exact: true })).toHaveValue(
-    "把职业背景问题复制到角色背景时，可以先回答其中一个问题，再改写成自己的经历。",
-  );
-
-  const single = page.locator('[data-module-id="pick-domain-card"]');
-  await single.getByRole("button", { name: "选择领域卡" }).click();
-  await expect(page.getByRole("dialog", { name: "领域卡资源库" })).toBeVisible();
-  await expect(page.getByLabel("选择 灵巧机动")).not.toBeVisible();
-  await page.getByLabel("排序字段").selectOption("名称");
-  await page.getByLabel("选择 卷土重来").click();
-  await expect(page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true })).toHaveValue("卷土重来");
-  await expect(page.locator('[data-module-id="domain-card-table"]')).toBeVisible();
-  await expect(page.getByAltText("卷土重来")).toBeVisible();
-  await page.locator(".play-card", { has: page.getByAltText("卷土重来") }).click({ button: "right" });
+  const single = page.locator('[data-module-id="pick-card-single"]');
+  await single.getByRole("button", { name: "单选演示卡并创建卡牌" }).click();
+  await expect(page.getByRole("dialog", { name: "演示卡牌资源库" })).toBeVisible();
+  await expect(page.getByLabel("选择 星光地图")).not.toBeVisible();
+  await page.getByLabel("选择 迅捷火花").click();
+  await page.getByRole("button", { name: "Card Table", exact: true }).click();
+  await expect(page.locator('[data-module-id="demo-card-table"]')).toBeVisible();
+  await expect(page.getByAltText("迅捷火花")).toBeVisible();
+  await page.locator(".play-card", { has: page.getByAltText("迅捷火花") }).click({ button: "right" });
   await page.getByRole("menuitem", { name: "标记为宝库" }).click();
   await waitForAutosave(page);
 
   await page.reload();
-  await expect(page.getByText("资源库选择示例系统包")).toBeVisible();
-  await expect(page.locator('[data-module-id="class-name"]').getByRole("textbox", { name: "职业", exact: true })).toHaveValue("德鲁伊");
-  await expect(page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true })).toHaveValue("卷土重来");
-  await expect(page.locator('[data-template-page-id="druid-shape-page"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "集成流程", exact: true }).click();
+  await expect(page.locator('[data-module-id="class-name"]')).toContainText("守灯人");
+  await expect(page.locator('[data-module-id="selected-card-name"]')).toContainText("迅捷火花");
 
   const download = await downloadCharacterJson(page);
   const exportPath = path.join(testInfo.outputDir, "selection-character.json");
@@ -222,31 +210,35 @@ test("uploads Resource Picker demo and restores filled text through export/impor
 
   const exportedText = await readFile(exportPath, "utf8");
   const exported = JSON.parse(exportedText);
-  expect(exported.character.values["class-name"]).toBe("德鲁伊");
-  expect(exported.character.values["class-domains"]).toBe("贤者+奥术");
-  expect(exported.character.values["domain-card-name"]).toBe("卷土重来");
+  expect(exported.character.values["class-name"]).toBe("守灯人");
+  expect(exported.character.values["class-domains"]).toBe("星辉+守护");
+  expect(exported.character.values["selected-card-name"]).toBe("迅捷火花");
   expect(exported.cards.instances).toEqual([
     expect.objectContaining({
-      tableModuleId: "domain-card-table",
-      libraryId: "domain-cards",
-      definitionId: "domain-card:卷土重来",
-      state: "vault",
+      tableModuleId: "demo-card-table",
+      definitionRef: {
+        type: "resourceLibrary",
+        libraryId: "demo-cards",
+        entryId: "demo-card:迅捷火花",
+      },
+      state: "宝库",
     }),
   ]);
-  expect(exported.character.values["background-helper"]).toBe("把职业背景问题复制到角色背景时，可以先回答其中一个问题，再改写成自己的经历。");
   expect(exported.character.values["class-background-questions"]).toBeUndefined();
-  expect(exported.character.values["druid-shape-note"]).toBeUndefined();
+  expect(exported.character.values["lantern-note"]).toBeUndefined();
   expect(exported.character.values["pick-class"]).toBeUndefined();
   expect(exported.character.values["pick-subclass"]).toBeUndefined();
-  expect(exported.character.values["pick-domain-card"]).toBeUndefined();
+  expect(exported.character.values["pick-card-single"]).toBeUndefined();
   expect(exportedText).not.toContain("resource-selection");
   expect(exportedText).not.toContain("assets/flame-card.svg");
   expect(exportedText).not.toContain("data:image");
   expect(exportedText).not.toContain("<svg");
 
-  const domainCardName = page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true });
-  await domainCardName.fill("临时领域卡");
-  await expect(domainCardName).toHaveValue("临时领域卡");
+  const selectedCardModule = page.locator('[data-module-id="selected-card-name"]');
+  await selectedCardModule.getByRole("button").click();
+  const selectedCardName = selectedCardModule.getByRole("textbox", { name: "单选演示卡", exact: true });
+  await selectedCardName.fill("临时演示卡");
+  await expect(selectedCardName).toHaveValue("临时演示卡");
 
   const characterChooserPromise = page.waitForEvent("filechooser");
   await openExportMenu(page);
@@ -254,40 +246,54 @@ test("uploads Resource Picker demo and restores filled text through export/impor
   const characterChooser = await characterChooserPromise;
   await characterChooser.setFiles(exportPath);
 
-  await expect(page.locator('[data-module-id="domain-card-name"]').getByRole("textbox", { name: "领域卡", exact: true })).toHaveValue("卷土重来");
-  await expect(page.locator(".play-card")).toContainText("domain-card:卷土重来");
+  await expect(page.locator('[data-module-id="selected-card-name"]')).toContainText("迅捷火花");
 });
 
-test("Character Creation Guide spotlights interactive targets without taking over their behavior", async ({ page }) => {
+test("complete demo teaches the A/B/C Validation exercise", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await uploadPackage(page, await completeDemoPackagePath(testInfo));
+  await page.getByRole("button", { name: "Free Text", exact: true }).click();
+
+  await expect(page.getByText("Validation 练习：C = A + B")).toBeVisible();
+  await page.getByLabel("A", { exact: true }).fill("2");
+  await page.getByLabel("B", { exact: true }).fill("3");
+  await page.getByLabel("C = A + B", { exact: true }).fill("4");
+  await openPlayerMenu(page);
+  await page.getByRole("button", { name: "运行 Validation Checks" }).click();
+  const report = page.getByRole("dialog", { name: "Validation Report" });
+  await expect(report).toContainText("DEMO_EQUATION_MISMATCH");
+  await expect(report).toContainText("C 应为 5");
+  await report.getByRole("button", { name: "关闭检查报告" }).click();
+
+  await page.locator('[data-module-id="validation-c"] [role="button"]').click();
+  await page.getByLabel("C = A + B", { exact: true }).fill("5");
+  await openPlayerMenu(page);
+  await page.getByRole("button", { name: "运行 Validation Checks" }).click();
+  await expect(page.getByRole("dialog", { name: "Validation Report" })).toContainText("DEMO_EQUATION_VALID");
+});
+
+test("Character Creation Guide spotlights interactive targets without taking over their behavior", async ({ page }, testInfo) => {
   await page.goto("/");
   await expect(page.getByText("未加载")).toBeVisible();
-  await uploadPackage(page, selectionDemoPackagePath());
+  await uploadPackage(page, await completeDemoPackagePath(testInfo));
 
-  await openSystemPackageMenu(page);
+  await openPlayerMenu(page);
   await page.getByRole("button", { name: "启动车卡指引" }).click();
   const guide = page.getByRole("dialog", { name: "车卡指引" });
-  await expect(guide).toContainText("开始创建角色");
-  await expect(guide).toContainText("1 / 4");
+  await expect(guide).toContainText("Guide 是什么");
+  await expect(guide).toContainText("1 / 13");
 
   await page.getByRole("button", { name: "下一步" }).click();
-  await expect(guide).toContainText("选择职业");
-  await expect(guide).toContainText("2 / 4");
-  const classTarget = page.locator('[data-module-slot-id="pick-class"]');
+  await expect(guide).toContainText("高亮 Layout Region");
+  await expect(guide).toContainText("2 / 13");
   const ring = page.locator(".guide-target-ring");
   await expect(ring).toBeVisible();
   await expect.poll(() => page.locator(".top-bar").evaluate((element) => (element as HTMLElement).inert)).toBe(true);
-  const targetBox = await classTarget.boundingBox();
-  const ringBox = await ring.boundingBox();
-  expect(targetBox).not.toBeNull();
-  expect(ringBox).not.toBeNull();
-  expect(ringBox!.x).toBeLessThanOrEqual(targetBox!.x);
-  expect(ringBox!.y).toBeLessThanOrEqual(targetBox!.y);
-  expect(ringBox!.width).toBeGreaterThanOrEqual(targetBox!.width);
-  const panelBox = await guide.boundingBox();
-  expect(panelBox).not.toBeNull();
-  expect(rectanglesOverlap(panelBox!, targetBox!)).toBe(false);
 
-  await classTarget.getByRole("button", { name: "选择职业" }).click();
+  for (let step = 2; step < 9; step += 1) await page.getByRole("button", { name: "下一步" }).click();
+  await expect(guide).toContainText("Resource Picker");
+  const classTarget = page.locator('[data-module-slot-id="pick-class"]');
+  await classTarget.getByRole("button", { name: "单库：选择职业" }).click();
   const resourceDialog = page.getByRole("dialog", { name: "职业资源库" });
   await expect(resourceDialog).toBeVisible();
   await expect
@@ -300,27 +306,15 @@ test("Character Creation Guide spotlights interactive targets without taking ove
     .toMatchObject({ guide: 50, resource: 80 });
   await page.getByLabel("选择 德鲁伊").click();
   await expect(resourceDialog).not.toBeVisible();
-  await expect(guide).toContainText("2 / 4");
-
-  await page.getByRole("button", { name: "下一步" }).click();
-  await expect(guide).toContainText("选择子职");
-  await page.getByRole("button", { name: "下一步" }).click();
-  await expect(guide).toContainText("查看职业专属页面");
-  await expect(page.locator('[data-template-page-id="druid-shape-page"]')).toBeVisible();
-  await expect(page.getByText("当前目标不可见")).toHaveCount(0);
-  await page.getByRole("button", { name: "完成车卡指引" }).click();
+  await expect(guide).toContainText("9 / 13");
+  await page.keyboard.press("Escape");
   await expect(guide).not.toBeVisible();
 
   await page.reload();
-  await openSystemPackageMenu(page);
+  await openPlayerMenu(page);
   await page.getByRole("button", { name: "启动车卡指引" }).click();
   const restartedGuide = page.getByRole("dialog", { name: "车卡指引" });
-  await expect(restartedGuide).toContainText("1 / 4");
-  for (let step = 0; step < 3; step += 1) {
-    await page.getByRole("button", { name: "下一步" }).click();
-  }
-  await expect(restartedGuide).toContainText("当前目标不可见");
-  await expect(page.locator('[data-template-page-id="druid-shape-page"]')).toHaveCount(0);
+  await expect(restartedGuide).toContainText("1 / 13");
   await page.keyboard.press("Escape");
   await expect(restartedGuide).not.toBeVisible();
   await expect(page.getByRole("button", { name: "启动车卡指引" })).toBeFocused();
@@ -331,7 +325,7 @@ test("Character Creation Guide uses a bottom panel on a mobile viewport", async 
   await page.goto("/");
   await expect(page.getByText("未加载")).toBeVisible();
   await uploadPackage(page, await createDaggerheartCorePackage(testInfo));
-  await openSystemPackageMenu(page);
+  await openPlayerMenu(page);
   await page.getByRole("button", { name: "启动车卡指引" }).click();
 
   const panel = page.locator(".guide-panel-mobile");
@@ -352,7 +346,7 @@ test("Daggerheart Guide renders long Restricted Markdown and follows cross-page 
   await page.goto("/");
   await uploadPackage(page, await createDaggerheartCorePackage(testInfo));
 
-  await openSystemPackageMenu(page);
+  await openPlayerMenu(page);
   await page.getByRole("button", { name: "启动车卡指引" }).click();
   const guide = page.getByRole("dialog", { name: "车卡指引" });
   const actions = page.getByRole("toolbar", { name: "车卡指引操作" });
@@ -386,23 +380,80 @@ test("Daggerheart Guide renders long Restricted Markdown and follows cross-page 
   await expect(page.locator('[data-template-page-id="character-story"]')).toBeVisible();
 });
 
-test("HTML Layout Template from demo zip stacks columns on small screens", async ({ page }) => {
+test("HTML Layout Template keeps Countable variants readable and stacks dense grids on small screens", async ({ page }, testInfo) => {
   await page.goto("/");
-  await uploadPackage(page, moduleDemoPackagePath());
+  await uploadPackage(page, await completeDemoPackagePath(testInfo));
 
-  const identitySection = page.locator(".identity");
-  await expect(identitySection).toBeVisible();
-  await expect(page.getByLabel("姓名")).toBeVisible();
-  await expect(page.getByRole("img", { name: "角色头像" })).toBeVisible();
-  await expect(page.getByAltText("阶段5示例徽记")).toBeVisible();
+  await page.getByRole("button", { name: "Countable Resource", exact: true }).click();
+  const countableGrid = page.locator(".demo-grid.single");
+  await expect(countableGrid).toBeVisible();
+  await expect.poll(() => countableGrid.evaluate((element) => getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length)).toBe(1);
+  await expect(page.getByRole("textbox", { name: "可改上限数值上限", exact: true })).toHaveValue("5");
+  await page.getByRole("textbox", { name: "可改上限数值上限", exact: true }).fill("3");
+  await expect(page.getByRole("textbox", { name: "可改上限数值上限", exact: true })).toHaveValue("3");
+  await expect(page.getByText("本例步长为 2")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "无上限数值（步长 2）", exact: true })).toHaveValue("2");
+  await page.getByRole("button", { name: "无上限数值（步长 2）增加" }).click();
+  await expect(page.getByRole("textbox", { name: "无上限数值（步长 2）", exact: true })).toHaveValue("4");
 
-  await expect(page.locator(".identity > .module-slot")).toHaveCount(3);
+  await page.getByRole("button", { name: "Read Only Display", exact: true }).click();
+  const readOnlyImageModule = page.locator('[data-module-id="display-image"]');
+  await expect(page.getByAltText("Demo 徽记")).toBeVisible();
+  expect(await readOnlyImageModule.evaluate((element) => {
+    const moduleRect = element.getBoundingClientRect();
+    const image = element.querySelector<HTMLElement>('[data-part="image"]')!;
+    const imageRect = image.getBoundingClientRect();
+    return getComputedStyle(image).position === "static"
+      && imageRect.left >= moduleRect.left - 1
+      && imageRect.right <= moduleRect.right + 1
+      && imageRect.top >= moduleRect.top - 1
+      && imageRect.bottom <= moduleRect.bottom + 1;
+  })).toBe(true);
+
+  await page.getByRole("button", { name: "Resource Picker", exact: true }).click();
+  const variantGrid = page.locator(".demo-grid.three");
+  await expect(variantGrid).toBeVisible();
+  await expect.poll(() => variantGrid.evaluate((element) => getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length)).toBe(3);
   await page.setViewportSize({ width: 480, height: 900 });
   await expect
-    .poll(async () =>
-      identitySection.evaluate((element) => getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length),
-    )
+    .poll(() => variantGrid.evaluate((element) => getComputedStyle(element).gridTemplateColumns.trim().split(/\s+/).length))
     .toBe(1);
+});
+
+test("complete demo uses the same A4 page box on screen and in print", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await uploadPackage(page, await completeDemoPackagePath(testInfo));
+
+  for (const pageName of [
+    "演示首页",
+    "Free Text",
+    "Long Text",
+    "Checkbox Resource",
+    "Countable Resource",
+    "Read Only Display",
+    "Image Field",
+    "Resource Picker",
+    "Resource Composer",
+    "Card Table",
+    "集成流程",
+  ]) {
+    await page.getByRole("button", { name: pageName, exact: true }).click();
+    const pageBox = page.locator(".sheet-page");
+    await expect(pageBox).toBeVisible();
+    const screen = await pageBoxMetrics(pageBox);
+    expect(screen.width).toBeCloseTo(210 * 96 / 25.4, 0);
+    expect(screen.height).toBeCloseTo(297 * 96 / 25.4, 0);
+    expect(screen.scrollWidth).toBeLessThanOrEqual(screen.clientWidth + 1);
+    expect(screen.scrollHeight).toBeLessThanOrEqual(screen.clientHeight + 1);
+  }
+
+  const pageBox = page.locator(".sheet-page");
+  const screen = await pageBoxMetrics(pageBox);
+  await page.emulateMedia({ media: "print" });
+  const print = await pageBoxMetrics(pageBox);
+  expect(print.width).toBeCloseTo(screen.width, 0);
+  expect(print.height).toBeCloseTo(screen.height, 0);
+  expect(print.padding).toBe(screen.padding);
 });
 
 test("Daggerheart story editors fill their outer frames", async ({ page }, testInfo) => {
@@ -838,12 +889,12 @@ test("printed text Cards preserve their screen presentation", async ({ page }, t
   await page.getByLabel("选择 自动拟合卡").click();
   const card = page.getByRole("article", { name: "自动拟合卡" });
   const description = card.locator(".play-card-description");
-  await expect.poll(() => description.getAttribute("data-card-description-fit-pending")).toBe("false");
+  await expect.poll(() => description.getAttribute("data-card-description-fit")).toBe("fitted");
   const screenPresentation = await cardPresentationMetrics(card);
 
   await page.emulateMedia({ media: "print" });
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-  await expect.poll(() => description.getAttribute("data-card-description-fit-pending")).toBe("false");
+  await expect.poll(() => description.getAttribute("data-card-description-fit")).toBe("fitted");
   const printPresentation = await cardPresentationMetrics(card);
 
   expect(printPresentation).toEqual(screenPresentation);
@@ -859,24 +910,24 @@ const errorFixtures = [
 ] as const;
 
 for (const [fileName, expectedCode] of errorFixtures) {
-  test(`invalid System Package fixture ${fileName} shows ${expectedCode}`, async ({ page }) => {
+  test(`invalid System Package fixture ${fileName} shows ${expectedCode}`, async ({ page }, testInfo) => {
     await page.goto("/");
-    await uploadPackage(page, errorFixturePath(fileName));
+    await uploadPackage(page, await errorFixturePath(testInfo, fileName));
 
     await expect(page.getByRole("alert", { name: "System Package error" })).toContainText(expectedCode);
     await expect(page.getByLabel("Sheet Tool", { exact: true })).not.toBeVisible();
   });
 }
 
-test("invalid System Package zip keeps the current sheet when one is already loaded", async ({ page }) => {
+test("invalid System Package zip keeps the current sheet when one is already loaded", async ({ page }, testInfo) => {
   await page.goto("/");
-  await uploadPackage(page, demoPackagePath());
+  await uploadPackage(page, await demoPackagePath(testInfo));
   await page.getByLabel("姓名").fill("阿青");
 
-  await uploadPackage(page, errorFixturePath("missing-manifest.zip"));
+  await uploadPackage(page, await errorFixturePath(testInfo, "missing-manifest.zip"));
 
   await expect(page.getByRole("alert", { name: "System Package error" })).toContainText("MANIFEST_MISSING");
-  await expect(page.getByLabel("姓名")).toHaveValue("阿青");
+  await expect(page.locator('[data-module-id="character-name"]')).toContainText("阿青");
 });
 
 test("invalid cached System Package is cleared and leaves upload controls usable", async ({ page }) => {
@@ -910,6 +961,10 @@ async function openSystemPackageMenu(page: Page) {
   await page.getByRole("button", { name: "系统包", exact: true }).click();
 }
 
+async function openPlayerMenu(page: Page) {
+  await page.getByRole("button", { name: "玩家功能", exact: true }).click();
+}
+
 async function openExportMenu(page: Page) {
   await page.getByRole("button", { name: "导入导出", exact: true }).click();
 }
@@ -923,10 +978,6 @@ async function selectDaggerheartSkin(page: Page, skinId: string) {
 
 async function waitForAutosave(page: Page) {
   await page.waitForTimeout(350);
-}
-
-function rectanglesOverlap(a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }) {
-  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
 }
 
 async function downloadCharacterJson(page: Page) {
@@ -953,37 +1004,6 @@ async function downloadHtmlSnapshot(page: Page) {
     // No advisory validation report appeared; output can continue directly.
   }
   return downloadPromise;
-}
-
-async function tableColumnWidths(container: Locator) {
-  return container.locator(".resource-table").evaluate((table) => {
-    const headers = [...table.querySelectorAll("th")];
-    return Object.fromEntries(headers.map((header) => [header.textContent?.trim() ?? "", header.getBoundingClientRect().width]));
-  });
-}
-
-async function resourceDialogWidth(container: Locator) {
-  return container.evaluate((dialog) => dialog.getBoundingClientRect().width);
-}
-
-async function resourceControlsWidth(container: Locator) {
-  return container.locator(".resource-controls").evaluate((controls) => controls.getBoundingClientRect().width);
-}
-
-async function resourceTableHasHorizontalOverflow(container: Locator) {
-  return container.locator(".resource-table-wrap").evaluate((wrapper) => wrapper.scrollWidth > wrapper.clientWidth + 1);
-}
-
-async function resourceTableCellPadding(container: Locator) {
-  return container.locator(".resource-table td").first().evaluate((cell) => {
-    const style = getComputedStyle(cell);
-    return {
-      paddingTop: style.paddingTop,
-      paddingRight: style.paddingRight,
-      paddingBottom: style.paddingBottom,
-      paddingLeft: style.paddingLeft,
-    };
-  });
 }
 
 async function cardDescriptionMetrics(description: Locator) {
@@ -1068,7 +1088,7 @@ async function createCardFitPackage(testInfo: TestInfo): Promise<string> {
         ID: "add-fit-card",
         类型: "resourcePicker",
         按钮文本: "添加测试卡",
-        资源库ID: "fit-cards",
+        资源库: [{ ID: "fit-cards" }],
         创建卡牌: { 卡牌桌面模块ID: "fit-card-table", 默认状态: "configured" },
       },
       {
@@ -1158,20 +1178,44 @@ async function putInvalidCachedPackage(page: Page) {
   });
 }
 
-function demoPackagePath() {
-  return path.join(process.cwd(), "public", "system-packages", "demo-minimal.zip");
+function demoPackagePath(testInfo: TestInfo) {
+  return createPublicPackageArchive(testInfo, "demo-minimal");
 }
 
-function moduleDemoPackagePath() {
-  return path.join(process.cwd(), "public", "system-packages", "demo-modules.zip");
+async function pageBoxMetrics(pageBox: Locator) {
+  return pageBox.evaluate((element) => {
+    const html = element as HTMLElement;
+    const rect = html.getBoundingClientRect();
+    const style = getComputedStyle(html);
+    return {
+      width: rect.width,
+      height: rect.height,
+      clientWidth: html.clientWidth,
+      clientHeight: html.clientHeight,
+      scrollWidth: html.scrollWidth,
+      scrollHeight: html.scrollHeight,
+      padding: style.padding,
+    };
+  });
 }
 
-function selectionDemoPackagePath() {
-  return path.join(process.cwd(), "public", "system-packages", "demo-selection.zip");
+function completeDemoPackagePath(testInfo: TestInfo) {
+  return createPublicPackageArchive(testInfo, "demo");
+}
+
+function createPublicPackageArchive(testInfo: TestInfo, packageName: string) {
+  return createPackageArchive(
+    testInfo,
+    path.join(process.cwd(), "public", "system-packages", packageName),
+    `${packageName}.zip`,
+  );
 }
 
 async function createDaggerheartCorePackage(testInfo: TestInfo): Promise<string> {
-  const packageRoot = path.join(process.cwd(), "public", "system-packages", "daggerheart-core");
+  return createPublicPackageArchive(testInfo, "daggerheart-core");
+}
+
+async function createPackageArchive(testInfo: TestInfo, packageRoot: string, fileName: string): Promise<string> {
   const files = Object.fromEntries(
     await Promise.all(
       (await walkPackageFiles(packageRoot)).map(async (file) => [
@@ -1180,7 +1224,7 @@ async function createDaggerheartCorePackage(testInfo: TestInfo): Promise<string>
       ]),
     ),
   );
-  const packagePath = path.join(testInfo.outputDir, "daggerheart-core.zip");
+  const packagePath = path.join(testInfo.outputDir, fileName);
   await mkdir(testInfo.outputDir, { recursive: true });
   await writeFile(packagePath, zipSync(files));
   return packagePath;
@@ -1194,8 +1238,10 @@ async function walkPackageFiles(directory: string): Promise<string[]> {
   }))).flat();
 }
 
-function errorFixturePath(fileName: string) {
-  return path.join(process.cwd(), "public", "system-packages", "error-fixtures", fileName);
+function errorFixturePath(testInfo: TestInfo, fileName: string) {
+  const fixtureRoot = path.join(process.cwd(), "tests", "fixtures", "system-packages", "errors");
+  if (fileName === "corrupt.zip") return path.join(fixtureRoot, fileName);
+  return createPackageArchive(testInfo, path.join(fixtureRoot, path.parse(fileName).name), fileName);
 }
 
 const tinyPngBase64 =

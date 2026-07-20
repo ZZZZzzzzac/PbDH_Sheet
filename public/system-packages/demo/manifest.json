@@ -1,0 +1,26 @@
+{
+  "ID": "demo",
+  "名称": "System Package 完整演示",
+  "版本": "0.1.0",
+  "schemaVersion": "0.1.0",
+  "pages": "pages.json",
+  "shell": {
+    "html": "layouts/shell.html",
+    "css": "layouts/shell.css"
+  },
+  "modules": "modules.json",
+  "dependencies": "dependencies.json",
+  "characterCreationGuide": "guides/character-creation.json",
+  "validationChecks": [
+    {
+      "ID": "demo-rules",
+      "脚本": "checks/demo-rules.js"
+    }
+  ],
+  "resourceLibraries": [
+    { "ID": "classes", "名称": "演示角色原型", "路径": "resources/classes.json" },
+    { "ID": "subclasses", "名称": "演示专长", "路径": "resources/subclasses.json" },
+    { "ID": "demo-cards", "名称": "演示卡牌", "路径": "resources/demo_cards.json" },
+    { "ID": "bonus-cards", "名称": "演示备忘", "路径": "resources/bonus_cards.json" }
+  ]
+}

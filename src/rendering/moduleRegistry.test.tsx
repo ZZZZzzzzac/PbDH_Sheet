@@ -113,8 +113,8 @@ describe("Module Registry rendering", () => {
     const sheetTool = result.container.querySelector(".sheet-tool");
     const styles = [...result.container.querySelectorAll("style")].map((style) => style.textContent ?? "");
 
-    expect(sheetTool).toHaveAttribute("data-system-package-id", "demo-modules");
-    expect(styles.at(-1)).toContain('[data-system-package-id="demo-modules"] :is(.demo-sheet, .identity)');
+    expect(sheetTool).toHaveAttribute("data-system-package-id", "demo");
+    expect(styles.at(-1)).toContain('[data-system-package-id="demo"] :is(.demo-sheet, .identity)');
     expect(styles.at(-1)).toContain('url("blob:skin-emblem")');
   });
 

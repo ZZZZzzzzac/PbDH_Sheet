@@ -1,0 +1,13 @@
+[
+  { "ID": "home", "名称": "演示首页", "打印": false, "layout": { "类型": "htmlTemplate", "html": "layouts/home.html", "css": "layouts/demo.css" } },
+  { "ID": "free-text", "名称": "Free Text", "layout": { "类型": "htmlTemplate", "html": "layouts/free-text.html", "css": "layouts/demo.css" } },
+  { "ID": "long-text", "名称": "Long Text", "layout": { "类型": "htmlTemplate", "html": "layouts/long-text.html", "css": "layouts/demo.css" } },
+  { "ID": "checkbox-resource", "名称": "Checkbox Resource", "layout": { "类型": "htmlTemplate", "html": "layouts/checkbox-resource.html", "css": "layouts/demo.css" } },
+  { "ID": "countable-resource", "名称": "Countable Resource", "layout": { "类型": "htmlTemplate", "html": "layouts/countable-resource.html", "css": "layouts/demo.css" } },
+  { "ID": "read-only-display", "名称": "Read Only Display", "layout": { "类型": "htmlTemplate", "html": "layouts/read-only-display.html", "css": "layouts/demo.css" } },
+  { "ID": "image-field", "名称": "Image Field", "layout": { "类型": "htmlTemplate", "html": "layouts/image-field.html", "css": "layouts/demo.css" } },
+  { "ID": "resource-picker", "名称": "Resource Picker", "layout": { "类型": "htmlTemplate", "html": "layouts/resource-picker.html", "css": "layouts/demo.css" } },
+  { "ID": "resource-composer", "名称": "Resource Composer", "layout": { "类型": "htmlTemplate", "html": "layouts/resource-composer.html", "css": "layouts/demo.css" } },
+  { "ID": "card-table", "名称": "Card Table", "layout": { "类型": "htmlTemplate", "html": "layouts/card-table.html", "css": "layouts/demo.css" } },
+  { "ID": "integration", "名称": "集成流程", "layout": { "类型": "htmlTemplate", "html": "layouts/integration.html", "css": "layouts/demo.css" } }
+]

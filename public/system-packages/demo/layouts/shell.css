@@ -1,0 +1,8 @@
+.demo-shell { display: grid; gap: 16px; padding: 16px; background: #eef2f3; color: #203035; }
+.demo-shell-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 20px; border: 1px solid #b9c8cc; border-radius: 12px; background: #f9fbfb; }
+.demo-shell-header h1, .demo-shell-header p { margin: 0; }
+.demo-shell-header img { width: 54px; height: 76px; object-fit: contain; }
+.demo-kicker { color: #526b72; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.demo-shell-page { min-width: 0; background: #fff; border: 1px solid #cbd5d8; border-radius: 12px; overflow: hidden; }
+@media (max-width: 640px) { .demo-shell { padding: 8px; } .demo-shell-header { align-items: flex-start; } }
+@media print { .demo-shell { padding: 0; background: #fff; } .demo-shell-header { display: none; } .demo-shell-page { border: 0; } }

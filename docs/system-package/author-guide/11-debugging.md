@@ -12,4 +12,4 @@ Validator 不提供 suggestion，因为它不知道 Author 想修改引用端还
 
 推荐顺序：先解决 fatal，再解决重复 ID/缺失引用等 error，最后检查 warning。不要通过删除 Validator 信息规避契约；包不能自定义、关闭或降级规则。
 
-手测材料位于 `public/system-packages/error-fixtures`。例如 `invalid-dependency-field.zip` 展示字段引用证据，`invalid-validation-script.zip` 展示脚本文件与行列。错误码参考见[Validator diagnostics](../reference/validator-diagnostics.md)。
+错误夹具源目录位于 `tests/fixtures/system-packages/errors`。自动测试运行时将目录打包为 zip；`invalid-dependency-field/` 展示字段引用证据，`invalid-validation-script/` 展示脚本文件与行列。错误码参考见[Validator diagnostics](../reference/validator-diagnostics.md)。

@@ -1,5 +1,6 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+import { zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { loadSystemPackageFromZipFile } from "./systemPackageLoader";
 
@@ -17,7 +18,7 @@ const cases: Array<[string, string[]]> = [
 
 describe("manual error System Package fixtures", () => {
   it.each(cases)("keeps %s.zip aligned with its expected diagnostics", async (name, expectedCodes) => {
-    const bytes = readFileSync(join(process.cwd(), "public", "system-packages", "error-fixtures", `${name}.zip`));
+    const bytes = createFixtureZip(name);
     const result = await loadSystemPackageFromZipFile(new Blob([bytes]));
 
     expect(result.ok).toBe(false);
@@ -30,3 +31,16 @@ describe("manual error System Package fixtures", () => {
     }
   });
 });
+
+function createFixtureZip(name: string) {
+  const root = join(process.cwd(), "tests", "fixtures", "system-packages", "errors", name);
+  const files = Object.fromEntries(walkFiles(root).map((file) => [relative(root, file).replaceAll("\\", "/"), readFileSync(file)]));
+  return zipSync(files);
+}
+
+function walkFiles(directory: string): string[] {
+  return readdirSync(directory).flatMap((name) => {
+    const path = join(directory, name);
+    return statSync(path).isDirectory() ? walkFiles(path) : [path];
+  });
+}

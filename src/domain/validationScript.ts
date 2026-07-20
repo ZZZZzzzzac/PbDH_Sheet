@@ -15,6 +15,7 @@ export interface ValidationIssue {
 export interface ValidationInput {
   characterData: CharacterData;
   resourceLibraries: ResourceLibrary[];
+  cardState: CharacterData["cards"];
   packageMetadata: {
     id: string;
     version: string;
@@ -25,6 +26,7 @@ export interface ValidationInput {
 export interface ScriptInput {
   characterData: CharacterData;
   resourceLibraries: ResourceLibrary[];
+  cardState: CharacterData["cards"];
   packageMetadata: ValidationInput["packageMetadata"];
 }
 
@@ -145,6 +147,7 @@ export async function runValidationChecksInProcess(input: ValidationInput): Prom
   const scriptInput = cloneAndFreeze({
     characterData: input.characterData,
     resourceLibraries: input.resourceLibraries,
+    cardState: input.cardState,
     packageMetadata: input.packageMetadata,
   });
 

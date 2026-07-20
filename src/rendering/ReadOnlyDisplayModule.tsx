@@ -19,7 +19,7 @@ export function ReadOnlyDisplayModule({ module }: ReadOnlyDisplayModuleProps) {
       {content ? <p className="value display-text" data-part="value">{content}</p> : null}
       {module.资源路径 ? (
         assetUrl && !failed ? (
-          <img className="value image-preview" data-part="image" src={assetUrl} alt={altText} onError={() => setFailed(true)} />
+          <img className="value read-only-image" data-part="image" src={assetUrl} alt={altText} onError={() => setFailed(true)} />
         ) : (
           <div className="image-fallback" data-part="image-fallback" role="img" aria-label={altText}>
             图片不可用
