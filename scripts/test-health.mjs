@@ -8,6 +8,7 @@ export const REVIEW_TEST_FILE_LINES = 600;
 const RAW_CSS_CONTRACT_FILES = new Set([
   "src/export/output.test.ts",
   "src/rendering/RestrictedMarkdown.test.tsx",
+  "src/styles/app-shell.test.ts",
   "src/styles/guide.test.ts",
   "src/styles/modules.test.ts",
   "src/test/systemPackagePrintLayout.test.ts",
