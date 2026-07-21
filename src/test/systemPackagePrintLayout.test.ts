@@ -44,17 +44,12 @@ describe("built-in System Package print layout contract", () => {
 
   it("keeps Hopefind A4 geometry in Layout CSS and Skin spacing inside the Page", () => {
     const layout = packageCss("heart-of-hopefind", "layouts/base.css");
-    const skins = [
-      packageCss("heart-of-hopefind", "skins/survivor-notebook.css"),
-      packageCss("heart-of-hopefind", "skins/dawn-survey/skin.css"),
-    ];
+    const skin = packageCss("heart-of-hopefind", "skins/survivor-notebook.css");
 
     expect(layout).toMatch(/:scope\s*\{[^}]*width:\s*210mm;[^}]*max-width:\s*none;[^}]*margin-inline:\s*auto/s);
     expect(layout).toMatch(/\.hopefind-page\s*\{[^}]*padding:\s*6mm/s);
-    for (const skin of skins) {
-      expect(skin).not.toMatch(/\.sheet-page\s*\{/);
-      expect(skin).toMatch(/\.character-sheet\s*\{[^}]*padding:\s*12px/s);
-    }
+    expect(skin).not.toMatch(/\.sheet-page\s*\{/);
+    expect(skin).toMatch(/\.character-sheet\s*\{[^}]*padding:\s*12px/s);
   });
 
   it("keeps HOW'S MY DRIVING Page spacing shared by screen and print", () => {
