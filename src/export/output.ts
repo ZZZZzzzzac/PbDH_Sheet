@@ -3,11 +3,11 @@ import type { SystemPackage } from "../domain/systemPackage";
 
 const embeddedCharacterDataId = "pbdh-character-data";
 
-export function buildReadonlyHtmlSnapshot(data: CharacterData, printableRoot?: Element, title?: string): string {
+export async function buildReadonlyHtmlSnapshot(data: CharacterData, printableRoot?: Element, title?: string): Promise<string> {
   const jsonText = exportCharacterData(data);
   const inertJson = jsonText.replace(/</g, "\\u003c");
   const snapshotTitle = htmlEscape(title || readCharacterName(data));
-  const printableHtml = printableRoot ? serializePrintableRoot(printableRoot) : buildFallbackSnapshotBody(data, title);
+  const printableHtml = printableRoot ? await serializePrintableRoot(printableRoot) : buildFallbackSnapshotBody(data, title);
   const documentStyles = printableRoot ? collectDocumentStyles(printableRoot.ownerDocument) : "";
   const snapshotStyles = buildSnapshotStyles();
 
@@ -123,12 +123,43 @@ function formatSnapshotValue(value: unknown): string {
   return JSON.stringify(value, null, 2);
 }
 
-function serializePrintableRoot(root: Element): string {
+async function serializePrintableRoot(root: Element): Promise<string> {
   const clone = root.cloneNode(true) as Element;
   syncFormControls(root, clone);
+  await embedBlobImages(root, clone);
   clone.querySelectorAll("[data-output-exclude]").forEach((element) => element.remove());
   stripInteractiveRuntimeState(clone);
   return clone.outerHTML;
+}
+
+async function embedBlobImages(sourceRoot: Element, cloneRoot: Element): Promise<void> {
+  const sourceImages = sourceRoot.querySelectorAll("img");
+  const cloneImages = cloneRoot.querySelectorAll("img");
+
+  await Promise.all([...sourceImages].map(async (sourceImage, index) => {
+    const source = sourceImage.currentSrc || sourceImage.src;
+    if (!source.startsWith("blob:")) {
+      return;
+    }
+
+    const response = await fetch(source);
+    if (!response.ok) {
+      throw new Error(`无法内联导出图片：${response.status} ${response.statusText}`);
+    }
+
+    const mimeType = response.headers.get("Content-Type")?.split(";", 1)[0] || "application/octet-stream";
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    cloneImages[index]?.setAttribute("src", `data:${mimeType};base64,${bytesToBase64(bytes)}`);
+  }));
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  const chunkSize = 0x8000;
+  let binary = "";
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return btoa(binary);
 }
 
 function syncFormControls(sourceRoot: Element, cloneRoot: Element) {

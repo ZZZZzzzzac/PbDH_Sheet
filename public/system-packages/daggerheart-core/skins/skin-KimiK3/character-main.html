@@ -13,12 +13,12 @@
     </div>
     <div class="identity-fields">
       <div class="character-name-field"><pb-module id="character-name"></pb-module></div>
+      <div class="picker-field ancestry-field" data-guide-region-id="guide-ancestry"><pb-module id="ancestry-name"></pb-module><pb-module id="pick-ancestry"></pb-module></div>
       <div class="picker-field class-field" data-guide-region-id="guide-class">
         <pb-module id="class-name"></pb-module>
         <pb-module id="pick-class"></pb-module>
         <pb-module id="pick-subclass"></pb-module>
       </div>
-      <div class="picker-field ancestry-field" data-guide-region-id="guide-ancestry"><pb-module id="ancestry-name"></pb-module><pb-module id="pick-ancestry"></pb-module></div>
       <div class="picker-field community-field" data-guide-region-id="guide-community"><pb-module id="community-name"></pb-module><pb-module id="pick-community"></pb-module></div>
     </div>
     <div class="level-field"><pb-module id="level"></pb-module></div>
@@ -50,6 +50,7 @@
           <pb-module id="armor-slots"></pb-module>
           <pb-module id="hope"></pb-module>
         </div>
+        <h2 class="section-title">希望特性</h2>
         <pb-module id="class-hope-feature"></pb-module>
       </section>
 
@@ -65,6 +66,7 @@
       </section>
 
       <section class="sheet-region class-feature-region" aria-label="职业特性">
+        <h2 class="section-title">职业特性</h2>
         <pb-module id="class-feature"></pb-module>
       </section>
 
@@ -98,6 +100,7 @@
         </article>
 
         <article class="equipment-slot">
+          <h3 class="equipment-slot-title">护甲</h3>
           <div class="equipment-grid">
             <div class="equipment-fields armor-fields">
               <pb-module id="armor-name"></pb-module><pb-module id="pick-armor"></pb-module><pb-module id="armor-base-major"></pb-module>
@@ -109,10 +112,12 @@
       </section>
 
       <section class="sheet-region inventory-region" aria-label="背包与备用武器" data-guide-region-id="guide-inventory">
-      <h2 class="section-title">物品栏</h2>
+      <div class="inventory-title-row">
+        <h2 class="section-title">物品栏</h2>
+        <pb-module id="pick-inventory-item"></pb-module>
+      </div>
       <div class="item-list">
         <pb-module id="inventory"></pb-module>
-        <pb-module id="pick-inventory-item"></pb-module>
       </div>
 
       <h2 class="section-title">金币区</h2>

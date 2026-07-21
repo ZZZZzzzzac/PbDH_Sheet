@@ -215,7 +215,7 @@ export default function App() {
       try {
         const printableRoot = document.querySelector(".sheet-tool");
         await waitForVisibleImages(printableRoot ?? document);
-        downloadText(buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined, activeCharacterSaveName), `${baseName}.html`, "text/html");
+        downloadText(await buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined, activeCharacterSaveName), `${baseName}.html`, "text/html");
       } finally {
         setPrintMode(false);
       }

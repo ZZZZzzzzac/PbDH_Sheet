@@ -21,6 +21,21 @@ describe("Card rendering", () => {
     vi.restoreAllMocks();
   });
 
+  it("renders an empty Card Table without a redundant empty-state panel", () => {
+    const systemPackage = createCardTablePackage();
+    useRuntimeStore.setState({
+      currentPackage: systemPackage,
+      characterData: createEmptyCharacterData(systemPackage),
+    });
+
+    const result = render(<SheetRenderer systemPackage={systemPackage} />);
+    const surface = result.container.querySelector(".card-table-surface");
+
+    expect(surface).toHaveAttribute("aria-label", "领域卡牌桌面自由桌面");
+    expect(surface?.querySelector('[data-part="empty"]')).toBeNull();
+    expect(screen.queryByText("选择卡牌后会放到这里。")).not.toBeInTheDocument();
+  });
+
   it("renders text cards with recall in the tag row above the description", () => {
     const systemPackage = createCardTablePackage();
     const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {

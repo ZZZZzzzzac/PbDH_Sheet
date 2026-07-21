@@ -7,8 +7,7 @@
     "性格": "高城之民通常表现为：亲切、坦率、狡猾、有进取心、炫耀、沉着。",
     "描述": ":red[**高人一等**]：你在与贵族交际、议价或利用你的声誉来达到目的的掷骰中具有优势。",
     "卡图": "assets/cards/communities/高城之民.webp",
-    "卡背": "assets/cards/backs/通用.webp",
-    "旧ID": "community-e054ca0d1920"
+    "卡背": "assets/cards/backs/通用.webp"
   },
   {
     "ID": "社群:博识之民",
@@ -18,8 +17,7 @@
     "性格": "博识之民通常表现为：直率、雄辩、好奇、耐心、狂热、机智。",
     "描述": ":red[**博览群书**]：你在关于重要人物或地点的历史、文化和政治的掷骰中具有优势。",
     "卡图": "assets/cards/communities/博识之民.webp",
-    "卡背": "assets/cards/backs/通用.webp",
-    "旧ID": "community-8a4ded124742"
+    "卡背": "assets/cards/backs/通用.webp"
   },
   {
     "ID": "社群:结社之民",
@@ -29,8 +27,7 @@
     "性格": "结社之民通常表现为：雄心勃勃、仁慈、深思熟虑、谨慎、轻蔑、克己。",
     "描述": ":red[**恪守不渝**]：记录三个你的成长经历灌输给你的格言或价值观。每次休息一次，当你描述你如何通过当前行动来体现这些原则之一时，你可以将一个**d20**作为你的希望骰，而不是d12。",
     "卡图": "assets/cards/communities/结社之民.webp",
-    "卡背": "assets/cards/backs/通用.webp",
-    "旧ID": "community-28749de060f7"
+    "卡背": "assets/cards/backs/通用.webp"
   },
   {
     "ID": "社群:山岭之民",
@@ -40,8 +37,7 @@
     "性格": "山岭之民通常表现为：勇敢、坚韧、不屈、忠诚、内敛、固执。",
     "描述": ":red[**脚踏实地**]：你在穿越危险的悬崖峭壁、在恶劣环境中导航以及使用你的生存知识的掷骰上具有优势。",
     "卡图": "assets/cards/communities/山岭之民.webp",
-    "卡背": "assets/cards/backs/通用.webp",
-    "旧ID": "community-ea8f3a66312e"
+    "卡背": "assets/cards/backs/通用.webp"
   },
   {
     "ID": "社群:滨海之民",
@@ -51,8 +47,7 @@
     "性格": "滨海之民通常表现为：直率、合作、热情、勇猛、坚定、饱经风霜。",
     "描述": ":red[**潮起潮落**]：你深谙生命和生活的变化无常。当你掷出恐惧结果时，在这张卡牌上放置一个指示物。你可以持有最大等于你等级数量的指示物。在你进行动作掷骰之前，你可以花费任意数量指示物，每个指示物使你的掷骰获得+1加值。在每场游戏结束时，清除所有未使用的指示物。",
     "卡图": "assets/cards/communities/滨海之民.webp",
-    "卡背": "assets/cards/backs/通用.webp",
-    "旧ID": "community-4219f980b318"
+    "卡背": "assets/cards/backs/通用.webp"
   },
   {
     "ID": "社群:法外之民",
@@ -62,8 +57,7 @@
     "性格": "法外之民通常表现为：精于算计、狡猾、强大、敏锐、机灵、顽固。",
     "描述": ":red[**恶贯满盈**]：你在与罪犯谈判、侦测谎言或寻找安全藏身之处的掷骰中具有优势。",
     "卡图": "assets/cards/communities/法外之民.webp",
-    "卡背": "assets/cards/backs/通用.webp",
-    "旧ID": "community-a8ac1b7ac2ad"
+    "卡背": "assets/cards/backs/通用.webp"
   },
   {
     "ID": "社群:地下之民",
@@ -73,8 +67,7 @@
     "性格": "地下之民通常表现为：沉着、难以捉摸、不屈不挠、创新、足智多谋、朴实无华。",
     "描述": ":red[**微光生存**]：当你处于微光或严重遮蔽的区域时，在隐匿、调查或感知该区域内细节的掷骰中具有优势。",
     "卡图": "assets/cards/communities/地下之民.webp",
-    "卡背": "assets/cards/backs/通用.webp",
-    "旧ID": "community-493bab7266b4"
+    "卡背": "assets/cards/backs/通用.webp"
   },
   {
     "ID": "社群:漂泊之民",
@@ -84,8 +77,7 @@
     "性格": "漂泊之民通常表现为：高深莫测、大度、开朗、可靠、精明、不循规蹈矩。",
     "描述": ":red[**游牧行囊**]：将一个游牧行囊添加到你的携带物品中。每局游戏一次，你可以**花费 1 希望点**从背包中拿出一件对当前情况有用的普通物品。与游戏主持人一起确定这件物品是什么。",
     "卡图": "assets/cards/communities/漂泊之民.webp",
-    "卡背": "assets/cards/backs/通用.webp",
-    "旧ID": "community-568bf1d2b291"
+    "卡背": "assets/cards/backs/通用.webp"
   },
   {
     "ID": "社群:荒野之民",
@@ -95,7 +87,6 @@
     "性格": "荒野之民的成员通常表现为：坚韧、忠诚、善于养育、隐居、睿智、充满活力。",
     "描述": ":red[**轻盈步伐**]：你的移动天然无声。在试图不被察觉的移动掷骰中具有优势。",
     "卡图": "assets/cards/communities/荒野之民.webp",
-    "卡背": "assets/cards/backs/通用.webp",
-    "旧ID": "community-6cedf77655e9"
+    "卡背": "assets/cards/backs/通用.webp"
   }
 ]

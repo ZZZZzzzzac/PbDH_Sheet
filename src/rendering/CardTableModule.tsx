@@ -214,7 +214,6 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
           </label>
           <span className="card-count">{visibleInstances.length} 张</span>
         </div>
-        {visibleInstances.length === 0 ? <p className="card-table-empty" data-part="empty">选择卡牌后会放到这里。</p> : null}
         {visibleInstances.map((instance) => (
           <CardView
             instance={instance}

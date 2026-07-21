@@ -5,9 +5,9 @@ import printCss from "../styles/print.css?raw";
 import { buildReadonlyHtmlSnapshot, extractEmbeddedCharacterJson, parseCharacterDataText, waitForVisibleImages } from "./output";
 
 describe("HTML snapshot export/import", () => {
-  it("exports a read-only HTML snapshot with inert embedded Character JSON", () => {
+  it("exports a read-only HTML snapshot with inert embedded Character JSON", async () => {
     const data = updateCharacterValue(createEmptyCharacterData(minimalSystemPackage), "character-name", "阿青");
-    const html = buildReadonlyHtmlSnapshot(data);
+    const html = await buildReadonlyHtmlSnapshot(data);
 
     expect(html).toContain('aria-label="Read-only Character Snapshot"');
     expect(html).toContain('type="application/json"');
@@ -21,7 +21,7 @@ describe("HTML snapshot export/import", () => {
     }
   });
 
-  it("can export the current printed Sheet Tool DOM instead of a data summary", () => {
+  it("can export the current printed Sheet Tool DOM instead of a data summary", async () => {
     const data = updateCharacterValue(createEmptyCharacterData(minimalSystemPackage), "character-name", "阿青");
     document.body.innerHTML = `
       <style>.sheet-page { color: rgb(1, 2, 3); }</style>
@@ -36,7 +36,7 @@ describe("HTML snapshot export/import", () => {
     const input = document.querySelector("input")!;
     input.value = "阿青";
 
-    const html = buildReadonlyHtmlSnapshot(data, document.querySelector(".sheet-tool")!);
+    const html = await buildReadonlyHtmlSnapshot(data, document.querySelector(".sheet-tool")!);
 
     expect(html).toContain('class="sheet-tool"');
     expect(html).toContain('data-module-slot-id="character-name"');
@@ -45,7 +45,26 @@ describe("HTML snapshot export/import", () => {
     expect(html).not.toContain("编辑按钮");
   });
 
-  it("exports rendered Markdown instead of a focused raw editor", () => {
+  it("embeds blob-backed Card artwork in the exported HTML snapshot", async () => {
+    const data = createEmptyCharacterData(minimalSystemPackage);
+    document.body.innerHTML = `
+      <main class="sheet-tool">
+        <article class="play-card">
+          <img class="play-card-image" src="blob:card-art" alt="卡图">
+        </article>
+      </main>`;
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), { headers: { "Content-Type": "image/png" } }),
+    );
+
+    const html = await buildReadonlyHtmlSnapshot(data, document.querySelector(".sheet-tool")!);
+
+    expect(fetchMock).toHaveBeenCalledWith("blob:card-art");
+    expect(html).toContain('src="data:image/png;base64,iVBORw=="');
+    expect(html).not.toContain("blob:card-art");
+  });
+
+  it("exports rendered Markdown instead of a focused raw editor", async () => {
     const data = updateCharacterValue(createEmptyCharacterData(minimalSystemPackage), "character-name", "**勇者**");
     document.body.innerHTML = `
       <main class="sheet-tool">
@@ -53,7 +72,7 @@ describe("HTML snapshot export/import", () => {
         <div data-markdown-preview="true" hidden aria-hidden="true" role="button" tabindex="0"><p><strong>勇者</strong></p></div>
       </main>`;
 
-    const html = buildReadonlyHtmlSnapshot(data, document.querySelector(".sheet-tool")!);
+    const html = await buildReadonlyHtmlSnapshot(data, document.querySelector(".sheet-tool")!);
 
     expect(html).toContain("<strong>勇者</strong>");
     expect(html).not.toContain("data-markdown-editor");
@@ -61,7 +80,7 @@ describe("HTML snapshot export/import", () => {
     expect(html).not.toContain('role="button"');
   });
 
-  it("includes print-only Card Table grid rules so browser PDF output does not reuse absolute drag positions", () => {
+  it("includes print-only Card Table grid rules so browser PDF output does not reuse absolute drag positions", async () => {
     const data = createEmptyCharacterData(minimalSystemPackage);
     document.body.innerHTML = `
       <main class="sheet-tool" aria-label="Sheet Tool">
@@ -74,7 +93,7 @@ describe("HTML snapshot export/import", () => {
         </article>
       </main>`;
 
-    const html = buildReadonlyHtmlSnapshot(data, document.querySelector(".sheet-tool")!);
+    const html = await buildReadonlyHtmlSnapshot(data, document.querySelector(".sheet-tool")!);
 
     expect(html).toContain(".snapshot-shell .card-table-surface");
     expect(html).toContain("@page");
@@ -112,8 +131,8 @@ describe("HTML snapshot export/import", () => {
     expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\[data-module-type="freeText"\] \[data-markdown-preview\][^{]*\{[^}]*overflow:\s*hidden[^}]*white-space:\s*nowrap/s);
   });
 
-  it("renders empty field placeholder text in light gray in HTML snapshots", () => {
-    const html = buildReadonlyHtmlSnapshot(createEmptyCharacterData(minimalSystemPackage));
+  it("renders empty field placeholder text in light gray in HTML snapshots", async () => {
+    const html = await buildReadonlyHtmlSnapshot(createEmptyCharacterData(minimalSystemPackage));
 
     expect(html).toContain(".snapshot-shell input::placeholder");
     expect(html).toContain(".snapshot-shell textarea::placeholder");
@@ -122,9 +141,9 @@ describe("HTML snapshot export/import", () => {
     expect(html).toContain("print-color-adjust: exact");
   });
 
-  it("imports HTML snapshots through the Character JSON compatibility path", () => {
+  it("imports HTML snapshots through the Character JSON compatibility path", async () => {
     const data = updateCharacterValue(createEmptyCharacterData(minimalSystemPackage), "character-name", "阿青");
-    const result = parseCharacterDataText(buildReadonlyHtmlSnapshot(data), minimalSystemPackage);
+    const result = parseCharacterDataText(await buildReadonlyHtmlSnapshot(data), minimalSystemPackage);
 
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -141,12 +160,12 @@ describe("HTML snapshot export/import", () => {
     }
   });
 
-  it("still rejects package mismatches after extracting HTML Character JSON", () => {
+  it("still rejects package mismatches after extracting HTML Character JSON", async () => {
     const data = createEmptyCharacterData({
       ...minimalSystemPackage,
       manifest: { ...minimalSystemPackage.manifest, ID: "other-package" },
     });
-    const result = parseCharacterDataText(buildReadonlyHtmlSnapshot(data), minimalSystemPackage);
+    const result = parseCharacterDataText(await buildReadonlyHtmlSnapshot(data), minimalSystemPackage);
 
     expect(result.ok).toBe(false);
     if (!result.ok) {

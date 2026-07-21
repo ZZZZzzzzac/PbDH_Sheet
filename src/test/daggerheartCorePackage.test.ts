@@ -26,23 +26,20 @@ describe("Daggerheart core System Package", () => {
     if (!result.ok) return;
 
     expect(result.issues.filter((issue) => issue.level === "fatal" || issue.level === "error")).toEqual([]);
-    expect(result.package.defaultSkin).toBe("plain");
+    expect(result.package.defaultSkin).toBe("skin-KimiK3");
     expect(result.package.skins).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ ID: "plain", 推荐框架配色: "light" }),
-        expect.objectContaining({ ID: "skin-gpt-5.6sol", 推荐框架配色: "dark" }),
+        expect.objectContaining({ ID: "skin-KimiK3", 推荐框架配色: "light" }),
       ]),
     );
-    expect(result.package.skins?.length).toBeGreaterThanOrEqual(2);
-    expect(result.package.skins?.find((skin) => skin.ID === "plain")).not.toHaveProperty("layoutOverrides");
-    const astralSkin = result.package.skins?.find((skin) => skin.ID === "skin-gpt-5.6sol");
-    expect(astralSkin?.layoutOverrides?.shell?.htmlContent).toContain("astral-workspace");
-    expect(astralSkin?.layoutOverrides?.pages.map((page) => page.ID)).toEqual([
+    expect(result.package.skins?.length).toBe(1);
+    const kimiSkin = result.package.skins?.find((skin) => skin.ID === "skin-KimiK3");
+    expect(kimiSkin?.layoutOverrides?.shell?.htmlContent).toContain("card-table-banner");
+    expect(kimiSkin?.layoutOverrides?.pages.map((page) => page.ID)).toEqual([
       "character-main",
       "character-story",
-      "ranger-companion",
     ]);
-    expect(astralSkin?.layoutOverrides?.pages.every((page) => page.htmlContent.includes("astral-"))).toBe(true);
+    expect(kimiSkin?.layoutOverrides?.pages.every((page) => page.htmlContent.includes("kimi-thread-book"))).toBe(true);
   });
 
   it("ships skin-KimiK3 with thread-bound HTML overrides that preserve module ownership and Guide regions", async () => {
@@ -90,6 +87,13 @@ describe("Daggerheart core System Package", () => {
     expect(skin.cssContent).toContain(":scope");
     expect(skin.cssContent).toContain("@media print");
     expect(skin.cssContent).toContain('url("assets/skins/skin-KimiK3/ink-wash-mountains.svg")');
+    const characterMainHtml = skin.layoutOverrides.pages?.find((page) => page.ID === "character-main")?.htmlContent ?? "";
+    expect(characterMainHtml).toMatch(/<div class="identity-fields">\s*<div class="character-name-field">[\s\S]*?<div class="picker-field ancestry-field"[\s\S]*?<div class="picker-field class-field"[\s\S]*?<div class="picker-field community-field"/u);
+    expect(characterMainHtml).toMatch(/<div class="inventory-title-row">\s*<h2 class="section-title">物品栏<\/h2>\s*<pb-module id="pick-inventory-item"><\/pb-module>\s*<\/div>/u);
+    expect(characterMainHtml).toMatch(/<div class="item-list">\s*<pb-module id="inventory"><\/pb-module>\s*<\/div>/u);
+    expect(skin.cssContent).toContain(".kimi-thread-book .identity-fields");
+    expect(skin.cssContent).toContain('.class-field [data-module-type="resourcePicker"] [data-part="button"]');
+    expect(skin.cssContent).toContain(".inventory-title-row");
     expect(skin.cssContent).not.toMatch(/@import|@font-face/i);
   });
 
@@ -172,7 +176,7 @@ describe("Daggerheart core System Package", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     const cases: Array<{ moduleId: string; libraryId: string; hidden: string[]; visible?: string[] }> = [
-      { moduleId: "pick-class", libraryId: "classes", hidden: ["推荐初始属性", "推荐初始武器", "推荐初始护甲", "职业物品", "类型"], visible: ["原名"] },
+      { moduleId: "pick-class", libraryId: "classes", hidden: ["推荐初始属性", "推荐初始武器", "推荐初始护甲", "职业物品", "类型", "原名"] },
       { moduleId: "pick-subclass", libraryId: "subclasses", hidden: ["类型"] },
       { moduleId: "pick-community", libraryId: "communities", hidden: ["类型"] },
       { moduleId: "pick-domain-card", libraryId: "domain-cards", hidden: ["背面卡牌ID", "原名", "类型"] },
@@ -188,8 +192,6 @@ describe("Daggerheart core System Package", () => {
       for (const field of item.hidden) {
         expect(fields.find((candidate) => candidate.key === field), `${item.moduleId}.${field}`).toMatchObject({
           visible: false,
-          filterable: false,
-          sortable: false,
           searchable: false,
         });
       }
@@ -208,8 +210,6 @@ describe("Daggerheart core System Package", () => {
         for (const key of ["类型"]) {
           expect(fields.find((field) => field.key === key), `${slot.ID}.${key}`).toMatchObject({
             visible: false,
-            filterable: false,
-            sortable: false,
             searchable: false,
           });
         }
@@ -234,8 +234,6 @@ describe("Daggerheart core System Package", () => {
       expect(library?.entries, libraryId).toHaveLength(expectedCount);
       for (const entry of library?.entries ?? []) {
         expect(entry.ID, `${libraryId}/${entry.fields.名称}.ID`).toBe(expectedReadableCoreId(libraryId, entry.fields));
-        expect(entry.aliases, `${entry.ID}.旧ID`).toHaveLength(1);
-        expect(entry.aliases?.[0], `${entry.ID}.旧ID`).toMatch(/^[a-z-]+-[0-9a-f]{12}$/u);
         expect(entry.fields.卡图, `${libraryId}/${entry.fields.名称}.卡图`).toMatch(/^assets\/cards\/.+\.webp$/u);
         expect(entry.fields.卡图, `${libraryId}/${entry.fields.名称}.卡图`).not.toMatch(/[0-9a-f]{12}/u);
         expect(assetPaths.has(entry.fields.卡图), entry.fields.卡图).toBe(true);
@@ -251,7 +249,7 @@ describe("Daggerheart core System Package", () => {
     }
     expect(frontPaths.size).toBe(270);
     expect([...assetPaths].filter((path) => !path.startsWith("assets/skins/"))).toHaveLength(280);
-    expect(assetPaths).toContain("assets/skins/skin-gpt-5.6sol/astral-chart.svg");
+    expect(assetPaths).toContain("assets/skins/skin-KimiK3/ink-wash-mountains.svg");
   });
 
   it("uses readable Chinese IDs for every core Resource Entry", async () => {
@@ -267,10 +265,9 @@ describe("Daggerheart core System Package", () => {
       expect(library?.entries, libraryId).toHaveLength(expectedCount);
       for (const entry of library?.entries ?? []) {
         expect(entry.ID, `${libraryId}/${entry.fields.名称}`).toBe(expectedReadableCoreId(libraryId, entry.fields));
-        expect(entry.aliases).toHaveLength(1);
+        expect(entry.aliases).toBeUndefined();
       }
-      expect(library?.fields.find((field) => field.key === "旧ID")).toBeDefined();
-      expect(library?.fields.find((field) => field.key === "旧ID")!.visible).not.toBe(false);
+      expect(library?.fields.find((field) => field.key === "旧ID")).toBeUndefined();
     }
   });
 

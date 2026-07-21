@@ -119,17 +119,6 @@
   touch-action: none;
 }
 
-.card-table-empty {
-  position: absolute;
-  inset: 16px;
-  display: grid;
-  place-items: center;
-  margin: 0;
-  border: 1px dashed var(--framework-border-strong);
-  color: var(--framework-text-muted);
-  background: rgba(255, 255, 255, 0.64);
-}
-
 .play-card {
   position: absolute;
   width: min(var(--play-card-width), calc(100% - 32px));
