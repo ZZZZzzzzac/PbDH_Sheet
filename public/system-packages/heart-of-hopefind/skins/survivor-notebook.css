@@ -129,7 +129,6 @@
 
 :scope [data-module-id="pick-survivor-style"] {
   display: flex;
-  align-self: center;
   min-height: 0;
   margin: 0;
   padding: 0;
@@ -140,11 +139,11 @@
 :scope [data-module-id="pick-survivor-style"] [data-part="button"] {
   width: 2.375rem;
   min-width: 2.375rem;
-  height: 1.65rem;
   min-height: 0;
   padding: 0;
   border-color: var(--hopefind-line);
-  background: transparent;
+  background: var(--hopefind-line);
+  color: var(--hopefind-paper);
   font-size: 0;
   line-height: 1;
 }

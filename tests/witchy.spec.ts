@@ -11,12 +11,14 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
   const portraitBox = await page.locator('[data-module-slot-id="character-portrait"]').boundingBox();
   const essenceBox = await page.locator(".essence-panel").boundingBox();
   const magicPointsBox = await page.locator('[data-module-slot-id="magic-points"]').boundingBox();
+  const erosionBox = await page.locator('[data-module-slot-id="erosion"]').boundingBox();
   expect(identityBox).not.toBeNull();
   expect(resourceBox).not.toBeNull();
   expect(nameBox).not.toBeNull();
   expect(portraitBox).not.toBeNull();
   expect(essenceBox).not.toBeNull();
   expect(magicPointsBox).not.toBeNull();
+  expect(erosionBox).not.toBeNull();
   const screenPortraitShare = portraitBox!.width / identityBox!.width;
   expect(identityBox!.x).toBeLessThan(resourceBox!.x);
   expect(portraitBox!.x).toBeLessThan(nameBox!.x);
@@ -34,6 +36,8 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
   expect(essenceBox!.y).toBeGreaterThan(resourceBox!.y);
   expect(magicPointsBox!.y).toBeGreaterThanOrEqual(essenceBox!.y + essenceBox!.height);
   expect(magicPointsBox!.y + magicPointsBox!.height).toBeLessThan(resourceBox!.y + resourceBox!.height);
+  expect(Math.abs(magicPointsBox!.x - erosionBox!.x)).toBeLessThanOrEqual(1);
+  expect(erosionBox!.y).toBeGreaterThanOrEqual(magicPointsBox!.y + magicPointsBox!.height);
   await expectPickerAfterField(page, "archetype-name", "pick-archetype");
   await expectPickerAfterField(page, "familiar-type-name", "pick-familiar-type");
   const familiarPortrait = await page.locator('[data-module-slot-id="familiar-portrait"]').boundingBox();

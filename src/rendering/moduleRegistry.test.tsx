@@ -44,6 +44,7 @@ describe("Simple Sheet Module rendering", () => {
     expect(result.container.querySelector(".demo-sheet")).not.toBeNull();
     expect(result.container.querySelector(".identity")).not.toBeNull();
     expect(result.container.querySelector('[data-module-slot-id="background"]')).not.toBeNull();
+    expect(result.container.querySelector('[data-module-slot-id="character-name"]')).toHaveAttribute("data-module-slot-type", "freeText");
     expect(result.container.querySelector("style")?.textContent).toContain('[data-template-page-id="main"] .identity');
   });
 

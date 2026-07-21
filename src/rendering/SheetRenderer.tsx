@@ -59,7 +59,7 @@ function renderModulePlaceholder(systemPackage: SystemPackage, moduleId: string 
   }
 
   return (
-    <div className="module-slot" data-module-slot-id={module.ID} key={key}>
+    <div className="module-slot" data-module-slot-id={module.ID} data-module-slot-type={module.类型} key={key}>
       <RenderSheetModule module={module} systemPackage={systemPackage} />
     </div>
   );

@@ -84,30 +84,12 @@
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
-:is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) {
-  display: flex;
-  align-self: center;
-  min-height: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-}
-
 :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
   width: 2.375rem;
   min-width: 2.375rem;
-  height: 1.65rem;
   min-height: 0;
   padding: 0;
   font-size: 0;
-}
-
-.class-field :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
-  width: auto;
-  min-width: 0;
-  padding-inline: 0.5rem;
-  font-size: 0.75rem;
 }
 
 .level-field {
@@ -255,7 +237,7 @@
 }
 
 .region-heading-row > [data-module-slot-id="proficiency"] {
-  flex: 0 1 16rem;
+  flex: 1;
 }
 
 .equipment-slot {

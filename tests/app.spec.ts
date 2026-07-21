@@ -36,6 +36,31 @@ test("switches between built-in System Packages without upload", async ({ page }
   await expect(page.locator('[data-system-package-id="heart-of-hopefind"]')).toBeVisible();
 });
 
+test("Daggerheart Resource Picker fills the adjacent Free Text height and centers its icon", async ({ page }) => {
+  await page.goto("/");
+  await expectDefaultDaggerheart(page);
+
+  const geometry = await page.locator(".class-field").evaluate((field) => {
+    const freeText = field.querySelector<HTMLElement>('[data-module-id="class-name"]')!.getBoundingClientRect();
+    const button = field.querySelector<HTMLElement>('[data-module-id="pick-class"] [data-part="button"]')!.getBoundingClientRect();
+    const icon = field.querySelector<SVGElement>('[data-module-id="pick-class"] [data-part="button"] svg')!.getBoundingClientRect();
+    return {
+      freeText: { top: freeText.top, height: freeText.height },
+      button: { left: button.left, top: button.top, width: button.width, height: button.height },
+      icon: { left: icon.left, top: icon.top, width: icon.width, height: icon.height },
+    };
+  });
+
+  expect(Math.abs(geometry.button.top - geometry.freeText.top)).toBeLessThanOrEqual(1);
+  expect(Math.abs(geometry.button.height - geometry.freeText.height)).toBeLessThanOrEqual(1);
+  expect(Math.abs(
+    geometry.icon.left + geometry.icon.width / 2 - (geometry.button.left + geometry.button.width / 2),
+  )).toBeLessThanOrEqual(1);
+  expect(Math.abs(
+    geometry.icon.top + geometry.icon.height / 2 - (geometry.button.top + geometry.button.height / 2),
+  )).toBeLessThanOrEqual(1);
+});
+
 test("minimal loop edits, autosaves, exports and imports Character JSON", async ({ page }, testInfo) => {
   await page.goto("/");
 

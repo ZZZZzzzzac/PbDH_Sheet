@@ -40,6 +40,43 @@ test("Heart of Hopefind keeps the A4 layout on a narrow viewport instead of refl
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeGreaterThan(390);
 });
 
+test("Heart of Hopefind skins align and center the survivor style picker", async ({ page }) => {
+  await page.goto("/");
+  await selectPreset(page, "heart-of-hopefind");
+
+  for (const skinId of ["survivor-notebook", "dawn-survey"]) {
+    await selectSkin(page, skinId);
+    const geometry = await page.locator(".style-name-row").evaluate((row) => {
+      const freeText = row.querySelector<HTMLElement>('[data-module-id="survivor-style-name"]')!.getBoundingClientRect();
+      const buttonElement = row.querySelector<HTMLElement>('[data-module-id="pick-survivor-style"] [data-part="button"]')!;
+      const button = buttonElement.getBoundingClientRect();
+      const icon = buttonElement.querySelector<SVGElement>("svg")!.getBoundingClientRect();
+      const style = getComputedStyle(buttonElement);
+      return {
+        freeText: { top: freeText.top, height: freeText.height },
+        button: { left: button.left, top: button.top, width: button.width, height: button.height },
+        icon: { left: icon.left, top: icon.top, width: icon.width, height: icon.height },
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+      };
+    });
+
+    expect(Math.abs(geometry.button.top - geometry.freeText.top), skinId).toBeLessThanOrEqual(1);
+    expect(Math.abs(geometry.button.height - geometry.freeText.height), skinId).toBeLessThanOrEqual(1);
+    expect(Math.abs(
+      geometry.icon.left + geometry.icon.width / 2 - (geometry.button.left + geometry.button.width / 2),
+    ), skinId).toBeLessThanOrEqual(1);
+    expect(Math.abs(
+      geometry.icon.top + geometry.icon.height / 2 - (geometry.button.top + geometry.button.height / 2),
+    ), skinId).toBeLessThanOrEqual(1);
+
+    if (skinId === "survivor-notebook") {
+      expect(geometry.backgroundColor).toBe("rgb(48, 46, 40)");
+      expect(geometry.color).toBe("rgb(238, 232, 215)");
+    }
+  }
+});
+
 async function pageGeometry(locator: ReturnType<Page["locator"]>) {
   return locator.evaluate((element) => {
     const item = element as HTMLElement;
@@ -61,4 +98,9 @@ async function selectPreset(page: Page, packageId: string) {
   await page.getByRole("button", { name: "系统包", exact: true }).click();
   await page.getByRole("combobox", { name: "预制系统包" }).selectOption(packageId);
   await expect(page.locator(`[data-system-package-id="${packageId}"]`)).toBeVisible();
+}
+
+async function selectSkin(page: Page, skinId: string) {
+  await page.getByRole("button", { name: "系统包", exact: true }).click();
+  await page.getByRole("combobox", { name: /^人物卡皮肤/ }).selectOption(skinId);
 }
