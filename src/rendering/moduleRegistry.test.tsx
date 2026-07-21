@@ -377,7 +377,7 @@ describe("Simple Sheet Module rendering", () => {
           return { ...module, 隐藏标签: true, 占位文本: "请输入姓名" };
         }
         if (module.ID === "background" && module.类型 === "longText") {
-          return { ...module, 隐藏标签: true, 占位文本: "请输入背景" };
+          return { ...module, 隐藏标签: true, 占位文本: "请输入背景", 默认值: "" };
         }
         return module;
       }),
@@ -386,14 +386,15 @@ describe("Simple Sheet Module rendering", () => {
     renderModuleDemo(packageWithPresentationOptions);
 
     const nameInput = screen.getByLabelText("姓名");
-    fireEvent.click(screen.getByRole("button", { name: "背景" }));
     const backgroundInput = screen.getByLabelText("背景");
     expect(nameInput).toHaveAttribute("placeholder", "请输入姓名");
     expect(backgroundInput).toHaveAttribute("placeholder", "请输入背景");
+    expect(nameInput.parentElement).toHaveAttribute("data-markdown-empty", "true");
+    expect(backgroundInput.parentElement).toHaveAttribute("data-markdown-empty", "true");
     expect(nameInput.closest('[data-module-type="freeText"]')?.querySelector('[data-part="label"]')).toBeNull();
     expect(backgroundInput.closest('[data-module-type="longText"]')?.querySelector('[data-part="label"]')).toBeNull();
     expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("");
-    expect(useRuntimeStore.getState().characterData?.character.values.background).toBe("写下角色的来历。");
+    expect(useRuntimeStore.getState().characterData?.character.values.background).toBe("");
   });
 
   it("treats an empty text label as hidden and lets a freeText input fill the container", () => {

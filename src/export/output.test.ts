@@ -80,6 +80,28 @@ describe("HTML snapshot export/import", () => {
     expect(html).not.toContain('role="button"');
   });
 
+  it("preserves empty Free Text and Long Text placeholders in HTML snapshots", async () => {
+    const data = createEmptyCharacterData(minimalSystemPackage);
+    document.body.innerHTML = `
+      <main class="sheet-tool">
+        <div data-module-type="freeText">
+          <div data-markdown-editor="true" data-markdown-empty="true"><input placeholder="填写姓名" value=""></div>
+          <div data-markdown-preview="true" data-markdown-empty="true" hidden></div>
+        </div>
+        <div data-module-type="longText">
+          <div data-markdown-editor="true" data-markdown-empty="true"><textarea placeholder="填写背景"></textarea></div>
+          <div data-markdown-preview="true" data-markdown-empty="true" hidden></div>
+        </div>
+      </main>`;
+
+    const html = await buildReadonlyHtmlSnapshot(data, document.querySelector(".sheet-tool")!);
+
+    expect(html).toContain('placeholder="填写姓名"');
+    expect(html).toContain('placeholder="填写背景"');
+    expect(html).toContain('data-markdown-editor="true"');
+    expect(html).not.toContain('data-markdown-preview="true" data-markdown-empty="true"');
+  });
+
   it("includes print-only Card Table grid rules so browser PDF output does not reuse absolute drag positions", async () => {
     const data = createEmptyCharacterData(minimalSystemPackage);
     document.body.innerHTML = `
@@ -111,19 +133,22 @@ describe("HTML snapshot export/import", () => {
     expect(html).toContain(".snapshot-shell .play-card *");
     expect(html).toContain("-webkit-print-color-adjust: exact");
     expect(html).toMatch(/\.snapshot-shell \.sheet-page,\s*\.snapshot-shell \[data-print-page="true"\]\s*\{[^}]*padding:\s*0/s);
-    expect(html).not.toContain("padding: 3mm");
+    expect(html).toMatch(/\.snapshot-shell \[data-print-page="true"\]:has\(\[data-module-type="cardTable"\]\)\s*\{[^}]*padding:\s*var\(--card-table-print-page-padding, 3mm\)/s);
   });
 
-  it("uses the same padding-free A4 page box while preparing output and browser printing", () => {
+  it("keeps ordinary A4 page boxes padding-free and gives Card Table print pages a default inset", () => {
     expect(printCss).toMatch(/\.print-mode \.sheet-page,\s*\.print-mode \[data-print-page="true"\]\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*210mm[^}]*height:\s*297mm[^}]*padding:\s*0/s);
     expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\.sheet-page,\s*\[data-print-page="true"\]\s*\{[^}]*padding:\s*0\s*!important/s);
-    expect(printCss).not.toContain("padding: 3mm");
+    expect(printCss).toMatch(/\.print-mode \[data-print-page="true"\]:has\(\[data-module-type="cardTable"\]\)\s*\{[^}]*padding:\s*var\(--card-table-print-page-padding, 3mm\)\s*!important/s);
+    expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\[data-print-page="true"\]:has\(\[data-module-type="cardTable"\]\)\s*\{[^}]*padding:\s*var\(--card-table-print-page-padding, 3mm\)\s*!important/s);
     expect(printCss).toMatch(/@page\s*\{[^}]*size:\s*A4 portrait[^}]*margin:\s*0/s);
     expect(printCss).not.toContain("zoom:");
     expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\.play-card\s*\{[^}]*width:\s*var\(--play-card-width\) !important/s);
     expect(printCss).toMatch(/\.play-card,\s*\.play-card \*\s*\{[^}]*print-color-adjust:\s*exact[^}]*-webkit-print-color-adjust:\s*exact/s);
     expect(printCss).toMatch(/\.sheet-page \+ \.sheet-page,[^{]*\{[^}]*break-before:\s*page[^}]*page-break-before:\s*always/s);
-    expect(printCss).toMatch(/\.print-mode input::placeholder,\s*\.print-mode textarea::placeholder\s*\{[^}]*color:\s*#d5dadd !important[^}]*-webkit-text-fill-color:\s*#d5dadd !important[^}]*print-color-adjust:\s*exact/s);
+    expect(printCss).toMatch(/\.print-mode \[data-markdown-editor\]\[data-markdown-empty="true"\]\s*\{[^}]*display:\s*block\s*!important/s);
+    expect(printCss).toMatch(/\.print-mode \[data-markdown-preview\]\[data-markdown-empty="true"\]\s*\{[^}]*display:\s*none\s*!important/s);
+    expect(printCss).toMatch(/\.print-mode input::placeholder,\s*\.print-mode textarea::placeholder\s*\{[^}]*color:\s*#e6e8e9 !important[^}]*-webkit-text-fill-color:\s*#e6e8e9 !important[^}]*print-color-adjust:\s*exact/s);
   });
 
   it("keeps Free Text on one line while preparing output and browser printing", () => {
@@ -131,13 +156,18 @@ describe("HTML snapshot export/import", () => {
     expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\[data-module-type="freeText"\] \[data-markdown-preview\][^{]*\{[^}]*overflow:\s*hidden[^}]*white-space:\s*nowrap/s);
   });
 
+  it("removes Countable Resource stepper shadows while preparing output and printing", () => {
+    expect(printCss).toMatch(/\.print-mode \[data-module-type="countableResource"\] \[data-part="decrement-button"\],[^{]*\[data-part="increment-button"\]\s*\{[^}]*box-shadow:\s*none\s*!important[^}]*filter:\s*none\s*!important/s);
+    expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\[data-module-type="countableResource"\] \[data-part="decrement-button"\],[^{]*\[data-part="increment-button"\]\s*\{[^}]*box-shadow:\s*none\s*!important[^}]*filter:\s*none\s*!important/s);
+  });
+
   it("renders empty field placeholder text in light gray in HTML snapshots", async () => {
     const html = await buildReadonlyHtmlSnapshot(createEmptyCharacterData(minimalSystemPackage));
 
     expect(html).toContain(".snapshot-shell input::placeholder");
     expect(html).toContain(".snapshot-shell textarea::placeholder");
-    expect(html).toContain("color: #d5dadd !important");
-    expect(html).toContain("-webkit-text-fill-color: #d5dadd !important");
+    expect(html).toContain("color: #e6e8e9 !important");
+    expect(html).toContain("-webkit-text-fill-color: #e6e8e9 !important");
     expect(html).toContain("print-color-adjust: exact");
   });
 

@@ -43,7 +43,7 @@ export function EditableMarkdownValue({ value, accessibleName, input, autoFit = 
   return (
     <>
       {showEditor ? (
-        <div data-markdown-editor="true">
+        <div data-markdown-editor="true" data-markdown-empty={value === "" ? "true" : undefined}>
           {input({
             ref: inputRef,
             value,
@@ -58,6 +58,7 @@ export function EditableMarkdownValue({ value, accessibleName, input, autoFit = 
         className="markdown-preview"
         data-part="input"
         data-markdown-preview="true"
+        data-markdown-empty={value === "" ? "true" : undefined}
         hidden={showEditor}
         aria-hidden={showEditor ? "true" : undefined}
         role={showEditor ? undefined : "button"}

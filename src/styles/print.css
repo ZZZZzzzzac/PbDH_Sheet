@@ -22,6 +22,8 @@
 .print-mode .card-detail-backdrop { display: none !important; }
 .print-mode [data-markdown-editor] { display: none !important; }
 .print-mode [data-markdown-preview] { display: block !important; }
+.print-mode [data-markdown-editor][data-markdown-empty="true"] { display: block !important; }
+.print-mode [data-markdown-preview][data-markdown-empty="true"] { display: none !important; }
 .print-mode [data-module-type="freeText"] [data-markdown-preview],
 .print-mode [data-module-type="freeText"] [data-markdown-preview] [data-restricted-markdown],
 .print-mode [data-module-type="freeText"] [data-markdown-preview] p {
@@ -60,6 +62,10 @@
   background: #ffffff;
 }
 
+.print-mode [data-print-page="true"]:has([data-module-type="cardTable"]) {
+  padding: var(--card-table-print-page-padding, 3mm) !important;
+}
+
 .print-mode .card-table-surface {
   overflow: visible;
   border: 0;
@@ -80,6 +86,12 @@
   filter: none !important;
 }
 
+.print-mode [data-module-type="countableResource"] [data-part="decrement-button"],
+.print-mode [data-module-type="countableResource"] [data-part="increment-button"] {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
 .print-mode .play-card,
 .print-mode .play-card * {
   print-color-adjust: exact;
@@ -88,8 +100,8 @@
 
 .print-mode input::placeholder,
 .print-mode textarea::placeholder {
-  color: #d5dadd !important;
-  -webkit-text-fill-color: #d5dadd !important;
+  color: #e6e8e9 !important;
+  -webkit-text-fill-color: #e6e8e9 !important;
   opacity: 1 !important;
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
@@ -133,6 +145,11 @@
     color-scheme: light;
   }
 
+  [data-markdown-editor] { display: none !important; }
+  [data-markdown-preview] { display: block !important; }
+  [data-markdown-editor][data-markdown-empty="true"] { display: block !important; }
+  [data-markdown-preview][data-markdown-empty="true"] { display: none !important; }
+
 [data-module-type="freeText"] [data-markdown-preview],
   [data-module-type="freeText"] [data-markdown-preview] [data-restricted-markdown],
   [data-module-type="freeText"] [data-markdown-preview] p {
@@ -144,8 +161,8 @@
 
   input::placeholder,
   textarea::placeholder {
-    color: #d5dadd !important;
-    -webkit-text-fill-color: #d5dadd !important;
+    color: #e6e8e9 !important;
+    -webkit-text-fill-color: #e6e8e9 !important;
     opacity: 1 !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
@@ -164,6 +181,10 @@
     border: 0;
     outline: 0;
     background: #ffffff;
+  }
+
+  [data-print-page="true"]:has([data-module-type="cardTable"]) {
+    padding: var(--card-table-print-page-padding, 3mm) !important;
   }
 
   .sheet-page + .sheet-page,
@@ -204,6 +225,12 @@
     top: auto !important;
     z-index: auto !important;
     transform: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  [data-module-type="countableResource"] [data-part="decrement-button"],
+  [data-module-type="countableResource"] [data-part="increment-button"] {
     box-shadow: none !important;
     filter: none !important;
   }

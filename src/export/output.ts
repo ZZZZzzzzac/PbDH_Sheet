@@ -198,8 +198,16 @@ function syncFormControls(sourceRoot: Element, cloneRoot: Element) {
 }
 
 function stripInteractiveRuntimeState(clone: Element) {
-  clone.querySelectorAll("[data-markdown-editor]").forEach((element) => element.remove());
+  clone.querySelectorAll("[data-markdown-editor]").forEach((element) => {
+    if (element.getAttribute("data-markdown-empty") !== "true") {
+      element.remove();
+    }
+  });
   clone.querySelectorAll("[data-markdown-preview]").forEach((element) => {
+    if (element.getAttribute("data-markdown-empty") === "true") {
+      element.remove();
+      return;
+    }
     element.removeAttribute("hidden");
     element.removeAttribute("aria-hidden");
     element.removeAttribute("role");
@@ -284,6 +292,9 @@ body.snapshot-body {
   overflow: hidden;
   background: #ffffff;
 }
+.snapshot-shell [data-print-page="true"]:has([data-module-type="cardTable"]) {
+  padding: var(--card-table-print-page-padding, 3mm);
+}
 .snapshot-shell .sheet-page,
 .snapshot-shell .module-slot,
 .snapshot-shell .container,
@@ -302,8 +313,8 @@ body.snapshot-body {
 }
 .snapshot-shell input::placeholder,
 .snapshot-shell textarea::placeholder {
-  color: #d5dadd !important;
-  -webkit-text-fill-color: #d5dadd !important;
+  color: #e6e8e9 !important;
+  -webkit-text-fill-color: #e6e8e9 !important;
   opacity: 1 !important;
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
@@ -316,8 +327,8 @@ body.snapshot-body {
 
   .snapshot-shell input::placeholder,
   .snapshot-shell textarea::placeholder {
-    color: #d5dadd !important;
-    -webkit-text-fill-color: #d5dadd !important;
+    color: #e6e8e9 !important;
+    -webkit-text-fill-color: #e6e8e9 !important;
     opacity: 1 !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
@@ -361,6 +372,10 @@ body.snapshot-body {
     padding: 0;
     overflow: hidden;
     break-after: page;
+  }
+  .snapshot-shell [data-print-page="true"]:has([data-module-type="cardTable"]),
+  [data-print-page="true"]:has([data-module-type="cardTable"]) {
+    padding: var(--card-table-print-page-padding, 3mm);
   }
   .snapshot-shell [data-print-page="true"],
   [data-print-page="true"] {

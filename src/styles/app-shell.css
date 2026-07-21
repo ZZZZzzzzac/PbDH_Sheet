@@ -247,7 +247,15 @@
   border: 0;
   outline: 1px solid var(--framework-border);
 }
-.page-navigation { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 14px; }
+.page-navigation {
+  box-sizing: border-box;
+  display: flex;
+  width: min(100%, 210mm);
+  margin-inline: auto;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 8px 0 14px;
+}
 .page-navigation button { flex: 0 0 auto; border: 1px solid var(--framework-border-strong); padding: 8px 14px; background: var(--framework-surface); color: var(--framework-text-strong); cursor: pointer; }
 .page-navigation button.active { border-color: var(--framework-accent-active); background: var(--framework-surface-muted); font-weight: 700; }
 .empty-page-state { padding: 32px; text-align: center; color: var(--framework-text-muted); }

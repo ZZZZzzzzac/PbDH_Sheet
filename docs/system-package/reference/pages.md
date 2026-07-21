@@ -12,8 +12,8 @@
 | `layout.html` | path | 是 | 安全相对路径 | 转成 `htmlContent` |
 | `layout.css` | path | 否 | 安全相对路径 | 转成 `cssContent` |
 
-Runtime-Visible Page = `默认隐藏` 与 Dependency `setVisibility` 的结果。Current Page 是 Renderer 临时状态：初始为第一个可见页；当前页隐藏后 fallback 到第一个可见页；零页显示空状态。两个以上可见页显示导航，一个不显示。
+Runtime-Visible Page = `默认隐藏` 与 Dependency `setVisibility` 的结果。Current Page 是 Renderer 临时状态：初始为第一个可见页；当前页隐藏后 fallback 到第一个可见页；零页显示空状态。两个以上可见页显示导航，一个不显示。Base Framework 将页面导航限制在 `min(100%, 210mm)` 并水平居中，使其与各 System Package 的 A4 主页面预览边界对齐。
 
 Printable Page policy：显式 `打印` 优先；否则采用 runtime visibility。输出模式渲染所有 printable pages，不受 Current Page 影响，并隐藏导航。
 
-Base Framework 将每个 printable Page 放入固定的 A4 纵向页面盒：外尺寸 `210mm × 297mm`、页内边距为 `0`。System Package 必须在 Layout CSS 中自行声明内容边距；这使页面背景可以铺到纸张边缘，同时由各包决定文字安全区。框架不会按 System Package 当前宽度自动缩放；HTML Layout Template 必须在 A4 页面盒内完成自己的 Grid/Flex 排版，溢出代表包布局需要修正。Sheet Shell 中确实需要作为额外打印页输出的静态区域可声明 `data-print-page="true"`，以复用同一无边距 A4 页面盒；该区域的内容边距同样由 System Package CSS 负责，不要自行重复声明纸张尺寸或 `@page` 页边距。
+Base Framework 将每个 printable Page 放入固定的 A4 纵向页面盒：外尺寸 `210mm × 297mm`、页内边距为 `0`。System Package 必须在 Layout CSS 中自行声明内容边距；这使页面背景可以铺到纸张边缘，同时由各包决定文字安全区。框架不会按 System Package 当前宽度自动缩放；HTML Layout Template 必须在 A4 页面盒内完成自己的 Grid/Flex 排版，溢出代表包布局需要修正。Sheet Shell 中确实需要作为额外打印页输出的静态区域可声明 `data-print-page="true"`，以复用同一 A4 页面盒；通常该区域的内容边距仍由 System Package CSS 负责，不要自行重复声明纸张尺寸或 `@page` 页边距。唯一的框架默认是：包含 `cardTable` Sheet Module 的额外打印页获得 `3mm` 内容边距，避免整理后的卡牌贴住纸张左上角；System Package 可在该区域设置 `--card-table-print-page-padding` 覆盖该值（包括设为 `0`）。
