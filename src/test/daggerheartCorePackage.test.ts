@@ -30,9 +30,10 @@ describe("Daggerheart core System Package", () => {
     expect(result.package.skins).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ ID: "skin-KimiK3", 推荐框架配色: "light" }),
+        expect.objectContaining({ ID: "skin-black-hours", 推荐框架配色: "dark" }),
       ]),
     );
-    expect(result.package.skins?.length).toBe(1);
+    expect(result.package.skins?.length).toBe(2);
     const kimiSkin = result.package.skins?.find((skin) => skin.ID === "skin-KimiK3");
     expect(kimiSkin?.layoutOverrides?.shell?.htmlContent).toContain("card-table-banner");
     expect(kimiSkin?.layoutOverrides?.pages.map((page) => page.ID)).toEqual([
@@ -95,6 +96,65 @@ describe("Daggerheart core System Package", () => {
     expect(skin.cssContent).toContain('.class-field [data-module-type="resourcePicker"] [data-part="button"]');
     expect(skin.cssContent).toContain(".inventory-title-row");
     expect(skin.cssContent).not.toMatch(/@import|@font-face/i);
+  });
+
+  it("ships skin-black-hours with dark gothic overrides that preserve module ownership and Guide regions", async () => {
+    const result = await loadDaggerheartPackage();
+    expect(result.ok, result.ok ? undefined : JSON.stringify(result.issues, null, 2)).toBe(true);
+    if (!result.ok) return;
+
+    const skin = result.package.skins?.find((candidate) => candidate.ID === "skin-black-hours");
+    expect(skin).toBeTruthy();
+    if (!skin?.layoutOverrides?.shell) return;
+    expect(skin.推荐框架配色).toBe("dark");
+    expect(skin.layoutOverrides.pages?.map((page) => page.ID)).toEqual(["character-main"]);
+
+    for (const override of skin.layoutOverrides.pages ?? []) {
+      const basePage = result.package.pages.find((page) => page.ID === override.ID);
+      expect(basePage, override.ID).toBeTruthy();
+      if (!basePage) continue;
+      expect(getHtmlTemplateModuleReferences(override.htmlContent).sort(), override.ID)
+        .toEqual(getHtmlTemplateModuleReferences(basePage.layout.htmlContent).sort());
+      expect(override.htmlContent).toContain("brand-monogram");
+    }
+
+    expect(result.package.shell).toBeTruthy();
+    if (!result.package.shell) return;
+    expect(getHtmlTemplateModuleReferences(skin.layoutOverrides.shell.htmlContent).sort())
+      .toEqual(getHtmlTemplateModuleReferences(result.package.shell.htmlContent).sort());
+    expect(skin.layoutOverrides.shell.htmlContent.match(/<pb-page-outlet\b/gi)).toHaveLength(1);
+    expect(skin.layoutOverrides.shell.htmlContent.match(/\bdata-print-page\s*=\s*["']true["']/gi)).toHaveLength(1);
+
+    const effectiveHtml = [
+      ...result.package.pages.map(
+        (page) => skin.layoutOverrides?.pages?.find((override) => override.ID === page.ID)?.htmlContent ?? page.layout.htmlContent,
+      ),
+      skin.layoutOverrides.shell.htmlContent,
+    ].join("\n");
+    const guideRegions = [
+      "guide-class", "guide-ancestry", "guide-community", "guide-traits",
+      "guide-resources", "guide-equipment", "guide-inventory", "guide-experiences",
+      "guide-background-questions", "guide-connection-questions", "guide-domain-cards",
+    ];
+    for (const regionId of guideRegions) {
+      expect(effectiveHtml, regionId).toContain(`data-guide-region-id="${regionId}"`);
+    }
+
+    expect(skin.cssContent).toContain(":scope");
+    expect(skin.cssContent).toContain("@media print");
+    expect(skin.cssContent).toContain(".print-mode :scope");
+    expect(skin.cssContent).toContain('url("assets/skins/skin-black-hours/diaper-pattern.svg")');
+    expect(skin.cssContent).toContain('url("assets/skins/skin-black-hours/corner-flourish.svg")');
+    expect(skin.cssContent).toContain(".brand-monogram");
+    expect(skin.cssContent).toContain(".codex-card-banner");
+    expect(skin.cssContent).toContain('[data-template-page-id="character-main"] .trait-summary');
+    expect(skin.cssContent).not.toMatch(/@import|@font-face/i);
+    expect(skin.layoutOverrides.shell.htmlContent).toContain("codex-wax-seal");
+
+    const assetPaths = new Set(result.package.assets?.map((asset) => asset.路径));
+    expect(assetPaths).toContain("assets/skins/skin-black-hours/diaper-pattern.svg");
+    expect(assetPaths).toContain("assets/skins/skin-black-hours/corner-flourish.svg");
+    expect(assetPaths).toContain("assets/skins/skin-black-hours/corner-flourish-right.svg");
   });
 
   it("loads the complete 18-step Character Creation Guide with stable targets", async () => {

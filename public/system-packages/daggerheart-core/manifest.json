@@ -16,6 +16,18 @@
           { "ID": "character-story", "html": "skins/skin-KimiK3/character-story.html" }
         ]
       }
+    },
+    {
+      "ID": "skin-black-hours",
+      "名称": "黑时祷书",
+      "css": "skins/skin-black-hours/skin.css",
+      "推荐框架配色": "dark",
+      "layoutOverrides": {
+        "shell": { "html": "skins/skin-black-hours/shell.html" },
+        "pages": [
+          { "ID": "character-main", "html": "skins/skin-black-hours/character-main.html" }
+        ]
+      }
     }
   ],
   "defaultSkin": "skin-KimiK3",
