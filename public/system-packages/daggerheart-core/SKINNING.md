@@ -22,7 +22,7 @@ Before handoff, verify every runtime-visible Page, hidden conditional Page, the 
 Before handoff, create or inspect text-mode Cards in both compact Card Face and Card Detail. Confirm that the Card name, description, tags and overflow indicator remain clearly readable against:
 
 - the default text-card background;
-- every background declared in the Card Table's `状态背景色` mapping; and
+- every outline and badge declared in the Card Table's `状态外观` mapping; and
 - the Skin's screen and print presentations.
 
-Do not assume the Skin's `--framework-text` color is compatible with Card backgrounds. Base text Cards and Author-defined Card states may use light surfaces even when the Skin recommends the Dark Framework Color Scheme. When contrast is insufficient, add Skin-scoped Card text/tag colors while preserving Author-defined `--play-card-state-background` values and their state meaning.
+Do not let Skin rules obscure the Author-defined `--play-card-state-color`, outline, or state badge. The Framework owns the badge's neutral readable surface; Skins may style ordinary Card content without changing the state meaning.

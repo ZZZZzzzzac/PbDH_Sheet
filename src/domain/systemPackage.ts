@@ -151,9 +151,12 @@ const cardTableModuleSchema = sheetModuleBaseSchema.extend({
   状态选项: z.array(z.string().min(1)).min(1).refine((states) => new Set(states).size === states.length, {
     message: "Card Table 的状态选项不能重复。",
   }).optional(),
-  状态背景色: z.record(
+  状态外观: z.record(
     z.string().min(1),
-    z.string().regex(/^#[0-9a-fA-F]{6}$/, "Card state 背景色必须是 #RRGGBB 六位十六进制颜色。"),
+    z.object({
+      描边颜色: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Card state 描边颜色必须是 #RRGGBB 六位十六进制颜色。"),
+      徽标: z.string().refine((value) => value.trim().length > 0, { message: "Card state 徽标不能为空白字符串。" }),
+    }),
   ).optional(),
   显示方式: z.enum(["image", "text"]).optional(),
   卡图字段: z.string().min(1).optional(),
@@ -679,6 +682,16 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
       return;
     }
 
+    if (moduleType === "cardTable" && isPlainObject(moduleInput) && "状态背景色" in moduleInput) {
+      moduleParseIssues.push({
+        level: "fatal",
+        code: "PACKAGE_SHAPE_INVALID",
+        text: "Card Table 的 `状态背景色` 已移除；请改用 `状态外观` 定义描边颜色和徽标。",
+        path: `modules.${index}.状态背景色`,
+      });
+      return;
+    }
+
     const parsedModule = sheetModuleSchema.safeParse(moduleInput);
     if (!parsedModule.success) {
       moduleParseIssues.push(
@@ -893,13 +906,13 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
         }
       });
       const stateOptions = module.状态选项 ?? [];
-      for (const state of Object.keys(module.状态背景色 ?? {})) {
+      for (const state of Object.keys(module.状态外观 ?? {})) {
         if (!stateOptions.includes(state)) {
           issues.push({
             level: "error",
-            code: "CARD_STATE_COLOR_UNKNOWN_STATE",
-            text: `Card state 背景色引用了状态选项中不存在的 state：${state}`,
-            path: `modules.${module.ID}.状态背景色.${state}`,
+            code: "CARD_STATE_PRESENTATION_UNKNOWN_STATE",
+            text: `Card state 外观引用了状态选项中不存在的 state：${state}`,
+            path: `modules.${module.ID}.状态外观.${state}`,
           });
         }
       }

@@ -275,7 +275,7 @@ export function createCardTablePackage(): SystemPackage {
           { 类型: "resourceLibrary", ID: "ancestry-cards" },
         ],
         状态选项: ["configured", "vault"],
-        状态背景色: { vault: "#abcdef" },
+        状态外观: { vault: { 描边颜色: "#abcdef", 徽标: "宝库" } },
       },
     ],
     pages: [

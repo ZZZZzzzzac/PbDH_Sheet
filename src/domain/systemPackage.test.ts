@@ -3,10 +3,10 @@ import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures"
 import { findAsset, findModule, findResourceLibrary, getHtmlTemplateModuleReferences, validateCachedSystemPackage, validateSystemPackage } from "./systemPackage";
 
 describe("validateSystemPackage Sheet Modules", () => {
-  it("accepts Card state background colors and rejects invalid colors or unknown states", () => {
+  it("accepts Card state appearances and rejects invalid colors, badges, unknown states, or the removed background field", () => {
     const cardModule = {
       ID: "cards", 类型: "cardTable", 标签: "卡牌", 资源来源: [{ 类型: "resourceLibrary", ID: "cards" }],
-      状态选项: ["current", "vault"], 状态背景色: { vault: "#123456" },
+      状态选项: ["current", "vault"], 状态外观: { vault: { 描边颜色: "#123456", 徽标: "宝库" } },
     } as const;
     const base = {
       ...minimalSystemPackage,
@@ -16,14 +16,19 @@ describe("validateSystemPackage Sheet Modules", () => {
     };
 
     const valid = validateSystemPackage(base);
-    const invalidColor = validateSystemPackage({ ...base, modules: [{ ...cardModule, 状态背景色: { vault: "blue" } }] });
-    const unknownState = validateSystemPackage({ ...base, modules: [{ ...cardModule, 状态背景色: { spent: "#abcdef" } }] });
+    const invalidColor = validateSystemPackage({ ...base, modules: [{ ...cardModule, 状态外观: { vault: { 描边颜色: "blue", 徽标: "宝库" } } }] });
+    const emptyBadge = validateSystemPackage({ ...base, modules: [{ ...cardModule, 状态外观: { vault: { 描边颜色: "#abcdef", 徽标: "  " } } }] });
+    const unknownState = validateSystemPackage({ ...base, modules: [{ ...cardModule, 状态外观: { spent: { 描边颜色: "#abcdef", 徽标: "已消耗" } } }] });
+    const removedBackground = validateSystemPackage({ ...base, modules: [{ ...cardModule, 状态背景色: { vault: "#abcdef" } }] });
 
     expect(valid.ok).toBe(true);
     expect(invalidColor.ok).toBe(false);
     if (!invalidColor.ok) expect(invalidColor.issues.map((issue) => issue.text).join("\n")).toContain("#RRGGBB");
+    expect(emptyBadge.ok).toBe(false);
+    if (!emptyBadge.ok) expect(emptyBadge.issues.map((issue) => issue.text).join("\n")).toContain("徽标");
     expect(unknownState.ok).toBe(false);
-    if (!unknownState.ok) expect(unknownState.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "CARD_STATE_COLOR_UNKNOWN_STATE" })]));
+    if (!unknownState.ok) expect(unknownState.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "CARD_STATE_PRESENTATION_UNKNOWN_STATE" })]));
+    expect(removedBackground.ok).toBe(false);
   });
 
   it("accepts text module label visibility and placeholder presentation options", () => {

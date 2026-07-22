@@ -4,12 +4,14 @@
     "sources": [{ "类型": "resourcePicker", "模块ID": "pick-armor" }],
     "targets": [
       { "类型": "module", "模块ID": "armor-summary" },
+      { "类型": "module", "模块ID": "armor-feature" },
       { "类型": "module", "模块ID": "armor-slots" }
     ],
     "触发": { "类型": "resourceSelected", "来源模块ID": "pick-armor" },
     "条件": { "类型": "always" },
     "动作": [
-      { "类型": "fillText", "目标模块ID": "armor-summary", "内容": { "类型": "selectedResourceTemplate", "格式": "**{{名称}}** · 重度 {{重度阈值}} / 严重 {{严重阈值}} · 护甲值 {{护甲值}}\n{{描述}}" } },
+      { "类型": "fillText", "目标模块ID": "armor-summary", "内容": { "类型": "selectedResourceTemplate", "格式": "{{名称}} | 阈值 {{重度阈值}}/{{严重阈值}} | 护甲值 {{护甲值}}" } },
+      { "类型": "fillText", "目标模块ID": "armor-feature", "内容": { "类型": "selectedResourceField", "字段": "描述" } },
       { "类型": "fillCountable", "目标模块ID": "armor-slots", "最大值": { "类型": "selectedResourceField", "字段": "护甲值" } }
     ]
   },
@@ -115,16 +117,14 @@
     "targets": [
       { "类型": "module", "模块ID": "subclass-name" },
       { "类型": "module", "模块ID": "subclass-stage" },
-      { "类型": "module", "模块ID": "weapon-summary" },
-      { "类型": "module", "模块ID": "weapon-attack-attribute" }
+      { "类型": "module", "模块ID": "weapon-summary" }
     ],
     "触发": { "类型": "resourceSelected", "来源模块ID": "pick-subclass-t1" },
     "条件": { "类型": "always" },
     "动作": [
       { "类型": "fillText", "目标模块ID": "subclass-name", "内容": { "类型": "selectedResourceField", "字段": "名称" } },
-      { "类型": "fillText", "目标模块ID": "subclass-stage", "内容": { "类型": "selectedResourceField", "字段": "阶段" } },
-      { "类型": "fillText", "目标模块ID": "weapon-summary", "内容": { "类型": "selectedResourceTemplate", "格式": "**{{武器名称}}** · {{距离}} / {{负荷}} / {{伤害类型}} · **伤害：** {{武器伤害骰}}" } },
-      { "类型": "fillText", "目标模块ID": "weapon-attack-attribute", "内容": "" }
+      { "类型": "fillText", "目标模块ID": "subclass-stage", "内容": { "类型": "selectedResourceField", "字段": "等级" } },
+      { "类型": "fillText", "目标模块ID": "weapon-summary", "内容": { "类型": "selectedResourceField", "字段": "武器原型" } }
     ]
   },
   {
@@ -133,7 +133,7 @@
     "targets": [{ "类型": "module", "模块ID": "subclass-current" }],
     "触发": { "类型": "resourceSelected", "来源模块ID": "pick-subclass-t1" },
     "条件": { "类型": "selectedResourceFieldNotEquals", "字段": "子职特性", "值": "" },
-    "动作": [{ "类型": "fillText", "目标模块ID": "subclass-current", "内容": { "类型": "selectedResourceTemplate", "格式": "**{{名称}} · {{阶段名称}}**\n**推荐领域：** {{推荐领域}}\n\n{{子职特性}}" } }]
+    "动作": [{ "类型": "fillText", "目标模块ID": "subclass-current", "内容": { "类型": "selectedResourceField", "字段": "子职特性" } }]
   },
   {
     "ID": "fill-class-feature-when-present",

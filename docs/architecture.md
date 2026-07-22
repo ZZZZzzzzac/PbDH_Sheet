@@ -416,7 +416,7 @@ Card Definition 是不可变资源数据。Card Instance 是 Player 拥有的运
 
 Card Engine 支持展示、创建、删除、拖拽移动、排序、状态切换、双面 Card Definition 翻面、四分之一圈旋转和框架内建通用指示物。每张卡最多十个指示物，以固定十色 palette 的紧凑边缘徽章呈现；值为 0 时保留，在 0 上继续减少才移除。它复用纯计数转移边界，但不是 Author 配置或 Countable Resource Sheet Module。Card Engine 不实现抽牌、弃牌、洗牌、支付、游戏合法性检查或效果结算。合法性问题由 Validation Scripts 报告。
 
-Card Instance state 是 Author 通过 Card Table `状态选项` 定义的任意字符串。Card Table presentation 可用 `状态背景色` 把部分 state 映射到 `#RRGGBB`；未映射 state 使用框架默认 Card Face 背景。颜色来自 System Package，不进入 Character Data 或 Card Definition。
+Card Instance state 是 Author 通过 Card Table `状态选项` 定义的任意字符串。Card Table presentation 可用 `状态外观` 把部分 state 映射到 Author 定义的 `#RRGGBB` 描边颜色与非空徽标文字；未映射 state 不显示状态装饰。图片 Card、文字 Card、Card Detail 与输出共用该外观。配置来自 System Package，不进入 Character Data 或 Card Definition。
 
 ## Storage 边界
 

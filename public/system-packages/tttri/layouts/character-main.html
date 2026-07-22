@@ -9,7 +9,6 @@
       <div class="picker-field class-field">
         <pb-module id="class-name"></pb-module>
         <pb-module id="pick-class"></pb-module>
-        <pb-module id="pick-subclass-t1"></pb-module>
       </div>
       <div class="identity-origin-fields" data-guide-region-id="ancestry-community">
         <div class="picker-field"><pb-module id="ancestry-name"></pb-module><pb-module id="pick-ancestry"></pb-module></div>
@@ -74,18 +73,19 @@
     </div>
 
     <div class="sheet-right-column">
-      <section class="sheet-region subclass-region" aria-label="当前子职" data-guide-region-id="subclass">
-        <h2 class="section-title">子职</h2>
+      <section class="sheet-region subclass-region" aria-label="当前干员" data-guide-region-id="subclass">
+        <h2 class="section-title">干员</h2>
         <div class="subclass-heading-row">
           <pb-module id="subclass-name"></pb-module>
           <pb-module id="subclass-stage"></pb-module>
+          <pb-module id="pick-subclass-t1"></pb-module>
         </div>
         <pb-module id="subclass-current"></pb-module>
       </section>
 
       <section class="sheet-region weapon-region" aria-label="武器原型" data-guide-region-id="weapon-prototype">
         <div class="region-heading-row"><h2 class="section-title">武器原型</h2><pb-module id="proficiency"></pb-module></div>
-        <div class="weapon-summary-row"><pb-module id="weapon-summary"></pb-module><pb-module id="weapon-attack-attribute"></pb-module></div>
+        <pb-module id="weapon-summary"></pb-module>
         <pb-module id="weapon-feature"></pb-module>
       </section>
 
@@ -93,12 +93,18 @@
         <h2 class="section-title">护甲</h2>
         <div class="equipment-picker-row"><pb-module id="pick-armor"></pb-module></div>
         <pb-module id="armor-summary"></pb-module>
+        <pb-module id="armor-feature"></pb-module>
       </section>
 
       <section class="sheet-region inventory-region" aria-label="物品栏" data-guide-region-id="inventory">
         <h2 class="section-title">物品栏</h2>
         <div class="item-list"><pb-module id="inventory"></pb-module><pb-module id="pick-inventory-item"></pb-module></div>
-        <pb-module id="currency"></pb-module>
+        <h2 class="section-title">金币区</h2>
+        <div class="currency-row" aria-label="金币">
+          <pb-module id="handful-gold"></pb-module>
+          <pb-module id="bag-gold"></pb-module>
+          <pb-module id="chest-gold"></pb-module>
+        </div>
       </section>
     </div>
   </div>

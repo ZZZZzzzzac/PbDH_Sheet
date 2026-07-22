@@ -260,12 +260,19 @@ function parseWeaponPrototype(raw) {
   const first = /^(.*)\s+(近距离|中距离|远距离)$/.exec(parts[0]);
   invariant(first, `无法解析武器名称和距离：${raw}`);
   return {
-    武器原型: raw,
-    武器名称: first[1].trim(),
-    距离: first[2],
-    负荷: parts[1],
-    伤害类型: parts[2],
+    name: first[1].trim(),
+    range: first[2],
+    load: parts[1],
+    damageType: parts[2],
   };
+}
+
+function formatWeaponPrototype(weapon, damage) {
+  return `${weapon.name} ${weapon.range}/${weapon.load} ${damage}/${weapon.damageType}`;
+}
+
+function operatorLevel(stage) {
+  return { T1: "预备", T2: "正式", T3: "资深", T4X: "精英", T4Y: "精英" }[stage];
 }
 
 function parseSubclassRow(rawRow) {
@@ -382,10 +389,9 @@ async function buildClassResources() {
           名称: section.name,
           类型: "子职",
           阶段: row.stage,
-          阶段名称: row.stageName,
+          等级: operatorLevel(row.stage),
           推荐领域: cleanRecommendedDomains(recommended),
-          ...row.weapon,
-          武器伤害骰: row.damage,
+          武器原型: formatWeaponPrototype(row.weapon, row.damage),
           子职提升: sectionUpgrades[row.stage],
           子职特性: row.subclassFeature,
           职业特性: row.classFeature,
@@ -402,10 +408,9 @@ async function buildClassResources() {
           名称: section.name,
           类型: "子职",
           阶段: "T4X",
-          阶段名称: "精英干员 X",
+          等级: operatorLevel("T4X"),
           推荐领域: cleanRecommendedDomains(recommended),
-          ...t4.weapon,
-          武器伤害骰: eliteDamage,
+          武器原型: formatWeaponPrototype(t4.weapon, eliteDamage),
           子职提升: sectionUpgrades.T4X,
           子职特性: "",
           职业特性: "",
@@ -417,10 +422,9 @@ async function buildClassResources() {
           名称: section.name,
           类型: "子职",
           阶段: "T4Y",
-          阶段名称: "精英干员 Y",
+          等级: operatorLevel("T4Y"),
           推荐领域: cleanRecommendedDomains(recommended),
-          ...t4.weapon,
-          武器伤害骰: eliteDamage,
+          武器原型: formatWeaponPrototype(t4.weapon, eliteDamage),
           子职提升: sectionUpgrades.T4Y,
           子职特性: "",
           职业特性: `${t3.classFeature}\n\n${t4.yFeature}`,
@@ -657,7 +661,7 @@ function validateCatalogs(catalogs) {
   const domainCards = catalogs.resources["domain-cards.json"];
 
   assertRequiredTextFields(classes, ["名称", "类型", "描述", "生命点", "闪避值", "主领域", "希望特性", "职业特性"], "职业");
-  assertRequiredTextFields(subclasses, ["主职", "名称", "类型", "阶段", "阶段名称", "推荐领域", "武器原型", "武器名称", "距离", "负荷", "伤害类型", "武器伤害骰", "子职提升"], "子职");
+  assertRequiredTextFields(subclasses, ["主职", "名称", "类型", "阶段", "等级", "推荐领域", "武器原型", "子职提升"], "子职");
   assertRequiredTextFields(ancestries, ["名称", "原名", "类型", "简介", "推荐经历", "默认种族经历", "默认种族经历修正", "显示方式"], "种族");
   assertRequiredTextFields(communities, ["名称", "类型", "简介", "描述", "参考出身", "显示方式"], "社群");
   assertRequiredTextFields(domainCards, ["名称", "类型", "领域", "等级", "属性", "回想", "描述", "显示方式"], "领域卡");

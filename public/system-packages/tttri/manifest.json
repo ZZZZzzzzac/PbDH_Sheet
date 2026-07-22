@@ -16,7 +16,7 @@
   ],
   "resourceLibraries": [
     { "ID": "classes", "名称": "职业", "路径": "resources/classes.json" },
-    { "ID": "subclasses", "名称": "子职", "路径": "resources/subclasses.json" },
+    { "ID": "subclasses", "名称": "干员", "路径": "resources/subclasses.json" },
     { "ID": "ancestries", "名称": "种族", "路径": "resources/ancestries.json" },
     { "ID": "communities", "名称": "社群", "路径": "resources/communities.json" },
     { "ID": "domain-cards", "名称": "领域卡", "路径": "resources/domain-cards.json" },

@@ -85,8 +85,6 @@
   align-items: stretch;
 }
 
-.class-field { grid-template-columns: minmax(0, 1fr) auto auto; }
-
 :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
   width: 2.375rem;
   min-width: 2.375rem;
@@ -172,7 +170,7 @@
 
 .resource-row { grid-template-columns: 1fr; }
 .domain-row { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0.2rem 0; }
-.subclass-heading-row { grid-template-columns: 1.4fr 0.6fr; }
+.subclass-heading-row { grid-template-columns: 1.4fr 0.6fr auto; }
 
 .resource-feature-layout {
   display: grid;
@@ -182,17 +180,6 @@
 }
 
 .resource-feature-copy { min-width: 0; }
-
-.weapon-summary-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 8rem;
-  gap: 0.125rem;
-  align-items: stretch;
-}
-
-.weapon-summary-row > [data-module-id="weapon-attack-attribute"] {
-  min-width: 0;
-}
 
 .experience-list {
   display: grid;
@@ -241,6 +228,27 @@
   min-height: 8rem;
   font-size: 0.72rem;
   line-height: 1.15;
+}
+
+.currency-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.2rem;
+  margin-top: 0.2rem;
+}
+
+.currency-row [data-module-type="countableResource"] {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
+.currency-row [data-module-type="countableResource"] [data-part="label"] {
+  order: 2;
+  border-right: 0;
+  border-left: 1px solid var(--framework-border-subtle);
+}
+
+.currency-row [data-part="maximum"] {
+  display: none;
 }
 
 .story-overview {
@@ -362,7 +370,6 @@
   .identity-fields,
   .level-field { grid-column: auto; grid-row: auto; }
   .trait-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .weapon-summary-row { grid-template-columns: 1fr; }
   .advancement-grid { grid-template-columns: 1fr; }
 }
 
@@ -374,5 +381,6 @@
   .resource-row,
   .domain-row,
   .subclass-heading-row,
-  .item-list { grid-template-columns: 1fr; }
+  .item-list,
+  .currency-row { grid-template-columns: 1fr; }
 }

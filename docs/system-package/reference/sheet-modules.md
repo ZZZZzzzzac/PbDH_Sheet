@@ -100,4 +100,4 @@ Player 点击图片区域或在其聚焦时按 Enter/Space 打开本地文件选
 
 ## cardTable
 
-`标签`、非空且不重复的 `资源来源` 必填。来源是 `{类型:"resourceLibrary"|"resourceComposer", ID, 卡牌展示?}`，或至多一个 `{类型:"otherResourceLibraries", ID:"其他", 卡牌展示?}` 动态来源。每个来源可选配置名称模板、描述模板和标签字段；省略时默认 `{{名称}}`、`{{描述}}` 与其他普通字段标签。动态来源适用于当前 Other Resources Picker 集合，不把具体 Extension Library ID 写入 System Package。多个来源共用状态、坐标系和层级。`状态选项?: non-empty unique string[]`；`状态背景色?: Record<string,"#RRGGBB">`；`显示方式?: image|text`；`卡图字段`、`卡背字段`、`显示方式字段`、`背面卡牌ID字段` 均是 Table 级配置。详见[Cards](cards.md)。
+`标签`、非空且不重复的 `资源来源` 必填。来源是 `{类型:"resourceLibrary"|"resourceComposer", ID, 卡牌展示?}`，或至多一个 `{类型:"otherResourceLibraries", ID:"其他", 卡牌展示?}` 动态来源。每个来源可选配置名称模板、描述模板和标签字段；省略时默认 `{{名称}}`、`{{描述}}` 与其他普通字段标签。动态来源适用于当前 Other Resources Picker 集合，不把具体 Extension Library ID 写入 System Package。多个来源共用状态、坐标系和层级。`状态选项?: non-empty unique string[]`；`状态外观?: Record<string,{描边颜色:"#RRGGBB",徽标:non-empty string}>`；`显示方式?: image|text`；`卡图字段`、`卡背字段`、`显示方式字段`、`背面卡牌ID字段` 均是 Table 级配置。详见[Cards](cards.md)。

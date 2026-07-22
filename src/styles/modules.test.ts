@@ -24,4 +24,10 @@ describe("Sheet Module sizing", () => {
     expect(descriptionRule).toMatch(/min-height:\s*0/);
     expect(descriptionRule).toMatch(/overflow:\s*hidden/);
   });
+
+  it("renders Card state appearance as an image-safe outline and badge instead of a background", () => {
+    expect(cardTableCss).toMatch(/\.play-card\.has-card-state-appearance::after[\s\S]*?border:\s*4px solid var\(--play-card-state-color\)/);
+    expect(cardTableCss).toMatch(/\.play-card-state-badge\s*\{[^}]*top:\s*-10px[^}]*right:\s*22px[^}]*border:\s*2px solid var\(--play-card-state-color\)/s);
+    expect(cardTableCss).not.toContain("--play-card-state-background");
+  });
 });

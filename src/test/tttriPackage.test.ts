@@ -43,13 +43,26 @@ describe("TTTRI System Package", () => {
     expect(loadedResult.package.shell?.htmlContent).toContain('class="tttri-card-pane"');
   });
 
+  it("uses the three Daggerheart gold Countable Resources", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const gold = loadedResult.package.modules.filter((module) => ["handful-gold", "bag-gold", "chest-gold"].includes(module.ID));
+
+    expect(gold).toEqual([
+      expect.objectContaining({ ID: "handful-gold", 类型: "countableResource", 标签: "把", 最大值: 9, 默认值: 1 }),
+      expect.objectContaining({ ID: "bag-gold", 类型: "countableResource", 标签: "袋", 最大值: 9, 默认值: 0 }),
+      expect.objectContaining({ ID: "chest-gold", 类型: "countableResource", 标签: "箱", 默认值: 0 }),
+    ]);
+    expect(loadedResult.package.modules).not.toContainEqual(expect.objectContaining({ ID: "currency" }));
+  });
+
   it("shows only the approved Class, Subclass and Ancestry Browser fields", () => {
     expect(loadedResult.ok).toBe(true);
     if (!loadedResult.ok) return;
     const systemPackage = loadedResult.package;
     const cases = [
       { moduleIds: ["pick-class"], libraryId: "classes", visible: ["名称", "生命点", "闪避值", "希望特性", "职业特性", "主领域"] },
-      { moduleIds: ["pick-subclass-t1"], libraryId: "subclasses", visible: ["主职", "名称", "阶段名称", "推荐领域", "武器原型", "子职提升"] },
+      { moduleIds: ["pick-subclass-t1"], libraryId: "subclasses", visible: ["主职", "名称", "等级", "推荐领域", "武器原型", "子职提升"] },
       { moduleIds: ["pick-ancestry"], libraryId: "ancestries", visible: ["名称", "简介", "推荐经历"] },
     ];
 
@@ -80,6 +93,16 @@ describe("TTTRI System Package", () => {
     const t3 = subclasses.entries.find((entry) => entry.fields.主职 === "辅助" && entry.fields.名称 === "医师" && entry.fields.阶段 === "T3")!;
     const t4x = subclasses.entries.find((entry) => entry.fields.主职 === "辅助" && entry.fields.名称 === "医师" && entry.fields.阶段 === "T4X")!;
     const t4y = subclasses.entries.find((entry) => entry.fields.主职 === "辅助" && entry.fields.名称 === "医师" && entry.fields.阶段 === "T4Y")!;
+    expect(t1.fields.武器原型).toBe("医疗单元 远距离/双手 d8/法术");
+    expect(t2.fields.武器原型).toBe("医疗单元 远距离/双手 d8+3/法术");
+    expect(t3.fields.武器原型).toBe("医疗单元 远距离/双手 d8+6/法术");
+    expect(t4x.fields.武器原型).toBe("医疗单元 远距离/双手 d8+9/法术");
+    expect([t1.fields.等级, t2.fields.等级, t3.fields.等级, t4x.fields.等级, t4y.fields.等级]).toEqual(["预备", "正式", "资深", "精英", "精英"]);
+    expect(t1.fields).not.toHaveProperty("武器伤害骰");
+    expect(systemPackage.modules).not.toContainEqual(expect.objectContaining({ ID: "weapon-attack-attribute" }));
+    expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "subclass-name", 标签: "干员类型" }));
+    expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "subclass-stage", 标签: "等级" }));
+    expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "subclass-current", 标签: "干员特性" }));
     expect(t1.fields.子职提升).toBe("子职特性获得：紧急维生：花费 3 希望点，启动医疗单元，为攻击范围内一名未标记生命点为 1-3 的友方自愿角色恢复 2 生命点。");
     expect(t2.fields.子职提升).toBe("子职特性增强：紧急维生+：花费 3 希望点，启动医疗单元，为攻击范围内一名:red[**未标记生命点为 1-4**] 的友方自愿角色恢复 2 生命点。");
     expect(t3.fields.子职提升).toContain("职业特性增强：状态分析-医师：");
@@ -108,17 +131,13 @@ describe("TTTRI System Package", () => {
     }
     expect(classResult.cardCreationInstructions).toEqual([]);
 
-    data.character.values["weapon-attack-attribute"] = "敏捷";
     const t1Result = evaluateDependencies(data, systemPackage, {
       type: "resourceSelected", sourceModuleId: "pick-subclass-t1", libraryId: "subclasses", selectedEntries: [t1],
     });
     data = applyDependencyResultToCharacterData(data, t1Result);
-    expect(data.character.values["subclass-stage"]).toBe("T1");
-    expect(data.character.values["subclass-current"]).toContain(t1.fields.子职特性);
-    expect(data.character.values["weapon-summary"]).toBe(
-      `**${t1.fields.武器名称}** · ${t1.fields.距离} / ${t1.fields.负荷} / ${t1.fields.伤害类型} · **伤害：** ${t1.fields.武器伤害骰}`,
-    );
-    expect(data.character.values["weapon-attack-attribute"]).toBe("");
+    expect(data.character.values["subclass-stage"]).toBe("预备");
+    expect(data.character.values["subclass-current"]).toBe(t1.fields.子职特性);
+    expect(data.character.values["weapon-summary"]).toBe(t1.fields.武器原型);
     expect(data.character.values["weapon-feature"]).toBe("");
     expect(t1Result.dataPatches).not.toHaveProperty("class-feature");
     expect(t1Result.dataPatches).not.toHaveProperty("class-hope-feature");
@@ -129,8 +148,8 @@ describe("TTTRI System Package", () => {
     });
     expect(t3Result.dataPatches["class-feature"]).toBe(t3.fields.职业特性);
     data = applyDependencyResultToCharacterData(data, t3Result);
-    expect(data.character.values["subclass-stage"]).toBe("T3");
-    expect(data.character.values["subclass-current"]).toContain(t3.fields.子职特性);
+    expect(data.character.values["subclass-stage"]).toBe("资深");
+    expect(data.character.values["subclass-current"]).toBe(t3.fields.子职特性);
     expect(data.character.values["class-feature"]).toBe(t3.fields.职业特性);
     const t3SubclassText = data.character.values["subclass-current"];
     const t3Data = JSON.parse(JSON.stringify(data));
@@ -141,12 +160,10 @@ describe("TTTRI System Package", () => {
     expect(xResult.dataPatches).not.toHaveProperty("class-feature");
     expect(xResult.dataPatches).not.toHaveProperty("subclass-current");
     data = applyDependencyResultToCharacterData(data, xResult);
-    expect(data.character.values["subclass-stage"]).toBe("T4X");
+    expect(data.character.values["subclass-stage"]).toBe("精英");
     expect(data.character.values["class-hope-feature"]).toBe(t4x.fields.希望特性);
     expect(data.character.values["class-feature"]).toBe(t3.fields.职业特性);
-    expect(data.character.values["weapon-summary"]).toBe(
-      `**${t4x.fields.武器名称}** · ${t4x.fields.距离} / ${t4x.fields.负荷} / ${t4x.fields.伤害类型} · **伤害：** ${t4x.fields.武器伤害骰}`,
-    );
+    expect(data.character.values["weapon-summary"]).toBe(t4x.fields.武器原型);
     expect(data.character.values["subclass-current"]).toBe(t3SubclassText);
     expect(xResult.cardCreationInstructions).toEqual([]);
 
@@ -156,7 +173,7 @@ describe("TTTRI System Package", () => {
     expect(yResult.dataPatches).not.toHaveProperty("class-hope-feature");
     expect(yResult.dataPatches).not.toHaveProperty("subclass-current");
     const yData = applyDependencyResultToCharacterData(t3Data, yResult);
-    expect(yData.character.values["subclass-stage"]).toBe("T4Y");
+    expect(yData.character.values["subclass-stage"]).toBe("精英");
     expect(yData.character.values["class-hope-feature"]).toBe(selectedClass.fields.希望特性);
     expect(yData.character.values["class-feature"]).toBe(t4y.fields.职业特性);
     expect(yData.character.values["subclass-current"]).toBe(t3SubclassText);
@@ -253,8 +270,12 @@ describe("TTTRI System Package", () => {
     });
     data = applyDependencyResultToCharacterData(data, armorResult);
     expect(data.character.values["armor-summary"]).toBe(
-      `**${armor.fields.名称}** · 重度 ${armor.fields.重度阈值} / 严重 ${armor.fields.严重阈值} · 护甲值 ${armor.fields.护甲值}\n${armor.fields.描述}`,
+      `${armor.fields.名称} | 阈值 ${armor.fields.重度阈值}/${armor.fields.严重阈值} | 护甲值 ${armor.fields.护甲值}`,
     );
+    expect(data.character.values["armor-feature"]).toBe(armor.fields.描述);
+    expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "armor-summary", 类型: "freeText" }));
+    expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "weapon-feature", 类型: "longText", 标签: "" }));
+    expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "armor-feature", 类型: "longText", 标签: "" }));
     expect(data.character.values["armor-slots"]).toEqual({ current: 0, max: Number(armor.fields.护甲值) });
 
     const lootResult = evaluateDependencies(data, systemPackage, {
@@ -275,6 +296,12 @@ describe("TTTRI System Package", () => {
     expect(t3.选项.some((option) => option.ID === "subclass")).toBe(true);
     expect(t4.选项.some((option) => option.ID === "subclass")).toBe(false);
     expect(t4.选项.some((option) => option.ID === "subclass-elite")).toBe(true);
+    expect(t2.选项.find((option) => option.ID === "subclass")?.标签).toBe("升级干员");
+    expect(t3.选项.find((option) => option.ID === "subclass")?.标签).toBe("升级干员");
+    expect(t4.选项.find((option) => option.ID === "subclass-elite")?.标签).toBe("升级干员");
+    for (const tier of [t2, t3, t4]) {
+      expect(tier.选项.filter((option) => option.分组 === "multiclass")).toHaveLength(2);
+    }
     expect(systemPackage.modules.some((module) => ["pick-subclass-t2", "pick-subclass-t3", "pick-class-module", "class-module-name"].includes(module.ID))).toBe(false);
     expect(systemPackage.resourceLibraries.some((library) => library.ID === "class-modules")).toBe(false);
     expect(systemPackage.characterCreationGuide?.步骤.length).toBeGreaterThan(0);
@@ -324,15 +351,14 @@ describe("TTTRI System Package", () => {
     empty.character.values.level = "8";
     empty.character.values["class-name"] = selectedClass.fields.名称;
     empty.character.values["subclass-name"] = selectedSubclass.fields.名称;
-    empty.character.values["subclass-stage"] = "T4X";
-    empty.character.values["weapon-attack-attribute"] = "敏捷";
+    empty.character.values["subclass-stage"] = selectedSubclass.fields.等级;
     const validIssues = await runValidationChecksInProcess({
       characterData: empty,
       resourceLibraries: systemPackage.resourceLibraries,
       packageMetadata: { id: "tttri", version: "0.1.0" },
       checks: systemPackage.validationChecks,
     });
-    expect(validIssues.filter((issue) => ["CLASS_MISSING", "SUBCLASS_MISSING", "SUBCLASS_STAGE_INVALID", "SUBCLASS_UNKNOWN", "WEAPON_ATTACK_ATTRIBUTE_MISSING", "CURRENT_THRESHOLDS_INVALID", "CURRENT_ARMOR_VALUE_INVALID", "T4_ELITE_SUBCLASS_MISSING"].includes(issue.code ?? ""))).toEqual([]);
+    expect(validIssues.filter((issue) => ["CLASS_MISSING", "SUBCLASS_MISSING", "SUBCLASS_STAGE_INVALID", "SUBCLASS_UNKNOWN", "CURRENT_THRESHOLDS_INVALID", "CURRENT_ARMOR_VALUE_INVALID", "T4_ELITE_SUBCLASS_MISSING"].includes(issue.code ?? ""))).toEqual([]);
   });
 
   it("restores persistent values and pure filters/placeholders from a Character Save round trip", () => {

@@ -303,9 +303,9 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
       }
     ],
     "状态选项": ["当前", "宝库", "已消耗"],
-    "状态背景色": {
-      "宝库": "#d8e2f3",
-      "已消耗": "#ead7d7"
+    "状态外观": {
+      "宝库": { "描边颜色": "#385f71", "徽标": "宝库" },
+      "已消耗": { "描边颜色": "#8b3a3a", "徽标": "已消耗" }
     },
     "显示方式": "text",
     "卡图字段": "卡图",
@@ -330,7 +330,7 @@ Shell 必须恰好有一个 `pb-page-outlet`。Shell 中的 Module 在切换 Cur
 | imageField | `替代文本` |
 | resourcePicker | `字段模板`、`多选`、`默认查询`、`创建卡牌` |
 | resourceComposer | `来源槽位`、`输出字段`、`选择关系输出`、`创建卡牌` |
-| cardTable | `状态选项`、`状态背景色`、`显示方式`、五个字段名配置（含 `背面卡牌ID字段`）；通用指示物不需要 Author 配置 |
+| cardTable | `状态选项`、`状态外观`、`显示方式`、五个字段名配置（含 `背面卡牌ID字段`）；通用指示物不需要 Author 配置 |
 
 列宽的全部值是 `compact | normal | wide | fill`。sort direction 是 `asc | desc`。Resource Entry 的 `ID` 默认不在 Picker 显示/筛选/排序/搜索；需要时在 `字段模板` 中显式配置。
 
