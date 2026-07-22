@@ -47,7 +47,7 @@ export function ResourceLibraryBrowser({
   const [draftSelectedIds, setDraftSelectedIds] = useState(selectedIds);
   const browserFields = fields ?? library.fields;
   const tableFields = browserFields.filter((field) => field.visible);
-  const tableColumnFields = normalizeTableColumnWidths(tableFields);
+  const tableColumnFields = normalizeTableColumnWidths(tableFields, library.entries);
   const rows = useMemo(() => queryResourceLibraryEntries(library, { filters, sort, keywords }, browserFields), [browserFields, filters, keywords, library, sort]);
 
   useEffect(() => {
@@ -139,7 +139,7 @@ export function ResourceLibraryBrowser({
               <thead>
                 <tr>
                   {tableColumnFields.map((field) => (
-                    <th scope="col" key={field.key}>
+                    <th className={field.centered ? "resource-table-cell-centered" : undefined} scope="col" key={field.key}>
                       <div className="resource-column-header">
                         <div className="resource-column-tools">
                           {field.sortable ? <button type="button" className="column-tool-button" onClick={() => cycleSort(field.key)} aria-label={`${field.label}${sort?.field === field.key ? (sort.direction === "desc" ? "降序" : "升序") : "不排序"}`}>{sort?.field === field.key ? (sort.direction === "desc" ? <ArrowDown size={14} /> : <ArrowUp size={14} />) : <ArrowUp className="inactive-sort" size={14} />}</button> : <span className="column-tool-placeholder" />}
@@ -174,7 +174,7 @@ export function ResourceLibraryBrowser({
                     tabIndex={0}
                   >
                     {tableColumnFields.map((field) => (
-                      <td className={`resource-table-cell-${field.effectiveWidth}`} key={field.key}>
+                      <td className={`resource-table-cell-${field.effectiveWidth}${field.centered ? " resource-table-cell-centered" : ""}`} key={field.key}>
                         <RestrictedMarkdown value={entry.fields[field.key]} />
                       </td>
                     ))}
@@ -206,6 +206,7 @@ function normalizeSort(sort: ResourceLibraryQuery["sort"] | undefined) {
 type TableColumnField = ResourceLibraryField & {
   effectiveWidth: NonNullable<ResourceLibraryField["width"]>;
   columnWidth: string;
+  centered: boolean;
 };
 
 const resourceTableColumnWidthWeights = {
@@ -215,7 +216,7 @@ const resourceTableColumnWidthWeights = {
   fill: 5.5,
 } as const;
 
-function normalizeTableColumnWidths(fields: ResourceLibraryField[]): TableColumnField[] {
+function normalizeTableColumnWidths(fields: ResourceLibraryField[], entries: ResourceLibraryEntry[]): TableColumnField[] {
   const lastFillIndex = fields.reduce((lastIndex, field, index) => ((field.width ?? "normal") === "fill" ? index : lastIndex), -1);
 
   const effectiveFields = fields.map((field, index) => {
@@ -230,5 +231,7 @@ function normalizeTableColumnWidths(fields: ResourceLibraryField[]): TableColumn
   return effectiveFields.map((field) => ({
     ...field,
     columnWidth: `${(resourceTableColumnWidthWeights[field.effectiveWidth] / totalWeight) * 100}%`,
+    centered: [field.label, ...entries.map((entry) => entry.fields[field.key] ?? "")]
+      .every((value) => [...value].length <= 10),
   }));
 }

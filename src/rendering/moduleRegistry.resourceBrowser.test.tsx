@@ -74,6 +74,22 @@ describe("Resource Browser rendering", () => {
 
   });
 
+  it("centers columns whose complete Library values are at most ten Unicode characters", () => {
+    const systemPackage = createResourcePickerPackage({ defaultFilters: { 领域: ["利刃"] } });
+    systemPackage.resourceLibraries[0].entries[0].fields.名称 = "1234567890";
+    systemPackage.resourceLibraries[0].entries[1].fields.领域 = "12345678901";
+    renderModuleDemo(systemPackage);
+
+    fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
+
+    const shortHeader = screen.getByRole("columnheader", { name: "卡名" });
+    const longHeader = screen.getByRole("columnheader", { name: "领域" });
+    expect(shortHeader).toHaveClass("resource-table-cell-centered");
+    expect(within(shortHeader.closest("table")!).getByText("1234567890").closest("td")).toHaveClass("resource-table-cell-centered");
+    expect(longHeader).not.toHaveClass("resource-table-cell-centered");
+    expect(screen.queryByText("12345678901")).not.toBeInTheDocument();
+  });
+
   it("supports Resource Picker multi-select and default Resource Library filters", () => {
     renderModuleDemo(createResourcePickerPackage({ multiSelect: true, defaultFilters: { 领域: ["骸骨"] } }));
 
