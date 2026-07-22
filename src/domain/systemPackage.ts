@@ -232,6 +232,10 @@ const dependencySourceSchema = z.discriminatedUnion("类型", [
     类型: z.literal("countableResource"),
     模块ID: z.string().min(1),
   }),
+  z.object({
+    类型: z.literal("freeText"),
+    模块ID: z.string().min(1),
+  }),
 ]);
 
 const dependencyTargetSchema = z.discriminatedUnion("类型", [
@@ -256,6 +260,10 @@ const dependencyTriggerSchema = z.discriminatedUnion("类型", [
   }),
   z.object({
     类型: z.literal("countableChanged"),
+    来源模块ID: z.string().min(1),
+  }),
+  z.object({
+    类型: z.literal("freeTextChanged"),
     来源模块ID: z.string().min(1),
   }),
 ]);
@@ -351,6 +359,11 @@ const dependencyActionSchema = z.discriminatedUnion("类型", [
     写入方式: z.enum(["替换", "追加"]).optional(),
     追加分隔符: z.string().optional(),
   }),
+  z.object({
+    类型: z.literal("setTextPlaceholder"),
+    目标模块ID: z.string().min(1),
+    内容: fillTextContentSchema,
+  }),
   fillCountableActionSchema,
   z.object({
     类型: z.literal("setVisibility"),
@@ -368,6 +381,12 @@ const dependencyActionSchema = z.discriminatedUnion("类型", [
         类型: z.literal("selectedResourceField"),
         字段: z.string().min(1),
         选择索引: z.number().int().min(0).optional(),
+      }),
+      z.object({
+        类型: z.literal("freeTextValues"),
+        模块IDs: z.array(z.string().min(1)).min(1).refine((ids) => new Set(ids).size === ids.length, {
+          message: "freeTextValues 模块IDs不能重复。",
+        }),
       }),
     ]),
   }),
@@ -1062,6 +1081,13 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
         text: `countableChanged 触发源必须是 Countable Resource：${dependency.触发.来源模块ID}`,
         path: `dependencies.${dependency.ID}.触发.来源模块ID`,
       });
+    } else if (dependency.触发.类型 === "freeTextChanged" && sourceModule.类型 !== "freeText") {
+      issues.push({
+        level: "error",
+        code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE",
+        text: `freeTextChanged 触发源必须是 Free Text：${dependency.触发.来源模块ID}`,
+        path: `dependencies.${dependency.ID}.触发.来源模块ID`,
+      });
     }
 
     const hasDeclaredTriggerSource = dependency.sources.some((source) => source.模块ID === dependency.触发.来源模块ID);
@@ -1107,6 +1133,15 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     }
 
     dependency.动作.forEach((action, actionIndex) => {
+      if (dependency.触发.类型 === "freeTextChanged" && action.类型 !== "setResourceDefaultFilter") {
+        issues.push({
+          level: "error",
+          code: "UNSUPPORTED_DEPENDENCY_ACTION",
+          text: `freeTextChanged 只允许 setResourceDefaultFilter：${dependency.ID}`,
+          path: `dependencies.${dependency.ID}.动作.${actionIndex}.类型`,
+        });
+      }
+
       if (action.类型 === "fillText") {
         const targetModule = moduleById.get(action.目标模块ID);
         if (!targetModule) {
@@ -1284,7 +1319,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
             validateResourceLibraryField(findResourceLibrary(systemPackage, link.ID), action.字段, `dependencies.${dependency.ID}.动作.${actionIndex}.字段`, dependency.ID, targetModule.ID, issues);
           }
         }
-        if (!Array.isArray(action.值)) {
+        if (!Array.isArray(action.值) && action.值.类型 === "selectedResourceField") {
           if (dependency.触发.类型 !== "resourceSelected") {
             issues.push({
               level: "error",
@@ -1294,6 +1329,84 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
             });
           }
           validateSelectedResourceField(systemPackage, sourceModule, action.值.字段, `dependencies.${dependency.ID}.动作.${actionIndex}.值.字段`, dependency.ID, issues);
+        }
+        if (!Array.isArray(action.值) && action.值.类型 === "freeTextValues") {
+          if (dependency.触发.类型 !== "freeTextChanged") {
+            issues.push({
+              level: "error",
+              code: "UNSUPPORTED_DEPENDENCY_ACTION_CONTENT",
+              text: `setResourceDefaultFilter freeTextValues 只能用于 freeTextChanged 触发：${dependency.ID}`,
+              path: `dependencies.${dependency.ID}.动作.${actionIndex}.值.类型`,
+            });
+          }
+          action.值.模块IDs.forEach((moduleId, moduleIndex) => {
+            const referencedModule = moduleById.get(moduleId);
+            if (!referencedModule) {
+              issues.push({
+                level: "error",
+                code: "MISSING_DEPENDENCY_SOURCE_MODULE",
+                text: `freeTextValues 引用了不存在的模块：${moduleId}`,
+                path: `dependencies.${dependency.ID}.动作.${actionIndex}.值.模块IDs.${moduleIndex}`,
+              });
+            } else if (referencedModule.类型 !== "freeText") {
+              issues.push({
+                level: "error",
+                code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE",
+                text: `freeTextValues 来源必须是 Free Text：${moduleId}`,
+                path: `dependencies.${dependency.ID}.动作.${actionIndex}.值.模块IDs.${moduleIndex}`,
+              });
+            }
+            if (!dependency.sources.some((source) => source.类型 === "freeText" && source.模块ID === moduleId)) {
+              issues.push({
+                level: "error",
+                code: "MISSING_DEPENDENCY_SOURCE_DECLARATION",
+                text: `Dependency Rule sources 必须声明 freeTextValues 来源模块：${moduleId}`,
+                path: `dependencies.${dependency.ID}.sources`,
+              });
+            }
+          });
+        }
+      }
+
+      if (action.类型 === "setTextPlaceholder") {
+        const targetModule = moduleById.get(action.目标模块ID);
+        if (!targetModule) {
+          issues.push({
+            level: "error",
+            code: "MISSING_DEPENDENCY_TARGET_MODULE",
+            text: `setTextPlaceholder 引用了不存在的目标模块：${action.目标模块ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
+          });
+          return;
+        }
+        if (targetModule.类型 !== "freeText" && targetModule.类型 !== "longText") {
+          issues.push({
+            level: "error",
+            code: "UNSUPPORTED_DEPENDENCY_TARGET_MODULE",
+            text: `setTextPlaceholder 目标必须是 Free Text 或 Long Text：${action.目标模块ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
+          });
+        }
+        if (dependency.触发.类型 !== "resourceSelected") {
+          issues.push({
+            level: "error",
+            code: "UNSUPPORTED_DEPENDENCY_ACTION_CONTENT",
+            text: `setTextPlaceholder 只能用于 resourceSelected 触发：${dependency.ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.内容`,
+          });
+        }
+        if (typeof action.内容 !== "string") {
+          const fields = action.内容.类型 === "selectedResourceField"
+            ? [action.内容.字段]
+            : getResourceTextTemplateFields(action.内容.格式);
+          fields.forEach((field) => validateSelectedResourceField(
+            systemPackage,
+            sourceModule,
+            field,
+            `dependencies.${dependency.ID}.动作.${actionIndex}.内容`,
+            dependency.ID,
+            issues,
+          ));
         }
       }
     });

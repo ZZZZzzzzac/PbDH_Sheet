@@ -134,6 +134,52 @@ describe("validateSystemPackage Sheet Modules", () => {
     ]));
   });
 
+  it("validates declared Free Text sources used by committed default filters", () => {
+    const createPackage = (options: { secondModuleType?: "freeText" | "longText"; includeSecondSource?: boolean; secondValueModuleId?: string } = {}) => ({
+      ...minimalSystemPackage,
+      modules: [
+        { ID: "primary-domain", 类型: "freeText", 标签: "主领域" },
+        { ID: "secondary-domain", 类型: options.secondModuleType ?? "freeText", 标签: "次领域" },
+        { ID: "pick-domain-cards", 类型: "resourcePicker", 按钮文本: "选择领域卡", 资源库: [{ ID: "domain-cards" }] },
+      ],
+      pages: [{
+        ...minimalSystemPackage.pages[0],
+        layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<pb-module id="primary-domain"></pb-module><pb-module id="secondary-domain"></pb-module><pb-module id="pick-domain-cards"></pb-module>' },
+      }],
+      resourceLibraries: [{ ID: "domain-cards", 名称: "领域卡", 路径: "resources/domain-cards.json", entries: [{ ID: "card:奥术", 领域: "奥术" }] }],
+      dependencies: [{
+        ID: "filter-domain-cards",
+        sources: [
+          { 类型: "freeText", 模块ID: "primary-domain" },
+          ...(options.includeSecondSource === false ? [] : [{ 类型: "freeText", 模块ID: "secondary-domain" }]),
+        ],
+        targets: [{ 类型: "module", 模块ID: "pick-domain-cards" }],
+        触发: { 类型: "freeTextChanged", 来源模块ID: "primary-domain" },
+        条件: { 类型: "always" },
+        动作: [{
+          类型: "setResourceDefaultFilter",
+          目标模块ID: "pick-domain-cards",
+          字段: "领域",
+          值: { 类型: "freeTextValues", 模块IDs: ["primary-domain", options.secondValueModuleId ?? "secondary-domain"] },
+        }],
+      }],
+    });
+
+    expect(validateSystemPackage(createPackage()).ok).toBe(true);
+
+    const missing = validateSystemPackage(createPackage({ secondValueModuleId: "missing-domain" }));
+    expect(missing.ok).toBe(false);
+    if (!missing.ok) expect(missing.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "MISSING_DEPENDENCY_SOURCE_MODULE" })]));
+
+    const wrongType = validateSystemPackage(createPackage({ secondModuleType: "longText" }));
+    expect(wrongType.ok).toBe(false);
+    if (!wrongType.ok) expect(wrongType.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE" })]));
+
+    const undeclared = validateSystemPackage(createPackage({ includeSecondSource: false }));
+    expect(undeclared.ok).toBe(false);
+    if (!undeclared.ok) expect(undeclared.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "MISSING_DEPENDENCY_SOURCE_DECLARATION" })]));
+  });
+
   it.each([
     ["removed singular field", { 资源库ID: "cards" }],
     ["empty plural field", { 资源来源: [] }],

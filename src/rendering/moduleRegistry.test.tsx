@@ -433,6 +433,9 @@ describe("Simple Sheet Module rendering", () => {
     };
 
     const result = renderModuleDemo(dropdownPackage);
+    const originalCommit = useRuntimeStore.getState().commitFreeTextChange;
+    const commitFreeTextChange = vi.fn();
+    act(() => useRuntimeStore.setState({ commitFreeTextChange }));
     const select = screen.getByRole("combobox", { name: "姓名" });
     const options = within(select).getAllByRole("option");
 
@@ -447,6 +450,37 @@ describe("Simple Sheet Module rendering", () => {
 
     expect(select).toHaveValue("法师");
     expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("法师");
+    expect(commitFreeTextChange).not.toHaveBeenCalled();
+    fireEvent.blur(select);
+    expect(commitFreeTextChange).toHaveBeenCalledTimes(1);
+    expect(commitFreeTextChange).toHaveBeenCalledWith("character-name", "法师");
+    act(() => useRuntimeStore.setState({ commitFreeTextChange: originalCommit }));
+  });
+
+  it("prefers a derived text placeholder without writing a Sheet Value", () => {
+    renderModuleDemo();
+    act(() => useRuntimeStore.setState({ derivedTextPlaceholders: { "character-name": "推荐经历：感染者互助" } }));
+
+    const input = screen.getByLabelText("姓名");
+    expect(input).toHaveAttribute("placeholder", "推荐经历：感染者互助");
+    expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("");
+  });
+
+  it("commits a Free Text input only after blur", () => {
+    renderModuleDemo();
+    const originalCommit = useRuntimeStore.getState().commitFreeTextChange;
+    const commitFreeTextChange = vi.fn();
+    act(() => useRuntimeStore.setState({ commitFreeTextChange }));
+    const input = screen.getByRole("textbox", { name: "姓名" });
+
+    fireEvent.change(input, { target: { value: "阿米娅" } });
+    expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("阿米娅");
+    expect(commitFreeTextChange).not.toHaveBeenCalled();
+
+    fireEvent.blur(input);
+    expect(commitFreeTextChange).toHaveBeenCalledTimes(1);
+    expect(commitFreeTextChange).toHaveBeenCalledWith("character-name", "阿米娅");
+    act(() => useRuntimeStore.setState({ commitFreeTextChange: originalCommit }));
   });
 
   it("uses the Free Text dropdown default and hidden-label accessible fallback", () => {

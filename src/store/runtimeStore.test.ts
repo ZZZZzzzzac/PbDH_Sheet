@@ -153,6 +153,7 @@ describe("runtime store", () => {
       characterData: null,
       packageIssues: [],
       derivedReadOnlyDisplayContent: {},
+      derivedTextPlaceholders: {},
       moduleVisibility: {},
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
@@ -236,6 +237,47 @@ describe("runtime store", () => {
     await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
 
     expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("阿青");
+  });
+
+  it("waits for a committed Free Text change before rebuilding Resource Picker filters", async () => {
+    const filterAction = {
+      类型: "setResourceDefaultFilter" as const,
+      目标模块ID: "pick-domain-cards",
+      字段: "领域",
+      值: { 类型: "freeTextValues" as const, 模块IDs: ["character-name", "secondary-domain"] },
+    };
+    const freeTextPackage = {
+      ...minimalSystemPackage,
+      modules: [
+        ...minimalSystemPackage.modules,
+        { ID: "secondary-domain", 类型: "freeText", 标签: "次领域" },
+        { ID: "pick-domain-cards", 类型: "resourcePicker", 按钮文本: "选择领域卡", 资源库: [{ ID: "domain-cards" }] },
+      ],
+      dependencies: ["character-name", "secondary-domain"].map((moduleId) => ({
+        ID: `filter-${moduleId}`,
+        sources: [
+          { 类型: "freeText" as const, 模块ID: "character-name" },
+          { 类型: "freeText" as const, 模块ID: "secondary-domain" },
+        ],
+        targets: [{ 类型: "module" as const, 模块ID: "pick-domain-cards" }],
+        触发: { 类型: "freeTextChanged" as const, 来源模块ID: moduleId },
+        条件: { 类型: "always" as const },
+        动作: [filterAction],
+      })),
+    } as unknown as SystemPackage;
+    configureRuntimeDependencies({
+      storage: memoryStorage,
+      loadSystemPackageFromFile: async () => ({ ok: true, package: freeTextPackage, issues: [] }),
+    });
+    await act(async () => useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob()));
+    const queryBeforeInput = useRuntimeStore.getState().resourcePickerDefaultQueries["pick-domain-cards"];
+
+    act(() => useRuntimeStore.getState().updateModuleValue("character-name", "奥术"));
+    act(() => useRuntimeStore.getState().updateModuleValue("secondary-domain", "奇迹"));
+    expect(useRuntimeStore.getState().resourcePickerDefaultQueries["pick-domain-cards"]).toEqual(queryBeforeInput);
+
+    act(() => useRuntimeStore.getState().commitFreeTextChange("secondary-domain", "奇迹"));
+    expect(useRuntimeStore.getState().resourcePickerDefaultQueries["pick-domain-cards"].filters).toEqual({ 领域: ["奥术", "奇迹"] });
   });
 
   it("evaluates countableChanged dependencies after updating a Countable Resource", async () => {

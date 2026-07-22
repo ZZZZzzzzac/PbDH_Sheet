@@ -14,6 +14,10 @@
 
 Player value 作为原始文本写 Character Data，并按[Restricted Markdown](restricted-markdown.md)展示。空或聚焦时显示单行原始输入；非空失焦时显示渲染结果。预览默认在自然字号与 `9px` 之间自动选择能够保持单行且完整容纳内容的最大字号；若 `9px` 仍超宽，继续单行裁切，并由 Framework Check 产生 `TEXT_CONTENT_OVERFLOW` warning。编辑态保持正常字号并可横向滚动。拟合状态不写 Character Data，也不提供 System Package 配置开关。列表语法不会把 freeText 改成多行控件。浏览器打印与 HTML snapshot 在值为空时保留输入控件及 `占位文本`，并用接近纸张背景的浅灰色输出，作为打印后手写提示；非空值仍输出 Restricted Markdown 预览。
 
+Free Text 可作为 `freeTextChanged` Dependency source。输入或选择期间的 `onChange`继续更新 Character Data 和自动保存，不执行 Dependency Logic；普通输入框或下拉框失焦时才提交最终值。跨模块读取和 Resource Picker 默认筛选仍由 Store 与 Dependency Engine 负责，Free Text、Resource Library 和 Browser 不直接互相读取。
+
+`setTextPlaceholder` 可从 Resource selection 为 freeText/longText 提供纯派生占位符。派生值优先于静态`占位文本`，但只在 Sheet Value 为空时显示；它不写 Character Data。空字段打印沿用现有浅灰 placeholder 策略，Player 输入后显示其真实值。
+
 声明`选项`时，Free Text 改用原生单选下拉框。每个选项必须是非空白且不重复的字符串；选项按纯文本显示，不解析 Restricted Markdown。`默认值`若存在必须严格等于一个选项；省略时新 Character 的值仍为`""`，下拉框以`占位文本`或默认“请选择”显示不可选空提示。Player 选择后仍保存普通字符串。旧 Character Data 或`fillText`替换写入的列表外字符串不会被清空或改写：下拉框会把它作为临时不可选项显示，直到 Player 改选当前选项。稳定 part `input`在此模式指向`select`元素。
 隐藏视觉标签时，输入框或下拉框依次使用非空 `标签`、`占位文本`、Module `ID` 作为无障碍名称。
 

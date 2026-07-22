@@ -3,6 +3,7 @@ import type { RefObject } from "react";
 import { useTextModuleState } from "./moduleState";
 import { EditableMarkdownValue } from "./EditableMarkdownValue";
 import { fitSingleLineTextContent } from "./textFit";
+import { useRuntimeStore } from "../store/runtimeStore";
 
 interface FreeTextModuleProps {
   module: FreeTextModule;
@@ -10,9 +11,12 @@ interface FreeTextModuleProps {
 
 export function FreeTextModule({ module }: FreeTextModuleProps) {
   const [value, setValue] = useTextModuleState(module.ID, module.默认值 ?? "");
+  const commitFreeTextChange = useRuntimeStore((state) => state.commitFreeTextChange);
+  const derivedPlaceholder = useRuntimeStore((state) => state.derivedTextPlaceholders[module.ID]);
   const inputId = `module-${module.ID}`;
   const labelHidden = module.隐藏标签 === true || module.标签 === "";
-  const accessibleName = module.标签 || module.占位文本 || module.ID;
+  const placeholder = derivedPlaceholder ?? module.占位文本;
+  const accessibleName = module.标签 || placeholder || module.ID;
   const dropdownOptions = module.选项;
   const valueIsDeclared = value === "" || (dropdownOptions?.includes(value) ?? true);
 
@@ -38,8 +42,9 @@ export function FreeTextModule({ module }: FreeTextModuleProps) {
           aria-label={labelHidden ? accessibleName : undefined}
           value={value}
           onChange={(event) => setValue(event.target.value)}
+          onBlur={(event) => commitFreeTextChange(module.ID, event.currentTarget.value)}
         >
-          {value === "" ? <option value="" disabled>{module.占位文本 || "请选择"}</option> : null}
+          {value === "" ? <option value="" disabled>{placeholder || "请选择"}</option> : null}
           {!valueIsDeclared ? <option value={value} disabled>{value}</option> : null}
           {dropdownOptions.map((option) => <option key={option} value={option}>{option}</option>)}
         </select>
@@ -56,10 +61,13 @@ export function FreeTextModule({ module }: FreeTextModuleProps) {
               className="input"
               data-part="input"
               aria-label={labelHidden ? accessibleName : undefined}
-              placeholder={module.占位文本}
+              placeholder={placeholder}
               value={props.value}
               onFocus={props.onFocus}
-              onBlur={props.onBlur}
+              onBlur={(event) => {
+                props.onBlur();
+                commitFreeTextChange(module.ID, event.currentTarget.value);
+              }}
               onChange={(event) => { setValue(event.target.value); props.onChange(event.target.value); }}
             />
           )}

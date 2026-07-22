@@ -76,6 +76,14 @@ _Avoid_: Strict gameplay value checker
 The written content of a sheet field, stored as text by default like a paper sheet entry.
 _Avoid_: Premature numeric type
 
+**Committed Free Text Change**:
+A transient Dependency Logic event emitted when a Player leaves a Free Text input or dropdown. Normal input changes still update Character Data and autosave; only the committed event may rebuild declared pure Resource Picker filters.
+_Avoid_: Per-keystroke dependency event, persisted Dependency Event
+
+**Derived Text Placeholder**:
+A non-persistent Free Text or Long Text placeholder computed by Dependency Logic from a Resource selection. It appears only while the Player Sheet Value is empty and uses the existing gray placeholder output policy.
+_Avoid_: Filled Sheet Value, Module Author Data mutation
+
 **Resource Value**:
 The author-provided content of a Resource Library entry field, treated as display text unless it is a framework-critical identifier or reference.
 _Avoid_: Implied numeric field
@@ -341,6 +349,9 @@ _Avoid_: Script plugin
 - An **HTML Layout Template** may include **Static Layout Content** and module placeholders, but editable Character Data still belongs to **Sheet Modules**.
 - A **Countable Resource** uses the same `{current, max}` Character Data and `fillCountable` Dependency Logic contract in both Numeric Presentation and Marker Presentation; presentation choice does not create a new Sheet Module type.
 - A **Countable Resource** may emit `countableChanged` after Player edits. Dependency Logic may use a bounded declarative integer calculation over Countable current values and persisted Resource Selection counts; it does not execute arbitrary formulas or scripts.
+- A **Free Text** Sheet Module updates its **Sheet Value** during input, but emits a **Committed Free Text Change** only on blur. Dependency Logic may combine declared non-empty Free Text sources into one Resource Picker default field filter; Resource Libraries and Browsers never read Character Data directly.
+- Pure default filters derived from **Committed Free Text Changes** rebuild from existing Character Data after load, import, or Character Save switch without persisting or replaying the event.
+- A Resource selection may produce a **Derived Text Placeholder** through Dependency Logic. It rebuilds from the source snapshot, does not write Character Data, and disappears visually when the Player enters a Sheet Value.
 - A **Marker Presentation** renders `current` current-value markers followed by `max - current` remaining-capacity markers. When `max` is absent, it renders only the current-value markers.
 - An **HTML Layout Template** must not define interactive form controls or custom behavior; all Player interaction that reads or writes state must use Base Framework **Sheet Modules** or other framework-provided interactive surfaces.
 - **Dependency Logic** helps Players avoid table lookup and text copying, but should not imply full automation of game rules.

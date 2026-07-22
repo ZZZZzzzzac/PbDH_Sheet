@@ -2,6 +2,7 @@ import type { LongTextModule as LongTextModuleConfig } from "../domain/systemPac
 import type { CSSProperties, RefObject } from "react";
 import { useTextModuleState } from "./moduleState";
 import { EditableMarkdownValue } from "./EditableMarkdownValue";
+import { useRuntimeStore } from "../store/runtimeStore";
 
 interface LongTextModuleProps {
   module: LongTextModuleConfig;
@@ -9,9 +10,11 @@ interface LongTextModuleProps {
 
 export function LongTextModule({ module }: LongTextModuleProps) {
   const [value, setValue] = useTextModuleState(module.ID, module.默认值 ?? "");
+  const derivedPlaceholder = useRuntimeStore((state) => state.derivedTextPlaceholders[module.ID]);
   const inputId = `module-${module.ID}`;
   const labelHidden = module.隐藏标签 === true || module.标签 === "";
-  const accessibleName = module.标签 || module.占位文本 || module.ID;
+  const placeholder = derivedPlaceholder ?? module.占位文本;
+  const accessibleName = module.标签 || placeholder || module.ID;
   const rows = module.行数 ?? 4;
   const style = {
     "--long-text-rows": rows,
@@ -36,7 +39,7 @@ export function LongTextModule({ module }: LongTextModuleProps) {
             className="input textarea"
             data-part="input"
             aria-label={labelHidden ? accessibleName : undefined}
-            placeholder={module.占位文本}
+            placeholder={placeholder}
             rows={rows}
             value={props.value}
             onFocus={props.onFocus}
