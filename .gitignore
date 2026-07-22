@@ -5,4 +5,5 @@ playwright-report/
 test-results/
 *.local
 /docs/pbdh/粥/领域卡/**/*.[pP][nN][gG]
+/docs/pbdh/粥/领域卡/**/*.[wW][eE][bB][pP]
 /docs/pbdh/粥/种族/**/*.[pP][nN][gG]
