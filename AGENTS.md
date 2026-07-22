@@ -20,6 +20,13 @@ The authoritative System Package documentation is `docs/system-package/README.md
 - AI and programmers must read `docs/system-package/reference/` before generating, modifying, validating, or diagnosing a System Package.
 - Use `docs/system-package/examples/` and `public/system-packages/` as current examples. Do not use removed legacy System Package documents or deprecated `selectionText` / Flow Layout interfaces.
 
+### Asset size policy
+
+- Before adding a large asset batch, measure file count, expanded bytes, and packaged bytes, then choose an explicit size-reduction plan. Import limits are safety caps, not size targets.
+- Do not commit raw source assets, lossless originals, generated intermediates, or duplicate exports to Git. Git retains historical blobs; keep source archives outside the repository and commit only optimized runtime assets.
+- For System Package images, resize to actual display needs, strip metadata, deduplicate, and prefer WebP/AVIF. Use PNG only when lossless output is required. Never embed large base64 payloads in JSON, HTML, or CSS.
+- Follow `docs/system-package/reference/assets-and-paths.md` for package-specific rules.
+
 ### PRD & Architecture
 
 `docs/PRD.md`, `docs/architecture.md` and `docs/c4.md`
