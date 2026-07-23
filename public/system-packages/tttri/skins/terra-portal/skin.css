@@ -597,9 +597,80 @@
   box-shadow: 0 0 0 1px var(--tp-line);
 }
 
+/* 桌面底纹:顶部一线青辉 + 点阵坐标网,纯背景层不改几何 */
 [data-module-type="cardTable"] [data-part="surface"] {
   border-color: var(--tp-line);
-  background: var(--tp-black);
+  background:
+    radial-gradient(ellipse 72% 44% at 50% 0%, rgba(99, 191, 209, 0.07), rgba(99, 191, 209, 0) 72%),
+    radial-gradient(circle, rgba(142, 155, 161, 0.13) 1px, rgba(142, 155, 161, 0) 1.4px),
+    var(--tp-black);
+  background-size: 100% 100%, 26px 26px, 100% 100%;
+}
+
+/* 桌面纹章:领域星芒(动画规范·奇迹)居中水印。SVG 内置 SMIL 入场+有限循环(皮肤 CSS 不支持 @keyframes);
+   z-index 0 压在所有卡牌(内联 z-index ≥ 1)之下,不抢主角。 */
+[data-module-type="cardTable"] [data-part="surface"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("assets/icons/domain-miracle.svg");
+  background-repeat: no-repeat;
+  background-position: center 45%;
+  background-size: min(38vmin, 320px);
+}
+
+/* 主领域联动:Sheet 根元素暴露 freeText 值为 data-value-<模块ID>,按主领域切换纹章;默认即奇迹 */
+:scope[data-value-primary-domain="远见"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-foresight.svg");
+}
+:scope[data-value-primary-domain="攻坚"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-assault.svg");
+}
+:scope[data-value-primary-domain="坚阵"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-bulwark.svg");
+}
+:scope[data-value-primary-domain="秘行"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-stealth.svg");
+}
+:scope[data-value-primary-domain="精准"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-precision.svg");
+}
+:scope[data-value-primary-domain="支柱"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-pillar.svg");
+}
+:scope[data-value-primary-domain="奥术"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-arcane.svg");
+}
+:scope[data-value-primary-domain="工业"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-industrial.svg");
+}
+:scope[data-value-primary-domain="心界"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-mindsphere.svg");
+}
+:scope[data-value-primary-domain="迅攻"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-blitz.svg");
+}
+
+/* 艺术字水印:TERRA / PORTAL 描边大字贴右下,低透明描边与官网背景排印同调 */
+[data-module-type="cardTable"] [data-part="surface"]::before {
+  content: "TERRA\A PORTAL";
+  white-space: pre;
+  position: absolute;
+  right: 1.1rem;
+  bottom: 0.7rem;
+  z-index: 0;
+  pointer-events: none;
+  font-family: var(--tp-font-display);
+  font-size: 4rem;
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: 0.16em;
+  text-align: right;
+  text-transform: uppercase;
+  color: rgba(99, 191, 209, 0.05);
+  -webkit-text-stroke: 1px rgba(99, 191, 209, 0.12);
 }
 
 [data-module-type="cardTable"] :is([data-part="tidy-button"], [data-part="size-control"]) {
@@ -636,6 +707,11 @@
 
 .print-mode :scope [data-module-type="cardTable"] [data-part="surface"] {
   background: #ffffff;
+}
+
+.print-mode :scope [data-module-type="cardTable"] [data-part="surface"]::before,
+.print-mode :scope [data-module-type="cardTable"] [data-part="surface"]::after {
+  display: none;
 }
 
 .print-mode :scope :is(
@@ -704,6 +780,11 @@
     background: #ffffff;
   }
 
+  [data-module-type="cardTable"] [data-part="surface"]::before,
+  [data-module-type="cardTable"] [data-part="surface"]::after {
+    display: none;
+  }
+
   :is(
     .advancement-region,
     .advancement-region > h2,
@@ -753,5 +834,9 @@
   .tp-frame,
   .tp-page-rail {
     display: none;
+  }
+
+  [data-module-type="cardTable"] [data-part="surface"]::before {
+    font-size: 2.4rem;
   }
 }
