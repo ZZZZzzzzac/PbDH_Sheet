@@ -186,6 +186,7 @@
   overflow: hidden;
   padding: 14px;
   background: #fffdf7;
+  color: #202426;
 }
 
 .play-card-state-badge {
@@ -214,7 +215,7 @@
 
 .play-card-name {
   margin: 0 0 8px;
-  color: var(--framework-text);
+  color: inherit;
   font-size: 1.05rem;
   font-weight: 700;
 }
@@ -248,7 +249,7 @@
 .play-card-description {
   margin: 0;
   min-height: 0;
-  color: var(--framework-text);
+  color: inherit;
   line-height: 1.45;
   white-space: normal;
   overflow-wrap: anywhere;

@@ -20,10 +20,27 @@ describe("Sheet Module sizing", () => {
     expect(modulesCss).toMatch(/\.container:focus-within\s*\{[^}]*position:\s*relative[^}]*z-index:\s*[1-9]/s);
   });
 
+  it("stretches Free Text editors and inputs to the Module content area", () => {
+    expect(modulesCss).toMatch(/\[data-module-type="freeText"\]\s*>\s*\[data-markdown-editor="true"\]\s*\{[^}]*align-self:\s*stretch[^}]*min-height:\s*0/s);
+    expect(modulesCss).toMatch(/\[data-module-type="freeText"\]\s*>\s*\[data-markdown-editor="true"\]\s*>\s*\[data-part="input"\][^\{]*\{[^}]*align-self:\s*stretch[^}]*height:\s*100%[^}]*min-height:\s*0[^}]*text-align:\s*center/s);
+  });
+
+  it("centers Free Text values in both editing and preview states", () => {
+    expect(modulesCss).toMatch(/\[data-module-type="freeText"\]\s*>\s*\[data-markdown-editor="true"\]\s*>\s*\[data-part="input"\][^\{]*\{[^}]*text-align:\s*center/s);
+    expect(modulesCss).toMatch(/\[data-module-type="freeText"\]\s*>\s*\[data-markdown-preview="true"\]:not\(\[hidden\]\)\s*\{[^}]*display:\s*flex[^}]*align-items:\s*center[^}]*justify-content:\s*center/s);
+    expect(modulesCss).not.toMatch(/\[data-module-type="freeText"\]\s*>\s*\[data-markdown-preview="true"\]\s*\{[^}]*display:/s);
+  });
+
   it("keeps Card Markdown lists in normal block flow", () => {
     expect(cardTableCss).not.toMatch(/\.play-card-description\s*\{[^}]*display:\s*-webkit-box/s);
     expect(cardTableCss).toMatch(/\.play-card-description\s*\{[^}]*white-space:\s*normal/s);
     expect(cardTableCss).toMatch(/\.play-card-description\s+(?:ul|ol)/);
+  });
+
+  it("keeps light text Cards readable when the surrounding Skin uses dark text variables", () => {
+    expect(cardTableCss).toMatch(/\.play-card-text\s*\{[^}]*background:\s*#fffdf7[^}]*color:\s*#202426/s);
+    expect(cardTableCss).toMatch(/\.play-card-name\s*\{[^}]*color:\s*inherit/s);
+    expect(cardTableCss).toMatch(/\.play-card-description\s*\{[^}]*color:\s*inherit/s);
   });
 
   it("lets Card descriptions use all remaining space at every Card size", () => {

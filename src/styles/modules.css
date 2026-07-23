@@ -108,6 +108,25 @@ fieldset.container {
   min-width: 0;
 }
 
+[data-module-type="freeText"] > [data-markdown-editor="true"] {
+  align-self: stretch;
+  min-height: 0;
+}
+
+[data-module-type="freeText"] > [data-markdown-editor="true"] > [data-part="input"],
+[data-module-type="freeText"] > [data-part="input"] {
+  align-self: stretch;
+  height: 100%;
+  min-height: 0;
+  text-align: center;
+}
+
+[data-module-type="freeText"] > [data-markdown-preview="true"]:not([hidden]) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .markdown-preview {
   min-width: 0;
   min-height: 30px;

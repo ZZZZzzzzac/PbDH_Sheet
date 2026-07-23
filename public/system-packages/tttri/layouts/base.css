@@ -64,18 +64,17 @@
 .identity-fields {
   display: grid;
   grid-column: 2;
-  grid-template-columns: 0.8fr 1.2fr;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
   gap: 0.125rem;
 }
 
-.character-name-field { grid-row: 1; }
-.class-field { grid-row: 1; }
+.identity-field {
+  min-width: 0;
+}
 
-.identity-origin-fields {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.125rem;
+.identity-field-wrapper {
+  display: contents;
 }
 
 .picker-field {
@@ -123,22 +122,46 @@
 }
 
 .level-field [data-part="input"] { font-size: 1.6rem; }
-.trait-summary [data-part="input"] { font-size: 1.3rem; }
+.trait-summary [data-part="input"] { font-size: 2.6rem; }
 
 .upper-stat-layout {
   display: grid;
   grid-template-columns: 15rem minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr;
   gap: 0.25rem;
 }
 
+.upper-stat-layout > .section-title {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  margin-top: 0;
+}
+
 .defense-summary {
+  grid-column: 1;
+  grid-row: 2;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 0.2rem;
   align-content: center;
 }
 
+.defense-summary > :nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.upper-stat-layout > .domain-row {
+  grid-column: 1;
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.125rem;
+  margin: 0;
+}
+
 .trait-summary {
+  grid-column: 2;
+  grid-row: 2 / -1;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.125rem;
@@ -194,12 +217,21 @@
 }
 
 .section-title {
-  display: block;
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
   margin: 0.15rem 0 0.125rem;
   padding: 0 0.2rem 0.1rem;
   border-bottom: 1px solid #69727c;
   font-size: 0.75rem;
   line-height: 1.2;
+}
+
+.title-tag {
+  margin-left: auto;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
 }
 
 .region-heading-row {
@@ -211,11 +243,6 @@
 
 .region-heading-row > [data-module-slot-id="proficiency"] { flex: 1; }
 
-.equipment-picker-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 0.125rem;
-}
 
 .item-list {
   display: grid;
@@ -369,13 +396,16 @@
   .brand-panel,
   .identity-fields,
   .level-field { grid-column: auto; grid-row: auto; }
+  .upper-stat-layout > .section-title,
+  .defense-summary,
+  .upper-stat-layout > .domain-row,
+  .trait-summary { grid-column: auto; grid-row: auto; }
   .trait-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .advancement-grid { grid-template-columns: 1fr; }
 }
 
 @media screen and (max-width: 480px) {
   .identity-fields,
-  .identity-origin-fields,
   .defense-summary,
   .trait-summary,
   .resource-row,

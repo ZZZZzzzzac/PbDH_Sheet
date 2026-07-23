@@ -88,6 +88,34 @@ describe("TTTRI System Package", () => {
     expect(skin.layoutOverrides.pages?.every((page) => page.htmlContent.includes(cornerClass))).toBe(true);
   });
 
+  it("uses one Terra Portal label style for Countable, Free Text, and Long Text Modules", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const css = loadedResult.package.skins?.find((skin) => skin.ID === "terra-portal")?.cssContent ?? "";
+
+    expect(css).toMatch(/:is\(\s*\[data-module-type="countableResource"\],\s*\[data-module-type="freeText"\],\s*\[data-module-type="longText"\]\s*\)\s*>\s*\[data-part="label"\]\s*\{[^}]*color:\s*var\(--tp-cyan\) !important[^}]*font-size:\s*0\.9rem !important/s);
+  });
+
+  it("labels the core traits and resource sections in the base layout and both Skin overrides", () => {
+    const layouts = [
+      join(packageRoot, "layouts", "character-main.html"),
+      join(packageRoot, "skins", "rhodes-island", "character-main.html"),
+      join(packageRoot, "skins", "terra-portal", "character-main.html"),
+    ].map((filePath) => readFileSync(filePath, "utf8"));
+
+    for (const html of layouts) {
+      expect(html).toContain('<h2 class="section-title">属性<span class="title-tag">TRAITS</span></h2>');
+      expect(html).toContain('<h2 class="section-title">资源<span class="title-tag">RESOURCE</span></h2>');
+    }
+
+    for (const skinId of ["rhodes-island", "terra-portal"]) {
+      const css = loadedResult.ok
+        ? loadedResult.package.skins?.find((skin) => skin.ID === skinId)?.cssContent ?? ""
+        : "";
+      expect(css, skinId).toMatch(/\.upper-stat-layout > \.section-title::before,[\s\S]*?content:\s*""/);
+    }
+  });
+
   it("mounts every declared Sheet Module exactly once", () => {
     expect(loadedResult.ok).toBe(true);
     if (!loadedResult.ok) return;
@@ -114,6 +142,28 @@ describe("TTTRI System Package", () => {
       expect.objectContaining({ ID: "chest-gold", 类型: "countableResource", 标签: "箱", 默认值: 0 }),
     ]);
     expect(loadedResult.package.modules).not.toContainEqual(expect.objectContaining({ ID: "currency" }));
+  });
+
+  it("uses uniform filled and empty square markers for core resources", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+
+    for (const id of ["hp", "stress", "armor-slots", "hope"]) {
+      expect(loadedResult.package.modules.find((module) => module.ID === id)).toMatchObject({
+        类型: "countableResource",
+        标记尺寸: 20,
+        当前值标记: { 类型: "文字", 内容: "■" },
+        剩余值标记: { 类型: "文字", 内容: "□" },
+      });
+    }
+  });
+
+  it("renders Terra Portal text Cards with a dark readable face", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const css = loadedResult.package.skins?.find((skin) => skin.ID === "terra-portal")?.cssContent ?? "";
+
+    expect(css).toMatch(/\.play-card-text\s*\{[^}]*background:\s*#0a0a0a[^}]*color:\s*#ffffff/s);
   });
 
   it("shows only the approved Class, Subclass and Ancestry Browser fields", () => {

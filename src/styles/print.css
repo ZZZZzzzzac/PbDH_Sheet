@@ -33,19 +33,43 @@
   overflow-wrap: normal !important;
 }
 
+.print-mode [data-module-type="freeText"] [data-markdown-preview]:not([data-markdown-empty="true"]) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100% !important;
+  text-align: center !important;
+}
+
+.print-mode :is([data-module-type="freeText"], [data-module-type="longText"])
+  :is([data-markdown-editor="true"], [data-markdown-preview="true"]),
+.print-mode [data-module-type] :is(input, textarea, select),
+.print-mode [data-module-type="countableResource"] [data-part="counter"] {
+  background: #ffffff !important;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+}
+
+.print-mode :is([data-module-type="freeText"], [data-module-type="longText"])
+  :is([data-markdown-editor="true"], [data-markdown-preview="true"]) * {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+}
+
 .print-mode .sheet-tool {
-  --framework-canvas: #eef1f2 !important;
+  --framework-canvas: #ffffff !important;
   --framework-surface: #ffffff !important;
   --framework-surface-subtle: #f8faf9 !important;
-  --framework-surface-muted: #edf6f1 !important;
-  --framework-text: #202426 !important;
-  --framework-text-strong: #243438 !important;
-  --framework-text-secondary: #425056 !important;
-  --framework-text-muted: #607075 !important;
-  --framework-border: #cdd5d7 !important;
-  --framework-border-strong: #c4ccce !important;
-  --framework-border-subtle: #d8dfe1 !important;
+  --framework-surface-muted: #edf1f2 !important;
+  --framework-text: #000000 !important;
+  --framework-text-strong: #000000 !important;
+  --framework-text-secondary: #30383b !important;
+  --framework-text-muted: #59666b !important;
+  --framework-border: #9ca8ac !important;
+  --framework-border-strong: #69777c !important;
+  --framework-border-subtle: #cbd2d4 !important;
   padding: 0;
+  color: #000000 !important;
   color-scheme: light;
 }
 
@@ -59,7 +83,8 @@
   overflow: hidden;
   border: 0;
   outline: 0;
-  background: #ffffff;
+  background: #ffffff !important;
+  color: #000000 !important;
 }
 
 .print-mode [data-print-page="true"]:has([data-module-type="cardTable"]) {
@@ -88,8 +113,13 @@
 
 .print-mode [data-module-type="countableResource"] [data-part="decrement-button"],
 .print-mode [data-module-type="countableResource"] [data-part="increment-button"] {
+  display: none !important;
   box-shadow: none !important;
   filter: none !important;
+}
+
+.print-mode [data-module-type="countableResource"] [data-part="counter"] {
+  grid-template-columns: minmax(0, 1fr) !important;
 }
 
 .print-mode .play-card,
@@ -130,18 +160,19 @@
   }
 
   .sheet-tool {
-    --framework-canvas: #eef1f2 !important;
+    --framework-canvas: #ffffff !important;
     --framework-surface: #ffffff !important;
     --framework-surface-subtle: #f8faf9 !important;
-    --framework-surface-muted: #edf6f1 !important;
-    --framework-text: #202426 !important;
-    --framework-text-strong: #243438 !important;
-    --framework-text-secondary: #425056 !important;
-    --framework-text-muted: #607075 !important;
-    --framework-border: #cdd5d7 !important;
-    --framework-border-strong: #c4ccce !important;
-    --framework-border-subtle: #d8dfe1 !important;
+    --framework-surface-muted: #edf1f2 !important;
+    --framework-text: #000000 !important;
+    --framework-text-strong: #000000 !important;
+    --framework-text-secondary: #30383b !important;
+    --framework-text-muted: #59666b !important;
+    --framework-border: #9ca8ac !important;
+    --framework-border-strong: #69777c !important;
+    --framework-border-subtle: #cbd2d4 !important;
     padding: 0;
+    color: #000000 !important;
     color-scheme: light;
   }
 
@@ -157,6 +188,29 @@
     overflow: hidden !important;
     white-space: nowrap !important;
     overflow-wrap: normal !important;
+  }
+
+  [data-module-type="freeText"] [data-markdown-preview]:not([data-markdown-empty="true"]) {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 100% !important;
+    text-align: center !important;
+  }
+
+  :is([data-module-type="freeText"], [data-module-type="longText"])
+    :is([data-markdown-editor="true"], [data-markdown-preview="true"]),
+  [data-module-type] :is(input, textarea, select),
+  [data-module-type="countableResource"] [data-part="counter"] {
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+  }
+
+  :is([data-module-type="freeText"], [data-module-type="longText"])
+    :is([data-markdown-editor="true"], [data-markdown-preview="true"]) * {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
   }
 
   input::placeholder,
@@ -180,7 +234,8 @@
     page-break-inside: avoid;
     border: 0;
     outline: 0;
-    background: #ffffff;
+    background: #ffffff !important;
+    color: #000000 !important;
   }
 
   [data-print-page="true"]:has([data-module-type="cardTable"]) {
@@ -204,6 +259,17 @@
     page-break-inside: avoid;
   }
 
+  [data-module-type="countableResource"] [data-part="decrement-button"],
+  [data-module-type="countableResource"] [data-part="increment-button"] {
+    display: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  [data-module-type="countableResource"] [data-part="counter"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
   .card-table-surface {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(0, var(--play-card-width)));
@@ -225,12 +291,6 @@
     top: auto !important;
     z-index: auto !important;
     transform: none !important;
-    box-shadow: none !important;
-    filter: none !important;
-  }
-
-  [data-module-type="countableResource"] [data-part="decrement-button"],
-  [data-module-type="countableResource"] [data-part="increment-button"] {
     box-shadow: none !important;
     filter: none !important;
   }

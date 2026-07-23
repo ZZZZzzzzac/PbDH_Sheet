@@ -257,9 +257,8 @@
 .defense-summary [data-part="label"] {
   border-bottom-color: var(--ak-line-soft);
   color: var(--ak-muted);
-  font-size: 0.62rem;
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.14em;
 }
 
 .trait-summary [data-part="input"],
@@ -270,6 +269,7 @@
 
 /* ========== 分区题签:黑方块 + 题字 + 英文码 ========== */
 
+.upper-stat-layout > .section-title,
 .sheet-region > .section-title,
 .region-heading-row > .section-title {
   display: flex;
@@ -283,6 +283,7 @@
   letter-spacing: 0.14em;
 }
 
+.upper-stat-layout > .section-title::before,
 .sheet-region > .section-title::before,
 .region-heading-row > .section-title::before {
   content: "";
