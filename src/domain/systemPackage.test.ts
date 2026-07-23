@@ -3,6 +3,32 @@ import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures"
 import { findAsset, findModule, findResourceLibrary, getHtmlTemplateModuleReferences, validateCachedSystemPackage, validateSystemPackage } from "./systemPackage";
 
 describe("validateSystemPackage Sheet Modules", () => {
+  it("accepts a restricted loading presentation in the manifest", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      manifest: {
+        ...minimalSystemPackage.manifest,
+        加载展示: { 标语: "群星正在校准人物卡", 强调色: "#63bfd1" },
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.package.manifest.加载展示).toEqual({ 标语: "群星正在校准人物卡", 强调色: "#63bfd1" });
+  });
+
+  it.each([
+    ["unsafe color", { 标语: "加载中", 强调色: "url(https://example.com/x)" }],
+    ["blank message", { 标语: "   ", 强调色: "#abcdef" }],
+    ["overlong message", { 标语: "长".repeat(81), 强调色: "#abcdef" }],
+  ])("rejects loading presentation with %s", (_case, 加载展示) => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      manifest: { ...minimalSystemPackage.manifest, 加载展示 },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "PACKAGE_SHAPE_INVALID" })]));
+  });
   it("accepts Card state appearances and rejects invalid colors, badges, unknown states, or the removed background field", () => {
     const cardModule = {
       ID: "cards", 类型: "cardTable", 标签: "卡牌", 资源来源: [{ 类型: "resourceLibrary", ID: "cards" }],

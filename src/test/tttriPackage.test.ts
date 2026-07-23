@@ -25,7 +25,7 @@ describe("TTTRI System Package", () => {
     expect(loadedResult.issues.filter((issue) => issue.level === "fatal" || issue.level === "error")).toEqual([]);
     expect(loadedResult.package.manifest.ID).toBe("tttri");
     expect(loadedResult.package.skins?.map((skin) => skin.ID)).toEqual(["rhodes-island", "terra-portal"]);
-    expect(loadedResult.package.defaultSkin).toBe("rhodes-island");
+    expect(loadedResult.package.defaultSkin).toBe("terra-portal");
     expect(loadedResult.package.resourceLibraries).toHaveLength(7);
   });
 
@@ -219,7 +219,7 @@ describe("TTTRI System Package", () => {
     expect(t2.fields.武器原型).toBe("医疗单元 远距离/双手 d8+3/法术");
     expect(t3.fields.武器原型).toBe("医疗单元 远距离/双手 d8+6/法术");
     expect(t4x.fields.武器原型).toBe("医疗单元 远距离/双手 d8+9/法术");
-    expect([t1.fields.等级, t2.fields.等级, t3.fields.等级, t4x.fields.等级, t4y.fields.等级]).toEqual(["预备", "正式", "资深", "精英", "精英"]);
+    expect([t1.fields.等级, t2.fields.等级, t3.fields.等级, t4x.fields.等级, t4y.fields.等级]).toEqual(["预备", "正式", "资深", "等级精英X", "等级精英Y"]);
     expect(t1.fields).not.toHaveProperty("武器伤害骰");
     expect(systemPackage.modules).not.toContainEqual(expect.objectContaining({ ID: "weapon-attack-attribute" }));
     expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "subclass-name", 标签: "干员类型" }));
@@ -282,7 +282,7 @@ describe("TTTRI System Package", () => {
     expect(xResult.dataPatches).not.toHaveProperty("class-feature");
     expect(xResult.dataPatches).not.toHaveProperty("subclass-current");
     data = applyDependencyResultToCharacterData(data, xResult);
-    expect(data.character.values["subclass-stage"]).toBe("精英");
+    expect(data.character.values["subclass-stage"]).toBe("等级精英X");
     expect(data.character.values["class-hope-feature"]).toBe(t4x.fields.希望特性);
     expect(data.character.values["class-feature"]).toBe(t3.fields.职业特性);
     expect(data.character.values["weapon-summary"]).toBe(t4x.fields.武器原型);
@@ -295,7 +295,7 @@ describe("TTTRI System Package", () => {
     expect(yResult.dataPatches).not.toHaveProperty("class-hope-feature");
     expect(yResult.dataPatches).not.toHaveProperty("subclass-current");
     const yData = applyDependencyResultToCharacterData(t3Data, yResult);
-    expect(yData.character.values["subclass-stage"]).toBe("精英");
+    expect(yData.character.values["subclass-stage"]).toBe("等级精英Y");
     expect(yData.character.values["class-hope-feature"]).toBe(selectedClass.fields.希望特性);
     expect(yData.character.values["class-feature"]).toBe(t4y.fields.职业特性);
     expect(yData.character.values["subclass-current"]).toBe(t3SubclassText);

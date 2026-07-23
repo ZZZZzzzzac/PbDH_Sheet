@@ -886,6 +886,39 @@ describe("App preset System Packages", () => {
     await waitFor(() => expect(useRuntimeStore.getState().currentPackage?.manifest.ID).toBe("daggerheart-core"));
     expect(select).toHaveValue("daggerheart-core");
   });
+
+  it("covers the Sheet with package-themed loading progress until switching completes", async () => {
+    configureRuntimeDependencies({
+      storage: createEmptyStorage(),
+      loadPresetSystemPackage: async (preset) => ({
+        ok: true,
+        package: {
+          ...minimalSystemPackage,
+          manifest: { ...minimalSystemPackage.manifest, ID: preset.id, 名称: preset.name, 版本: preset.version },
+        },
+        issues: [],
+      }),
+    });
+    useRuntimeStore.setState({ currentPackage: null, characterData: null, bootStatus: "idle", packageIssues: [] });
+    render(<App />);
+    await waitFor(() => expect(useRuntimeStore.getState().bootStatus).toBe("ready"));
+
+    act(() => useRuntimeStore.setState({
+      bootStatus: "loading",
+      packageLoadProgress: { completed: 2, total: 4 },
+      packageLoadingPresentation: { 标语: "罗德岛正在接驳", 强调色: "#63bfd1" },
+    }));
+
+    const loading = screen.getByRole("status", { name: "System Package 加载中" });
+    expect(loading).toHaveTextContent("罗德岛正在接驳");
+    expect(loading).toHaveTextContent("50%");
+    expect(loading).toHaveStyle({ "--package-loading-accent": "#63bfd1" });
+    expect(screen.getByRole("progressbar")).toHaveAttribute("value", "2");
+    expect(screen.getByRole("progressbar")).toHaveAttribute("max", "4");
+
+    act(() => useRuntimeStore.setState({ bootStatus: "ready", packageLoadProgress: null, packageLoadingPresentation: null }));
+    expect(screen.queryByRole("status", { name: "System Package 加载中" })).not.toBeInTheDocument();
+  });
 });
 
 function createGuidePackage(

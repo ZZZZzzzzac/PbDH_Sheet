@@ -2,13 +2,17 @@ import type { PackageIssue } from "../domain/systemPackage";
 import type { PackageVirtualFileSystem } from "./packageVfs";
 import { inferMimeType } from "../utils";
 
-export interface RuntimePackageAsset {
+interface RuntimePackageAssetBase {
   路径: string;
   类型: string;
-  bytes: Uint8Array;
   sourceType?: "systemPackage" | "resourceExtension";
   sourceId?: string;
 }
+
+export type RuntimePackageAsset = RuntimePackageAssetBase & (
+  | { bytes: Uint8Array; staticUrl?: never }
+  | { bytes?: never; staticUrl: string }
+);
 
 export type AssetResolveResult =
   | {
@@ -68,6 +72,11 @@ export function createRuntimeAssetResolver(assets: RuntimePackageAsset[]): Runti
   const urls: Record<string, string> = {};
 
   for (const asset of assets) {
+    if (asset.staticUrl) {
+      urls[resourceAssetUrlKey(asset.sourceType, asset.sourceId, asset.路径)] = asset.staticUrl;
+      continue;
+    }
+    if (!asset.bytes) continue;
     const objectUrl = createObjectUrl(asset.bytes, asset.类型);
     if (!objectUrl) {
       continue;

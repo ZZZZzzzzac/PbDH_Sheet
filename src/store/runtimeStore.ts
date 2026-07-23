@@ -37,7 +37,7 @@ import { parseCharacterDataText } from "../export/output";
 import { createRuntimeAssetResolver, type RuntimeAssetResolver, type RuntimePackageAsset } from "../loaders/assetResolver";
 import type { PackageDirectoryHandle } from "../loaders/packageVfs";
 import { loadSystemPackageFromDirectoryFiles, loadSystemPackageFromDirectoryHandle, loadSystemPackageFromZipFile, type PackageLoadResult } from "../loaders/systemPackageLoader";
-import { loadPresetSystemPackage, type PresetSystemPackage } from "../loaders/presetSystemPackageLoader";
+import { loadPresetSystemPackage, type PresetLoadProgress, type PresetSystemPackage } from "../loaders/presetSystemPackageLoader";
 import { loadResourceExtensionFromJsonText, loadResourceExtensionFromZipFile, type NormalizedResourceExtensionArtifact } from "../loaders/resourceExtensionLoader";
 import { loadAuthorPreviewDirectoryHandle, saveAuthorPreviewDirectoryHandle, storageService, type CharacterSaveSummary, type StorageService } from "../storage/storageService";
 import { generateId } from "../utils";
@@ -84,6 +84,8 @@ interface RuntimeState {
   validationIssues: ValidationIssue[];
   validationStatus: ValidationStatus;
   bootStatus: BootStatus;
+  packageLoadProgress: PresetLoadProgress | null;
+  packageLoadingPresentation: NonNullable<PresetSystemPackage["loadingPresentation"]> | null;
   storageStatus: StorageStatus;
   importError: string | null;
   importNotice: string | null;
@@ -138,7 +140,7 @@ interface RuntimeDependencies {
   loadSystemPackageFromFile: (file: Blob) => Promise<PackageLoadResult>;
   loadSystemPackageFromDirectory: (files: Iterable<File>) => Promise<PackageLoadResult>;
   loadSystemPackageFromDirectoryHandle: (handle: PackageDirectoryHandle) => Promise<PackageLoadResult>;
-  loadPresetSystemPackage: (preset: PresetSystemPackage) => Promise<PackageLoadResult>;
+  loadPresetSystemPackage: (preset: PresetSystemPackage, onProgress?: (progress: PresetLoadProgress) => void) => Promise<PackageLoadResult>;
   loadPreviewDirectoryHandle: () => Promise<PackageDirectoryHandle | null>;
   savePreviewDirectoryHandle: (handle: PackageDirectoryHandle) => Promise<void>;
   storage: StorageService;
@@ -149,7 +151,7 @@ const defaultRuntimeDependencies: RuntimeDependencies = {
   loadSystemPackageFromFile: (file) => loadSystemPackageFromZipFile(file),
   loadSystemPackageFromDirectory: (files) => loadSystemPackageFromDirectoryFiles(files),
   loadSystemPackageFromDirectoryHandle: (handle) => loadSystemPackageFromDirectoryHandle(handle),
-  loadPresetSystemPackage: (preset) => loadPresetSystemPackage(preset),
+  loadPresetSystemPackage: (preset, onProgress) => loadPresetSystemPackage(preset, import.meta.env.BASE_URL, fetch, onProgress),
   loadPreviewDirectoryHandle: () => loadAuthorPreviewDirectoryHandle(),
   savePreviewDirectoryHandle: (handle) => saveAuthorPreviewDirectoryHandle(handle),
   storage: storageService,
@@ -276,6 +278,8 @@ async function loadPackageIntoState(
       ...rebuildDependencyRuntimeState(loaded.characterData, effectivePackage),
       packageIssues: issues,
       bootStatus: "ready",
+      packageLoadProgress: null,
+      packageLoadingPresentation: null,
       storageStatus,
       ...(skinPreference.fellBack ? { importNotice: `此前选择的 Skin 已不存在，已回退到默认 Skin：${skinPreference.skinId}` } : {}),
     });
@@ -288,6 +292,8 @@ async function loadPackageIntoState(
     set({
       packageIssues: [...issues, { level: "error", code: "PACKAGE_LOAD_FAILED", text: `加载 System Package 时出错：${message}`, path: "boot" }],
       bootStatus: activePackageAssetResolver ? "ready" : "error",
+      packageLoadProgress: null,
+      packageLoadingPresentation: null,
       storageStatus: "error",
       importError: message,
       importNotice: null,
@@ -347,6 +353,8 @@ async function clearCachedPackageAndResetState(set: (partial: Partial<RuntimeSta
     ...emptyDerivedState(),
     packageIssues: [],
     bootStatus: "ready",
+    packageLoadProgress: null,
+    packageLoadingPresentation: null,
     storageStatus,
     importNotice:
       storageStatus === "error"
@@ -488,6 +496,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   activeCharacterSaveId: null,
   ...emptyDerivedState(),
   bootStatus: "idle",
+  packageLoadProgress: null,
+  packageLoadingPresentation: null,
   storageStatus: "idle",
   importError: null,
   importNotice: null,
@@ -496,7 +506,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   // ========== Package lifecycle & boot ==========
 
   async initialize() {
-    set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null, frameworkColorSchemePreference: loadFrameworkColorSchemePreference() });
+    set({ bootStatus: "loading", packageLoadProgress: null, packageLoadingPresentation: null, packageIssues: [], importError: null, importNotice: null, frameworkColorSchemePreference: loadFrameworkColorSchemePreference() });
 
     try {
       if (sessionStorage.getItem(authorPreviewSessionKey) === "active") {
@@ -573,7 +583,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   },
 
   async uploadSystemPackageFromFile(file) {
-    set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null });
+    set({ bootStatus: "loading", packageLoadProgress: null, packageLoadingPresentation: null, packageIssues: [], importError: null, importNotice: null });
     const validation = await runtimeDependencies.loadSystemPackageFromFile(file);
 
     if (!validation.ok) {
@@ -596,7 +606,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   },
 
   async uploadSystemPackageFromDirectory(files) {
-    set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null });
+    set({ bootStatus: "loading", packageLoadProgress: null, packageLoadingPresentation: null, packageIssues: [], importError: null, importNotice: null });
     const validation = await runtimeDependencies.loadSystemPackageFromDirectory(files);
     if (!validation.ok) {
       set((state) => ({ bootStatus: state.currentPackage ? "ready" : "error", packageIssues: validation.issues }));
@@ -614,10 +624,22 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
 
   async switchToPresetSystemPackage(preset) {
     if (get().currentPackage?.manifest.ID === preset.id) return;
-    set({ bootStatus: "loading", packageIssues: [], importError: null, importNotice: null });
-    const validation = await runtimeDependencies.loadPresetSystemPackage(preset);
+    set({
+      bootStatus: "loading",
+      packageLoadProgress: { completed: 0, total: preset.files.filter((path) => !path.startsWith("assets/")).length },
+      packageLoadingPresentation: preset.loadingPresentation ?? null,
+      packageIssues: [],
+      importError: null,
+      importNotice: null,
+    });
+    const validation = await runtimeDependencies.loadPresetSystemPackage(preset, (packageLoadProgress) => set({ packageLoadProgress }));
     if (!validation.ok) {
-      set((state) => ({ bootStatus: state.currentPackage ? "ready" : "error", packageIssues: validation.issues }));
+      set((state) => ({
+        bootStatus: state.currentPackage ? "ready" : "error",
+        packageLoadProgress: null,
+        packageLoadingPresentation: null,
+        packageIssues: validation.issues,
+      }));
       return;
     }
     const loaded = await loadPackageIntoState(validation.package, validation.issues, set, "idle", validation.packageAssets ?? []);

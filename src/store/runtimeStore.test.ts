@@ -459,6 +459,44 @@ describe("runtime store", () => {
     expect(memoryStorage.getCachedPackage()?.manifest.ID).toBe("demo-minimal");
   });
 
+  it("exposes incoming preset presentation and metadata progress only while switching", async () => {
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    configureRuntimeDependencies({
+      storage: memoryStorage,
+      loadPresetSystemPackage: async (_preset, onProgress) => {
+        onProgress?.({ completed: 2, total: 4 });
+        await gate;
+        return { ok: false, issues: [{ level: "fatal", code: "PRESET_PACKAGE_FETCH_FAILED", text: "offline" }] };
+      },
+    });
+
+    const switching = useRuntimeStore.getState().switchToPresetSystemPackage({
+      id: "themed-preset",
+      name: "主题预制包",
+      version: "1",
+      directory: "themed-preset",
+      files: ["manifest.json", "pages.json", "modules.json", "layouts/main.html", "assets/card.webp"],
+      loadingPresentation: { 标语: "罗德岛正在接驳", 强调色: "#63bfd1" },
+    });
+    await Promise.resolve();
+
+    expect(useRuntimeStore.getState()).toMatchObject({
+      bootStatus: "loading",
+      packageLoadProgress: { completed: 2, total: 4 },
+      packageLoadingPresentation: { 标语: "罗德岛正在接驳", 强调色: "#63bfd1" },
+    });
+
+    release();
+    await switching;
+    expect(useRuntimeStore.getState()).toMatchObject({
+      bootStatus: "ready",
+      packageLoadProgress: null,
+      packageLoadingPresentation: null,
+    });
+  });
+
   it("switches and persists Skin per System Package without changing Character Data", async () => {
     const skinnedPackage: SystemPackage = {
       ...minimalSystemPackage,

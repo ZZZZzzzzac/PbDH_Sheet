@@ -3,6 +3,10 @@
   "名称": "共赴明日：罗德岛旅记TTTRI",
   "版本": "0.1.0",
   "schemaVersion": "0.2.0",
+  "加载展示": {
+    "标语": "正在连接PRTS...",
+    "强调色": "#63bfd1"
+  },
   "pages": "pages.json",
   "skins": [
     {
@@ -32,7 +36,7 @@
       }
     }
   ],
-  "defaultSkin": "rhodes-island",
+  "defaultSkin": "terra-portal",
   "shell": {
     "html": "layouts/shell.html",
     "css": "layouts/shell.css"

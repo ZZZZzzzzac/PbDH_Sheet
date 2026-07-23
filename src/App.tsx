@@ -1,5 +1,5 @@
 import { Archive, Copy, Download, Eye, FileText, Library, Map, Plus, Printer, ShieldCheck, Trash2, Type, Upload, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type InputHTMLAttributes } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type InputHTMLAttributes } from "react";
 import { exportCharacterData } from "./domain/characterData";
 import { createCardTableLayout } from "./domain/cardEngine";
 import {
@@ -155,6 +155,8 @@ export default function App() {
   const activeCharacterSaveId = useRuntimeStore((state) => state.activeCharacterSaveId);
   const cardTableCardWidths = useRuntimeStore((state) => state.cardTableCardWidths);
   const bootStatus = useRuntimeStore((state) => state.bootStatus);
+  const packageLoadProgress = useRuntimeStore((state) => state.packageLoadProgress);
+  const packageLoadingPresentation = useRuntimeStore((state) => state.packageLoadingPresentation);
   const packageIssues = useRuntimeStore((state) => state.packageIssues);
   const validationIssues = useRuntimeStore((state) => state.validationIssues);
   const validationStatus = useRuntimeStore((state) => state.validationStatus);
@@ -405,6 +407,9 @@ export default function App() {
 
   return (
     <div className={`app-shell${printMode ? " print-mode" : ""}`} data-framework-color-scheme={resolvedFrameworkColorScheme}>
+      {bootStatus === "loading" ? (
+        <PackageLoadingSurface progress={packageLoadProgress} presentation={packageLoadingPresentation} />
+      ) : null}
       <header className="top-bar">
         <div className="brand-block">
           <span className="brand-mark">PbDH</span>
@@ -707,6 +712,36 @@ export default function App() {
         />
       ) : null}
     </div>
+  );
+}
+
+function PackageLoadingSurface({
+  progress,
+  presentation,
+}: {
+  progress: { completed: number; total: number } | null;
+  presentation: NonNullable<SystemPackage["manifest"]["加载展示"]> | null;
+}) {
+  const accentColor = presentation?.强调色 ?? "#7c3aed";
+  const message = presentation?.标语 ?? "正在装配人物卡世界……";
+  const completed = progress ? Math.min(progress.completed, progress.total) : 0;
+  const percent = progress && progress.total > 0 ? Math.round((completed / progress.total) * 100) : null;
+  const style = { "--package-loading-accent": accentColor } as CSSProperties;
+
+  return (
+    <section className="package-loading-surface" role="status" aria-live="polite" aria-label="System Package 加载中" style={style}>
+      <div className="package-loading-panel">
+        <span className="package-loading-mark" aria-hidden="true">PbDH</span>
+        <p className="package-loading-message">{message}</p>
+        <progress
+          className="package-loading-progress"
+          {...(progress && progress.total > 0 ? { max: progress.total, value: completed } : {})}
+        />
+        <p className="package-loading-detail">
+          {percent === null ? "正在读取 System Package" : `正在读取 System Package · ${percent}%`}
+        </p>
+      </div>
+    </section>
   );
 }
 

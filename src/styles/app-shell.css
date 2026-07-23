@@ -2,6 +2,77 @@
   min-height: 100vh;
 }
 
+.package-loading-surface {
+  --package-loading-accent: #7c3aed;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--package-loading-accent) 18%, transparent), transparent 42%),
+    color-mix(in srgb, var(--framework-surface) 94%, #000 6%);
+  backdrop-filter: blur(8px);
+}
+
+.package-loading-panel {
+  width: min(440px, 100%);
+  text-align: center;
+}
+
+.package-loading-mark {
+  display: inline-grid;
+  place-items: center;
+  min-width: 72px;
+  min-height: 36px;
+  margin-bottom: 20px;
+  border: 1px solid var(--package-loading-accent);
+  color: var(--package-loading-accent);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.package-loading-message {
+  margin: 0 0 20px;
+  color: var(--framework-text);
+  font-size: clamp(1.15rem, 4vw, 1.55rem);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.package-loading-progress {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--package-loading-accent) 18%, var(--framework-surface));
+  accent-color: var(--package-loading-accent);
+}
+
+.package-loading-progress::-webkit-progress-bar {
+  background: color-mix(in srgb, var(--package-loading-accent) 18%, var(--framework-surface));
+  border-radius: inherit;
+}
+
+.package-loading-progress::-webkit-progress-value {
+  background: var(--package-loading-accent);
+  border-radius: inherit;
+}
+
+.package-loading-progress::-moz-progress-bar {
+  background: var(--package-loading-accent);
+  border-radius: inherit;
+}
+
+.package-loading-detail {
+  margin: 10px 0 0;
+  color: var(--framework-text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+}
+
 .top-bar {
   display: flex;
   align-items: center;

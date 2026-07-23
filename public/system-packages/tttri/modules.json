@@ -38,10 +38,10 @@
   { "ID": "presence", "类型": "freeText", "标签": "风度" },
   { "ID": "knowledge", "类型": "freeText", "标签": "知识" },
   { "ID": "primary-domain", "类型": "freeText", "标签": "主领域" },
-  { "ID": "secondary-domain", "类型": "freeText", "标签": "次领域", "占位文本": "选择次领域", "选项": ["奥术", "工业", "攻坚", "坚阵", "精准", "秘行", "奇迹", "心界", "迅攻", "远见", "支柱"] },
+  { "ID": "secondary-domain", "类型": "freeText", "标签": "次领域", "占位文本": "选择", "选项": ["奥术", "工业", "攻坚", "坚阵", "精准", "秘行", "奇迹", "心界", "迅攻", "远见", "支柱"] },
   { "ID": "pick-domain-card", "类型": "resourcePicker", "按钮文本": "选择领域卡", "资源库": [{ "ID": "domain-cards", "字段模板": [{ "键": "类型", "默认显示": false }, { "键": "卡图", "默认显示": false }, { "键": "卡背", "默认显示": false }, { "键": "显示方式", "默认显示": false }], "默认查询": { "sort": { "field": "等级", "direction": "asc" } } }], "创建卡牌": { "卡牌桌面模块ID": "character-card-table", "默认状态": "配置" } },
   { "ID": "class-hope-feature", "类型": "longText", "标签": "希望特性", "行数": 5 },
-  { "ID": "class-feature", "类型": "longText", "标签": "", "行数": 11 },
+  { "ID": "class-feature", "类型": "longText", "标签": "", "行数": 14 },
   {
     "ID": "pick-subclass-t1", "类型": "resourcePicker", "按钮文本": "选择干员",
     "资源库": [{

@@ -6,7 +6,8 @@ const preset: PresetSystemPackage = {
   name: "预制测试包",
   version: "1.0.0",
   directory: "preset test",
-  files: ["manifest.json", "pages.json", "modules.json", "layouts/main.html"],
+  files: ["manifest.json", "pages.json", "modules.json", "layouts/main.html", "assets/cards/hidden.webp"],
+  loadingPresentation: { 标语: "正在铺开测试卷轴", 强调色: "#7c3aed" },
 };
 
 const packageFiles: Record<string, string> = {
@@ -29,6 +30,29 @@ describe("preset System Package loader", () => {
     if (!result.ok) return;
     expect(result.package.manifest).toMatchObject({ ID: preset.id, 名称: preset.name, 版本: preset.version });
     expect(fetchFile).toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/manifest.json");
+    expect(fetchFile).not.toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/assets/cards/hidden.webp");
+    expect(result.packageAssets).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        路径: "assets/cards/hidden.webp",
+        类型: "image/webp",
+        staticUrl: "/pbdh/system-packages/preset%20test/assets/cards/hidden.webp",
+      }),
+    ]));
+  });
+
+  it("reports monotonic metadata progress without counting lazy images", async () => {
+    const progress: Array<{ completed: number; total: number }> = [];
+    const fetchFile = vi.fn(async (url: string | URL | Request) => {
+      const path = decodeURIComponent(String(url).split("/preset%20test/")[1]);
+      return new Response(packageFiles[path], { status: packageFiles[path] === undefined ? 404 : 200 });
+    });
+
+    const result = await loadPresetSystemPackage(preset, "/pbdh/", fetchFile as typeof fetch, (next) => progress.push(next));
+
+    expect(result.ok).toBe(true);
+    expect(progress[0]).toEqual({ completed: 0, total: 4 });
+    expect(progress.at(-1)).toEqual({ completed: 4, total: 4 });
+    expect(progress.every((value, index) => index === 0 || value.completed >= progress[index - 1].completed)).toBe(true);
   });
 
   it("returns an actionable issue when a preset file cannot be fetched", async () => {

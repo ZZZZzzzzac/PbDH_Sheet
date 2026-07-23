@@ -1,3 +1,7 @@
+const ELITE_STAGES = ["等级精英X", "等级精英Y"];
+const ALL_STAGES = ["预备", "正式", "资深", ...ELITE_STAGES];
+const STAGE_MESSAGE = "干员等级必须是预备、正式、资深、等级精英X或等级精英Y。";
+
 module.exports = ({ characterData, resourceLibraries }) => {
   const values = characterData && characterData.character ? characterData.character.values || {} : {};
   const libraries = new Map((resourceLibraries || []).map((library) => [library.ID, library]));
@@ -6,6 +10,7 @@ module.exports = ({ characterData, resourceLibraries }) => {
   const className = text(values["class-name"]);
   const subclassName = text(values["subclass-name"]);
   const subclassStage = text(values["subclass-stage"]);
+  const isElite = ELITE_STAGES.includes(subclassStage);
   const armorSummary = text(values["armor-summary"]);
   const thresholds = text(values.thresholds);
   const armorValue = text(values["armor-value"]);
@@ -21,8 +26,8 @@ module.exports = ({ characterData, resourceLibraries }) => {
   if (!subclassName) {
     warn(issues, "SUBCLASS_MISSING", "character.values.subclass-name", "尚未选择干员。");
   }
-  if (subclassName && !["预备", "正式", "资深", "精英"].includes(subclassStage)) {
-    warn(issues, "SUBCLASS_STAGE_INVALID", "character.values.subclass-stage", "干员等级必须是预备、正式、资深或精英。");
+  if (subclassName && !ALL_STAGES.includes(subclassStage)) {
+    warn(issues, "SUBCLASS_STAGE_INVALID", "character.values.subclass-stage", STAGE_MESSAGE);
   } else if (subclassName && !hasSubclassEntry(libraries.get("subclasses"), subclassName, subclassStage)) {
     warn(issues, "SUBCLASS_UNKNOWN", "character.values.subclass-name", "当前干员类型及等级组合不在干员资源库中。");
   }
@@ -36,19 +41,19 @@ module.exports = ({ characterData, resourceLibraries }) => {
   const t2 = checkboxState(values["advancement-tier-2"]);
   const t3 = checkboxState(values["advancement-tier-3"]);
   const t4 = checkboxState(values["advancement-tier-4"]);
-  if (t2.subclass === true && !["正式", "资深", "精英"].includes(subclassStage)) {
+  if (t2.subclass === true && !["正式", "资深", ...ELITE_STAGES].includes(subclassStage)) {
     warn(issues, "T2_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "已在 T2 勾选升级干员，但当前干员仍是预备等级。");
   }
-  if (t3.subclass === true && !["资深", "精英"].includes(subclassStage)) {
+  if (t3.subclass === true && !["资深", ...ELITE_STAGES].includes(subclassStage)) {
     warn(issues, "T3_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "已在 T3 勾选升级干员，但当前干员尚未达到资深等级。");
   }
 
   if ((level !== undefined && level >= 8) || t4["subclass-elite"] === true) {
-    if (subclassStage !== "精英") {
-      warn(issues, "T4_ELITE_SUBCLASS_MISSING", "character.values.subclass-stage", "T4 应选择精英等级的干员。");
+    if (!isElite) {
+      warn(issues, "T4_ELITE_SUBCLASS_MISSING", "character.values.subclass-stage", "T4 应选择等级精英X或等级精英Y的干员。");
     }
-  } else if (subclassStage === "精英") {
-    warn(issues, "ELITE_SUBCLASS_BEFORE_T4", "character.values.subclass-stage", "角色尚未到达 T4，不应提前选择精英等级的干员。");
+  } else if (isElite) {
+    warn(issues, "ELITE_SUBCLASS_BEFORE_T4", "character.values.subclass-stage", "角色尚未到达 T4，不应提前选择等级精英的干员。");
   }
 
   return issues;

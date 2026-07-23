@@ -4,6 +4,18 @@ import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures"
 import { loadSystemPackageFromZipFile } from "./systemPackageLoader";
 
 describe("loadSystemPackageFromZipFile", () => {
+  it("loads a restricted loading presentation from manifest.json", async () => {
+    const result = await loadSystemPackageFromZipFile(createPackageZip({
+      manifest: {
+        ...createManifest(),
+        加载展示: { 标语: "正在展开旅途", 强调色: "#63bfd1" },
+      },
+    }));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.package.manifest.加载展示).toEqual({ 标语: "正在展开旅途", 强调色: "#63bfd1" });
+  });
+
   it("loads a minimal System Package zip through its manifest", async () => {
     const result = await loadSystemPackageFromZipFile(createPackageZip());
 

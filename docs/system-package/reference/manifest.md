@@ -8,6 +8,7 @@
 | `名称` | string | 是 | 非空 | UI display |
 | `版本` | string | 是 | 非空；Author version | cache/compat metadata |
 | `schemaVersion` | string | 是 | 当前 `0.2.0`；不匹配 warning | schema compatibility |
+| `加载展示` | object | 否 | `{标语, 强调色}` | Base Framework 加载层的声明式文案与强调色 |
 | `pages` | path string | 是 | 安全相对路径 | Page JSON |
 | `modules` | path string | 是 | 安全相对路径 | Module JSON |
 | `shell` | object | 否 | `{html, css?}` | common Sheet Shell |
@@ -26,6 +27,7 @@
   "名称": "Demo",
   "版本": "1.0.0",
   "schemaVersion": "0.2.0",
+  "加载展示": { "标语": "群星正在校准人物卡……", "强调色": "#63bfd1" },
   "pages": "pages.json",
   "modules": "modules.json",
   "dependencies": "dependencies.json",
@@ -35,5 +37,16 @@
 ```
 
 图片无需 manifest 声明；Loader 自动发现 `assets/**` 下的支持格式，Author 直接引用相对路径。
+
+## 加载展示
+
+`加载展示` 只定制 Base Framework 提供的加载层，不允许 System Package 注入 HTML、CSS、脚本、动画或外部 URL：
+
+| 字段 | 类型 | 必填 | 约束 |
+| --- | --- | --- | --- |
+| `标语` | string | 是 | 去除首尾空白后 1–80 个字符 |
+| `强调色` | string | 是 | 六位十六进制颜色，例如 `#63bfd1` |
+
+加载层、进度条、进度文字和可访问性语义由 Base Framework 统一提供。预制 System Package 的进度表示完成读取的元数据文件比例；图片保持按需加载，不计入切换进度。省略 `加载展示` 时，Framework 使用默认标语和强调色。在 manifest 尚不可用的上传或恢复阶段，也使用 Framework 默认值。
 
 Skin item 的完整 `css`、`推荐框架配色` 与 `layoutOverrides` 字段见 [System Package Skins](skins.md)。

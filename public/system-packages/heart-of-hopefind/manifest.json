@@ -3,6 +3,10 @@
   "名称": "寻望之心 Heart of Hopefind",
   "版本": "0.1.0",
   "schemaVersion": "0.2.0",
+  "加载展示": {
+    "标语": "正在感染病毒...",
+    "强调色": "#302e28"
+  },
   "pages": "pages.json",
   "modules": "modules.json",
   "dependencies": "dependencies.json",

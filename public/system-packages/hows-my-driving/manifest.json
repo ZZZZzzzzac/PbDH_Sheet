@@ -3,6 +3,10 @@
   "名称": "我的车技如何？ HOW'S MY DRIVING?",
   "版本": "0.1.0",
   "schemaVersion": "0.2.0",
+  "加载展示": {
+    "标语": "正在整备座驾...",
+    "强调色": "#8f2024"
+  },
   "pages": "pages.json",
   "modules": "modules.json",
   "dependencies": "dependencies.json",

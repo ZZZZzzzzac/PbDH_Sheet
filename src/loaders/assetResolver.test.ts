@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createAssetResolver, createRuntimeAssetResolver, resourceAssetUrlKey } from "./assetResolver";
 import { createVirtualFileSystem } from "./packageVfs";
 
@@ -40,6 +40,17 @@ describe("createAssetResolver", () => {
 });
 
 describe("createRuntimeAssetResolver", () => {
+  it("uses preset static URLs without creating Blob URLs", () => {
+    const createObjectUrl = vi.spyOn(URL, "createObjectURL");
+
+    const resolver = createRuntimeAssetResolver([
+      { 路径: "assets/card.webp", 类型: "image/webp", staticUrl: "/pbdh/system-packages/core/assets/card.webp" },
+    ]);
+
+    expect(resolver.urls["assets/card.webp"]).toBe("/pbdh/system-packages/core/assets/card.webp");
+    expect(createObjectUrl).not.toHaveBeenCalled();
+  });
+
   it("isolates identical paths by owning Resource Extension", () => {
     const resolver = createRuntimeAssetResolver([
       { 路径: "assets/card.png", 类型: "image/png", bytes: new Uint8Array([1]), sourceType: "resourceExtension", sourceId: "author-a" },

@@ -12,6 +12,7 @@ interface PresetManifest {
   ID: string;
   名称: string;
   版本: string;
+  加载展示?: { 标语: string; 强调色: string };
 }
 
 function presetSystemPackagesPlugin(): Plugin {
@@ -38,6 +39,7 @@ function presetSystemPackagesPlugin(): Plugin {
             name: manifest.名称,
             version: manifest.版本,
             directory: entry.name,
+            ...(manifest.加载展示 ? { loadingPresentation: manifest.加载展示 } : {}),
             files: walkPresetFiles(root).map((file) => relative(root, file).replaceAll("\\", "/")),
           };
         })

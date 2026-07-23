@@ -15,6 +15,10 @@ const packageManifestSchema = z.object({
   名称: z.string().min(1),
   版本: z.string().min(1),
   schemaVersion: z.string().min(1),
+  加载展示: z.object({
+    标语: z.string().trim().min(1).max(80),
+    强调色: z.string().regex(/^#[0-9a-f]{6}$/i),
+  }).optional(),
   pages: z.string().min(1),
   modules: z.string().min(1),
   shell: z.object({ html: z.string().min(1), css: z.string().min(1).optional() }).optional(),
@@ -189,6 +193,7 @@ function normalizeManifestPackage(
       名称: manifest.名称,
       版本: manifest.版本,
       schemaVersion: manifest.schemaVersion,
+      ...(manifest.加载展示 ? { 加载展示: manifest.加载展示 } : {}),
     },
     ...(skins && skins.length > 0 ? { skins } : {}),
     ...(manifest.defaultSkin ? { defaultSkin: manifest.defaultSkin } : {}),
