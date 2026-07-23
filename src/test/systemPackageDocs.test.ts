@@ -107,12 +107,13 @@ describe("System Package documentation", () => {
     const reference = readFileSync(join(docsRoot, "reference", "sheet-modules.md"), "utf8");
     const authorGuide = readFileSync(join(docsRoot, "author-guide", "04-sheet-modules.md"), "utf8");
     const requiredTerms = [
-      '显示方式?: "数值" | "标记"', "当前值标记", "剩余值标记", "Unicode 字素",
+      '显示方式?: "数值" | "标记"', "当前值标记", "剩余值标记", "Marker Descriptor", "Unicode 字素",
+      '"类型": "图片"', "资源路径", "标记尺寸", "contain", "PNG", ".ico",
       "右键", "触屏长按", "无上限", "5px", "Character Data", "fillCountable",
     ];
 
     expect(requiredTerms.filter((term) => !reference.includes(term))).toEqual([]);
-    expect(["当前值标记", "剩余值标记", "右键", "触屏长按", "5px", "{current,max}"].filter((term) => !authorGuide.includes(term))).toEqual([]);
+    expect(["当前值标记", "剩余值标记", "assets/**", "标记尺寸", ".ico", "右键", "触屏长按", "5px", "{current,max}"].filter((term) => !authorGuide.includes(term))).toEqual([]);
   });
 
   it("documents Card state appearance, flip, quarter-turn rotation, and persistent edge indicators", () => {

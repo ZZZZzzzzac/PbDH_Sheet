@@ -238,16 +238,17 @@ describe("validateSystemPackage Sheet Modules", () => {
     }
   });
 
-  it("accepts a Countable Resource Marker Presentation with single visible emoji graphemes", () => {
+  it("accepts text and image Marker Descriptors", () => {
     const result = validateSystemPackage({
       ...minimalSystemPackage,
+      assets: [{ 路径: "assets/empty.webp", 类型: "image/webp" }],
       modules: [{
         ID: "character-name",
         类型: "countableResource",
         标签: "生命",
         显示方式: "标记",
-        当前值标记: "❤️",
-        剩余值标记: "🖤",
+        当前值标记: { 类型: "文字", 内容: "❤️" },
+        剩余值标记: { 类型: "图片", 资源路径: "assets/empty.webp" },
         最小值: 0,
         最大值: 6,
         默认值: 2,
@@ -258,20 +259,20 @@ describe("validateSystemPackage Sheet Modules", () => {
     if (result.ok) {
       expect(findModule(result.package, "character-name")).toEqual(expect.objectContaining({
         显示方式: "标记",
-        当前值标记: "❤️",
-        剩余值标记: "🖤",
+        当前值标记: { 类型: "文字", 内容: "❤️" },
+        剩余值标记: { 类型: "图片", 资源路径: "assets/empty.webp" },
       }));
     }
   });
 
-  it.each([5, 96])("accepts Countable Resource font sizes at the %spx boundary", (fontSize) => {
+  it.each([5, 96])("accepts Countable Resource sizes at the %spx boundary", (fontSize) => {
     const result = validateSystemPackage({
       ...minimalSystemPackage,
       modules: [{
         ID: "character-name",
         类型: "countableResource",
         标签: "生命",
-        标识字号: fontSize,
+        标记尺寸: fontSize,
         加减号字号: fontSize,
       }],
     });
@@ -279,15 +280,15 @@ describe("validateSystemPackage Sheet Modules", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(findModule(result.package, "character-name")).toEqual(expect.objectContaining({
-        标识字号: fontSize,
+        标记尺寸: fontSize,
         加减号字号: fontSize,
       }));
     }
   });
 
   it.each([
-    ["identifier below minimum", { 标识字号: 4.9 }],
-    ["identifier above maximum", { 标识字号: 96.1 }],
+    ["marker below minimum", { 标记尺寸: 4.9 }],
+    ["marker above maximum", { 标记尺寸: 96.1 }],
     ["stepper below minimum", { 加减号字号: 4.9 }],
     ["stepper above maximum", { 加减号字号: 96.1 }],
   ])("rejects Countable Resource font size when %s", (_case, fontConfig) => {
@@ -307,7 +308,7 @@ describe("validateSystemPackage Sheet Modules", () => {
     ]));
   });
 
-  it("rejects a Countable Resource Marker Presentation without both marker graphemes", () => {
+  it("rejects a Countable Resource Marker Presentation without both descriptors", () => {
     const result = validateSystemPackage({
       ...minimalSystemPackage,
       modules: [{
@@ -325,11 +326,13 @@ describe("validateSystemPackage Sheet Modules", () => {
   });
 
   it.each([
-    ["multiple graphemes", { 当前值标记: "❤️❤️", 剩余值标记: "🖤", 最小值: 0 }],
-    ["whitespace marker", { 当前值标记: " ", 剩余值标记: "🖤", 最小值: 0 }],
-    ["format-only marker", { 当前值标记: "\u200d", 剩余值标记: "🖤", 最小值: 0 }],
-    ["identical markers", { 当前值标记: "❤️", 剩余值标记: "❤️", 最小值: 0 }],
-    ["negative minimum", { 当前值标记: "❤️", 剩余值标记: "🖤", 最小值: -1 }],
+    ["multiple graphemes", { 当前值标记: { 类型: "文字", 内容: "❤️❤️" }, 剩余值标记: { 类型: "文字", 内容: "🖤" }, 最小值: 0 }],
+    ["whitespace marker", { 当前值标记: { 类型: "文字", 内容: " " }, 剩余值标记: { 类型: "文字", 内容: "🖤" }, 最小值: 0 }],
+    ["format-only marker", { 当前值标记: { 类型: "文字", 内容: "\u200d" }, 剩余值标记: { 类型: "文字", 内容: "🖤" }, 最小值: 0 }],
+    ["identical text markers", { 当前值标记: { 类型: "文字", 内容: "❤️" }, 剩余值标记: { 类型: "文字", 内容: "❤️" }, 最小值: 0 }],
+    ["NFC-equivalent text markers", { 当前值标记: { 类型: "文字", 内容: "é" }, 剩余值标记: { 类型: "文字", 内容: "e\u0301" }, 最小值: 0 }],
+    ["identical image markers", { 当前值标记: { 类型: "图片", 资源路径: "assets/same.webp" }, 剩余值标记: { 类型: "图片", 资源路径: "assets/same.webp" }, 最小值: 0 }],
+    ["negative minimum", { 当前值标记: { 类型: "文字", 内容: "❤️" }, 剩余值标记: { 类型: "文字", 内容: "🖤" }, 最小值: -1 }],
   ])("rejects Marker Presentation with %s", (_case, markerConfig) => {
     const result = validateSystemPackage({
       ...minimalSystemPackage,
@@ -343,6 +346,21 @@ describe("validateSystemPackage Sheet Modules", () => {
     });
 
     expect(result.ok).toBe(false);
+  });
+
+  it.each([
+    ["legacy string markers", { 显示方式: "标记", 当前值标记: "❤️", 剩余值标记: "🖤" }],
+    ["removed identifier font size", { 标识字号: 18 }],
+  ])("rejects Countable Resource %s", (_case, legacyConfig) => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: [{ ID: "character-name", 类型: "countableResource", 标签: "生命", ...legacyConfig }],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "PACKAGE_SHAPE_INVALID" }),
+    ]));
   });
 
   it("accepts Validation Check declarations with loaded script content", () => {

@@ -48,8 +48,8 @@ Profession Markdown remains the rules-text source. Matching DOCX files provide o
 
 - Commit optimized runtime WebP only.
 - Do not copy PNG originals or Ancestry illustrations.
-- Industrial and Mindscape Domain Cards are text Cards.
-- `大地的慈悲-昭示`, `摇篮曲-终`, and `归乡邀约-洗礼` are supplemental backs, not selectable entries.
+- All 231 Domain Cards use image presentation.
+- `大地的慈悲-昭示`, `摇篮曲-终`, `归乡邀约-洗礼`, `召唤：炮台`, and `召唤：巨兵` are supplemental backs, not selectable entries.
 
 ## Review gate
 

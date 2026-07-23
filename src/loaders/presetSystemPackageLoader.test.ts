@@ -10,7 +10,7 @@ const preset: PresetSystemPackage = {
 };
 
 const packageFiles: Record<string, string> = {
-  "manifest.json": JSON.stringify({ ID: preset.id, 名称: preset.name, 版本: preset.version, schemaVersion: "0.1.0", pages: "pages.json", modules: "modules.json" }),
+  "manifest.json": JSON.stringify({ ID: preset.id, 名称: preset.name, 版本: preset.version, schemaVersion: "0.2.0", pages: "pages.json", modules: "modules.json" }),
   "pages.json": JSON.stringify([{ ID: "main", 名称: "首页", layout: { 类型: "htmlTemplate", html: "layouts/main.html" } }]),
   "modules.json": JSON.stringify([{ ID: "intro", 类型: "readOnlyDisplay", 标签: "简介", 内容: "Preset" }]),
   "layouts/main.html": "<main><pb-module id=\"intro\"></pb-module></main>",

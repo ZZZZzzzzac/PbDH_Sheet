@@ -11,14 +11,14 @@ my-system/
    └─ main.html
 ```
 
-先修改 `manifest.json` 的 `ID`、`名称`、`版本`，保持 `schemaVersion` 为 `0.1.0`。`pages` 和 `modules` 是包内相对路径：
+先修改 `manifest.json` 的 `ID`、`名称`、`版本`，保持 `schemaVersion` 为 `0.2.0`。`pages` 和 `modules` 是包内相对路径：
 
 ```json
 {
   "ID": "my-system",
   "名称": "我的 PbDH 系统",
   "版本": "0.1.0",
-  "schemaVersion": "0.1.0",
+  "schemaVersion": "0.2.0",
   "pages": "pages.json",
   "modules": "modules.json"
 }

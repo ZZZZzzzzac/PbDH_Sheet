@@ -1,6 +1,6 @@
 # ADR-0010: Module Scoped Style Overrides
 
-状态：Accepted
+状态：Accepted（`countableResource` 的 `标识字号`合同由 ADR-0027 局部替代）
 日期：2026-07-06
 
 ## 背景

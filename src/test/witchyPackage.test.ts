@@ -40,7 +40,9 @@ describe("Witchy System Package", () => {
     });
     expect(result.package.modules.find((module) => module.ID === "erosion")).toMatchObject({
       类型: "countableResource", 默认值: 0, 最大值: 6,
-      显示方式: "标记", 当前值标记: "🌑", 剩余值标记: "🌕",
+      显示方式: "标记",
+      当前值标记: { 类型: "文字", 内容: "🌑" },
+      剩余值标记: { 类型: "文字", 内容: "🌕" },
     });
     expect(result.package.dependencies).toEqual(expect.arrayContaining([
       expect.objectContaining({

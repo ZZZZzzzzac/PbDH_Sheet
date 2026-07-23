@@ -36,7 +36,7 @@ export const moduleDemoSystemPackage = {
     ID: "demo",
     名称: "模块测试夹具",
     版本: "0.1.0",
-    schemaVersion: "0.1.0",
+    schemaVersion: "0.2.0",
   },
   pages: [{
     ID: "main",
@@ -71,7 +71,7 @@ export const moduleDemoSystemPackage = {
         { ID: "inspired", 标签: "振奋", 默认选中: true },
       ],
     },
-    { ID: "vitality", 类型: "countableResource", 标签: "气力", 最小值: 0, 最大值: 6, 默认值: 3, 步长: 1, 最大值可改: true, 标识字号: 18, 加减号字号: 20 },
+    { ID: "vitality", 类型: "countableResource", 标签: "气力", 最小值: 0, 最大值: 6, 默认值: 3, 步长: 1, 最大值可改: true, 标记尺寸: 18, 加减号字号: 20 },
     { ID: "rule-note", 类型: "readOnlyDisplay", 标签: "提示", 内容: "只读展示模块不会写入 Character Data。这里适合放规则提示、检查清单或静态说明。" },
     { ID: "sect-emblem", 类型: "readOnlyDisplay", 标签: "徽记", 资源路径: "assets/demo-emblem.svg", 替代文本: "Sheet Module 示例徽记" },
     { ID: "portrait", 类型: "imageField", 标签: "头像", 替代文本: "角色头像" },

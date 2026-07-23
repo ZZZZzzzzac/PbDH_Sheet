@@ -7,7 +7,7 @@
 | `ID` | string | 是 | 非空、稳定 | package identity |
 | `名称` | string | 是 | 非空 | UI display |
 | `版本` | string | 是 | 非空；Author version | cache/compat metadata |
-| `schemaVersion` | string | 是 | 当前 `0.1.0`；不匹配 warning | schema compatibility |
+| `schemaVersion` | string | 是 | 当前 `0.2.0`；不匹配 warning | schema compatibility |
 | `pages` | path string | 是 | 安全相对路径 | Page JSON |
 | `modules` | path string | 是 | 安全相对路径 | Module JSON |
 | `shell` | object | 否 | `{html, css?}` | common Sheet Shell |
@@ -25,7 +25,7 @@
   "ID": "demo",
   "名称": "Demo",
   "版本": "1.0.0",
-  "schemaVersion": "0.1.0",
+  "schemaVersion": "0.2.0",
   "pages": "pages.json",
   "modules": "modules.json",
   "dependencies": "dependencies.json",

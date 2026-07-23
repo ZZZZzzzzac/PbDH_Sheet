@@ -17,7 +17,7 @@
   "ID": "fixed",
   "名称": "修复包",
   "版本": "1.0.0",
-  "schemaVersion": "0.1.0",
+  "schemaVersion": "0.2.0",
   "pages": "pages.json",
   "modules": "modules.json"
 }

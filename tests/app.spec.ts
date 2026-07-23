@@ -935,7 +935,7 @@ async function createCardFitPackage(testInfo: TestInfo): Promise<string> {
       ID: "card-fit-e2e",
       名称: "Card 描述拟合测试包",
       版本: "0.1.0",
-      schemaVersion: "0.1.0",
+      schemaVersion: "0.2.0",
       pages: "pages.json",
       modules: "modules.json",
       resourceLibraries: [{ ID: "fit-cards", 名称: "拟合卡牌", 路径: "resources/cards.json" }],
@@ -1000,7 +1000,7 @@ async function putInvalidCachedPackage(page: Page) {
             ID: "invalid-current-contract",
             名称: "无效缓存包",
             版本: "1.0.0",
-            schemaVersion: "0.1.0",
+            schemaVersion: "0.2.0",
           },
           pages: [
             {

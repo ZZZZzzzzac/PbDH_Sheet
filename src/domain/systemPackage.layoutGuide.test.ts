@@ -38,7 +38,7 @@ describe("validateSystemPackage Layout and Guide", () => {
   it("warns but still renders when the schemaVersion differs from the framework version", () => {
     const mismatchedPackage = {
       ...minimalSystemPackage,
-      manifest: { ...minimalSystemPackage.manifest, schemaVersion: "0.2.0" },
+      manifest: { ...minimalSystemPackage.manifest, schemaVersion: "0.1.0" },
     };
 
     const result = validateSystemPackage(mismatchedPackage);

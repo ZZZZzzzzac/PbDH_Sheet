@@ -109,7 +109,7 @@ A Sheet Module that stores an integer current value and an optional integer maxi
 _Avoid_: Separate counter module for each presentation
 
 **Marker Presentation**:
-An Author-selected presentation of a Countable Resource that repeats one Author-defined Unicode grapheme for the current value and, when a finite maximum exists, a different Author-defined Unicode grapheme for the remaining capacity.
+An Author-selected presentation of a Countable Resource that repeats separate Author-defined text or System Package image markers for its current value and remaining capacity.
 _Avoid_: New Sheet Module, text value
 
 **Resource Library**:
@@ -352,7 +352,7 @@ _Avoid_: Script plugin
 - A **Free Text** Sheet Module updates its **Sheet Value** during input, but emits a **Committed Free Text Change** only on blur. Dependency Logic may combine declared non-empty Free Text sources into one Resource Picker default field filter; Resource Libraries and Browsers never read Character Data directly.
 - Pure default filters derived from **Committed Free Text Changes** rebuild from existing Character Data after load, import, or Character Save switch without persisting or replaying the event.
 - A Resource selection may produce a **Derived Text Placeholder** through Dependency Logic. It rebuilds from the source snapshot, does not write Character Data, and disappears visually when the Player enters a Sheet Value.
-- A **Marker Presentation** renders `current` current-value markers followed by `max - current` remaining-capacity markers. When `max` is absent, it renders only the current-value markers.
+- A **Marker Presentation** renders `current` current-value markers followed by `max - current` remaining-capacity markers. Each marker is explicitly a text grapheme or a System Package image; when `max` is absent, it renders only the current-value markers.
 - An **HTML Layout Template** must not define interactive form controls or custom behavior; all Player interaction that reads or writes state must use Base Framework **Sheet Modules** or other framework-provided interactive surfaces.
 - **Dependency Logic** helps Players avoid table lookup and text copying, but should not imply full automation of game rules.
 - **Dependency Logic** may consume a Resource Picker selection event and fill existing Sheet Modules with selected Resource Values.

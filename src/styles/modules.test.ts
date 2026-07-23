@@ -1,10 +1,19 @@
 import { describe, expect, it } from "vitest";
 import cardTableCss from "./card-table.css?raw";
+import countableResourceCss from "./countable-resource.css?raw";
 import modulesCss from "./modules.css?raw";
 
 describe("Sheet Module sizing", () => {
   it("uses Long Text rows as a fixed editor and preview height with scrolling overflow", () => {
     expect(modulesCss).toMatch(/\[data-module-type="longText"\]\s+\[data-part="input"\]\s*\{[^}]*height:\s*var\(--long-text-height[^}]*overflow:\s*auto/s);
+  });
+
+  it("keeps Countable Resource text and image markers in equal square cells", () => {
+    expect(countableResourceCss).toMatch(/\.marker-group\s*\{[^}]*font-size:\s*var\(--countable-marker-size,\s*inherit\)/s);
+    expect(countableResourceCss).toMatch(/\.marker-cell\s*\{[^}]*flex:\s*0 0 1em[^}]*width:\s*1em[^}]*height:\s*1em/s);
+    expect(countableResourceCss).not.toMatch(/\.marker-cell\[data-marker-type="(?:text|image)"\]\s*\{[^}]*(?:width|flex-basis)/s);
+    expect(countableResourceCss).toMatch(/\.marker-image\s*\{[^}]*width:\s*100%[^}]*height:\s*100%[^}]*object-fit:\s*contain/s);
+    expect(countableResourceCss).toMatch(/\[data-countable-print-strategy="clear-uniform-squares"\]\s+\.marker-cell\s+\.marker-glyph\s*\{[^}]*display:\s*none/s);
   });
 
   it("raises the focused Sheet Module above adjacent controls", () => {

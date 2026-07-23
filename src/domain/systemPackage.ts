@@ -15,7 +15,7 @@ import {
   type CharacterCreationGuide,
 } from "./characterCreationGuide";
 
-export const frameworkSchemaVersion = "0.1.0";
+export const frameworkSchemaVersion = "0.2.0";
 
 const manifestSchema = z.object({
   ID: z.string().min(1),
@@ -74,6 +74,25 @@ const checkboxResourceModuleSchema = sheetModuleBaseSchema.extend({
     .min(1),
 });
 
+const textMarkerDescriptorSchema = z.object({
+  类型: z.literal("文字"),
+  内容: z.string().refine(isSingleVisibleGrapheme, {
+    message: "文字标记内容必须是一个可见 Unicode 字素。",
+  }),
+});
+
+const imageMarkerDescriptorSchema = z.object({
+  类型: z.literal("图片"),
+  资源路径: z.string().refine((value) => value.trim().length > 0, {
+    message: "图片标记资源路径不能为空白字符串。",
+  }),
+});
+
+const markerDescriptorSchema = z.discriminatedUnion("类型", [
+  textMarkerDescriptorSchema,
+  imageMarkerDescriptorSchema,
+]);
+
 const countableResourceModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("countableResource"),
   标签: z.string().min(1),
@@ -83,24 +102,20 @@ const countableResourceModuleSchema = sheetModuleBaseSchema.extend({
   步长: z.number().int().positive().optional(),
   最大值可改: z.boolean().optional(),
   显示方式: z.enum(["数值", "标记"]).optional(),
-  当前值标记: z.string().optional(),
-  剩余值标记: z.string().optional(),
-  标识字号: z.number().min(5).max(96).optional(),
+  当前值标记: markerDescriptorSchema.optional(),
+  剩余值标记: markerDescriptorSchema.optional(),
+  标记尺寸: z.number().min(5).max(96).optional(),
   加减号字号: z.number().min(5).max(96).optional(),
 }).superRefine((module, context) => {
   if (module.显示方式 !== "标记") return;
   if (module.当前值标记 === undefined) {
     context.addIssue({ code: "custom", path: ["当前值标记"], message: "标记展示需要当前值标记。" });
-  } else if (!isSingleVisibleGrapheme(module.当前值标记)) {
-    context.addIssue({ code: "custom", path: ["当前值标记"], message: "当前值标记必须是一个可见 Unicode 字素。" });
   }
   if (module.剩余值标记 === undefined) {
     context.addIssue({ code: "custom", path: ["剩余值标记"], message: "标记展示需要剩余值标记。" });
-  } else if (!isSingleVisibleGrapheme(module.剩余值标记)) {
-    context.addIssue({ code: "custom", path: ["剩余值标记"], message: "剩余值标记必须是一个可见 Unicode 字素。" });
   }
   if (module.当前值标记 !== undefined && module.剩余值标记 !== undefined
-    && module.当前值标记.normalize("NFC") === module.剩余值标记.normalize("NFC")) {
+    && markerDescriptorsEqual(module.当前值标记, module.剩余值标记)) {
     context.addIssue({ code: "custom", path: ["剩余值标记"], message: "当前值标记与剩余值标记必须不同。" });
   }
   if ((module.最小值 ?? 0) < 0) {
@@ -112,6 +127,18 @@ function isSingleVisibleGrapheme(value: string): boolean {
   if (!/[^\p{White_Space}\p{Control}\p{Format}\p{Mark}]/u.test(value)) return false;
   const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
   return [...segmenter.segment(value)].length === 1;
+}
+
+function markerDescriptorsEqual(
+  current: z.infer<typeof markerDescriptorSchema>,
+  remaining: z.infer<typeof markerDescriptorSchema>,
+): boolean {
+  if (current.类型 !== remaining.类型) return false;
+  return current.类型 === "文字" && remaining.类型 === "文字"
+    ? current.内容.normalize("NFC") === remaining.内容.normalize("NFC")
+    : current.类型 === "图片" && remaining.类型 === "图片"
+      ? current.资源路径 === remaining.资源路径
+      : false;
 }
 
 const readOnlyDisplayModuleSchema = sheetModuleBaseSchema.extend({
@@ -692,6 +719,16 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
       return;
     }
 
+    if (moduleType === "countableResource" && isPlainObject(moduleInput) && "标识字号" in moduleInput) {
+      moduleParseIssues.push({
+        level: "fatal",
+        code: "PACKAGE_SHAPE_INVALID",
+        text: "Countable Resource 的 `标识字号` 已移除；请改用 `标记尺寸`。",
+        path: `modules.${index}.标识字号`,
+      });
+      return;
+    }
+
     const parsedModule = sheetModuleSchema.safeParse(moduleInput);
     if (!parsedModule.success) {
       moduleParseIssues.push(
@@ -835,6 +872,24 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     }
     if (module.类型 === "readOnlyDisplay" && module.资源路径) {
       usedAssetRefs.add(module.资源路径);
+    }
+
+    if (module.类型 === "countableResource" && module.显示方式 === "标记") {
+      for (const [field, marker] of [
+        ["当前值标记", module.当前值标记],
+        ["剩余值标记", module.剩余值标记],
+      ] as const) {
+        if (marker?.类型 !== "图片") continue;
+        usedAssetRefs.add(marker.资源路径);
+        if (!assetRefs.has(marker.资源路径)) {
+          issues.push({
+            level: "error",
+            code: "MISSING_ASSET_REFERENCE",
+            text: `Countable Resource 图片标记引用了不存在的图片：${marker.资源路径}`,
+            path: `modules.${module.ID}.${field}.资源路径`,
+          });
+        }
+      }
     }
 
     if (module.类型 === "resourceComposer") {

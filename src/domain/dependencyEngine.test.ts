@@ -459,7 +459,7 @@ function createDependencyPackage(options: { dependencies?: SystemPackage["depend
       ID: "dependency-demo",
       名称: "依赖示例",
       版本: "0.1.0",
-      schemaVersion: "0.1.0",
+      schemaVersion: "0.2.0",
     },
     pages: [
       {

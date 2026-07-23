@@ -1,6 +1,6 @@
 # Images and package paths
 
-System Package 自动发现 `assets/**` 下的 PNG、JPEG、WebP、GIF、AVIF 和 SVG 图片。Author 不声明 Asset manifest item 或自定义 Asset ID；HTML、CSS、readOnlyDisplay 和 Card art 统一使用包内相对路径，例如 `assets/cards/flame.webp`。
+System Package 自动发现 `assets/**` 下的 PNG、JPEG、WebP、GIF、AVIF 和 SVG 图片。Author 不声明 Asset manifest item 或自定义 Asset ID；HTML、CSS、readOnlyDisplay、Countable Resource 图片 Marker 和 Card art 统一使用包内相对路径，例如 `assets/cards/flame.webp`。
 
 合法路径是包根相对路径。Normalizer 统一 `/`，拒绝绝对路径、drive prefix、URL、空路径和任何 `..` traversal。zip 允许所有文件共享一层公共根目录，Loader 会剥离该根；目录选择也会剥离选择目录名。
 

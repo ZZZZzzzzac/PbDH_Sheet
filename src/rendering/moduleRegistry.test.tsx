@@ -174,7 +174,7 @@ describe("Simple Sheet Module rendering", () => {
     const countableModule = result.container.querySelector<HTMLElement>('[data-module-id="vitality"]')!;
     const maxInput = screen.getByLabelText("气力上限");
     expect(maxInput).toHaveValue("6");
-    expect(countableModule.style.getPropertyValue("--countable-identifier-font-size")).toBe("18px");
+    expect(countableModule.style.getPropertyValue("--countable-marker-size")).toBe("18px");
     expect(countableModule.style.getPropertyValue("--countable-stepper-font-size")).toBe("20px");
 
     fireEvent.change(maxInput, { target: { value: "10" } });
@@ -200,7 +200,7 @@ describe("Simple Sheet Module rendering", () => {
     const markerPackage: SystemPackage = {
       ...moduleDemoSystemPackage,
       modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "vitality" && module.类型 === "countableResource"
-        ? { ...module, 显示方式: "标记", 当前值标记: "❤️", 剩余值标记: "🖤", 步长: 2 }
+        ? { ...module, 显示方式: "标记", 当前值标记: { 类型: "文字", 内容: "❤️" }, 剩余值标记: { 类型: "文字", 内容: "🖤" }, 步长: 2 }
         : module),
     };
 
@@ -212,7 +212,7 @@ describe("Simple Sheet Module rendering", () => {
     expect(markerModule.querySelector('[data-part="remaining-markers"]')).toHaveTextContent("🖤🖤🖤");
     expect(markerModule.querySelectorAll('[data-part="marker"]')).toHaveLength(6);
     expect(markerModule.querySelector('[data-part="marker-group"]')).toHaveAccessibleName("气力：当前值 3，上限 6");
-    expect((markerModule as HTMLElement).style.getPropertyValue("--countable-identifier-font-size")).toBe("18px");
+    expect((markerModule as HTMLElement).style.getPropertyValue("--countable-marker-size")).toBe("18px");
     expect((markerModule as HTMLElement).style.getPropertyValue("--countable-stepper-font-size")).toBe("20px");
 
     fireEvent.click(within(markerModule as HTMLElement).getByRole("button", { name: "气力增加" }));
@@ -222,18 +222,56 @@ describe("Simple Sheet Module rendering", () => {
     expect(markerModule.querySelector('[data-part="remaining-markers"]')).toHaveTextContent("🖤");
   });
 
+  it("renders mixed image and text markers through package asset URLs and falls back on image failure", () => {
+    const markerPackage: SystemPackage = {
+      ...moduleDemoSystemPackage,
+      modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "vitality" && module.类型 === "countableResource"
+        ? {
+            ...module,
+            显示方式: "标记",
+            当前值标记: { 类型: "图片", 资源路径: "assets/current.webp" },
+            剩余值标记: { 类型: "文字", 内容: "◇" },
+            标记尺寸: 24,
+          }
+        : module),
+    };
+
+    const result = renderModuleDemo(markerPackage, { "assets/current.webp": "blob:current-marker" });
+    const markerModule = result.container.querySelector<HTMLElement>('[data-module-id="vitality"]')!;
+    const images = markerModule.querySelectorAll<HTMLImageElement>('[data-part="marker-image"]');
+    const imageCell = markerModule.querySelector<HTMLElement>('[data-marker-type="image"]')!;
+
+    expect(images).toHaveLength(3);
+    expect(images[0]).toHaveAttribute("src", "blob:current-marker");
+    expect(images[0]).toHaveAttribute("alt", "");
+    expect(imageCell).toHaveAttribute("data-marker-type", "image");
+    expect(images[0]).toHaveClass("marker-image");
+    expect(markerModule.querySelector('[data-part="remaining-markers"]')).toHaveTextContent("◇◇◇");
+    expect(markerModule.style.getPropertyValue("--countable-marker-size")).toBe("24px");
+    expect(markerModule.querySelector('[data-part="marker-group"]')).toHaveAccessibleName("气力：当前值 3，上限 6");
+
+    fireEvent.error(images[0]);
+
+    expect(markerModule.querySelector('[data-part="marker-image-fallback"]')).toHaveTextContent("□");
+
+    act(() => useRuntimeStore.setState({ packageAssetUrls: { "assets/current.webp": "blob:replacement-marker" } }));
+
+    expect(markerModule.querySelectorAll<HTMLImageElement>('[data-part="marker-image"][src="blob:replacement-marker"]')).toHaveLength(3);
+    expect(markerModule.querySelector('[data-part="marker-image-fallback"]')).not.toBeInTheDocument();
+  });
+
   it("preserves stylesheet font defaults when Countable Resource sizes are omitted", () => {
     const packageWithoutFontSizes: SystemPackage = {
       ...moduleDemoSystemPackage,
       modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "vitality" && module.类型 === "countableResource"
-        ? { ...module, 标识字号: undefined, 加减号字号: undefined }
+        ? { ...module, 标记尺寸: undefined, 加减号字号: undefined }
         : module),
     };
 
     const result = renderModuleDemo(packageWithoutFontSizes);
     const countableModule = result.container.querySelector<HTMLElement>('[data-module-id="vitality"]')!;
 
-    expect(countableModule.style.getPropertyValue("--countable-identifier-font-size")).toBe("");
+    expect(countableModule.style.getPropertyValue("--countable-marker-size")).toBe("");
     expect(countableModule.style.getPropertyValue("--countable-stepper-font-size")).toBe("");
   });
 
@@ -241,7 +279,7 @@ describe("Simple Sheet Module rendering", () => {
     const markerPackage: SystemPackage = {
       ...moduleDemoSystemPackage,
       modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "vitality" && module.类型 === "countableResource"
-        ? { ...module, 显示方式: "标记", 当前值标记: "❤️", 剩余值标记: "🖤", 步长: 2 }
+        ? { ...module, 显示方式: "标记", 当前值标记: { 类型: "文字", 内容: "❤️" }, 剩余值标记: { 类型: "文字", 内容: "🖤" }, 步长: 2 }
         : module),
     };
 
@@ -264,7 +302,7 @@ describe("Simple Sheet Module rendering", () => {
     const markerPackage: SystemPackage = {
       ...moduleDemoSystemPackage,
       modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "vitality" && module.类型 === "countableResource"
-        ? { ...module, 显示方式: "标记", 当前值标记: "❤️", 剩余值标记: "🖤", 步长: 2 }
+        ? { ...module, 显示方式: "标记", 当前值标记: { 类型: "文字", 内容: "❤️" }, 剩余值标记: { 类型: "文字", 内容: "🖤" }, 步长: 2 }
         : module),
     };
 
@@ -284,7 +322,7 @@ describe("Simple Sheet Module rendering", () => {
     const markerPackage: SystemPackage = {
       ...moduleDemoSystemPackage,
       modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "vitality" && module.类型 === "countableResource"
-        ? { ...module, 显示方式: "标记", 当前值标记: "❤️", 剩余值标记: "🖤", 步长: 2 }
+        ? { ...module, 显示方式: "标记", 当前值标记: { 类型: "文字", 内容: "❤️" }, 剩余值标记: { 类型: "文字", 内容: "🖤" }, 步长: 2 }
         : module),
     };
 
@@ -315,7 +353,7 @@ describe("Simple Sheet Module rendering", () => {
     const markerPackage: SystemPackage = {
       ...moduleDemoSystemPackage,
       modules: moduleDemoSystemPackage.modules.map((module) => module.ID === "vitality" && module.类型 === "countableResource"
-        ? { ...module, 显示方式: "标记", 当前值标记: "❤️", 剩余值标记: "🖤" }
+        ? { ...module, 显示方式: "标记", 当前值标记: { 类型: "文字", 内容: "❤️" }, 剩余值标记: { 类型: "文字", 内容: "🖤" } }
         : module),
     };
 

@@ -520,12 +520,12 @@ async function buildCommunities() {
     const referenceIndex = body.indexOf(referenceMarker);
     invariant(referenceIndex >= 0, `缺少参考出身：${section.name}`);
     const before = body.slice(0, referenceIndex).trim();
-    const referenceOrigins = body.slice(referenceIndex + referenceMarker.length).trim();
+    const referenceOrigins = body.slice(referenceIndex + referenceMarker.length).trim().replace(/\n{2,}/g, "\n");
     const beforeLines = before.split("\n");
     const firstLineIndex = beforeLines.findIndex((line) => line.trim());
     const firstLine = beforeLines[firstLineIndex];
     invariant(firstLine, `缺少社群简介：${section.name}`);
-    const description = stripDocumentNoise(beforeLines.slice(firstLineIndex + 1).join("\n"));
+    const description = stripDocumentNoise(beforeLines.slice(firstLineIndex + 1).join("\n")).replace(/\n{2,}/g, "\n");
     invariant(description, `缺少社群能力：${section.name}`);
     return {
       ID: `社群:${section.name}`,

@@ -2,7 +2,7 @@
 
 生成或修改前：
 
-1. 使用 `schemaVersion: 0.1.0` 和中文框架键名。
+1. 使用 `schemaVersion: 0.2.0` 和中文框架键名。
 2. 先列 manifest、稳定 ID 和文件引用，再生成内容。
 3. 只使用当前九种 Sheet Module。
 4. 使用 HTML Layout Template、`pb-module` 和可选单一 `pb-page-outlet`；不要生成 Flow Layout。
@@ -18,7 +18,7 @@
 13. 运行 Validator 后按 `location/entities/evidence` 修复；不要要求或虚构 suggestion，不要尝试关闭规则。
 14. 只在自由输入 freeText/longText value 与 Card name/description/tags 中生成 Restricted Markdown；只用批准语法和七个命名颜色，不格式化框架 UI 文本。Free Text `选项`必须是非空、无重复的纯文本字符串列表，`默认值`必须属于列表，且下拉模式不能作为`fillText`追加目标。
    Resource selection 需要动态灰色提示时使用纯派生 `setTextPlaceholder`，不要用 `fillText`伪造 Player 已填写值，也不要让 Text Module 直接读取 Resource。
-15. Countable Resource 标记展示仍用 `countableResource`；生成 `显示方式:"标记"` 时同时提供两个不同的单一可见 Unicode 字素 `当前值标记` / `剩余值标记`，并保证 `最小值 >= 0`。可用 5–96 的 `标识字号` / `加减号字号`分别声明数字或 emoji / 加减号的 CSS 像素字号；不要写单位字符串，也不要创建新的 counter Module 或 Character Data shape。
+15. Countable Resource 标记展示仍用 `countableResource`；生成 `显示方式:"标记"` 时同时提供两个不同的 Marker Descriptor `当前值标记` / `剩余值标记`，并保证 `最小值 >= 0`。每侧显式使用 `{类型:"文字",内容:"单个可见 Unicode 字素"}` 或 `{类型:"图片",资源路径:"assets/**"}`，可混用。图片只用 PNG、JPEG、WebP、GIF、AVIF、SVG 包内路径，不用 `.ico`、外链或 base64。可用 5–96 的 `标记尺寸` / `加减号字号`声明 marker / 加减号 CSS 像素尺寸；不要写单位字符串，也不要创建新的 counter Module 或 Character Data shape。
 16. Resource Composer 只声明固定单选槽位和一对一字段路由；需要区分全部同源与异源组合时，可额外声明受限的 `选择关系输出`。不保存来源，不生成其他模板、条件或脚本。
 17. Card Table 只用 `资源来源`；每个来源可选声明 `卡牌展示.名称模板`、`描述模板` 与 `标签字段`。
 18. Resource Entry ID 可以使用中文；优先生成可读的稳定命名空间，不生成无必要的随机哈希。迁移已发布 ID 时显式写 `旧ID`，不得按名称猜测引用。

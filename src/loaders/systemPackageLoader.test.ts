@@ -326,6 +326,33 @@ describe("loadSystemPackageFromZipFile", () => {
     expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "UNUSED_PACKAGE_IMAGE", level: "warning", path: "assets/unused.svg" })]));
   });
 
+  it("does not discover .ico files as Countable Resource marker images", async () => {
+    const modules = [{
+      ID: "character-name",
+      类型: "countableResource",
+      标签: "生命",
+      显示方式: "标记",
+      当前值标记: { 类型: "图片", 资源路径: "assets/marker.ico" },
+      剩余值标记: { 类型: "文字", 内容: "□" },
+    }];
+    const result = await loadSystemPackageFromZipFile(zipBlob({
+      "manifest.json": JSON.stringify(createManifest()),
+      "pages.json": packagePagesJson(minimalSystemPackage.pages),
+      "modules.json": JSON.stringify(modules),
+      "layouts/main.html": minimalSystemPackage.pages[0].layout.htmlContent,
+      "layouts/main.css": minimalSystemPackage.pages[0].layout.cssContent ?? "",
+      "assets/marker.ico": "not-an-image",
+    }));
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "MISSING_ASSET_REFERENCE",
+        path: "modules.character-name.当前值标记.资源路径",
+      }),
+    ]));
+  });
+
   it("reports a missing static HTML image path", async () => {
     const pages = [{
       ...minimalSystemPackage.pages[0],
