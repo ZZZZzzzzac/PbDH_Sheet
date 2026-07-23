@@ -20,10 +20,6 @@ const expectedResourceCounts = {
 };
 
 const deprecatedDomainCards = new Set(["反制技巧", "关键情报"]);
-const artworkSourceName = new Map([
-  ["掎角之锋", "犄角之锋"],
-  ["治愈苦痛", "治愈痛苦"],
-]);
 const supplementalBacks = new Map([
   ["大地的慈悲", "大地的慈悲-昭示"],
   ["霜白摇篮曲", "摇篮曲-终"],
@@ -586,8 +582,7 @@ async function buildDomainCards() {
     invariant(authoritative.size === 21, `${domain} 最终领域卡数量不是 21，而是 ${authoritative.size}`);
 
     for (const card of authoritative.values()) {
-      const sourceStem = artworkSourceName.get(card.name) ?? card.name;
-      const frontSource = webpByStem.get(sourceStem);
+      const frontSource = webpByStem.get(card.name);
       const entry = {
         ID: `领域卡:${domain}:${card.name}`,
         名称: card.name,

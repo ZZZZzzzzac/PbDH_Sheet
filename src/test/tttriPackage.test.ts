@@ -24,8 +24,68 @@ describe("TTTRI System Package", () => {
 
     expect(loadedResult.issues.filter((issue) => issue.level === "fatal" || issue.level === "error")).toEqual([]);
     expect(loadedResult.package.manifest.ID).toBe("tttri");
-    expect(loadedResult.package.skins).toBeUndefined();
+    expect(loadedResult.package.skins?.map((skin) => skin.ID)).toEqual(["rhodes-island", "terra-portal"]);
+    expect(loadedResult.package.defaultSkin).toBe("rhodes-island");
     expect(loadedResult.package.resourceLibraries).toHaveLength(7);
+  });
+
+  it.each([
+    {
+      id: "rhodes-island",
+      scheme: "light",
+      cornerClass: "ak-corner",
+    },
+    {
+      id: "terra-portal",
+      scheme: "dark",
+      cornerClass: "tp-frame",
+    },
+  ] as const)("ships the $id Skin with overrides that preserve module ownership and Guide regions", ({ id, scheme, cornerClass }) => {
+    expect(loadedResult.ok, loadedResult.ok ? undefined : JSON.stringify(loadedResult.issues, null, 2)).toBe(true);
+    if (!loadedResult.ok) return;
+
+    const systemPackage = loadedResult.package;
+    const skin = systemPackage.skins?.find((candidate) => candidate.ID === id);
+    expect(skin).toBeTruthy();
+    if (!skin?.layoutOverrides?.shell || !systemPackage.shell) return;
+    expect(skin.推荐框架配色).toBe(scheme);
+    expect(skin.layoutOverrides.pages?.map((page) => page.ID)).toEqual(["character-main", "character-story"]);
+
+    for (const override of skin.layoutOverrides.pages ?? []) {
+      const basePage = systemPackage.pages.find((page) => page.ID === override.ID);
+      expect(basePage, override.ID).toBeTruthy();
+      if (!basePage) continue;
+      expect(getHtmlTemplateModuleReferences(override.htmlContent).sort(), override.ID)
+        .toEqual(getHtmlTemplateModuleReferences(basePage.layout.htmlContent).sort());
+    }
+
+    expect(getHtmlTemplateModuleReferences(skin.layoutOverrides.shell.htmlContent).sort())
+      .toEqual(getHtmlTemplateModuleReferences(systemPackage.shell.htmlContent).sort());
+    expect(skin.layoutOverrides.shell.htmlContent.match(/<pb-page-outlet\b/gi)).toHaveLength(1);
+    expect(skin.layoutOverrides.shell.htmlContent.match(/\bdata-print-page\s*=\s*["']true["']/gi)).toHaveLength(1);
+
+    const effectiveHtml = [
+      ...systemPackage.pages.map(
+        (page) => skin.layoutOverrides?.pages?.find((override) => override.ID === page.ID)?.htmlContent ?? page.layout.htmlContent,
+      ),
+      skin.layoutOverrides.shell.htmlContent,
+    ].join("\n");
+    const guideRegions = [
+      "identity", "core-stats", "class-features", "subclass", "weapon-prototype",
+      "ancestry-community", "experiences", "background-questions", "connection-questions",
+      "equipment", "inventory", "advancement", "character-cards",
+    ];
+    for (const regionId of guideRegions) {
+      expect(effectiveHtml, regionId).toContain(`data-guide-region-id="${regionId}"`);
+    }
+
+    expect(skin.cssContent).toContain(":scope");
+    expect(skin.cssContent).toContain("@media print");
+    expect(skin.cssContent).toContain(".print-mode :scope");
+    expect(skin.cssContent).not.toMatch(/@import|@font-face/i);
+    expect(skin.cssContent).not.toMatch(/\.sheet-page\s*\{/);
+    expect(skin.layoutOverrides.shell.htmlContent).toContain("card-desk-banner");
+    expect(skin.layoutOverrides.pages?.every((page) => page.htmlContent.includes(cornerClass))).toBe(true);
   });
 
   it("mounts every declared Sheet Module exactly once", () => {

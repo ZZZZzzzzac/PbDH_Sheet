@@ -1,0 +1,632 @@
+/* terra-portal 「泰拉门户」— 还原 ak.hypergryph.com/archive/dynamicCompile：纯黑底、白字、灰辅、#19d1ff 强调、中英双标、扁平几何。 */
+:scope {
+  color-scheme: dark;
+
+  --tp-black: #000000;
+  --tp-ink: #0a0a0a;
+  --tp-panel: #181818;
+  --tp-panel-2: #232323;
+  --tp-panel-soft: #2e2e2e;
+  --tp-line: #3a3a3a;
+  --tp-line-soft: #5a5a5a;
+  --tp-line-strong: #8a8a8a;
+  --tp-text: #ffffff;
+  --tp-text-soft: #c4c2c2;
+  --tp-muted: #8a8a8a;
+  --tp-muted-deep: #585858;
+  --tp-cyan: #19d1ff;
+  --tp-cyan-deep: #06bbff;
+  --tp-font-display: "Oswald", "Bahnschrift", "DIN Alternate", "Arial Narrow", "Segoe UI", "Microsoft YaHei", sans-serif;
+  --tp-font-wide: "Bahnschrift", "Segoe UI", "Microsoft YaHei", sans-serif;
+  --tp-font-body: system-ui, "Segoe UI", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
+
+  --framework-canvas: #000000;
+  --framework-surface: #181818;
+  --framework-surface-subtle: #232323;
+  --framework-surface-muted: #2e2e2e;
+  --framework-text: #ffffff;
+  --framework-text-strong: #ffffff;
+  --framework-text-secondary: #c4c2c2;
+  --framework-text-muted: #8a8a8a;
+  --framework-border: #3a3a3a;
+  --framework-border-strong: #8a8a8a;
+  --framework-border-subtle: #5a5a5a;
+  --framework-accent: #19d1ff;
+  --framework-accent-active: #06bbff;
+  --framework-on-accent: #000000;
+  --framework-focus: #19d1ff;
+  --framework-danger: #ff5a5a;
+  --framework-danger-strong: #e84848;
+  --framework-danger-border: #c44a4a;
+  --framework-danger-surface: #2a1212;
+  --framework-success: #4fd1a5;
+  --framework-success-border: #3aa884;
+  --framework-warning: #e0b35a;
+  --framework-warning-border: #b8903f;
+  --framework-warning-surface: #2a2418;
+  --framework-shadow: rgba(0, 0, 0, 0.45);
+  --framework-shadow-strong: rgba(0, 0, 0, 0.7);
+  --framework-overlay: rgba(0, 0, 0, 0.85);
+}
+
+/* ========== 工作区与页面外盒 ========== */
+
+.tttri-workspace {
+  background: #000000;
+}
+
+.tttri-sheet-pane {
+  border: 1px solid #5a5a5a;
+  background: #0a0a0a;
+  box-shadow: 0 0 0 1px rgba(25, 209, 255, 0.18);
+}
+
+/* ========== 页面：纯黑门户，无网格纹理 ========== */
+
+.tttri-sheet {
+  position: relative;
+  background: #0a0a0a;
+  color: var(--tp-text);
+  font-family: var(--tp-font-body);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.tttri-sheet {
+  --restricted-markdown-red: #ff6b6b;
+  --restricted-markdown-orange: #e0a060;
+  --restricted-markdown-yellow: #e0b35a;
+  --restricted-markdown-green: #4fd1a5;
+  --restricted-markdown-blue: #19d1ff;
+  --restricted-markdown-purple: #b48ead;
+  --restricted-markdown-gray: #8a8a8a;
+}
+
+/* 页缘：官网式细角标 L 形 */
+.tp-frame {
+  position: absolute;
+  width: 5mm;
+  height: 5mm;
+  border: 0 solid #ffffff;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.tp-frame-tl { top: 1.1mm; left: 1.1mm; border-top-width: 1px; border-left-width: 1px; }
+.tp-frame-tr { top: 1.1mm; right: 1.1mm; border-top-width: 1px; border-right-width: 1px; }
+.tp-frame-bl { bottom: 1.1mm; left: 1.1mm; border-bottom-width: 1px; border-left-width: 1px; }
+.tp-frame-br { bottom: 1.1mm; right: 1.1mm; border-bottom-width: 1px; border-right-width: 1px; }
+
+/* 页顶：纯青细轨（官网 MEDIA 选中色） */
+.tp-page-rail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--tp-cyan);
+  pointer-events: none;
+}
+
+/* ========== 分区：近黑面板 + 1px 灰边 ========== */
+
+.identity-panel,
+.upper-stat-layout,
+.sheet-region,
+.question-column,
+.advancement-region {
+  background: var(--tp-panel);
+  box-shadow: 0 0 0 1px var(--tp-line);
+}
+
+.story-overview > [data-module-slot-id] {
+  background: var(--tp-panel);
+  box-shadow: 0 0 0 1px var(--tp-line);
+}
+
+/* ========== 身份头：PROFILE 式黑底 + 青底线 ========== */
+
+.identity-panel {
+  position: relative;
+  background: #000000;
+  color: var(--tp-text);
+  box-shadow:
+    0 0 0 1px #3a3a3a,
+    inset 0 -2px 0 0 var(--tp-cyan);
+}
+
+.identity-panel [data-part="label"] {
+  color: var(--tp-muted);
+}
+
+.identity-panel [data-module-type] :is([data-part="input"], [data-part="maximum-input"]) {
+  border-color: #3a3a3a;
+  background: #181818;
+  color: #ffffff;
+}
+
+/* 品牌块：官网 RHODES ISLAND :// PROFILE 结构 */
+.brand-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.06rem;
+  padding: 0.32rem 0.42rem 0.38rem;
+  border: 0;
+  background: #000000;
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px #3a3a3a;
+  text-align: left;
+}
+
+.brand-kicker {
+  font-family: var(--tp-font-wide);
+  font-size: 0.48rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--tp-cyan);
+  text-transform: uppercase;
+}
+
+.brand-title {
+  font-family: var(--tp-font-body);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  color: #ffffff;
+}
+
+.brand-subtitle {
+  font-family: var(--tp-font-display);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.brand-rule {
+  display: block;
+  width: 100%;
+  height: 1px;
+  margin: 0.1rem 0 0.04rem;
+  background: #3a3a3a;
+}
+
+.brand-code {
+  font-family: var(--tp-font-display);
+  font-size: 0.5rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--tp-muted);
+  text-transform: uppercase;
+}
+
+/* 头版选择器：实心青底黑字（官网 CTA） */
+.identity-panel :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
+  border: 0;
+  background: var(--tp-cyan);
+  color: #000000;
+  box-shadow: none;
+}
+
+.identity-panel :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"]:hover:not(:disabled) {
+  background: #4ddcff;
+  color: #000000;
+}
+
+.identity-panel .level-field [data-part="label"] {
+  border-bottom-color: #3a3a3a;
+  color: var(--tp-muted);
+}
+
+.identity-panel .level-field [data-part="input"] {
+  font-family: var(--tp-font-display);
+  font-weight: 600;
+  color: var(--tp-cyan);
+  background: #000000;
+}
+
+/* ========== 上排属性 ========== */
+
+.upper-stat-layout {
+  background: var(--tp-panel);
+}
+
+.trait-summary > [data-module-slot-id],
+.defense-summary > [data-module-slot-id] {
+  background: #000000;
+  box-shadow:
+    inset 0 2px 0 var(--tp-cyan),
+    0 0 0 1px #3a3a3a;
+}
+
+.trait-summary [data-part="label"],
+.defense-summary [data-part="label"] {
+  border-bottom-color: #3a3a3a;
+  color: var(--tp-muted);
+  font-family: var(--tp-font-display);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.trait-summary [data-part="input"],
+.defense-summary [data-part="input"] {
+  font-family: var(--tp-font-display);
+  font-weight: 600;
+  color: #ffffff;
+  background: #000000;
+}
+
+/* ========== 分区题签：中文 + 英文码（Oswald 感） ========== */
+
+.sheet-region > .section-title,
+.region-heading-row > .section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  border-bottom: 1px solid #3a3a3a;
+  color: #ffffff;
+  font-family: var(--tp-font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.sheet-region > .section-title::before,
+.region-heading-row > .section-title::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 0.18em;
+  height: 0.95em;
+  background: var(--tp-cyan);
+  transform: translateY(0.1em);
+}
+
+.title-tag {
+  margin-left: auto;
+  color: var(--tp-muted);
+  font-family: var(--tp-font-display);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.region-heading-row > h2:not(.section-title) {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin: 0.15rem 0 0.125rem;
+  padding: 0 0.2rem 0.1rem;
+  border-bottom: 1px solid #3a3a3a;
+  color: #ffffff;
+  font-family: var(--tp-font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+/* ========== 模块零件 ========== */
+
+[data-module-type] [data-part="label"] {
+  color: var(--tp-muted);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]) {
+  border-color: #3a3a3a;
+  background: #000000;
+  color: #ffffff;
+  caret-color: var(--tp-cyan);
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]):hover:not(:disabled) {
+  border-color: #5a5a5a;
+}
+
+[data-module-type] :is([data-part="input"], [data-part="maximum-input"]):focus-visible,
+[data-module-type] button:focus-visible {
+  outline: 2px solid var(--tp-cyan);
+  outline-offset: 1px;
+}
+
+[data-module-type="freeText"] [data-markdown-preview],
+[data-module-type="longText"] [data-markdown-preview] {
+  background: rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+}
+
+/* 选择器：青底黑字实心钮 */
+:is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
+  border: 0;
+  background: var(--tp-cyan);
+  color: #000000;
+  box-shadow: none;
+}
+
+:is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"]:hover:not(:disabled) {
+  background: #4ddcff;
+  color: #000000;
+}
+
+/* 计数资源：黑签青字 + 灰钮 */
+[data-module-type="countableResource"] [data-part="label"] {
+  background: #000000;
+  color: var(--tp-cyan);
+  font-family: var(--tp-font-display);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  box-shadow: inset 0 0 0 1px #3a3a3a;
+}
+
+[data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]) {
+  border: 1px solid #3a3a3a;
+  background: #232323;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+[data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]):hover:not(:disabled) {
+  border-color: var(--tp-cyan);
+  background: #000000;
+  color: var(--tp-cyan);
+}
+
+.experience-list > div {
+  box-shadow: 0 1px 0 #3a3a3a;
+}
+
+.experience-list > div:last-child {
+  box-shadow: none;
+}
+
+.experience-list [data-module-id^="experience-modifier-"] [data-part="input"],
+.experience-list [data-module-id="ancestry-experience-modifier"] [data-part="input"] {
+  font-family: var(--tp-font-display);
+  font-weight: 600;
+  text-align: center;
+  color: var(--tp-cyan);
+}
+
+.currency-row [data-module-type="countableResource"] [data-part="label"] {
+  border-left-color: #3a3a3a;
+}
+
+[data-module-type="checkboxResource"] [data-part="input"] {
+  accent-color: var(--tp-cyan);
+}
+
+[data-module-type="imageField"] [data-part="surface-frame"] {
+  border: 1px solid #5a5a5a;
+  background: #000000;
+}
+
+/* ========== 背景与关系页 ========== */
+
+.question-column h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding-bottom: 0.15rem;
+  box-shadow: 0 1px 0 #3a3a3a;
+  color: #ffffff;
+  font-family: var(--tp-font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: left;
+}
+
+.question-column h2::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 0.18em;
+  height: 0.95em;
+  background: var(--tp-cyan);
+}
+
+/* 升级记录：纯黑条 + 青底线 */
+.advancement-region > h2 {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.18rem 0.5rem 0.34rem;
+  background: #000000;
+  color: #ffffff;
+  font-family: var(--tp-font-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  box-shadow: inset 0 -2px 0 0 var(--tp-cyan);
+}
+
+.advancement-region > h2 .title-tag {
+  color: var(--tp-muted);
+}
+
+.advancement-grid article {
+  border: 1px solid #3a3a3a;
+  background: #000000;
+  box-shadow: inset 0 2px 0 var(--tp-cyan);
+}
+
+.advancement-grid article h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  color: #ffffff;
+  font-family: var(--tp-font-display);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.advancement-grid article h3::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 0.4em;
+  height: 0.4em;
+  background: var(--tp-cyan);
+}
+
+.advancement-grid [data-module-type="readOnlyDisplay"] [data-part="value"] {
+  color: var(--tp-muted);
+}
+
+/* ========== 卡牌桌面 ========== */
+
+.tttri-card-pane {
+  color: #ffffff;
+}
+
+.card-desk-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem 0.62rem;
+  background: #000000;
+  box-shadow:
+    0 0 0 1px #3a3a3a,
+    inset 0 -2px 0 0 var(--tp-cyan);
+}
+
+.card-desk-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.02rem;
+}
+
+.card-desk-kicker {
+  font-family: var(--tp-font-wide);
+  font-size: 0.46rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: var(--tp-cyan);
+  text-transform: uppercase;
+}
+
+.card-desk-title {
+  font-family: var(--tp-font-body);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #ffffff;
+}
+
+.card-desk-sub {
+  font-family: var(--tp-font-display);
+  font-size: 0.56rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--tp-muted);
+  text-transform: uppercase;
+}
+
+.card-desk-index {
+  margin-left: auto;
+  font-family: var(--tp-font-display);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: #ffffff;
+}
+
+[data-module-slot-id="pick-domain-card"] [data-part="button"] {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.1rem;
+  padding: 0 0.6rem;
+  border: 0;
+  background: var(--tp-cyan);
+  color: #000000;
+  font-family: var(--tp-font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  box-shadow: none;
+}
+
+[data-module-slot-id="pick-domain-card"] [data-part="button"]:hover:not(:disabled) {
+  background: #4ddcff;
+}
+
+.tttri-card-table-slot {
+  box-shadow: 0 0 0 1px #3a3a3a;
+}
+
+[data-module-type="cardTable"] [data-part="surface"] {
+  border-color: #3a3a3a;
+  background: #000000;
+}
+
+[data-module-type="cardTable"] :is([data-part="tidy-button"], [data-part="size-control"]) {
+  border: 1px solid #3a3a3a;
+  background: #181818;
+  color: #ffffff;
+}
+
+.play-card-tag {
+  border-color: #3a3a3a;
+  background: #232323;
+  color: #c4c2c2;
+}
+
+/* ========== 输出 / 打印：保留结构，纸面改白 ========== */
+
+.print-mode :scope .tttri-workspace {
+  background: #ffffff;
+}
+
+.print-mode :scope .card-desk-banner {
+  display: none;
+}
+
+.print-mode :scope .tttri-sheet {
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+.print-mode :scope [data-module-type="cardTable"] [data-part="surface"] {
+  background: #ffffff;
+}
+
+@media print {
+  .tttri-workspace {
+    background: #ffffff;
+  }
+
+  .tttri-sheet {
+    background: #ffffff;
+    color: #0a0a0a;
+  }
+
+  .card-desk-banner {
+    display: none;
+  }
+
+  [data-module-type="cardTable"] [data-part="surface"] {
+    background: #ffffff;
+  }
+}
+
+@media screen and (max-width: 800px) {
+  .tp-frame,
+  .tp-page-rail {
+    display: none;
+  }
+}

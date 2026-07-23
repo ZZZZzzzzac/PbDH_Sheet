@@ -6,7 +6,6 @@ Resource review is complete. Implement the functional System Package in Issue or
 
 - Add and validate `manifest.json`, Pages, Sheet Modules, Dependencies, Guide, Checks, and Base Layouts as required by the active Issue.
 - Keep the first Base Layout plain and functional: mount every Module exactly once, use semantic groups and stable Guide Regions, and contain printable content within A4.
-- Do not declare a Skin. Final visual design and Author layout work remain outside this stage.
 - Run the standalone resource check after resource changes and the normal package/build/test checks after `manifest.json` exists.
 
 ## Sources and authority
@@ -36,6 +35,14 @@ Resource review is complete. Implement the functional System Package in Issue or
 The generator may remove document-only structure, strip embedded image/source links, convert `<br>` to newlines, select approved revisions, and split approved combined Ancestry chapters. It must not clean up or rewrite inline Markdown, wording, punctuation, or rules text during this stage.
 
 Profession Markdown remains the rules-text source. Matching DOCX files provide only colored upgrade annotations for `子职提升`.
+
+## Skin
+
+- `skins/rhodes-island/` 是 `defaultSkin`:Arknights 工业档案风(深色档案头、警示黄 accent、危险斜纹、条码、套准角标),零图片资产。
+- `skins/terra-portal/` 是第二 Skin:还原 `ak.hypergryph.com/archive/dynamicCompile`(纯黑底、白字、灰辅、`#19d1ff` 强调、中英双标、扁平几何),零图片资产。
+- Skin 只写 `skins/<skin-id>/**` 与 `manifest.json` 中该 Skin 的注册项;不改 Base `layouts/`、`modules.json`、`pages.json`。
+- HTML override 必须保持每个 Page/Shell 的 `<pb-module>` ID 多重集合与全部 Guide Region 不变;Shell 保持唯一 `<pb-page-outlet>` 与一个 `data-print-page="true"`。
+- 装饰一律绝对定位或零高度手段(box-shadow 描边),不改 Base 几何;A4 容量由 `tests/tttri.spec.ts` 验收,改动后必跑。
 
 ## Assets
 
