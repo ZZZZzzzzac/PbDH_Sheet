@@ -94,6 +94,8 @@ describe("TTTRI System Package", () => {
     const css = loadedResult.package.skins?.find((skin) => skin.ID === "terra-portal")?.cssContent ?? "";
 
     expect(css).toMatch(/:is\(\s*\[data-module-type="countableResource"\],\s*\[data-module-type="freeText"\],\s*\[data-module-type="longText"\]\s*\)\s*>\s*\[data-part="label"\]\s*\{[^}]*color:\s*var\(--tp-cyan\) !important[^}]*font-size:\s*0\.9rem !important/s);
+    expect(css).toMatch(/--tp-module-surface:\s*#[0-9a-f]{6}/i);
+    expect(css).toMatch(/:is\(\s*\[data-module-type="countableResource"\],\s*\[data-module-type="freeText"\],\s*\[data-module-type="longText"\]\s*\)\s*\{[^}]*background:\s*var\(--tp-module-surface\)/s);
   });
 
   it("labels the core traits and resource sections in the base layout and both Skin overrides", () => {
@@ -163,7 +165,17 @@ describe("TTTRI System Package", () => {
     if (!loadedResult.ok) return;
     const css = loadedResult.package.skins?.find((skin) => skin.ID === "terra-portal")?.cssContent ?? "";
 
-    expect(css).toMatch(/\.play-card-text\s*\{[^}]*background:\s*#0a0a0a[^}]*color:\s*#ffffff/s);
+    expect(css).toMatch(/\.play-card-text\s*\{[^}]*background:\s*var\(--tp-ink\)[^}]*color:\s*var\(--tp-text\)/s);
+  });
+
+  it("prints Terra Portal advancement records and text Cards on light surfaces", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const css = loadedResult.package.skins?.find((skin) => skin.ID === "terra-portal")?.cssContent ?? "";
+
+    expect(css).toMatch(/\.print-mode :scope :is\([\s\S]*?\.advancement-region[\s\S]*?\.advancement-grid article[\s\S]*?\)\s*\{[^}]*background:\s*#ffffff !important[^}]*color:\s*#111111 !important/s);
+    expect(css).toMatch(/\.print-mode :scope \.play-card-text\s*\{[^}]*background:\s*#ffffff !important[^}]*color:\s*#111111 !important/s);
+    expect(css).toMatch(/@media print\s*\{[\s\S]*?\.play-card-text\s*\{[^}]*background:\s*#ffffff !important[^}]*color:\s*#111111 !important/s);
   });
 
   it("shows only the approved Class, Subclass and Ancestry Browser fields", () => {

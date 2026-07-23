@@ -145,7 +145,7 @@ describe("HTML snapshot export/import", () => {
     expect(printCss).not.toContain("zoom:");
     expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\.play-card\s*\{[^}]*width:\s*var\(--play-card-width\) !important/s);
     expect(printCss).toMatch(/\.play-card,\s*\.play-card \*\s*\{[^}]*print-color-adjust:\s*exact[^}]*-webkit-print-color-adjust:\s*exact/s);
-    expect(printCss).toMatch(/\.sheet-page \+ \.sheet-page,[^{]*\{[^}]*break-before:\s*page[^}]*page-break-before:\s*always/s);
+    expect(printCss).not.toMatch(/\.sheet-page \+ \.sheet-page,[^{]*\{[^}]*break-before:\s*page/);
     expect(printCss).toMatch(/\.print-mode \[data-markdown-editor\]\[data-markdown-empty="true"\]\s*\{[^}]*display:\s*block\s*!important/s);
     expect(printCss).toMatch(/\.print-mode \[data-markdown-preview\]\[data-markdown-empty="true"\]\s*\{[^}]*display:\s*none\s*!important/s);
     expect(printCss).toMatch(/\.print-mode input::placeholder,\s*\.print-mode textarea::placeholder\s*\{[^}]*color:\s*#e6e8e9 !important[^}]*-webkit-text-fill-color:\s*#e6e8e9 !important[^}]*print-color-adjust:\s*exact/s);

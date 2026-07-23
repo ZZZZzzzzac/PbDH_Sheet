@@ -1,10 +1,14 @@
 import { expect, test } from "@playwright/test";
 
-test("TTTRI plain pages stay inside the A4 page box on screen and in print", async ({ page }) => {
+test("TTTRI Terra Portal pages stay inside A4 and print without blank sheets", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "系统包", exact: true }).click();
   await page.getByRole("combobox", { name: "预制系统包" }).selectOption("tttri");
   await expect(page.locator('[data-system-package-id="tttri"]')).toBeVisible();
+  await page.getByRole("combobox", { name: "人物卡皮肤" }).selectOption("terra-portal");
+  await page.locator('[data-module-slot-id="pick-ancestry"]').getByRole("button", { name: "选择种族" }).click();
+  await page.getByLabel("选择 乌萨斯").click();
+  await expect(page.locator(".play-card-text")).toHaveCount(1);
 
   for (const pageName of ["人物卡", "背景与关系"]) {
     await page.getByRole("button", { name: pageName, exact: true }).click();
@@ -23,6 +27,9 @@ test("TTTRI plain pages stay inside the A4 page box on screen and in print", asy
   await page.emulateMedia({ media: "print" });
   await page.evaluate(() => {
     delete document.documentElement.dataset.tttriA4Probe;
+    delete document.documentElement.dataset.tttriCurrencyProbe;
+    delete document.documentElement.dataset.tttriLightPrintProbe;
+    delete document.documentElement.dataset.tttriPrintSnapshot;
     window.print = () => {
       const surfaces = [...document.querySelectorAll<HTMLElement>('.sheet-page, [data-print-page="true"]')];
       document.documentElement.dataset.tttriA4Probe = JSON.stringify(surfaces.map((element) => {
@@ -53,6 +60,34 @@ test("TTTRI plain pages stay inside the A4 page box on screen and in print", asy
             .map((region) => ({ id: region.dataset.guideRegionId, bottom: region.getBoundingClientRect().bottom - rect.top })),
         };
       }));
+      const currencyElements = document.querySelectorAll<HTMLElement>([
+        '.currency-row [data-module-type="countableResource"]',
+        '.currency-row [data-module-type="countableResource"] > [data-part="label"]',
+        '.currency-row [data-module-type="countableResource"] [data-part="counter"]',
+      ].join(", "));
+      document.documentElement.dataset.tttriCurrencyProbe = JSON.stringify(
+        [...currencyElements].map((element) => getComputedStyle(element).backgroundColor),
+      );
+      const lightPrintBackgrounds = document.querySelectorAll<HTMLElement>([
+        ".advancement-region > h2",
+        ".advancement-grid article",
+        '.advancement-grid [data-module-type]',
+        ".play-card-text",
+      ].join(", "));
+      const lightPrintText = document.querySelectorAll<HTMLElement>([
+        ".advancement-region > h2",
+        ".advancement-grid article h3",
+        '.advancement-grid [data-part="value"]',
+        '.advancement-grid [data-part="option-label"]',
+        ".play-card-text",
+      ].join(", "));
+      document.documentElement.dataset.tttriLightPrintProbe = JSON.stringify(
+        {
+          backgrounds: [...lightPrintBackgrounds].map((element) => getComputedStyle(element).backgroundColor),
+          colors: [...lightPrintText].map((element) => getComputedStyle(element).color),
+        },
+      );
+      document.documentElement.dataset.tttriPrintSnapshot = document.querySelector<HTMLElement>(".sheet-tool")?.outerHTML ?? "";
     };
   });
   await printButton.evaluate((button) => (button as HTMLButtonElement).click());
@@ -81,6 +116,24 @@ test("TTTRI plain pages stay inside the A4 page box on screen and in print", asy
     expect(metrics.horizontalOverflow, metrics.pageId).toBeLessThanOrEqual(1);
     expect(metrics.verticalOverflow, `${metrics.pageId}: ${metrics.lowestElement}; regions=${JSON.stringify(metrics.regionBottoms)}`).toBeLessThanOrEqual(1);
   }
+
+  const currencyPrintSurfaces = JSON.parse(await page.evaluate(() => document.documentElement.dataset.tttriCurrencyProbe ?? "[]")) as string[];
+  expect(currencyPrintSurfaces.length).toBeGreaterThan(0);
+  expect(new Set(currencyPrintSurfaces), `金币区打印底色：${currencyPrintSurfaces.join(", ")}`).toEqual(new Set(["rgb(255, 255, 255)"]));
+
+  const lightPrintSurfaces = JSON.parse(await page.evaluate(() => document.documentElement.dataset.tttriLightPrintProbe ?? "{}")) as { backgrounds?: string[]; colors?: string[] };
+  expect(lightPrintSurfaces.backgrounds?.length).toBeGreaterThan(0);
+  expect(lightPrintSurfaces.colors?.length).toBeGreaterThan(0);
+  expect(new Set(lightPrintSurfaces.backgrounds), `升级记录打印底色：${JSON.stringify(lightPrintSurfaces)}`).toEqual(new Set(["rgb(255, 255, 255)"]));
+  expect(new Set(lightPrintSurfaces.colors), `升级记录打印文字：${JSON.stringify(lightPrintSurfaces)}`).toEqual(new Set(["rgb(17, 17, 17)"]));
+
+  await page.evaluate(() => {
+    document.body.className = "print-mode";
+    document.body.innerHTML = document.documentElement.dataset.tttriPrintSnapshot ?? "";
+  });
+  const printedPdf = await page.pdf({ format: "A4", printBackground: true, preferCSSPageSize: true });
+  const printedPageCount = printedPdf.toString("latin1").match(/\/Type\s*\/Page\b/g)?.length ?? 0;
+  expect(printedPageCount, "TTTRI should emit exactly its three declared print surfaces").toBe(3);
 });
 
 async function measurePage(pageBox: import("@playwright/test").Locator) {

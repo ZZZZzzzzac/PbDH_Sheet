@@ -91,13 +91,17 @@
   padding: var(--card-table-print-page-padding, 3mm) !important;
 }
 
+.print-mode [data-print-page="true"] {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 .print-mode .card-table-surface {
   overflow: visible;
   border: 0;
   background: #ffffff;
 }
 
-.print-mode .sheet-page,
 .print-mode .module-slot,
 .print-mode .container,
 .print-mode .image,
@@ -230,8 +234,6 @@
     margin: 0 !important;
     padding: 0 !important;
     overflow: hidden;
-    break-inside: avoid;
-    page-break-inside: avoid;
     border: 0;
     outline: 0;
     background: #ffffff !important;
@@ -242,13 +244,9 @@
     padding: var(--card-table-print-page-padding, 3mm) !important;
   }
 
-  .sheet-page + .sheet-page,
-  .sheet-page + [data-print-page="true"],
-  [data-print-page="true"] + [data-print-page="true"],
-  [data-print-page="true"] + .sheet-page {
-    /* 非第一个打印块之前分页,避免 break-after 在末项后多生空白页 */
-    break-before: page;
-    page-break-before: always;
+  [data-print-page="true"] {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .module-slot,

@@ -1,49 +1,51 @@
-/* terra-portal 「泰拉门户」— 还原 ak.hypergryph.com/archive/dynamicCompile：纯黑底、白字、灰辅、#19d1ff 强调、中英双标、扁平几何。 */
+/* terra-portal 「泰拉门户」— 柔和蓝黑底、灰白字、低饱和青强调、中英双标、扁平几何。 */
 :scope {
   color-scheme: dark;
 
-  --tp-black: #000000;
-  --tp-ink: #0a0a0a;
-  --tp-panel: #181818;
-  --tp-panel-2: #232323;
-  --tp-panel-soft: #2e2e2e;
-  --tp-line: #3a3a3a;
-  --tp-line-soft: #5a5a5a;
-  --tp-line-strong: #8a8a8a;
-  --tp-text: #ffffff;
-  --tp-text-soft: #c4c2c2;
-  --tp-muted: #8a8a8a;
-  --tp-muted-deep: #585858;
-  --tp-cyan: #19d1ff;
-  --tp-cyan-deep: #06bbff;
+  --tp-black: #101416;
+  --tp-ink: #1c2327;
+  --tp-panel: #151b1e;
+  --tp-panel-2: #242d31;
+  --tp-panel-soft: #303a3f;
+  --tp-module-surface: #23292d;
+  --tp-line: #46535a;
+  --tp-line-soft: #647279;
+  --tp-line-strong: #8e9ba1;
+  --tp-text: #e7ecee;
+  --tp-text-soft: #c1c8cb;
+  --tp-muted: #909a9f;
+  --tp-muted-deep: #626b70;
+  --tp-cyan: #63bfd1;
+  --tp-cyan-deep: #4aaabd;
+  --tp-cyan-hover: #78c9d8;
   --tp-font-display: "Oswald", "Bahnschrift", "DIN Alternate", "Arial Narrow", "Segoe UI", "Microsoft YaHei", sans-serif;
   --tp-font-wide: "Bahnschrift", "Segoe UI", "Microsoft YaHei", sans-serif;
   --tp-font-body: system-ui, "Segoe UI", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
 
-  --framework-canvas: #000000;
-  --framework-surface: #181818;
-  --framework-surface-subtle: #232323;
-  --framework-surface-muted: #2e2e2e;
-  --framework-text: #ffffff;
-  --framework-text-strong: #ffffff;
-  --framework-text-secondary: #c4c2c2;
-  --framework-text-muted: #8a8a8a;
-  --framework-border: #3a3a3a;
-  --framework-border-strong: #8a8a8a;
-  --framework-border-subtle: #5a5a5a;
-  --framework-accent: #19d1ff;
-  --framework-accent-active: #06bbff;
-  --framework-on-accent: #000000;
-  --framework-focus: #19d1ff;
-  --framework-danger: #ff5a5a;
-  --framework-danger-strong: #e84848;
-  --framework-danger-border: #c44a4a;
-  --framework-danger-surface: #2a1212;
-  --framework-success: #4fd1a5;
-  --framework-success-border: #3aa884;
-  --framework-warning: #e0b35a;
-  --framework-warning-border: #b8903f;
-  --framework-warning-surface: #2a2418;
+  --framework-canvas: var(--tp-black);
+  --framework-surface: var(--tp-panel);
+  --framework-surface-subtle: var(--tp-panel-2);
+  --framework-surface-muted: var(--tp-panel-soft);
+  --framework-text: var(--tp-text);
+  --framework-text-strong: var(--tp-text);
+  --framework-text-secondary: var(--tp-text-soft);
+  --framework-text-muted: var(--tp-muted);
+  --framework-border: var(--tp-line);
+  --framework-border-strong: var(--tp-line-strong);
+  --framework-border-subtle: var(--tp-line-soft);
+  --framework-accent: var(--tp-cyan);
+  --framework-accent-active: var(--tp-cyan-deep);
+  --framework-on-accent: var(--tp-black);
+  --framework-focus: var(--tp-cyan);
+  --framework-danger: #e87979;
+  --framework-danger-strong: #cf6262;
+  --framework-danger-border: #a85858;
+  --framework-danger-surface: #2b181a;
+  --framework-success: #6fc4a5;
+  --framework-success-border: #509b80;
+  --framework-warning: #d4b374;
+  --framework-warning-border: #a98d58;
+  --framework-warning-surface: #2b261c;
   --framework-shadow: rgba(0, 0, 0, 0.45);
   --framework-shadow-strong: rgba(0, 0, 0, 0.7);
   --framework-overlay: rgba(0, 0, 0, 0.85);
@@ -52,20 +54,20 @@
 /* ========== 工作区与页面外盒 ========== */
 
 .tttri-workspace {
-  background: #000000;
+  background: var(--tp-black);
 }
 
 .tttri-sheet-pane {
-  border: 1px solid #5a5a5a;
-  background: #0a0a0a;
-  box-shadow: 0 0 0 1px rgba(25, 209, 255, 0.18);
+  border: 1px solid var(--tp-line-soft);
+  background: var(--tp-ink);
+  box-shadow: 0 0 0 1px rgba(99, 191, 209, 0.14);
 }
 
-/* ========== 页面：纯黑门户，无网格纹理 ========== */
+/* ========== 页面：深蓝灰门户，无网格纹理 ========== */
 
 .tttri-sheet {
   position: relative;
-  background: #0a0a0a;
+  background: var(--tp-ink);
   color: var(--tp-text);
   font-family: var(--tp-font-body);
   print-color-adjust: exact;
@@ -77,9 +79,9 @@
   --restricted-markdown-orange: #e0a060;
   --restricted-markdown-yellow: #e0b35a;
   --restricted-markdown-green: #4fd1a5;
-  --restricted-markdown-blue: #19d1ff;
+  --restricted-markdown-blue: var(--tp-cyan);
   --restricted-markdown-purple: #b48ead;
-  --restricted-markdown-gray: #8a8a8a;
+  --restricted-markdown-gray: var(--tp-muted);
 }
 
 /* 页缘：官网式细角标 L 形 */
@@ -87,7 +89,7 @@
   position: absolute;
   width: 5mm;
   height: 5mm;
-  border: 0 solid #ffffff;
+  border: 0 solid var(--tp-text);
   pointer-events: none;
   opacity: 0.55;
 }
@@ -128,10 +130,10 @@
 
 .identity-panel {
   position: relative;
-  background: #000000;
+  background: var(--tp-black);
   color: var(--tp-text);
   box-shadow:
-    0 0 0 1px #3a3a3a,
+    0 0 0 1px var(--tp-line),
     inset 0 -2px 0 0 var(--tp-cyan);
 }
 
@@ -140,9 +142,9 @@
 }
 
 .identity-panel [data-module-type] :is([data-part="input"], [data-part="maximum-input"]) {
-  border-color: #3a3a3a;
-  background: #181818;
-  color: #ffffff;
+  border-color: var(--tp-line);
+  background: var(--tp-panel);
+  color: var(--tp-text);
 }
 
 /* 品牌块：官网 RHODES ISLAND :// PROFILE 结构 */
@@ -154,9 +156,9 @@
   gap: 0.06rem;
   padding: 0.32rem 0.42rem 0.38rem;
   border: 0;
-  background: #000000;
-  color: #ffffff;
-  box-shadow: inset 0 0 0 1px #3a3a3a;
+  background: var(--tp-black);
+  color: var(--tp-text);
+  box-shadow: inset 0 0 0 1px var(--tp-line);
   text-align: left;
 }
 
@@ -175,7 +177,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   line-height: 1.1;
-  color: #ffffff;
+  color: var(--tp-text);
 }
 
 .brand-subtitle {
@@ -183,7 +185,7 @@
   font-size: 0.72rem;
   font-weight: 500;
   letter-spacing: 0.12em;
-  color: #ffffff;
+  color: var(--tp-text);
   text-transform: uppercase;
 }
 
@@ -192,7 +194,7 @@
   width: 100%;
   height: 1px;
   margin: 0.1rem 0 0.04rem;
-  background: #3a3a3a;
+  background: var(--tp-line);
 }
 
 .brand-code {
@@ -208,17 +210,17 @@
 .identity-panel :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
   border: 0;
   background: var(--tp-cyan);
-  color: #000000;
+  color: var(--tp-black);
   box-shadow: none;
 }
 
 .identity-panel :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"]:hover:not(:disabled) {
-  background: #4ddcff;
-  color: #000000;
+  background: var(--tp-cyan-hover);
+  color: var(--tp-black);
 }
 
 .identity-panel .level-field [data-part="label"] {
-  border-bottom-color: #3a3a3a;
+  border-bottom-color: var(--tp-line);
   color: var(--tp-muted);
 }
 
@@ -226,7 +228,7 @@
   font-family: var(--tp-font-display);
   font-weight: 600;
   color: var(--tp-cyan);
-  background: #000000;
+  background: var(--tp-black);
 }
 
 /* ========== 上排属性 ========== */
@@ -237,15 +239,15 @@
 
 .trait-summary > [data-module-slot-id],
 .defense-summary > [data-module-slot-id] {
-  background: #000000;
+  background: var(--tp-black);
   box-shadow:
     inset 0 2px 0 var(--tp-cyan),
-    0 0 0 1px #3a3a3a;
+    0 0 0 1px var(--tp-line);
 }
 
 .trait-summary [data-part="label"],
 .defense-summary [data-part="label"] {
-  border-bottom-color: #3a3a3a;
+  border-bottom-color: var(--tp-line);
   color: var(--tp-muted);
   font-family: var(--tp-font-display);
   font-weight: 500;
@@ -257,8 +259,8 @@
 .defense-summary [data-part="input"] {
   font-family: var(--tp-font-display);
   font-weight: 600;
-  color: #ffffff;
-  background: #000000;
+  color: var(--tp-text);
+  background: var(--tp-black);
 }
 
 /* ========== 分区题签：中文 + 英文码（Oswald 感） ========== */
@@ -269,8 +271,8 @@
   display: flex;
   align-items: baseline;
   gap: 0.35rem;
-  border-bottom: 1px solid #3a3a3a;
-  color: #ffffff;
+  border-bottom: 1px solid var(--tp-line);
+  color: var(--tp-text);
   font-family: var(--tp-font-body);
   font-size: 0.78rem;
   font-weight: 700;
@@ -304,8 +306,8 @@
   gap: 0.35rem;
   margin: 0.15rem 0 0.125rem;
   padding: 0 0.2rem 0.1rem;
-  border-bottom: 1px solid #3a3a3a;
-  color: #ffffff;
+  border-bottom: 1px solid var(--tp-line);
+  color: var(--tp-text);
   font-family: var(--tp-font-body);
   font-size: 0.78rem;
   font-weight: 700;
@@ -322,14 +324,14 @@
 }
 
 [data-module-type] :is([data-part="input"], [data-part="maximum-input"]) {
-  border-color: #3a3a3a;
-  background: #000000;
-  color: #ffffff;
+  border-color: var(--tp-line);
+  background: var(--tp-black);
+  color: var(--tp-text);
   caret-color: var(--tp-cyan);
 }
 
 [data-module-type] :is([data-part="input"], [data-part="maximum-input"]):hover:not(:disabled) {
-  border-color: #5a5a5a;
+  border-color: var(--tp-line-soft);
 }
 
 [data-module-type] :is([data-part="input"], [data-part="maximum-input"]):focus-visible,
@@ -340,21 +342,21 @@
 
 [data-module-type="freeText"] [data-markdown-preview],
 [data-module-type="longText"] [data-markdown-preview] {
-  background: rgba(0, 0, 0, 0.45);
-  color: #ffffff;
+  background: var(--tp-module-surface);
+  color: var(--tp-text);
 }
 
 /* 选择器：青底黑字实心钮 */
 :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
   border: 0;
   background: var(--tp-cyan);
-  color: #000000;
+  color: var(--tp-black);
   box-shadow: none;
 }
 
 :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"]:hover:not(:disabled) {
-  background: #4ddcff;
-  color: #000000;
+  background: var(--tp-cyan-hover);
+  color: var(--tp-black);
 }
 
 /* 文本与计数资源共用同一套黑签青字标签。 */
@@ -363,31 +365,52 @@
   [data-module-type="freeText"],
   [data-module-type="longText"]
 ) > [data-part="label"] {
-  background: #000000 !important;
+  background: var(--tp-black) !important;
   color: var(--tp-cyan) !important;
   font-family: var(--tp-font-display) !important;
   font-size: 0.9rem !important;
   font-weight: 600 !important;
   letter-spacing: 0.16em !important;
   text-transform: uppercase !important;
-  box-shadow: inset 0 0 0 1px #3a3a3a !important;
+  box-shadow: inset 0 0 0 1px var(--tp-line) !important;
+}
+
+/* 三类常用信息模块共享稍浅的正文底，和整页深底形成稳定层级。 */
+:is(
+  [data-module-type="countableResource"],
+  [data-module-type="freeText"],
+  [data-module-type="longText"]
+) {
+  background: var(--tp-module-surface);
+}
+
+:is(
+  [data-module-type="freeText"],
+  [data-module-type="longText"]
+) :is([data-markdown-editor], [data-markdown-preview], [data-part="input"]),
+[data-module-type="countableResource"] :is(
+  [data-part="counter"],
+  [data-part="value-group"],
+  [data-part="input"]
+) {
+  background: var(--tp-module-surface);
 }
 
 [data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]) {
-  border: 1px solid #3a3a3a;
-  background: #232323;
-  color: #ffffff;
+  border: 1px solid var(--tp-line);
+  background: var(--tp-panel-2);
+  color: var(--tp-text);
   box-shadow: none;
 }
 
 [data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]):hover:not(:disabled) {
   border-color: var(--tp-cyan);
-  background: #000000;
+  background: var(--tp-black);
   color: var(--tp-cyan);
 }
 
 .experience-list > div {
-  box-shadow: 0 1px 0 #3a3a3a;
+  box-shadow: 0 1px 0 var(--tp-line);
 }
 
 .experience-list > div:last-child {
@@ -403,7 +426,7 @@
 }
 
 .currency-row [data-module-type="countableResource"] [data-part="label"] {
-  border-left-color: #3a3a3a;
+  border-left-color: var(--tp-line);
 }
 
 [data-module-type="checkboxResource"] [data-part="input"] {
@@ -411,8 +434,8 @@
 }
 
 [data-module-type="imageField"] [data-part="surface-frame"] {
-  border: 1px solid #5a5a5a;
-  background: #000000;
+  border: 1px solid var(--tp-line-soft);
+  background: var(--tp-black);
 }
 
 /* ========== 背景与关系页 ========== */
@@ -422,8 +445,8 @@
   align-items: baseline;
   gap: 0.35rem;
   padding-bottom: 0.15rem;
-  box-shadow: 0 1px 0 #3a3a3a;
-  color: #ffffff;
+  box-shadow: 0 1px 0 var(--tp-line);
+  color: var(--tp-text);
   font-family: var(--tp-font-body);
   font-size: 0.78rem;
   font-weight: 700;
@@ -447,8 +470,8 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0.18rem 0.5rem 0.34rem;
-  background: #000000;
-  color: #ffffff;
+  background: var(--tp-black);
+  color: var(--tp-text);
   font-family: var(--tp-font-body);
   font-size: 0.8rem;
   font-weight: 700;
@@ -461,8 +484,8 @@
 }
 
 .advancement-grid article {
-  border: 1px solid #3a3a3a;
-  background: #000000;
+  border: 1px solid var(--tp-line);
+  background: var(--tp-black);
   box-shadow: inset 0 2px 0 var(--tp-cyan);
 }
 
@@ -470,7 +493,7 @@
   display: flex;
   align-items: baseline;
   gap: 0.25rem;
-  color: #ffffff;
+  color: var(--tp-text);
   font-family: var(--tp-font-display);
   font-size: 0.72rem;
   font-weight: 500;
@@ -494,7 +517,7 @@
 /* ========== 卡牌桌面 ========== */
 
 .tttri-card-pane {
-  color: #ffffff;
+  color: var(--tp-text);
 }
 
 .card-desk-banner {
@@ -503,9 +526,9 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.5rem 0.7rem 0.62rem;
-  background: #000000;
+  background: var(--tp-black);
   box-shadow:
-    0 0 0 1px #3a3a3a,
+    0 0 0 1px var(--tp-line),
     inset 0 -2px 0 0 var(--tp-cyan);
 }
 
@@ -529,7 +552,7 @@
   font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: 0.18em;
-  color: #ffffff;
+  color: var(--tp-text);
 }
 
 .card-desk-sub {
@@ -547,7 +570,7 @@
   font-size: 0.7rem;
   font-weight: 500;
   letter-spacing: 0.14em;
-  color: #ffffff;
+  color: var(--tp-text);
 }
 
 [data-module-slot-id="pick-domain-card"] [data-part="button"] {
@@ -557,7 +580,7 @@
   padding: 0 0.6rem;
   border: 0;
   background: var(--tp-cyan);
-  color: #000000;
+  color: var(--tp-black);
   font-family: var(--tp-font-display);
   font-size: 0.8rem;
   font-weight: 600;
@@ -567,33 +590,33 @@
 }
 
 [data-module-slot-id="pick-domain-card"] [data-part="button"]:hover:not(:disabled) {
-  background: #4ddcff;
+  background: var(--tp-cyan-hover);
 }
 
 .tttri-card-table-slot {
-  box-shadow: 0 0 0 1px #3a3a3a;
+  box-shadow: 0 0 0 1px var(--tp-line);
 }
 
 [data-module-type="cardTable"] [data-part="surface"] {
-  border-color: #3a3a3a;
-  background: #000000;
+  border-color: var(--tp-line);
+  background: var(--tp-black);
 }
 
 [data-module-type="cardTable"] :is([data-part="tidy-button"], [data-part="size-control"]) {
-  border: 1px solid #3a3a3a;
-  background: #181818;
-  color: #ffffff;
+  border: 1px solid var(--tp-line);
+  background: var(--tp-panel);
+  color: var(--tp-text);
 }
 
 .play-card-tag {
-  border-color: #3a3a3a;
-  background: #232323;
-  color: #c4c2c2;
+  border-color: var(--tp-line);
+  background: var(--tp-panel-2);
+  color: var(--tp-text-soft);
 }
 
 .play-card-text {
-  background: #0a0a0a;
-  color: #ffffff;
+  background: var(--tp-ink);
+  color: var(--tp-text);
 }
 
 /* ========== 输出 / 打印：保留结构，纸面改白 ========== */
@@ -615,9 +638,57 @@
   background: #ffffff;
 }
 
+.print-mode :scope :is(
+  .advancement-region,
+  .advancement-region > h2,
+  .advancement-grid article,
+  .advancement-grid [data-module-type]
+) {
+  background: #ffffff !important;
+  color: #111111 !important;
+}
+
+.print-mode :scope .advancement-grid :is(
+  h3,
+  [data-part="label"],
+  [data-part="value"],
+  [data-part="option-label"]
+) {
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+}
+
+.print-mode :scope .play-card-text {
+  background: #ffffff !important;
+  color: #111111 !important;
+}
+
+.print-mode :scope .play-card-tag {
+  border-color: #9ca8ac !important;
+  background: #f2f4f4 !important;
+  color: #30383b !important;
+  -webkit-text-fill-color: #30383b !important;
+}
+
+.print-mode :scope .currency-row :is(
+  [data-module-type="countableResource"],
+  [data-part="label"],
+  [data-part="counter"],
+  [data-part="value-group"],
+  [data-part="input"]
+) {
+  background: #ffffff !important;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+}
+
 @media print {
   .tttri-workspace {
     background: #ffffff;
+  }
+
+  .tttri-sheet-pane {
+    overflow: visible;
   }
 
   .tttri-sheet {
@@ -631,6 +702,50 @@
 
   [data-module-type="cardTable"] [data-part="surface"] {
     background: #ffffff;
+  }
+
+  :is(
+    .advancement-region,
+    .advancement-region > h2,
+    .advancement-grid article,
+    .advancement-grid [data-module-type]
+  ) {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+
+  .advancement-grid :is(
+    h3,
+    [data-part="label"],
+    [data-part="value"],
+    [data-part="option-label"]
+  ) {
+    color: #111111 !important;
+    -webkit-text-fill-color: #111111 !important;
+  }
+
+  .play-card-text {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+
+  .play-card-tag {
+    border-color: #9ca8ac !important;
+    background: #f2f4f4 !important;
+    color: #30383b !important;
+    -webkit-text-fill-color: #30383b !important;
+  }
+
+  .currency-row :is(
+    [data-module-type="countableResource"],
+    [data-part="label"],
+    [data-part="counter"],
+    [data-part="value-group"],
+    [data-part="input"]
+  ) {
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
   }
 }
 
