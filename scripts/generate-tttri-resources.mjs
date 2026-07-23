@@ -28,6 +28,8 @@ const supplementalBacks = new Map([
   ["大地的慈悲", "大地的慈悲-昭示"],
   ["霜白摇篮曲", "摇篮曲-终"],
   ["归乡邀约", "归乡邀约-洗礼"],
+  ["反击炮火", "召唤：炮台"],
+  ["号令巨兵", "召唤：巨兵"],
 ]);
 const expectedDomains = ["奥术", "工业", "攻坚", "坚阵", "精准", "秘行", "奇迹", "心界", "迅攻", "远见", "支柱"];
 const expectedDomainLevelCounts = new Map([
@@ -617,9 +619,9 @@ async function buildDomainCards() {
   }
 
   invariant(cards.length === 231, `领域卡总数不是 231，而是 ${cards.length}`);
-  invariant(cards.filter((entry) => entry.显示方式 === "image").length === 189, "图片领域卡数量不是 189");
-  invariant(cards.filter((entry) => entry.显示方式 === "text").length === 42, "文字领域卡数量不是 42");
-  invariant(assetCopies.length === 192, `WebP 映射数量不是 192，而是 ${assetCopies.length}`);
+  invariant(cards.filter((entry) => entry.显示方式 === "image").length === 231, "图片领域卡数量不是 231");
+  invariant(cards.filter((entry) => entry.显示方式 === "text").length === 0, "文字领域卡数量不是 0");
+  invariant(assetCopies.length === 236, `WebP 映射数量不是 236，而是 ${assetCopies.length}`);
   invariant(assignedSourceAssets.size === allSourceWebp.size, `仍有未分配 WebP：${[...allSourceWebp].filter((item) => !assignedSourceAssets.has(item)).join(", ")}`);
   return { cards, assetCopies };
 }

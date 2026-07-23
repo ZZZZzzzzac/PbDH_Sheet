@@ -226,7 +226,7 @@ describe("TTTRI System Package", () => {
     expect(experienceModuleIds).toHaveLength(10);
   });
 
-  it("derives two-domain defaults while keeping all mixed-presentation Domain Cards selectable", () => {
+  it("derives two-domain defaults while keeping all Domain Cards selectable", () => {
     expect(loadedResult.ok).toBe(true);
     if (!loadedResult.ok) return;
     const systemPackage = loadedResult.package;
@@ -235,9 +235,11 @@ describe("TTTRI System Package", () => {
     const textCards = cards.entries.filter((entry) => entry.fields.显示方式 === "text");
     const backedCards = cards.entries.filter((entry) => entry.fields.卡背);
     expect(cards.entries).toHaveLength(231);
-    expect(imageCards).toHaveLength(189);
-    expect(textCards).toHaveLength(42);
-    expect(backedCards).toHaveLength(3);
+    expect(imageCards).toHaveLength(231);
+    expect(textCards).toHaveLength(0);
+    expect(backedCards).toHaveLength(5);
+    expect(cards.entries.find((entry) => entry.fields.名称 === "反击炮火")?.fields.卡背).toBe("assets/cards/domain-cards/工业/召唤：炮台.webp");
+    expect(cards.entries.find((entry) => entry.fields.名称 === "号令巨兵")?.fields.卡背).toBe("assets/cards/domain-cards/工业/召唤：巨兵.webp");
     expect(cards.entries.some((entry) => entry.fields.名称 === "掎角之锋")).toBe(true);
     expect(cards.entries.some((entry) => entry.fields.名称 === "治愈苦痛")).toBe(true);
 
