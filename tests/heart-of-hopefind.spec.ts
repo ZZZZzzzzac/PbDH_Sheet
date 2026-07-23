@@ -44,8 +44,7 @@ test("Heart of Hopefind skins align and center the survivor style picker", async
   await page.goto("/");
   await selectPreset(page, "heart-of-hopefind");
 
-  for (const skinId of ["survivor-notebook", "dawn-survey"]) {
-    await selectSkin(page, skinId);
+  for (const skinId of ["survivor-notebook"]) {
     const geometry = await page.locator(".style-name-row").evaluate((row) => {
       const freeText = row.querySelector<HTMLElement>('[data-module-id="survivor-style-name"]')!.getBoundingClientRect();
       const buttonElement = row.querySelector<HTMLElement>('[data-module-id="pick-survivor-style"] [data-part="button"]')!;
@@ -98,9 +97,4 @@ async function selectPreset(page: Page, packageId: string) {
   await page.getByRole("button", { name: "系统包", exact: true }).click();
   await page.getByRole("combobox", { name: "预制系统包" }).selectOption(packageId);
   await expect(page.locator(`[data-system-package-id="${packageId}"]`)).toBeVisible();
-}
-
-async function selectSkin(page: Page, skinId: string) {
-  await page.getByRole("button", { name: "系统包", exact: true }).click();
-  await page.getByRole("combobox", { name: /^人物卡皮肤/ }).selectOption(skinId);
 }

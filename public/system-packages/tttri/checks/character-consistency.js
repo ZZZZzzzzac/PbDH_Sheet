@@ -1,6 +1,6 @@
-const ELITE_STAGES = ["等级精英X", "等级精英Y"];
+const ELITE_STAGES = ["精英X", "精英Y"];
 const ALL_STAGES = ["预备", "正式", "资深", ...ELITE_STAGES];
-const STAGE_MESSAGE = "干员等级必须是预备、正式、资深、等级精英X或等级精英Y。";
+const STAGE_MESSAGE = "干员等级必须是预备、正式、资深、精英X或精英Y。";
 
 module.exports = ({ characterData, resourceLibraries }) => {
   const values = characterData && characterData.character ? characterData.character.values || {} : {};
@@ -50,10 +50,10 @@ module.exports = ({ characterData, resourceLibraries }) => {
 
   if ((level !== undefined && level >= 8) || t4["subclass-elite"] === true) {
     if (!isElite) {
-      warn(issues, "T4_ELITE_SUBCLASS_MISSING", "character.values.subclass-stage", "T4 应选择等级精英X或等级精英Y的干员。");
+      warn(issues, "T4_ELITE_SUBCLASS_MISSING", "character.values.subclass-stage", "T4 应选择精英X或精英Y的干员。");
     }
   } else if (isElite) {
-    warn(issues, "ELITE_SUBCLASS_BEFORE_T4", "character.values.subclass-stage", "角色尚未到达 T4，不应提前选择等级精英的干员。");
+    warn(issues, "ELITE_SUBCLASS_BEFORE_T4", "character.values.subclass-stage", "角色尚未到达 T4，不应提前选择精英X或精英Y的干员。");
   }
 
   return issues;

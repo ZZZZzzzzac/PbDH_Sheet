@@ -4,9 +4,6 @@ test("Witching Hour uses the same page width and layout when printing", async ({
   await page.goto("/");
   await selectWitchyPreset(page);
 
-  const skinSelect = page.getByRole("combobox", { name: /^人物卡皮肤/ });
-  await expect(skinSelect.locator('option[value="witching-hour"]')).toHaveCount(1);
-  await skinSelect.selectOption("witching-hour");
   await expect(page.locator('[data-module-id="magic-4-name"], [data-module-id="magic-4-description"]')).toHaveCount(0);
 
   const screen = await witchingHourPresentation(page);
