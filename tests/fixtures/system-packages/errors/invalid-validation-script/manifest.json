@@ -2,7 +2,7 @@
   "ID": "bad-validation-script",
   "名称": "错误包：检查脚本语法错误",
   "版本": "0.1.0",
-  "schemaVersion": "0.1.0",
+  "schemaVersion": "0.2.0",
   "pages": "pages.json",
   "modules": "modules.json",
   "validationChecks": [{ "ID": "broken-check", "脚本": "checks/broken.js" }]

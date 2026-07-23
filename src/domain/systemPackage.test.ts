@@ -3,10 +3,10 @@ import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures"
 import { findAsset, findModule, findResourceLibrary, getHtmlTemplateModuleReferences, validateCachedSystemPackage, validateSystemPackage } from "./systemPackage";
 
 describe("validateSystemPackage Sheet Modules", () => {
-  it("accepts Card state background colors and rejects invalid colors or unknown states", () => {
+  it("accepts Card state appearances and rejects invalid colors, badges, unknown states, or the removed background field", () => {
     const cardModule = {
       ID: "cards", 类型: "cardTable", 标签: "卡牌", 资源来源: [{ 类型: "resourceLibrary", ID: "cards" }],
-      状态选项: ["current", "vault"], 状态背景色: { vault: "#123456" },
+      状态选项: ["current", "vault"], 状态外观: { vault: { 描边颜色: "#123456", 徽标: "宝库" } },
     } as const;
     const base = {
       ...minimalSystemPackage,
@@ -16,14 +16,19 @@ describe("validateSystemPackage Sheet Modules", () => {
     };
 
     const valid = validateSystemPackage(base);
-    const invalidColor = validateSystemPackage({ ...base, modules: [{ ...cardModule, 状态背景色: { vault: "blue" } }] });
-    const unknownState = validateSystemPackage({ ...base, modules: [{ ...cardModule, 状态背景色: { spent: "#abcdef" } }] });
+    const invalidColor = validateSystemPackage({ ...base, modules: [{ ...cardModule, 状态外观: { vault: { 描边颜色: "blue", 徽标: "宝库" } } }] });
+    const emptyBadge = validateSystemPackage({ ...base, modules: [{ ...cardModule, 状态外观: { vault: { 描边颜色: "#abcdef", 徽标: "  " } } }] });
+    const unknownState = validateSystemPackage({ ...base, modules: [{ ...cardModule, 状态外观: { spent: { 描边颜色: "#abcdef", 徽标: "已消耗" } } }] });
+    const removedBackground = validateSystemPackage({ ...base, modules: [{ ...cardModule, 状态背景色: { vault: "#abcdef" } }] });
 
     expect(valid.ok).toBe(true);
     expect(invalidColor.ok).toBe(false);
     if (!invalidColor.ok) expect(invalidColor.issues.map((issue) => issue.text).join("\n")).toContain("#RRGGBB");
+    expect(emptyBadge.ok).toBe(false);
+    if (!emptyBadge.ok) expect(emptyBadge.issues.map((issue) => issue.text).join("\n")).toContain("徽标");
     expect(unknownState.ok).toBe(false);
-    if (!unknownState.ok) expect(unknownState.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "CARD_STATE_COLOR_UNKNOWN_STATE" })]));
+    if (!unknownState.ok) expect(unknownState.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "CARD_STATE_PRESENTATION_UNKNOWN_STATE" })]));
+    expect(removedBackground.ok).toBe(false);
   });
 
   it("accepts text module label visibility and placeholder presentation options", () => {
@@ -134,6 +139,52 @@ describe("validateSystemPackage Sheet Modules", () => {
     ]));
   });
 
+  it("validates declared Free Text sources used by committed default filters", () => {
+    const createPackage = (options: { secondModuleType?: "freeText" | "longText"; includeSecondSource?: boolean; secondValueModuleId?: string } = {}) => ({
+      ...minimalSystemPackage,
+      modules: [
+        { ID: "primary-domain", 类型: "freeText", 标签: "主领域" },
+        { ID: "secondary-domain", 类型: options.secondModuleType ?? "freeText", 标签: "次领域" },
+        { ID: "pick-domain-cards", 类型: "resourcePicker", 按钮文本: "选择领域卡", 资源库: [{ ID: "domain-cards" }] },
+      ],
+      pages: [{
+        ...minimalSystemPackage.pages[0],
+        layout: { ...minimalSystemPackage.pages[0].layout, htmlContent: '<pb-module id="primary-domain"></pb-module><pb-module id="secondary-domain"></pb-module><pb-module id="pick-domain-cards"></pb-module>' },
+      }],
+      resourceLibraries: [{ ID: "domain-cards", 名称: "领域卡", 路径: "resources/domain-cards.json", entries: [{ ID: "card:奥术", 领域: "奥术" }] }],
+      dependencies: [{
+        ID: "filter-domain-cards",
+        sources: [
+          { 类型: "freeText", 模块ID: "primary-domain" },
+          ...(options.includeSecondSource === false ? [] : [{ 类型: "freeText", 模块ID: "secondary-domain" }]),
+        ],
+        targets: [{ 类型: "module", 模块ID: "pick-domain-cards" }],
+        触发: { 类型: "freeTextChanged", 来源模块ID: "primary-domain" },
+        条件: { 类型: "always" },
+        动作: [{
+          类型: "setResourceDefaultFilter",
+          目标模块ID: "pick-domain-cards",
+          字段: "领域",
+          值: { 类型: "freeTextValues", 模块IDs: ["primary-domain", options.secondValueModuleId ?? "secondary-domain"] },
+        }],
+      }],
+    });
+
+    expect(validateSystemPackage(createPackage()).ok).toBe(true);
+
+    const missing = validateSystemPackage(createPackage({ secondValueModuleId: "missing-domain" }));
+    expect(missing.ok).toBe(false);
+    if (!missing.ok) expect(missing.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "MISSING_DEPENDENCY_SOURCE_MODULE" })]));
+
+    const wrongType = validateSystemPackage(createPackage({ secondModuleType: "longText" }));
+    expect(wrongType.ok).toBe(false);
+    if (!wrongType.ok) expect(wrongType.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE" })]));
+
+    const undeclared = validateSystemPackage(createPackage({ includeSecondSource: false }));
+    expect(undeclared.ok).toBe(false);
+    if (!undeclared.ok) expect(undeclared.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "MISSING_DEPENDENCY_SOURCE_DECLARATION" })]));
+  });
+
   it.each([
     ["removed singular field", { 资源库ID: "cards" }],
     ["empty plural field", { 资源来源: [] }],
@@ -187,16 +238,17 @@ describe("validateSystemPackage Sheet Modules", () => {
     }
   });
 
-  it("accepts a Countable Resource Marker Presentation with single visible emoji graphemes", () => {
+  it("accepts text and image Marker Descriptors", () => {
     const result = validateSystemPackage({
       ...minimalSystemPackage,
+      assets: [{ 路径: "assets/empty.webp", 类型: "image/webp" }],
       modules: [{
         ID: "character-name",
         类型: "countableResource",
         标签: "生命",
         显示方式: "标记",
-        当前值标记: "❤️",
-        剩余值标记: "🖤",
+        当前值标记: { 类型: "文字", 内容: "❤️" },
+        剩余值标记: { 类型: "图片", 资源路径: "assets/empty.webp" },
         最小值: 0,
         最大值: 6,
         默认值: 2,
@@ -207,20 +259,20 @@ describe("validateSystemPackage Sheet Modules", () => {
     if (result.ok) {
       expect(findModule(result.package, "character-name")).toEqual(expect.objectContaining({
         显示方式: "标记",
-        当前值标记: "❤️",
-        剩余值标记: "🖤",
+        当前值标记: { 类型: "文字", 内容: "❤️" },
+        剩余值标记: { 类型: "图片", 资源路径: "assets/empty.webp" },
       }));
     }
   });
 
-  it.each([5, 96])("accepts Countable Resource font sizes at the %spx boundary", (fontSize) => {
+  it.each([5, 96])("accepts Countable Resource sizes at the %spx boundary", (fontSize) => {
     const result = validateSystemPackage({
       ...minimalSystemPackage,
       modules: [{
         ID: "character-name",
         类型: "countableResource",
         标签: "生命",
-        标识字号: fontSize,
+        标记尺寸: fontSize,
         加减号字号: fontSize,
       }],
     });
@@ -228,15 +280,15 @@ describe("validateSystemPackage Sheet Modules", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(findModule(result.package, "character-name")).toEqual(expect.objectContaining({
-        标识字号: fontSize,
+        标记尺寸: fontSize,
         加减号字号: fontSize,
       }));
     }
   });
 
   it.each([
-    ["identifier below minimum", { 标识字号: 4.9 }],
-    ["identifier above maximum", { 标识字号: 96.1 }],
+    ["marker below minimum", { 标记尺寸: 4.9 }],
+    ["marker above maximum", { 标记尺寸: 96.1 }],
     ["stepper below minimum", { 加减号字号: 4.9 }],
     ["stepper above maximum", { 加减号字号: 96.1 }],
   ])("rejects Countable Resource font size when %s", (_case, fontConfig) => {
@@ -256,7 +308,7 @@ describe("validateSystemPackage Sheet Modules", () => {
     ]));
   });
 
-  it("rejects a Countable Resource Marker Presentation without both marker graphemes", () => {
+  it("rejects a Countable Resource Marker Presentation without both descriptors", () => {
     const result = validateSystemPackage({
       ...minimalSystemPackage,
       modules: [{
@@ -274,11 +326,13 @@ describe("validateSystemPackage Sheet Modules", () => {
   });
 
   it.each([
-    ["multiple graphemes", { 当前值标记: "❤️❤️", 剩余值标记: "🖤", 最小值: 0 }],
-    ["whitespace marker", { 当前值标记: " ", 剩余值标记: "🖤", 最小值: 0 }],
-    ["format-only marker", { 当前值标记: "\u200d", 剩余值标记: "🖤", 最小值: 0 }],
-    ["identical markers", { 当前值标记: "❤️", 剩余值标记: "❤️", 最小值: 0 }],
-    ["negative minimum", { 当前值标记: "❤️", 剩余值标记: "🖤", 最小值: -1 }],
+    ["multiple graphemes", { 当前值标记: { 类型: "文字", 内容: "❤️❤️" }, 剩余值标记: { 类型: "文字", 内容: "🖤" }, 最小值: 0 }],
+    ["whitespace marker", { 当前值标记: { 类型: "文字", 内容: " " }, 剩余值标记: { 类型: "文字", 内容: "🖤" }, 最小值: 0 }],
+    ["format-only marker", { 当前值标记: { 类型: "文字", 内容: "\u200d" }, 剩余值标记: { 类型: "文字", 内容: "🖤" }, 最小值: 0 }],
+    ["identical text markers", { 当前值标记: { 类型: "文字", 内容: "❤️" }, 剩余值标记: { 类型: "文字", 内容: "❤️" }, 最小值: 0 }],
+    ["NFC-equivalent text markers", { 当前值标记: { 类型: "文字", 内容: "é" }, 剩余值标记: { 类型: "文字", 内容: "e\u0301" }, 最小值: 0 }],
+    ["identical image markers", { 当前值标记: { 类型: "图片", 资源路径: "assets/same.webp" }, 剩余值标记: { 类型: "图片", 资源路径: "assets/same.webp" }, 最小值: 0 }],
+    ["negative minimum", { 当前值标记: { 类型: "文字", 内容: "❤️" }, 剩余值标记: { 类型: "文字", 内容: "🖤" }, 最小值: -1 }],
   ])("rejects Marker Presentation with %s", (_case, markerConfig) => {
     const result = validateSystemPackage({
       ...minimalSystemPackage,
@@ -292,6 +346,21 @@ describe("validateSystemPackage Sheet Modules", () => {
     });
 
     expect(result.ok).toBe(false);
+  });
+
+  it.each([
+    ["legacy string markers", { 显示方式: "标记", 当前值标记: "❤️", 剩余值标记: "🖤" }],
+    ["removed identifier font size", { 标识字号: 18 }],
+  ])("rejects Countable Resource %s", (_case, legacyConfig) => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: [{ ID: "character-name", 类型: "countableResource", 标签: "生命", ...legacyConfig }],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "PACKAGE_SHAPE_INVALID" }),
+    ]));
   });
 
   it("accepts Validation Check declarations with loaded script content", () => {

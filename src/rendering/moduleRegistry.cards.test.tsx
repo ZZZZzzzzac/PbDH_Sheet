@@ -334,8 +334,9 @@ describe("Card rendering", () => {
     expect(within(card).getByRole("img", { name: "回想测试" })).toHaveAttribute("src", "blob:front");
   });
 
-  it("uses the Card Table state background color after switching state", () => {
+  it("uses Author-defined state outlines and badges for image Cards and Card Detail", () => {
     const systemPackage = createCardTablePackage();
+    systemPackage.resourceLibraries[0].entries[0].fields.卡图 = "assets/cards/front.webp";
     const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
       instanceId: "colored-card",
       tableModuleId: "domain-card-table",
@@ -343,19 +344,48 @@ describe("Card rendering", () => {
       definitionId: "domain-card:recall-test",
       state: "configured",
     });
-    useRuntimeStore.setState({ currentPackage: systemPackage, characterData });
+    useRuntimeStore.setState({ currentPackage: systemPackage, characterData, packageAssetUrls: { "assets/cards/front.webp": "blob:front" } });
 
     render(<SheetRenderer systemPackage={systemPackage} />);
     const card = screen.getByRole("article", { name: "回想测试" });
-    expect(card.style.getPropertyValue("--play-card-state-background")).toBe("");
+    expect(within(card).getByRole("img", { name: "回想测试" })).toBeInTheDocument();
+    expect(card).toHaveAttribute("data-card-state", "configured");
+    expect(card.style.getPropertyValue("--play-card-state-color")).toBe("");
+    expect(within(card).queryByText("宝库")).not.toBeInTheDocument();
     fireEvent.contextMenu(card);
     fireEvent.click(screen.getByRole("menuitem", { name: "标记为vault" }));
 
-    expect(card.style.getPropertyValue("--play-card-state-background")).toBe("#abcdef");
+    expect(card).toHaveAttribute("data-card-state", "vault");
+    expect(card.style.getPropertyValue("--play-card-state-color")).toBe("#abcdef");
+    expect(within(card).getByText("宝库")).toHaveClass("play-card-state-badge");
+    expect(within(card).getByRole("img", { name: "回想测试" })).toBeInTheDocument();
     fireEvent.contextMenu(card);
     fireEvent.click(screen.getByRole("menuitem", { name: "查看详情" }));
-    expect(screen.getByRole("dialog", { name: "回想测试详情" }).querySelector(".card-detail-face"))
-      .toHaveStyle({ "--play-card-state-background": "#abcdef" });
+    const detail = screen.getByRole("dialog", { name: "回想测试详情" });
+    expect(detail.querySelector(".card-detail-face")).toHaveAttribute("data-card-state", "vault");
+    expect(detail.querySelector(".card-detail-face")).toHaveStyle({ "--play-card-state-color": "#abcdef" });
+    expect(within(detail).getByText("宝库")).toHaveClass("play-card-state-badge");
+  });
+
+  it("uses the same Author-defined state outline and badge for text Cards", () => {
+    const systemPackage = createCardTablePackage();
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "text-state-card",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: "domain-card:recall-test",
+      state: "vault",
+    });
+    useRuntimeStore.setState({ currentPackage: systemPackage, characterData, packageAssetUrls: {} });
+
+    render(<SheetRenderer systemPackage={systemPackage} />);
+    const card = screen.getByRole("article", { name: "回想测试" });
+
+    expect(card.querySelector(".play-card-text")).not.toBeNull();
+    expect(card).toHaveClass("has-card-state-appearance");
+    expect(card).toHaveAttribute("data-card-state", "vault");
+    expect(card).toHaveStyle({ "--play-card-state-color": "#abcdef" });
+    expect(within(card).getByText("宝库")).toHaveClass("play-card-state-badge");
   });
 
   it("does not invent Card states when the Author omits state options", () => {
@@ -363,7 +393,7 @@ describe("Card rendering", () => {
     const systemPackage: SystemPackage = {
       ...configuredPackage,
       modules: configuredPackage.modules.map((module) => module.类型 === "cardTable"
-        ? { ...module, 状态选项: undefined, 状态背景色: undefined }
+        ? { ...module, 状态选项: undefined, 状态外观: undefined }
         : module),
     };
     const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {

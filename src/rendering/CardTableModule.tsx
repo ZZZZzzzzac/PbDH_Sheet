@@ -292,18 +292,21 @@ function CardView({
   const isDragging = dragState?.instanceId === instance.instanceId;
   const positionXPct = isDragging ? dragState.pendingXPct : instance.xPct;
   const positionYPct = isDragging ? dragState.pendingYPct : instance.yPct;
+  const stateAppearance = moduleConfig.状态外观?.[instance.state];
+  const stateBadgeId = stateAppearance ? `card-state-${instance.instanceId}` : undefined;
 
   return (
     <article
-      className="play-card"
+      className={`play-card${stateAppearance ? " has-card-state-appearance" : ""}`}
       data-card-instance-id={instance.instanceId}
+      data-card-state={instance.state}
       style={{
         left: `${positionXPct}%`,
         top: `${positionYPct}%`,
         zIndex: instance.zIndex,
         transform: `rotate(${instance.rotation}deg) scale(${instance.scale})`,
         "--card-control-counter-rotation": `${-instance.rotation}deg`,
-        "--play-card-state-background": moduleConfig.状态背景色?.[instance.state],
+        "--play-card-state-color": stateAppearance?.描边颜色,
       } as CSSProperties}
       onPointerDown={(event) => onPointerDown(event, instance)}
       onPointerMove={onPointerMove}
@@ -311,6 +314,7 @@ function CardView({
       onPointerCancel={onPointerUp}
       onContextMenu={(event) => onContextMenu(event, instance)}
       aria-label={name}
+      aria-describedby={stateBadgeId}
     >
       <button
         className="play-card-delete"
@@ -326,6 +330,7 @@ function CardView({
       </button>
       <CardIndicatorColumn instance={instance} />
       <CardFace definition={definition} definitionRef={instance.definitionRef} module={moduleConfig} presentation={presentation} fallbackName={name} />
+      {stateAppearance ? <CardStateBadge id={stateBadgeId} label={stateAppearance.徽标} /> : null}
     </article>
   );
 }
@@ -450,19 +455,26 @@ function CardDetailOverlay({ instance, definition, module, presentation, onClose
   }, [onClose]);
   if (!instance) return null;
   const name = resolvePresentation(definition, module, presentation).name || definitionReferenceId(instance);
+  const stateAppearance = module.状态外观?.[instance.state];
   return (
     <div className="card-detail-backdrop" data-guide-interaction-surface="true" data-output-exclude="true" onClick={onClose}>
       <section className="card-detail-dialog" role="dialog" aria-modal="true" aria-label={`${name}详情`} onClick={(event) => event.stopPropagation()}>
         <button className="card-detail-close" type="button" onClick={onClose} aria-label="关闭卡牌详情"><X aria-hidden="true" size={20} /></button>
         <div
-          className="card-detail-face"
-          style={{ "--play-card-state-background": module.状态背景色?.[instance.state] } as CSSProperties}
+          className={`card-detail-face${stateAppearance ? " has-card-state-appearance" : ""}`}
+          data-card-state={instance.state}
+          style={{ "--play-card-state-color": stateAppearance?.描边颜色 } as CSSProperties}
         >
           <CardFace definition={definition} definitionRef={instance.definitionRef} module={module} presentation={presentation} fallbackName={name} autoFitDescription={false} />
+          {stateAppearance ? <CardStateBadge label={stateAppearance.徽标} /> : null}
         </div>
       </section>
     </div>
   );
+}
+
+function CardStateBadge({ id, label }: { id?: string; label: string }) {
+  return <span id={id} className="play-card-state-badge">{label}</span>;
 }
 
 function TextCard({

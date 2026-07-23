@@ -5,7 +5,7 @@ import { readCountableState } from "./moduleState";
 import { useTextFit } from "./textFit";
 import { usePointerActions } from "./usePointerActions";
 import { clampInt } from "../utils";
-import { useRef, type CSSProperties } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 
 interface CountableResourceModuleProps {
   module: CountableResourceModuleConfig;
@@ -24,6 +24,7 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
 
   const rawValue = useRuntimeStore((state) => state.characterData?.character.values[module.ID]);
   const updateModuleValue = useRuntimeStore((state) => state.updateModuleValue);
+  const packageAssetUrls = useRuntimeStore((state) => state.packageAssetUrls);
   const state = readCountableState(rawValue, fallback);
   const max = state.max;
   const current = clampInt(state.current, min, max);
@@ -56,12 +57,12 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
   );
   useTextFit(
     markerGroupRef,
-    `${module.标识字号 ?? ""}:${module.当前值标记}:${current}:${module.剩余值标记}:${max}`,
+    `${module.标记尺寸 ?? ""}:${JSON.stringify(module.当前值标记)}:${current}:${JSON.stringify(module.剩余值标记)}:${max}`,
     markerPresentation,
   );
 
   const configuredStyles = {
-    ...(module.标识字号 === undefined ? {} : { "--countable-identifier-font-size": `${module.标识字号}px` }),
+    ...(module.标记尺寸 === undefined ? {} : { "--countable-marker-size": `${module.标记尺寸}px` }),
     ...(module.加减号字号 === undefined ? {} : { "--countable-stepper-font-size": `${module.加减号字号}px` }),
   } as CSSProperties;
 
@@ -95,10 +96,10 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
             aria-label={`${module.标签}：当前值 ${current}，${max === null ? "无上限" : `上限 ${max}`}`}
           >
             <span data-part="current-markers">
-              {renderMarkerCells(module.当前值标记 ?? "", current, "current")}
+              {module.当前值标记 ? renderMarkerCells(module.当前值标记, current, "current", packageAssetUrls) : null}
             </span>
             <span data-part="remaining-markers">
-              {renderMarkerCells(module.剩余值标记 ?? "", max === null ? 0 : Math.max(0, max - current), "remaining")}
+              {module.剩余值标记 ? renderMarkerCells(module.剩余值标记, max === null ? 0 : Math.max(0, max - current), "remaining", packageAssetUrls) : null}
             </span>
           </span>
         ) : (
@@ -145,18 +146,49 @@ export function CountableResourceModule({ module }: CountableResourceModuleProps
   );
 }
 
-function renderMarkerCells(marker: string, count: number, kind: "current" | "remaining") {
+type MarkerDescriptor = NonNullable<CountableResourceModuleConfig["当前值标记"]>;
+
+function renderMarkerCells(
+  marker: MarkerDescriptor,
+  count: number,
+  kind: "current" | "remaining",
+  packageAssetUrls: Record<string, string>,
+) {
+  const markerKey = marker.类型 === "文字" ? marker.内容 : marker.资源路径;
   return Array.from({ length: count }, (_, index) => (
     <span
-      key={`${kind}-${index}`}
+      key={`${kind}-${marker.类型}-${markerKey}-${index}`}
       className="marker-cell"
       data-part="marker"
       data-marker-kind={kind}
+      data-marker-type={marker.类型 === "文字" ? "text" : "image"}
       aria-hidden="true"
     >
-      <span className="marker-glyph">{marker}</span>
+      {marker.类型 === "文字" ? (
+        <span className="marker-glyph">{marker.内容}</span>
+      ) : (
+        <MarkerImage src={packageAssetUrls[marker.资源路径]} />
+      )}
     </span>
   ));
+}
+
+function MarkerImage({ src }: { src?: string }) {
+  const [failedSrc, setFailedSrc] = useState<string>();
+  if (!src || failedSrc === src) {
+    return <span className="marker-glyph marker-image-fallback" data-part="marker-image-fallback">□</span>;
+  }
+  return (
+    <img
+      className="marker-glyph marker-image"
+      data-part="marker-image"
+      src={src}
+      alt=""
+      aria-hidden="true"
+      draggable={false}
+      onError={() => setFailedSrc(src)}
+    />
+  );
 }
 
 function parseInteger(value: string, fallback: number) {

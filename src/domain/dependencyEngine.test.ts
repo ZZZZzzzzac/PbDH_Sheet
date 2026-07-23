@@ -72,6 +72,54 @@ describe("Dependency Engine v1", () => {
     expect(next.character.values["domain-card-list"]).toBe("卷土重来、灵巧机动");
   });
 
+  it("builds and rebuilds one Resource Picker filter from declared non-empty Free Text values", () => {
+    const filterAction = {
+      类型: "setResourceDefaultFilter" as const,
+      目标模块ID: "pick-domain-cards",
+      字段: "领域",
+      值: { 类型: "freeTextValues" as const, 模块IDs: ["class-name", "class-domains"] },
+    };
+    const systemPackage = createDependencyPackage({ dependencies: [
+      {
+        ID: "filter-on-primary-domain",
+        sources: [
+          { 类型: "freeText", 模块ID: "class-name" },
+          { 类型: "freeText", 模块ID: "class-domains" },
+        ],
+        targets: [{ 类型: "module", 模块ID: "pick-domain-cards" }],
+        触发: { 类型: "freeTextChanged", 来源模块ID: "class-name" },
+        条件: { 类型: "always" },
+        动作: [filterAction],
+      },
+      {
+        ID: "filter-on-secondary-domain",
+        sources: [
+          { 类型: "freeText", 模块ID: "class-name" },
+          { 类型: "freeText", 模块ID: "class-domains" },
+        ],
+        targets: [{ 类型: "module", 模块ID: "pick-domain-cards" }],
+        触发: { 类型: "freeTextChanged", 来源模块ID: "class-domains" },
+        条件: { 类型: "always" },
+        动作: [filterAction],
+      },
+    ] });
+    const data = createEmptyCharacterData(systemPackage);
+    data.character.values["class-name"] = " 奥术 ";
+    data.character.values["class-domains"] = "";
+
+    const committed = evaluateDependencies(data, systemPackage, {
+      type: "freeTextChanged",
+      sourceModuleId: "class-name",
+      value: " 奥术 ",
+    });
+    expect(committed.resourcePickerDefaultQueries["pick-domain-cards"].filters).toEqual({ 领域: ["奥术"] });
+
+    data.character.values["class-domains"] = "奇迹";
+    const rebuilt = rebuildDerivedDependencies(data, systemPackage);
+    expect(rebuilt.resourcePickerDefaultQueries["pick-domain-cards"].filters).toEqual({ 领域: ["奥术", "奇迹"] });
+    expect(rebuilt.dataPatches).toEqual({});
+  });
+
   it("rebuilds only pure derived actions from a persisted Resource Picker snapshot", () => {
     const systemPackage = createDependencyPackage();
     const druid = {
@@ -128,6 +176,30 @@ describe("Dependency Engine v1", () => {
     expect(result.readOnlyDisplayContent["class-background"]).toBe("组合提示");
     expect(result.pageVisibility["druid-page"]).toBe(true);
     expect(result.dataPatches).toEqual({});
+  });
+
+  it("derives and rebuilds a text placeholder without writing Character Data", () => {
+    const systemPackage = createDependencyPackage({ dependencies: [{
+      ID: "derive-placeholder",
+      sources: [{ 类型: "resourcePicker", 模块ID: "pick-class" }],
+      targets: [{ 类型: "module", 模块ID: "class-name" }],
+      触发: { 类型: "resourceSelected", 来源模块ID: "pick-class" },
+      条件: { 类型: "always" },
+      动作: [{ 类型: "setTextPlaceholder", 目标模块ID: "class-name", 内容: { 类型: "selectedResourceField", 字段: "名称" } }],
+    }] });
+    const selected = { ID: "class:德鲁伊", fields: { ID: "class:德鲁伊", 名称: "德鲁伊" } };
+    systemPackage.resourceLibraries.find((library) => library.ID === "classes")?.entries.push(selected);
+    const data = createEmptyCharacterData(systemPackage);
+
+    const result = evaluateDependencies(data, systemPackage, {
+      type: "resourceSelected", sourceModuleId: "pick-class", libraryId: "classes", selectedEntries: [selected],
+    });
+    expect(result.textPlaceholders).toEqual({ "class-name": "德鲁伊" });
+    expect(result.dataPatches).toEqual({});
+
+    data.resourceSelections = { "pick-class": { libraryId: "classes", entryIds: [selected.ID] } };
+    expect(rebuildDerivedDependencies(data, systemPackage).textPlaceholders).toEqual({ "class-name": "德鲁伊" });
+    expect(data.character.values["class-name"]).toBe("");
   });
 
   it("warns and skips an invalid derived Resource Reference", () => {
@@ -387,7 +459,7 @@ function createDependencyPackage(options: { dependencies?: SystemPackage["depend
       ID: "dependency-demo",
       名称: "依赖示例",
       版本: "0.1.0",
-      schemaVersion: "0.1.0",
+      schemaVersion: "0.2.0",
     },
     pages: [
       {

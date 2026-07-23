@@ -2,6 +2,8 @@
 
 Dependency Logic 是唯一允许跨模块联动的声明式规则。每条规则包含唯一 `ID`、`sources`、`targets`、`触发`、可选 `条件` 和非空 `动作`。
 
+Free Text 作为来源时使用 `freeTextChanged`。Player 输入和下拉选择的 `onChange`仍会保存，但只在失焦时求值；第一版只允许它执行 `setResourceDefaultFilter`。多个 Free Text 合成一个字段筛选时，使用 `{ "类型":"freeTextValues", "模块IDs":[...] }`，并把所有 Module 以 `{ "类型":"freeText", "模块ID":"..." }`列入同一 Rule 的 `sources`。空值会被忽略，同一字段内按 OR 筛选。Browser 只接收 Engine 结果，不读取这些字段。
+
 ```json
 [
   {
@@ -19,7 +21,9 @@ Dependency Logic 是唯一允许跨模块联动的声明式规则。每条规则
 ]
 ```
 
-触发只有 Resource Picker 的 `resourceSelected` 和 Checkbox Resource 的 `checkboxChanged`。条件支持 `always`、选中资源字段相等/不等/包含，以及 checkbox option 已选/未选。动作支持填充文本、填充 Countable State、设置 Page/Module 可见性，以及给 Resource Picker 设置默认精确筛选。
+触发包括 Resource Picker/Composer 的 `resourceSelected`、Checkbox Resource 的 `checkboxChanged`、Countable Resource 的 `countableChanged`和 Free Text 失焦提交的 `freeTextChanged`。条件支持 `always`、选中资源字段相等/不等/包含，以及 checkbox option 已选/未选。动作支持填充文本、填充 Countable State、派生 Text placeholder、设置 Page/Module 可见性，以及给 Resource Picker 设置默认精确筛选。
+
+需要让 Resource selection 改变空输入框的灰色提示时，用 `setTextPlaceholder`，不要用 `fillText`写入。它只改变派生 placeholder，Player 输入和 Character Data 保持独立；刷新时通过来源 Picker 的最小快照重建。
 
 需要把多个资源字段写进一个文本框时，使用格式模板；需要保留 Player 已有文本时再选择追加：
 

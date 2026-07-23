@@ -2,7 +2,7 @@
 
 System Package 是 Author 提供给 Base Framework 的声明式资料包。它包含页面、Sheet Modules、Resource Libraries、Dependency Logic、Character Creation Guide、Validation Checks、样式与 Assets；它不是可执行插件，也不能修改框架 UI 或绕过框架写 Character Data。
 
-当前包格式版本：`0.1.0`。实现、Accepted ADR 与本目录共同描述当前契约。
+当前包格式版本：`0.2.0`。实现、Accepted ADR 与本目录共同描述当前契约。
 
 ## 按读者选择路线
 

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 42.86 39.41">
+  <!-- 领域纹章·精准 PRECISION:几何源自 docs/pbdh/粥/图标PNG及SVG/资源 9.svg;SMIL 内置入场淡入+有限循环×2(依领域图标动画规范,循环不用 infinite)。 -->
+  <g>
+    <animateTransform attributeName="transform" type="translate" values="0 0;0 -0.8;0 0" keyTimes="0;0.5;1" begin="0.8s" dur="3.5s" repeatCount="2" calcMode="spline" keySplines="0.42 0 0.58 1;0.42 0 0.58 1"/>
+    <animate attributeName="opacity" values="1;0.95;1" keyTimes="0;0.5;1" begin="0.8s" dur="3.5s" repeatCount="2" calcMode="spline" keySplines="0.42 0 0.58 1;0.42 0 0.58 1"/>
+    <g opacity="0">
+      <animate attributeName="opacity" from="0" to="1" begin="0.15s" dur="0.4s" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" fill="freeze"/>
+      <g fill="#63bfd1" opacity="0.08">
+        <polygon points="21.43 0 26.92 4.6 32.41 9.2 21.43 5.16 10.46 9.2 15.94 4.6 21.43 0"/>
+        <polygon points="21.43 6.85 32.15 10.64 42.86 15.25 21.42 12.33 0 15.25 10.72 10.64 21.43 6.85"/>
+        <polygon points="21.54 39.41 19.54 24.95 17.54 10.49 21.54 9.09 25.53 10.49 23.54 24.95 21.54 39.41"/>
+        <polygon points="20.86 12.41 5.96 24.94 21.54 22.72 14.58 21.13 20.86 12.41"/>
+        <polygon points="22.1 12.41 37.01 24.94 21.54 22.72 28.39 21.13 22.1 12.41"/>
+      </g>
+    </g>
+  </g>
+</svg>

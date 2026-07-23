@@ -76,6 +76,7 @@ interface RuntimeState {
   characterSaves: CharacterSaveSummary[];
   activeCharacterSaveId: string | null;
   derivedReadOnlyDisplayContent: Record<string, string>;
+  derivedTextPlaceholders: Record<string, string>;
   moduleVisibility: Record<string, boolean>;
   pageVisibility: Record<string, boolean>;
   resourcePickerDefaultQueries: Record<string, ResourceLibraryQuery>;
@@ -107,6 +108,7 @@ interface RuntimeState {
   duplicateCharacterSave: (saveId: string, name?: string) => Promise<void>;
   deleteCharacterSave: (saveId: string) => Promise<void>;
   updateModuleValue: (moduleId: string, value: SheetValue) => void;
+  commitFreeTextChange: (moduleId: string, value: string) => void;
   commitResourceSelection: (moduleId: string, libraryId: string, entries: ResourceLibraryEntry[]) => void;
   commitResourceComposition: (moduleId: string, selections: ResourceComposerSelections) => void;
   commitCheckboxChange: (moduleId: string, optionId: string, checked: boolean, checkboxState: CheckboxState) => void;
@@ -193,6 +195,7 @@ async function loadPreviewPackage(handle: PackageDirectoryHandle, set: (partial:
 function emptyDerivedState() {
   return {
     derivedReadOnlyDisplayContent: {} as Record<string, string>,
+    derivedTextPlaceholders: {} as Record<string, string>,
     moduleVisibility: {} as Record<string, boolean>,
     pageVisibility: {} as Record<string, boolean>,
     resourcePickerDefaultQueries: {} as Record<string, ResourceLibraryQuery>,
@@ -1029,6 +1032,29 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       () => get().characterData,
       (status) => set({ storageStatus: status }),
     );
+  },
+
+  commitFreeTextChange(moduleId, value) {
+    const currentPackage = get().currentPackage;
+    const characterData = get().characterData;
+    const module = currentPackage?.modules.find((candidate) => candidate.ID === moduleId);
+    if (!currentPackage || !characterData || module?.类型 !== "freeText") {
+      return;
+    }
+
+    const result = evaluateDependencies(characterData, currentPackage, {
+      type: "freeTextChanged",
+      sourceModuleId: moduleId,
+      value,
+    });
+    warnDependencyIssues(result);
+    const derivedResult = rebuildDerivedDependencies(characterData, currentPackage);
+    warnDependencyIssues(derivedResult);
+    set({
+      ...dependencyRuntimeStateFromResult(derivedResult),
+      importError: null,
+      importNotice: null,
+    });
   },
 
   commitResourceSelection(moduleId, libraryId, entries) {

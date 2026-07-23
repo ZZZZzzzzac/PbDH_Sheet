@@ -14,6 +14,10 @@
 
 Player value 作为原始文本写 Character Data，并按[Restricted Markdown](restricted-markdown.md)展示。空或聚焦时显示单行原始输入；非空失焦时显示渲染结果。预览默认在自然字号与 `9px` 之间自动选择能够保持单行且完整容纳内容的最大字号；若 `9px` 仍超宽，继续单行裁切，并由 Framework Check 产生 `TEXT_CONTENT_OVERFLOW` warning。编辑态保持正常字号并可横向滚动。拟合状态不写 Character Data，也不提供 System Package 配置开关。列表语法不会把 freeText 改成多行控件。浏览器打印与 HTML snapshot 在值为空时保留输入控件及 `占位文本`，并用接近纸张背景的浅灰色输出，作为打印后手写提示；非空值仍输出 Restricted Markdown 预览。
 
+Free Text 可作为 `freeTextChanged` Dependency source。输入或选择期间的 `onChange`继续更新 Character Data 和自动保存，不执行 Dependency Logic；普通输入框或下拉框失焦时才提交最终值。跨模块读取和 Resource Picker 默认筛选仍由 Store 与 Dependency Engine 负责，Free Text、Resource Library 和 Browser 不直接互相读取。
+
+`setTextPlaceholder` 可从 Resource selection 为 freeText/longText 提供纯派生占位符。派生值优先于静态`占位文本`，但只在 Sheet Value 为空时显示；它不写 Character Data。空字段打印沿用现有浅灰 placeholder 策略，Player 输入后显示其真实值。
+
 声明`选项`时，Free Text 改用原生单选下拉框。每个选项必须是非空白且不重复的字符串；选项按纯文本显示，不解析 Restricted Markdown。`默认值`若存在必须严格等于一个选项；省略时新 Character 的值仍为`""`，下拉框以`占位文本`或默认“请选择”显示不可选空提示。Player 选择后仍保存普通字符串。旧 Character Data 或`fillText`替换写入的列表外字符串不会被清空或改写：下拉框会把它作为临时不可选项显示，直到 Player 改选当前选项。稳定 part `input`在此模式指向`select`元素。
 隐藏视觉标签时，输入框或下拉框依次使用非空 `标签`、`占位文本`、Module `ID` 作为无障碍名称。
 
@@ -31,7 +35,7 @@ Player value 作为原始文本写 Character Data，并按[Restricted Markdown](
 
 `标签` 必填。可选整数：`最小值`、`最大值`、`默认值`；`步长` 必须为正整数；`最大值可改?: boolean = false`。省略上下限表示框架不施加对应边界。该模块可作为 `countableChanged` Dependency source，也可作为 `fillCountable` target；Dependency 可持久化修改 current 和 max，不受 `最大值可改` 限制（该字段只控制 Player UI）。
 
-`标识字号?: number` 与 `加减号字号?: number` 均使用 CSS 像素，范围 5–96。`标识字号`控制数值展示的当前值/上限数字，以及标记展示的 Unicode/emoji 标记；`加减号字号`只控制 `-` / `+` 字形。省略时保持 Base Framework 与 Author CSS 的 computed font size。Base Framework 的加减按钮默认至少为 `28px × 28px`，按钮宽高不由这两个字号字段控制。
+`标记尺寸?: number` 与 `加减号字号?: number` 均使用 CSS 像素，范围 5–96。`标记尺寸`控制文字标记的字号或图片标记的正方形单元格尺寸；`加减号字号`只控制 `-` / `+` 字形。省略时保持 Base Framework 与 Author CSS 的 computed font size。数值展示的字号由 Author CSS 控制。Base Framework 的加减按钮默认至少为 `28px × 28px`，按钮宽高不由这两个字段控制。
 
 `显示方式?: "数值" | "标记"` 省略时为 `数值`，保持当前值/最大值输入形式。`标记`仍是同一个 Countable Resource，并要求：
 
@@ -41,24 +45,25 @@ Player value 作为原始文本写 Character Data，并按[Restricted Markdown](
   "类型": "countableResource",
   "标签": "生命",
   "显示方式": "标记",
-  "当前值标记": "❤️",
-  "剩余值标记": "🖤",
+  "当前值标记": { "类型": "图片", "资源路径": "assets/icons/heart-full.webp" },
+  "剩余值标记": { "类型": "文字", "内容": "◇" },
   "最小值": 0,
   "最大值": 6,
   "默认值": 3,
   "步长": 1,
   "最大值可改": true,
-  "标识字号": 20,
+  "标记尺寸": 20,
   "加减号字号": 18
 }
 ```
 
-- `当前值标记`、`剩余值标记` 各是一个非空白 Unicode 字素，支持由多个 code point 组成的单个 emoji；两者必须不同。
+- `当前值标记`、`剩余值标记` 各是一个 Marker Descriptor，两者必须不同。`{ "类型": "文字", "内容": "…" }` 的`内容`必须是一个非空白 Unicode 字素，支持由多个 code point 组成的单个 emoji；`{ "类型": "图片", "资源路径": "assets/**" }`必须引用本 System Package 自动发现的图片。两侧可独立选择文字或图片。
+- 图片 Marker 复用普通 System Package 图片合同，支持 PNG、JPEG、WebP、GIF、AVIF、SVG；不支持 `.ico`、外链或 JSON base64。图片保持宽高比，以 `contain`完整放入正方形单元格，不裁切、不拉伸；加载失败时显示空心方块 fallback。
 - 标记展示的 `最小值` 不得为负，省略仍为 `0`。显示 `current` 个当前值标记，再显示 `max - current` 个剩余值标记；无上限时只显示当前值标记。
 - 普通点击 `-` / `+` 按 `步长` 修改 current。有限上限且 `最大值可改: true` 时，右键或触屏长按按 `步长` 修改 max；降低 max 会同时把 current 收缩到新 max。无上限时上限操作无效。
 - 标记展示没有数字输入框，也不提供上限键盘快捷键或可见操作提示。按钮只在当前值与上限操作都不能生效时禁用。
-- 标记区高度固定，以 `标识字号`或 computed font size 作为自然字号，允许换行并自动缩小到最低 `5px`；仍溢出时内部横向滚动，不增加 Module 高度。拟合状态不写入 Character Data。
-- 标记展示额外公开稳定 parts：`marker-group`、`current-markers`、`remaining-markers`、单个等宽标记格 `marker`。现有 `container`、`label`、`counter`、`decrement-button`、`increment-button` 继续可用。
+- 标记区高度固定，以 `标记尺寸`或 computed font size 作为自然尺寸。文字与图片共享相同的正方形标记格，current 变化只替换原槽内容，不移动其他槽位或改变有限 Marker Presentation 的整体宽度。标记允许换行并自动缩小到最低 `5px`；文字与图片都随拟合尺寸缩放。仍溢出时内部横向滚动，不增加 Module 高度。拟合状态不写入 Character Data。
+- 标记展示额外公开稳定 parts：`marker-group`、`current-markers`、`remaining-markers`、单个标记格 `marker`，以及图片内容的`marker-image` / `marker-image-fallback`；`marker`同时公开 `data-marker-type="text|image"`。现有 `container`、`label`、`counter`、`decrement-button`、`increment-button` 继续可用。
 - 浏览器打印/PDF 与 HTML snapshot 使用固定的 Countable Resource 输出策略，不提供 Player 选择：视觉清零 current；有限 Marker Presentation 按 max 把所有槽位临时替换为字号约 5.5mm 的 Unicode 空心方块 `□`；无上限 Marker Presentation 不显示槽位；数值展示把 current 显示为 `0` 并保留 max。输出不使用 Author 配置的 marker 字形，便于 Player 在纸面用笔涂写。该策略只改变输出视觉结果，不修改 Character Data。
 
 ## readOnlyDisplay
@@ -96,4 +101,4 @@ Player 点击图片区域或在其聚焦时按 Enter/Space 打开本地文件选
 
 ## cardTable
 
-`标签`、非空且不重复的 `资源来源` 必填。来源是 `{类型:"resourceLibrary"|"resourceComposer", ID, 卡牌展示?}`，或至多一个 `{类型:"otherResourceLibraries", ID:"其他", 卡牌展示?}` 动态来源。每个来源可选配置名称模板、描述模板和标签字段；省略时默认 `{{名称}}`、`{{描述}}` 与其他普通字段标签。动态来源适用于当前 Other Resources Picker 集合，不把具体 Extension Library ID 写入 System Package。多个来源共用状态、坐标系和层级。`状态选项?: non-empty unique string[]`；`状态背景色?: Record<string,"#RRGGBB">`；`显示方式?: image|text`；`卡图字段`、`卡背字段`、`显示方式字段`、`背面卡牌ID字段` 均是 Table 级配置。详见[Cards](cards.md)。
+`标签`、非空且不重复的 `资源来源` 必填。来源是 `{类型:"resourceLibrary"|"resourceComposer", ID, 卡牌展示?}`，或至多一个 `{类型:"otherResourceLibraries", ID:"其他", 卡牌展示?}` 动态来源。每个来源可选配置名称模板、描述模板和标签字段；省略时默认 `{{名称}}`、`{{描述}}` 与其他普通字段标签。动态来源适用于当前 Other Resources Picker 集合，不把具体 Extension Library ID 写入 System Package。多个来源共用状态、坐标系和层级。`状态选项?: non-empty unique string[]`；`状态外观?: Record<string,{描边颜色:"#RRGGBB",徽标:non-empty string}>`；`显示方式?: image|text`；`卡图字段`、`卡背字段`、`显示方式字段`、`背面卡牌ID字段` 均是 Table 级配置。详见[Cards](cards.md)。

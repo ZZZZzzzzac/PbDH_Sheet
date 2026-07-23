@@ -34,11 +34,18 @@ export interface CountableChangedEvent {
   countableState: CountableState;
 }
 
-export type DependencyEvent = ResourceSelectedEvent | CheckboxChangedEvent | CountableChangedEvent;
+export interface FreeTextChangedEvent {
+  type: "freeTextChanged";
+  sourceModuleId: string;
+  value: string;
+}
+
+export type DependencyEvent = ResourceSelectedEvent | CheckboxChangedEvent | CountableChangedEvent | FreeTextChangedEvent;
 
 export interface DependencyEvaluationResult {
   dataPatches: Record<string, SheetValue>;
   readOnlyDisplayContent: Record<string, string>;
+  textPlaceholders: Record<string, string>;
   moduleVisibility: Record<string, boolean>;
   pageVisibility: Record<string, boolean>;
   resourcePickerDefaultQueries: Record<string, ResourceLibraryQuery>;
@@ -50,6 +57,7 @@ export function createEmptyDependencyEvaluationResult(): DependencyEvaluationRes
   return {
     dataPatches: {},
     readOnlyDisplayContent: {},
+    textPlaceholders: {},
     moduleVisibility: {},
     pageVisibility: {},
     resourcePickerDefaultQueries: {},
@@ -263,6 +271,14 @@ function applyAction({
       return;
     }
 
+    case "setTextPlaceholder": {
+      const value = fillTextValue(action.内容, event);
+      const targetKey = `textPlaceholder:${action.目标模块ID}`;
+      recordWrite(result, writtenTargets, targetKey, `text placeholder ${action.目标模块ID}`, ruleId, value);
+      result.textPlaceholders[action.目标模块ID] = value;
+      return;
+    }
+
     case "setVisibility": {
       const targetKey = `visibility:${action.目标类型}:${action.目标ID}`;
       recordWrite(result, writtenTargets, targetKey, `${action.目标类型} visibility ${action.目标ID}`, ruleId, String(action.显示));
@@ -279,11 +295,17 @@ function applyAction({
     case "setResourceDefaultFilter": {
       const values = Array.isArray(action.值)
         ? action.值
-        : event.type === "resourceSelected"
-          ? action.值.选择索引 === undefined
-            ? selectedFieldValues(event, action.值.字段)
-            : [event.selectedEntries[action.值.选择索引]?.fields[action.值.字段] ?? ""]
-          : [];
+        : action.值.类型 === "selectedResourceField"
+          ? event.type === "resourceSelected"
+            ? action.值.选择索引 === undefined
+              ? selectedFieldValues(event, action.值.字段)
+              : [event.selectedEntries[action.值.选择索引]?.fields[action.值.字段] ?? ""]
+            : []
+          : [...new Set(action.值.模块IDs
+            .map((moduleId) => data.character.values[moduleId])
+            .filter((value): value is string => typeof value === "string")
+            .map((value) => value.trim())
+            .filter(Boolean))];
       const targetKey = `resourceDefaultFilter:${action.目标模块ID}:${action.字段}`;
       recordWrite(result, writtenTargets, targetKey, `resource picker default filter ${action.目标模块ID}.${action.字段}`, ruleId, JSON.stringify(values));
 
@@ -380,7 +402,7 @@ function recordWrite(
 }
 
 function isRebuildableAction(action: DependencyAction, systemPackage: SystemPackage): boolean {
-  if (action.类型 === "setVisibility" || action.类型 === "setResourceDefaultFilter") return true;
+  if (action.类型 === "setVisibility" || action.类型 === "setResourceDefaultFilter" || action.类型 === "setTextPlaceholder") return true;
   if (action.类型 !== "fillText" || action.写入方式 === "追加") return false;
   return findModule(systemPackage, action.目标模块ID)?.类型 === "readOnlyDisplay";
 }
@@ -402,6 +424,14 @@ function resolveDerivedSourceEvent(
     return composite
       ? { type: "resourceSelected", sourceModuleId, selectedEntries: [composite] }
       : null;
+  }
+  if (sourceModule?.类型 === "freeText") {
+    const storedValue = data.character.values[sourceModuleId];
+    return {
+      type: "freeTextChanged",
+      sourceModuleId,
+      value: typeof storedValue === "string" ? storedValue : sourceModule.默认值 ?? "",
+    };
   }
   if (sourceModule?.类型 !== "resourcePicker") return null;
 

@@ -2,7 +2,7 @@
   "ID": "witchy-omega-1",
   "名称": "Witchy 巫趣 ω1.0",
   "版本": "0.1.0",
-  "schemaVersion": "0.1.0",
+  "schemaVersion": "0.2.0",
   "pages": "pages.json",
   "modules": "modules.json",
   "dependencies": "dependencies.json",

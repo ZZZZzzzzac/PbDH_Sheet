@@ -141,6 +141,52 @@ describe("validateSystemPackage Resource Libraries and Cards", () => {
     );
   });
 
+  it("counts Countable Resource image markers as used package assets", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      assets: [
+        { 路径: "assets/current.webp", 类型: "image/webp" },
+        { 路径: "assets/remaining.svg", 类型: "image/svg+xml" },
+      ],
+      modules: [{
+        ID: "character-name",
+        类型: "countableResource",
+        标签: "生命",
+        显示方式: "标记",
+        当前值标记: { 类型: "图片", 资源路径: "assets/current.webp" },
+        剩余值标记: { 类型: "图片", 资源路径: "assets/remaining.svg" },
+        最大值: 6,
+      }],
+    });
+
+    expect(result.ok, result.ok ? undefined : JSON.stringify(result.issues)).toBe(true);
+    expect(result.issues).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "UNUSED_PACKAGE_IMAGE" }),
+    ]));
+  });
+
+  it.each(["assets/missing.webp", "../secret.png"])("reports invalid Countable Resource image marker reference %s", (resourcePath) => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: [{
+        ID: "character-name",
+        类型: "countableResource",
+        标签: "生命",
+        显示方式: "标记",
+        当前值标记: { 类型: "图片", 资源路径: resourcePath },
+        剩余值标记: { 类型: "文字", 内容: "□" },
+      }],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: "MISSING_ASSET_REFERENCE",
+        path: "modules.character-name.当前值标记.资源路径",
+      }),
+    ]));
+  });
+
   it("accepts Resource Libraries, Resource Picker references, and dependency fill rules", () => {
     const packageWithSelection = {
       ...minimalSystemPackage,

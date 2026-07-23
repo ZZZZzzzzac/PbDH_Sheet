@@ -1,6 +1,7 @@
 import { createElement, useEffect, useRef, useState, type ReactNode } from "react";
 import type { SystemPackage } from "../domain/systemPackage";
 import { allowedHtmlTags, findModule } from "../domain/systemPackage";
+import type { SheetValue } from "../domain/characterData";
 import { useRuntimeStore } from "../store/runtimeStore";
 import { RenderSheetModule } from "./moduleRegistry";
 import { printablePages, resolveCurrentPageId, runtimeVisiblePages } from "./pagePresentation";
@@ -240,6 +241,7 @@ export function SheetRenderer({ systemPackage, outputMode = false, requestedPage
   const moduleVisibility = useRuntimeStore((state) => state.moduleVisibility);
   const packageAssetUrls = useRuntimeStore((state) => state.packageAssetUrls);
   const selectedSkinId = useRuntimeStore((state) => state.selectedSkinId);
+  const characterValues = useRuntimeStore((state) => state.characterData?.character.values);
   const [currentPageId, setCurrentPageId] = useState<string | null>(null);
   const visiblePages = runtimeVisiblePages(systemPackage.pages, pageVisibility);
   const requestedVisiblePageId = requestedPageId && visiblePages.some((page) => page.ID === requestedPageId) ? requestedPageId : null;
@@ -268,11 +270,30 @@ export function SheetRenderer({ systemPackage, outputMode = false, requestedPage
       aria-label="Sheet Tool"
       data-system-package-id={systemPackage.manifest.ID}
       data-countable-print-strategy={outputMode ? "clear-uniform-squares" : undefined}
+      {...sheetValueDataAttributes(systemPackage, characterValues)}
     >
       {systemPackage.shell ? <div className="sheet-shell" data-template-shell="true"><style>{scopeCssBlock(resolveTemplateCssAssets(systemPackage.shell.cssContent ?? "", packageAssetUrls), '[data-template-shell="true"]')}</style>{renderHtmlTemplate(systemPackage, effectiveShellHtml(systemPackage, selectedSkinId)!, moduleVisibility, packageAssetUrls, outlet)}</div> : outlet}
       {skinCss ? <style data-system-package-skin={resolvedSkinId}>{skinCss}</style> : null}
     </main>
   );
+}
+
+/**
+ * 将 freeText 模块的当前文本值暴露为 Sheet 根元素的 `data-value-<模块ID>` 属性,
+ * 供 System Package Skin 以 `:scope[data-value-...]` 做条件化装饰(如按主领域切换卡牌桌面纹章)。
+ * 模块 ID 统一转小写;空值不输出属性。
+ */
+function sheetValueDataAttributes(systemPackage: SystemPackage, values: Record<string, SheetValue> | undefined): Record<string, string> {
+  if (!values) return {};
+  const attributes: Record<string, string> = {};
+  for (const module of systemPackage.modules) {
+    if (module.类型 !== "freeText") continue;
+    const value = values[module.ID];
+    if (typeof value === "string" && value.trim()) {
+      attributes[`data-value-${module.ID.toLowerCase()}`] = value.trim();
+    }
+  }
+  return attributes;
 }
 
 function isRuntimeVisible(defaultHidden: boolean | undefined, runtimeVisible: boolean | undefined): boolean {

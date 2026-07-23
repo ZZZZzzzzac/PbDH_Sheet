@@ -21,7 +21,7 @@ hello-sheet/
   "ID": "hello-sheet",
   "名称": "你好人物卡",
   "版本": "1.0.0",
-  "schemaVersion": "0.1.0",
+  "schemaVersion": "0.2.0",
   "pages": "pages.json",
   "modules": "modules.json"
 }

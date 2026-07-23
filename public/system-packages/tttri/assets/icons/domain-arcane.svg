@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 35.19 32.23">
+  <!-- 领域纹章·奥术 ARCANE:几何源自 docs/pbdh/粥/图标PNG及SVG/资源 11.svg;SMIL 内置入场淡入+有限循环×2(依领域图标动画规范,循环不用 infinite)。晶体保留原 SVG transform(动画不作用于它,无冲突)。 -->
+  <g>
+    <animateTransform attributeName="transform" type="translate" values="0 0;0 -0.8;0 0" keyTimes="0;0.5;1" begin="0.8s" dur="3.5s" repeatCount="2" calcMode="spline" keySplines="0.42 0 0.58 1;0.42 0 0.58 1"/>
+    <animate attributeName="opacity" values="1;0.95;1" keyTimes="0;0.5;1" begin="0.8s" dur="3.5s" repeatCount="2" calcMode="spline" keySplines="0.42 0 0.58 1;0.42 0 0.58 1"/>
+    <g opacity="0">
+      <animate attributeName="opacity" from="0" to="1" begin="0.15s" dur="0.4s" calcMode="spline" keySplines="0.25 0.46 0.45 0.94" fill="freeze"/>
+      <g fill="#63bfd1" opacity="0.08">
+        <rect x="13.53" y="12.04" width="8.14" height="8.14" transform="translate(-6.24 17.16) rotate(-45)"/>
+        <polygon points="10.21 13.28 15.44 8.05 17.6 0 1.48 16.11 0 23.71 7.38 14.02 10.21 13.28"/>
+        <polygon points="24.98 18.94 19.75 24.17 17.6 32.23 33.71 16.11 35.19 8.51 27.81 18.2 24.98 18.94"/>
+        <polygon points="6.65 14.65 4.17 18.06 14.31 28.2 15.37 23.37 6.65 14.65"/>
+        <polygon points="28.89 17.31 31.37 13.89 21.24 3.76 20.17 8.59 28.89 17.31"/>
+      </g>
+    </g>
+  </g>
+</svg>

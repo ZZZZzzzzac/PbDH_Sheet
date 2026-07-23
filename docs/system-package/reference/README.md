@@ -19,4 +19,4 @@
 - [Validator diagnostics](validator-diagnostics.md)
 - [AI generation checklist](ai-checklist.md)
 
-Reference 描述 `schemaVersion: 0.1.0`。表中的“默认”指字段省略后的当前处理逻辑；没有默认的可选字段保持 `undefined`，不能假设未来版本仍会推断相同值。
+Reference 描述 `schemaVersion: 0.2.0`。表中的“默认”指字段省略后的当前处理逻辑；没有默认的可选字段保持 `undefined`，不能假设未来版本仍会推断相同值。

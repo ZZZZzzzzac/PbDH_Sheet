@@ -2,7 +2,7 @@
   "ID": "heart-of-hopefind",
   "名称": "寻望之心 Heart of Hopefind",
   "版本": "0.1.0",
-  "schemaVersion": "0.1.0",
+  "schemaVersion": "0.2.0",
   "pages": "pages.json",
   "modules": "modules.json",
   "dependencies": "dependencies.json",

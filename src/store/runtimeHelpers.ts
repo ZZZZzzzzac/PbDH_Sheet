@@ -14,6 +14,7 @@ import { generateId } from "../utils";
 
 export interface DependencyMergeState {
   derivedReadOnlyDisplayContent: Record<string, string>;
+  derivedTextPlaceholders: Record<string, string>;
   moduleVisibility: Record<string, boolean>;
   pageVisibility: Record<string, boolean>;
   resourcePickerDefaultQueries: Record<string, ResourceLibraryQuery>;
@@ -49,6 +50,7 @@ export function ensureCardState(data: CharacterData | null, systemPackage?: Syst
 export function dependencyRuntimeStateFromResult(result: DependencyEvaluationResult): DependencyMergeState {
   return {
     derivedReadOnlyDisplayContent: result.readOnlyDisplayContent,
+    derivedTextPlaceholders: result.textPlaceholders,
     moduleVisibility: result.moduleVisibility,
     pageVisibility: result.pageVisibility,
     resourcePickerDefaultQueries: result.resourcePickerDefaultQueries,

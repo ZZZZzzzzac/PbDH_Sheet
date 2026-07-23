@@ -15,7 +15,7 @@ import {
   type CharacterCreationGuide,
 } from "./characterCreationGuide";
 
-export const frameworkSchemaVersion = "0.1.0";
+export const frameworkSchemaVersion = "0.2.0";
 
 const manifestSchema = z.object({
   ID: z.string().min(1),
@@ -74,6 +74,25 @@ const checkboxResourceModuleSchema = sheetModuleBaseSchema.extend({
     .min(1),
 });
 
+const textMarkerDescriptorSchema = z.object({
+  类型: z.literal("文字"),
+  内容: z.string().refine(isSingleVisibleGrapheme, {
+    message: "文字标记内容必须是一个可见 Unicode 字素。",
+  }),
+});
+
+const imageMarkerDescriptorSchema = z.object({
+  类型: z.literal("图片"),
+  资源路径: z.string().refine((value) => value.trim().length > 0, {
+    message: "图片标记资源路径不能为空白字符串。",
+  }),
+});
+
+const markerDescriptorSchema = z.discriminatedUnion("类型", [
+  textMarkerDescriptorSchema,
+  imageMarkerDescriptorSchema,
+]);
+
 const countableResourceModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("countableResource"),
   标签: z.string().min(1),
@@ -83,24 +102,20 @@ const countableResourceModuleSchema = sheetModuleBaseSchema.extend({
   步长: z.number().int().positive().optional(),
   最大值可改: z.boolean().optional(),
   显示方式: z.enum(["数值", "标记"]).optional(),
-  当前值标记: z.string().optional(),
-  剩余值标记: z.string().optional(),
-  标识字号: z.number().min(5).max(96).optional(),
+  当前值标记: markerDescriptorSchema.optional(),
+  剩余值标记: markerDescriptorSchema.optional(),
+  标记尺寸: z.number().min(5).max(96).optional(),
   加减号字号: z.number().min(5).max(96).optional(),
 }).superRefine((module, context) => {
   if (module.显示方式 !== "标记") return;
   if (module.当前值标记 === undefined) {
     context.addIssue({ code: "custom", path: ["当前值标记"], message: "标记展示需要当前值标记。" });
-  } else if (!isSingleVisibleGrapheme(module.当前值标记)) {
-    context.addIssue({ code: "custom", path: ["当前值标记"], message: "当前值标记必须是一个可见 Unicode 字素。" });
   }
   if (module.剩余值标记 === undefined) {
     context.addIssue({ code: "custom", path: ["剩余值标记"], message: "标记展示需要剩余值标记。" });
-  } else if (!isSingleVisibleGrapheme(module.剩余值标记)) {
-    context.addIssue({ code: "custom", path: ["剩余值标记"], message: "剩余值标记必须是一个可见 Unicode 字素。" });
   }
   if (module.当前值标记 !== undefined && module.剩余值标记 !== undefined
-    && module.当前值标记.normalize("NFC") === module.剩余值标记.normalize("NFC")) {
+    && markerDescriptorsEqual(module.当前值标记, module.剩余值标记)) {
     context.addIssue({ code: "custom", path: ["剩余值标记"], message: "当前值标记与剩余值标记必须不同。" });
   }
   if ((module.最小值 ?? 0) < 0) {
@@ -112,6 +127,18 @@ function isSingleVisibleGrapheme(value: string): boolean {
   if (!/[^\p{White_Space}\p{Control}\p{Format}\p{Mark}]/u.test(value)) return false;
   const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
   return [...segmenter.segment(value)].length === 1;
+}
+
+function markerDescriptorsEqual(
+  current: z.infer<typeof markerDescriptorSchema>,
+  remaining: z.infer<typeof markerDescriptorSchema>,
+): boolean {
+  if (current.类型 !== remaining.类型) return false;
+  return current.类型 === "文字" && remaining.类型 === "文字"
+    ? current.内容.normalize("NFC") === remaining.内容.normalize("NFC")
+    : current.类型 === "图片" && remaining.类型 === "图片"
+      ? current.资源路径 === remaining.资源路径
+      : false;
 }
 
 const readOnlyDisplayModuleSchema = sheetModuleBaseSchema.extend({
@@ -151,9 +178,12 @@ const cardTableModuleSchema = sheetModuleBaseSchema.extend({
   状态选项: z.array(z.string().min(1)).min(1).refine((states) => new Set(states).size === states.length, {
     message: "Card Table 的状态选项不能重复。",
   }).optional(),
-  状态背景色: z.record(
+  状态外观: z.record(
     z.string().min(1),
-    z.string().regex(/^#[0-9a-fA-F]{6}$/, "Card state 背景色必须是 #RRGGBB 六位十六进制颜色。"),
+    z.object({
+      描边颜色: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Card state 描边颜色必须是 #RRGGBB 六位十六进制颜色。"),
+      徽标: z.string().refine((value) => value.trim().length > 0, { message: "Card state 徽标不能为空白字符串。" }),
+    }),
   ).optional(),
   显示方式: z.enum(["image", "text"]).optional(),
   卡图字段: z.string().min(1).optional(),
@@ -232,6 +262,10 @@ const dependencySourceSchema = z.discriminatedUnion("类型", [
     类型: z.literal("countableResource"),
     模块ID: z.string().min(1),
   }),
+  z.object({
+    类型: z.literal("freeText"),
+    模块ID: z.string().min(1),
+  }),
 ]);
 
 const dependencyTargetSchema = z.discriminatedUnion("类型", [
@@ -256,6 +290,10 @@ const dependencyTriggerSchema = z.discriminatedUnion("类型", [
   }),
   z.object({
     类型: z.literal("countableChanged"),
+    来源模块ID: z.string().min(1),
+  }),
+  z.object({
+    类型: z.literal("freeTextChanged"),
     来源模块ID: z.string().min(1),
   }),
 ]);
@@ -351,6 +389,11 @@ const dependencyActionSchema = z.discriminatedUnion("类型", [
     写入方式: z.enum(["替换", "追加"]).optional(),
     追加分隔符: z.string().optional(),
   }),
+  z.object({
+    类型: z.literal("setTextPlaceholder"),
+    目标模块ID: z.string().min(1),
+    内容: fillTextContentSchema,
+  }),
   fillCountableActionSchema,
   z.object({
     类型: z.literal("setVisibility"),
@@ -368,6 +411,12 @@ const dependencyActionSchema = z.discriminatedUnion("类型", [
         类型: z.literal("selectedResourceField"),
         字段: z.string().min(1),
         选择索引: z.number().int().min(0).optional(),
+      }),
+      z.object({
+        类型: z.literal("freeTextValues"),
+        模块IDs: z.array(z.string().min(1)).min(1).refine((ids) => new Set(ids).size === ids.length, {
+          message: "freeTextValues 模块IDs不能重复。",
+        }),
       }),
     ]),
   }),
@@ -660,6 +709,26 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
       return;
     }
 
+    if (moduleType === "cardTable" && isPlainObject(moduleInput) && "状态背景色" in moduleInput) {
+      moduleParseIssues.push({
+        level: "fatal",
+        code: "PACKAGE_SHAPE_INVALID",
+        text: "Card Table 的 `状态背景色` 已移除；请改用 `状态外观` 定义描边颜色和徽标。",
+        path: `modules.${index}.状态背景色`,
+      });
+      return;
+    }
+
+    if (moduleType === "countableResource" && isPlainObject(moduleInput) && "标识字号" in moduleInput) {
+      moduleParseIssues.push({
+        level: "fatal",
+        code: "PACKAGE_SHAPE_INVALID",
+        text: "Countable Resource 的 `标识字号` 已移除；请改用 `标记尺寸`。",
+        path: `modules.${index}.标识字号`,
+      });
+      return;
+    }
+
     const parsedModule = sheetModuleSchema.safeParse(moduleInput);
     if (!parsedModule.success) {
       moduleParseIssues.push(
@@ -805,6 +874,24 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
       usedAssetRefs.add(module.资源路径);
     }
 
+    if (module.类型 === "countableResource" && module.显示方式 === "标记") {
+      for (const [field, marker] of [
+        ["当前值标记", module.当前值标记],
+        ["剩余值标记", module.剩余值标记],
+      ] as const) {
+        if (marker?.类型 !== "图片") continue;
+        usedAssetRefs.add(marker.资源路径);
+        if (!assetRefs.has(marker.资源路径)) {
+          issues.push({
+            level: "error",
+            code: "MISSING_ASSET_REFERENCE",
+            text: `Countable Resource 图片标记引用了不存在的图片：${marker.资源路径}`,
+            path: `modules.${module.ID}.${field}.资源路径`,
+          });
+        }
+      }
+    }
+
     if (module.类型 === "resourceComposer") {
       const slotById = new Map(module.来源槽位.map((slot) => [slot.ID, slot]));
       module.来源槽位.forEach((slot, slotIndex) => {
@@ -874,13 +961,13 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
         }
       });
       const stateOptions = module.状态选项 ?? [];
-      for (const state of Object.keys(module.状态背景色 ?? {})) {
+      for (const state of Object.keys(module.状态外观 ?? {})) {
         if (!stateOptions.includes(state)) {
           issues.push({
             level: "error",
-            code: "CARD_STATE_COLOR_UNKNOWN_STATE",
-            text: `Card state 背景色引用了状态选项中不存在的 state：${state}`,
-            path: `modules.${module.ID}.状态背景色.${state}`,
+            code: "CARD_STATE_PRESENTATION_UNKNOWN_STATE",
+            text: `Card state 外观引用了状态选项中不存在的 state：${state}`,
+            path: `modules.${module.ID}.状态外观.${state}`,
           });
         }
       }
@@ -1062,6 +1149,13 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
         text: `countableChanged 触发源必须是 Countable Resource：${dependency.触发.来源模块ID}`,
         path: `dependencies.${dependency.ID}.触发.来源模块ID`,
       });
+    } else if (dependency.触发.类型 === "freeTextChanged" && sourceModule.类型 !== "freeText") {
+      issues.push({
+        level: "error",
+        code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE",
+        text: `freeTextChanged 触发源必须是 Free Text：${dependency.触发.来源模块ID}`,
+        path: `dependencies.${dependency.ID}.触发.来源模块ID`,
+      });
     }
 
     const hasDeclaredTriggerSource = dependency.sources.some((source) => source.模块ID === dependency.触发.来源模块ID);
@@ -1107,6 +1201,15 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     }
 
     dependency.动作.forEach((action, actionIndex) => {
+      if (dependency.触发.类型 === "freeTextChanged" && action.类型 !== "setResourceDefaultFilter") {
+        issues.push({
+          level: "error",
+          code: "UNSUPPORTED_DEPENDENCY_ACTION",
+          text: `freeTextChanged 只允许 setResourceDefaultFilter：${dependency.ID}`,
+          path: `dependencies.${dependency.ID}.动作.${actionIndex}.类型`,
+        });
+      }
+
       if (action.类型 === "fillText") {
         const targetModule = moduleById.get(action.目标模块ID);
         if (!targetModule) {
@@ -1284,7 +1387,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
             validateResourceLibraryField(findResourceLibrary(systemPackage, link.ID), action.字段, `dependencies.${dependency.ID}.动作.${actionIndex}.字段`, dependency.ID, targetModule.ID, issues);
           }
         }
-        if (!Array.isArray(action.值)) {
+        if (!Array.isArray(action.值) && action.值.类型 === "selectedResourceField") {
           if (dependency.触发.类型 !== "resourceSelected") {
             issues.push({
               level: "error",
@@ -1294,6 +1397,84 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
             });
           }
           validateSelectedResourceField(systemPackage, sourceModule, action.值.字段, `dependencies.${dependency.ID}.动作.${actionIndex}.值.字段`, dependency.ID, issues);
+        }
+        if (!Array.isArray(action.值) && action.值.类型 === "freeTextValues") {
+          if (dependency.触发.类型 !== "freeTextChanged") {
+            issues.push({
+              level: "error",
+              code: "UNSUPPORTED_DEPENDENCY_ACTION_CONTENT",
+              text: `setResourceDefaultFilter freeTextValues 只能用于 freeTextChanged 触发：${dependency.ID}`,
+              path: `dependencies.${dependency.ID}.动作.${actionIndex}.值.类型`,
+            });
+          }
+          action.值.模块IDs.forEach((moduleId, moduleIndex) => {
+            const referencedModule = moduleById.get(moduleId);
+            if (!referencedModule) {
+              issues.push({
+                level: "error",
+                code: "MISSING_DEPENDENCY_SOURCE_MODULE",
+                text: `freeTextValues 引用了不存在的模块：${moduleId}`,
+                path: `dependencies.${dependency.ID}.动作.${actionIndex}.值.模块IDs.${moduleIndex}`,
+              });
+            } else if (referencedModule.类型 !== "freeText") {
+              issues.push({
+                level: "error",
+                code: "UNSUPPORTED_DEPENDENCY_SOURCE_MODULE",
+                text: `freeTextValues 来源必须是 Free Text：${moduleId}`,
+                path: `dependencies.${dependency.ID}.动作.${actionIndex}.值.模块IDs.${moduleIndex}`,
+              });
+            }
+            if (!dependency.sources.some((source) => source.类型 === "freeText" && source.模块ID === moduleId)) {
+              issues.push({
+                level: "error",
+                code: "MISSING_DEPENDENCY_SOURCE_DECLARATION",
+                text: `Dependency Rule sources 必须声明 freeTextValues 来源模块：${moduleId}`,
+                path: `dependencies.${dependency.ID}.sources`,
+              });
+            }
+          });
+        }
+      }
+
+      if (action.类型 === "setTextPlaceholder") {
+        const targetModule = moduleById.get(action.目标模块ID);
+        if (!targetModule) {
+          issues.push({
+            level: "error",
+            code: "MISSING_DEPENDENCY_TARGET_MODULE",
+            text: `setTextPlaceholder 引用了不存在的目标模块：${action.目标模块ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
+          });
+          return;
+        }
+        if (targetModule.类型 !== "freeText" && targetModule.类型 !== "longText") {
+          issues.push({
+            level: "error",
+            code: "UNSUPPORTED_DEPENDENCY_TARGET_MODULE",
+            text: `setTextPlaceholder 目标必须是 Free Text 或 Long Text：${action.目标模块ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.目标模块ID`,
+          });
+        }
+        if (dependency.触发.类型 !== "resourceSelected") {
+          issues.push({
+            level: "error",
+            code: "UNSUPPORTED_DEPENDENCY_ACTION_CONTENT",
+            text: `setTextPlaceholder 只能用于 resourceSelected 触发：${dependency.ID}`,
+            path: `dependencies.${dependency.ID}.动作.${actionIndex}.内容`,
+          });
+        }
+        if (typeof action.内容 !== "string") {
+          const fields = action.内容.类型 === "selectedResourceField"
+            ? [action.内容.字段]
+            : getResourceTextTemplateFields(action.内容.格式);
+          fields.forEach((field) => validateSelectedResourceField(
+            systemPackage,
+            sourceModule,
+            field,
+            `dependencies.${dependency.ID}.动作.${actionIndex}.内容`,
+            dependency.ID,
+            issues,
+          ));
         }
       }
     });

@@ -74,8 +74,8 @@ describe("Heart of Hopefind System Package", () => {
     const markerPairs = countables.map((module) => {
       expect(module.类型).toBe("countableResource");
       if (module.类型 !== "countableResource") return "";
-      expect(module.当前值标记).not.toBe(module.剩余值标记);
-      return `${module.当前值标记}/${module.剩余值标记}`;
+      expect(module.当前值标记).not.toEqual(module.剩余值标记);
+      return JSON.stringify([module.当前值标记, module.剩余值标记]);
     });
     expect(new Set(markerPairs).size).toBe(4);
   });

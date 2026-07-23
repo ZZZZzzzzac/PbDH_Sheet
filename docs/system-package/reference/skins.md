@@ -53,6 +53,21 @@ Skin 调整 Page 内部 Grid/Flex 时，主列宽应相对于固定 A4 内容区
 
 Skin CSS 禁止 `@import`、`@font-face`、外部/绝对 URL。图片只能引用 System Package `assets/**` 下已发现的支持格式；字体只能使用带 fallback 的系统字体栈。
 
+Skin CSS 的作用域处理器只保留普通选择器与 `@media`/`@supports`/`@container`/`@layer` 块,`@keyframes` 会被丢弃。装饰动画应内置在 SVG 资产的 SMIL 中(有限循环,不用 `infinite`)或使用 CSS transition。
+
+## Sheet 值数据属性
+
+Renderer 在 System Package 根节点上,把每个非空 freeText 模块的当前文本值暴露为 `data-value-<模块ID>` 属性(模块 ID 统一小写,值去掉首尾空白;空值不输出属性)。Skin 可以用 `:scope[data-value-<模块ID>="<值>"]` 做条件化装饰,例如按主领域切换卡牌桌面纹章:
+
+```css
+.card-emblem { background-image: url("assets/icons/domain-miracle.svg"); }
+:scope[data-value-primary-domain="奥术"] .card-emblem {
+  background-image: url("assets/icons/domain-arcane.svg");
+}
+```
+
+该契约只用于表现层装饰;值来自 Character Data,Skin 不能借它改变结构、依赖规则或游戏行为。属性随值更新实时增减,切换 Skin、页面或导出打印时行为一致(输出态装饰仍由 Skin 的打印规则控制)。
+
 ## 网页与打印的所见即所得合同
 
 Base Framework 固定拥有无页内边距的 A4 打印页盒；Base Layout 或 Skin 负责声明 System Package 自己的内容边距。Skin 的“所见即所得”不是把任意宽度的 desktop 页面原样塞进 A4，也不是在打印时另做一套紧凑布局；它表示网页预览与打印在同一有效 A4 内容宽度下使用相同的结构、轨道比例、Module 尺寸、题眉和装饰。

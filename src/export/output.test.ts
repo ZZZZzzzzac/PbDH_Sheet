@@ -145,7 +145,7 @@ describe("HTML snapshot export/import", () => {
     expect(printCss).not.toContain("zoom:");
     expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\.play-card\s*\{[^}]*width:\s*var\(--play-card-width\) !important/s);
     expect(printCss).toMatch(/\.play-card,\s*\.play-card \*\s*\{[^}]*print-color-adjust:\s*exact[^}]*-webkit-print-color-adjust:\s*exact/s);
-    expect(printCss).toMatch(/\.sheet-page \+ \.sheet-page,[^{]*\{[^}]*break-before:\s*page[^}]*page-break-before:\s*always/s);
+    expect(printCss).not.toMatch(/\.sheet-page \+ \.sheet-page,[^{]*\{[^}]*break-before:\s*page/);
     expect(printCss).toMatch(/\.print-mode \[data-markdown-editor\]\[data-markdown-empty="true"\]\s*\{[^}]*display:\s*block\s*!important/s);
     expect(printCss).toMatch(/\.print-mode \[data-markdown-preview\]\[data-markdown-empty="true"\]\s*\{[^}]*display:\s*none\s*!important/s);
     expect(printCss).toMatch(/\.print-mode input::placeholder,\s*\.print-mode textarea::placeholder\s*\{[^}]*color:\s*#e6e8e9 !important[^}]*-webkit-text-fill-color:\s*#e6e8e9 !important[^}]*print-color-adjust:\s*exact/s);
@@ -156,9 +156,23 @@ describe("HTML snapshot export/import", () => {
     expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\[data-module-type="freeText"\] \[data-markdown-preview\][^{]*\{[^}]*overflow:\s*hidden[^}]*white-space:\s*nowrap/s);
   });
 
-  it("removes Countable Resource stepper shadows while preparing output and printing", () => {
-    expect(printCss).toMatch(/\.print-mode \[data-module-type="countableResource"\] \[data-part="decrement-button"\],[^{]*\[data-part="increment-button"\]\s*\{[^}]*box-shadow:\s*none\s*!important[^}]*filter:\s*none\s*!important/s);
-    expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\[data-module-type="countableResource"\] \[data-part="decrement-button"\],[^{]*\[data-part="increment-button"\]\s*\{[^}]*box-shadow:\s*none\s*!important[^}]*filter:\s*none\s*!important/s);
+  it("uses a white paper base without erasing Skin accents and centers Free Text while printing", () => {
+    expect(printCss).toMatch(/\.print-mode \.sheet-tool\s*\{[^}]*--framework-canvas:\s*#ffffff !important[^}]*--framework-text:\s*#000000 !important/s);
+    expect(printCss).toMatch(/\.print-mode \.sheet-page,\s*\.print-mode \[data-print-page="true"\]\s*\{[^}]*background:\s*#ffffff !important[^}]*color:\s*#000000 !important/s);
+    expect(printCss).not.toMatch(/\.print-mode :is\(\.sheet-page, \[data-print-page="true"\]\) \*/);
+    expect(printCss).toMatch(/\.print-mode \[data-module-type="freeText"\] \[data-markdown-preview\]:not\(\[data-markdown-empty="true"\]\)\s*\{[^}]*display:\s*flex !important[^}]*align-items:\s*center !important[^}]*justify-content:\s*center !important/s);
+    expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\[data-module-type="freeText"\] \[data-markdown-preview\]:not\(\[data-markdown-empty="true"\]\)\s*\{[^}]*display:\s*flex !important[^}]*align-items:\s*center !important[^}]*justify-content:\s*center !important/s);
+  });
+
+  it("prints editable fields with white surfaces and black text without flattening the whole Skin", () => {
+    expect(printCss).toMatch(/\.print-mode :is\(\[data-module-type="freeText"\], \[data-module-type="longText"\]\)[\s\S]*?:is\(\[data-markdown-editor="true"\], \[data-markdown-preview="true"\]\),[\s\S]*?\{[^}]*background:\s*#ffffff !important[^}]*color:\s*#000000 !important/s);
+    expect(printCss).not.toMatch(/\.print-mode :is\(\.sheet-page, \[data-print-page="true"\]\) \*/);
+  });
+
+  it("hides Countable Resource steppers and gives the value area their print width", () => {
+    expect(printCss).toMatch(/\.print-mode \[data-module-type="countableResource"\] \[data-part="decrement-button"\],[^{]*\[data-part="increment-button"\]\s*\{[^}]*display:\s*none\s*!important[^}]*box-shadow:\s*none\s*!important[^}]*filter:\s*none\s*!important/s);
+    expect(printCss).toMatch(/\.print-mode \[data-module-type="countableResource"\] \[data-part="counter"\]\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*!important/s);
+    expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\[data-module-type="countableResource"\] \[data-part="decrement-button"\],[^{]*\[data-part="increment-button"\]\s*\{[^}]*display:\s*none\s*!important/s);
   });
 
   it("renders empty field placeholder text in light gray in HTML snapshots", async () => {

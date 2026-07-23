@@ -22,6 +22,6 @@ Card Definition 是不可变 Author Data；Card Instance 是 Player 状态，包
 
 Card 右键菜单只提供顺时针 90° 旋转和恢复竖置；需要 180° 或 270° 时继续顺时针旋转。整理桌面会把 Card 恢复为竖置。翻面、旋转和指示物都属于 Character Data，并保留在保存、导入和输出中。
 
-`标记为宝库`一类文字完全来自 Author 在 Card Table `状态选项` 中写入的 `宝库` state，不是 Base Framework 术语或 Card Definition 字段。Author 可写任意 state，并用 `状态背景色` 为其中部分状态指定 `#RRGGBB` 背景色，例如 `{ "宝库": "#d8e2f3" }`。未映射状态保持默认卡面颜色；配色会用于紧凑卡面、详情和输出，但不会写入 Character Data。
+`标记为宝库`一类文字完全来自 Author 在 Card Table `状态选项` 中写入的 `宝库` state，不是 Base Framework 术语或 Card Definition 字段。Author 可写任意 state，并用 `状态外观` 为其中部分状态同时指定 `#RRGGBB` 描边与非空徽标文字，例如 `{ "宝库": { "描边颜色": "#385f71", "徽标": "宝库" } }`。未映射状态不显示状态装饰；映射会用于图片 Card、文字 Card、Card Detail 和输出，但不会写入 Character Data。徽标底色由框架保持为中性可读表面。
 
 图片加载失败会使用文字 fallback。不要把大型图片转成 base64 写进资源 JSON；将图片放入 `assets/**` 并直接引用相对路径。

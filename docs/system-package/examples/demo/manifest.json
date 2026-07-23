@@ -2,7 +2,7 @@
   "ID": "demo",
   "名称": "System Package 完整演示",
   "版本": "0.1.0",
-  "schemaVersion": "0.1.0",
+  "schemaVersion": "0.2.0",
   "pages": "pages.json",
   "shell": {
     "html": "layouts/shell.html",

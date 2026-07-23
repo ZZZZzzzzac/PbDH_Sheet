@@ -29,7 +29,7 @@
   text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
-  font-size: var(--countable-identifier-font-size, inherit);
+  font-size: var(--countable-marker-size, inherit);
 }
 
 .marker-group[data-text-fit="overflow"] {
@@ -47,11 +47,23 @@
 
 .marker-cell {
   display: inline-flex;
-  flex: 0 0 1.25em;
-  width: 1.25em;
+  flex: 0 0 1em;
+  width: 1em;
+  height: 1em;
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+.marker-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.marker-image-fallback {
+  line-height: 1;
 }
 
 [data-countable-print-strategy="clear-uniform-squares"] .marker-cell .marker-glyph {
