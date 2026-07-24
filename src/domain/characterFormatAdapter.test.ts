@@ -45,6 +45,7 @@ describe("Character Format Adapter", () => {
       "chest-gold": { current: 0, max: null },
       "experience-1": "【逐渐遗忘的藏经阁器灵】",
       "experience-modifier-1": "+5",
+      "secondary-weapon-description": "保护：护甲值+2。",
     }));
     expect(Object.values(converted.data.playerImages)).toEqual([expect.objectContaining({ mimeType: "image/jpeg", dataUrl: expect.stringMatching(/^data:image\/jpeg;base64,/u) })]);
     expect(converted.report.convertedImages).toBe(1);
@@ -58,6 +59,28 @@ describe("Character Format Adapter", () => {
       expect(entry, `${card.definitionRef.libraryId}/${card.definitionRef.entryId}`).toBeDefined();
       expect(entry?.fields["卡图"]).toMatch(/^assets\/cards\/.+\.webp$/u);
     }
+  });
+
+  it("maps both ZZZ weapon trait textboxes to weapon description Modules", () => {
+    const document = JSON.parse(readFileSync(join(migrationRoot, "啄页_匕首之心人物卡_zzz.json"), "utf8")) as Record<string, unknown>;
+    document.PrimaryWeaponTraitTextbox = "Primary weapon trait";
+    document.SecondaryWeaponTraitTextbox = "Secondary weapon trait";
+    const detection = parseAndDetectCharacterSource(JSON.stringify(document), "weapon-traits_zzz.json", daggerheartPackage.characterFormatAdapters ?? []);
+    expect(detection.status).toBe("match");
+    if (detection.status !== "match") return;
+
+    const converted = convertExternalCharacterSource(detection.source, detection.adapter, daggerheartPackage);
+    expect(converted.data.character.values).toEqual(expect.objectContaining({
+      "primary-weapon-description": "Primary weapon trait",
+      "secondary-weapon-description": "Secondary weapon trait",
+    }));
+    const exported = exportExternalCharacterData(converted.data, detection.adapter, daggerheartPackage);
+    expect("error" in exported).toBe(false);
+    if ("error" in exported) return;
+    expect(exported.document).toEqual(expect.objectContaining({
+      PrimaryWeaponTraitTextbox: "Primary weapon trait",
+      SecondaryWeaponTraitTextbox: "Secondary weapon trait",
+    }));
   });
 
   it("produces equivalent representative values from real dhSheet JSON and HTML", () => {

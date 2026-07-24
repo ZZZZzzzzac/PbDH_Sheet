@@ -31,7 +31,9 @@
       { "目标模块ID": "severe-threshold", "来源路径": ["SevereTextbox"] },
       { "目标模块ID": "class-feature", "来源路径": ["ClassFeatureTextbox"] },
       { "目标模块ID": "primary-weapon-name", "来源路径": ["PrimaryWeaponNameTextbox"] },
+      { "目标模块ID": "primary-weapon-description", "来源路径": ["PrimaryWeaponTraitTextbox"] },
       { "目标模块ID": "secondary-weapon-name", "来源路径": ["SecondaryWeaponNameTextbox"] },
+      { "目标模块ID": "secondary-weapon-description", "来源路径": ["SecondaryWeaponTraitTextbox"] },
       { "目标模块ID": "backup-weapon-1-name", "来源路径": ["Backup1WeaponNameTextbox"] },
       { "目标模块ID": "backup-weapon-2-name", "来源路径": ["Backup2WeaponNameTextbox"] },
       { "目标模块ID": "armor-name", "来源路径": ["ArmorNameTextbox"] },
@@ -137,7 +139,9 @@
         { "来源模块ID": "finesse", "目标路径": ["FinesseTextbox"] },
         { "来源模块ID": "instinct", "目标路径": ["InstinctTextbox"] },
         { "来源模块ID": "presence", "目标路径": ["PresenceTextbox"] },
-        { "来源模块ID": "knowledge", "目标路径": ["KnowledgeTextbox"] }
+        { "来源模块ID": "knowledge", "目标路径": ["KnowledgeTextbox"] },
+        { "来源模块ID": "primary-weapon-description", "目标路径": ["PrimaryWeaponTraitTextbox"] },
+        { "来源模块ID": "secondary-weapon-description", "目标路径": ["SecondaryWeaponTraitTextbox"] }
       ],
       "Countable映射": [
         { "来源模块ID": "hope", "目标路径列表": [["HopeSlotCheckbox1"], ["HopeSlotCheckbox2"], ["HopeSlotCheckbox3"], ["HopeSlotCheckbox4"], ["HopeSlotCheckbox5"], ["HopeSlotCheckbox6"]], "转换": "booleanArray", "长度": 6 },
