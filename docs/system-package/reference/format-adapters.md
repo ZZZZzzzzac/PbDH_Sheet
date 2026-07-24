@@ -21,7 +21,7 @@ ZIP Adapter 可用 `图片`把来源 ID 绑定到包内图片。未绑定图片�
 
 ## Character Format Adapter
 
-导入声明包括文本、Countable、Player Image 和 Card 映射。Countable 支持数字、truthy/checked 数组与 tri-state 数组，并可从固定值、来源路径、数组长度或可用槽数取得 max。tri-state 的固定语义是 `0 = 空`、`1 = 满`、`2 = 不可用`：current 为 1 的数量，`availableCount` max 为 0 与 1 的总数；反向导出使用相同编码。图片只接受支持的 `data:image/*;base64` URL，并写入 Character Data 顶层 `playerImages`。
+导入声明包括文本、Checkbox、Countable、Player Image 和 Card 映射。`Checkbox映射`可把一个外部路径投影到一个或多个 Checkbox Resource 选项；只把数值或字符串 `1` 视为选中，`0` 与 `2` 均导入为未选中，因此外部格式的 disabled/unavailable 状态不会进入 Character Data。反向导出在声明的来源选项全部选中时写 `1`，否则写 `0`。Countable 支持数字、truthy/checked 数组与 tri-state 数组，并可从固定值、来源路径、数组长度或可用槽数取得 max。tri-state 的固定语义是 `0 = 空`、`1 = 满`、`2 = 不可用`：current 为 1 的数量，`availableCount` max 为 0 与 1 的总数；反向导出使用相同编码。图片只接受支持的 `data:image/*;base64` URL，并写入 Character Data 顶层 `playerImages`。
 
 Card 按声明顺序尝试 external ID、结构化字段组合、唯一名称、规范化后的完整描述精确匹配；不做模糊匹配。非 `fields` 规则可在来源或 Resource 字段上声明 `fileStem` 转换，从 `/` 或 `\\` 分隔的路径取不含最后扩展名的文件名，再进行精确比较；这适合外部格式以卡图路径代表卡牌的情况。空来源值不参与匹配；某一级多命中即报告 ambiguous 并跳过。查找范围是声明的 Libraries，运行时传入 Effective System Package，因此已安装 Extension 的 Entries 也可命中，但人物卡导入本身不会安装资源包。
 

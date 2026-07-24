@@ -524,15 +524,16 @@ describe("validateSystemPackage Sheet Modules", () => {
     };
     const characterAdapter = {
       ID: "duplicate", 名称: "Character", 载体: [{ 类型: "json", 根类型: "object", 检测: [{ 路径: ["name"], 存在: true }] }],
-      字段映射: [{ 目标模块ID: "missing-module", 来源路径: ["name"] }], Countable映射: [{ 目标模块ID: "character-name", 来源路径: ["hp"], 转换: "number" }], 图片映射: [],
+      字段映射: [{ 目标模块ID: "missing-module", 来源路径: ["name"] }], Checkbox映射: [{ 目标模块ID: "checks", 选项映射: [{ 目标选项IDs: ["missing-option"], 来源路径: ["check"] }] }], Countable映射: [{ 目标模块ID: "character-name", 来源路径: ["hp"], 转换: "number" }], 图片映射: [],
       Card映射: [{ 来源路径: ["cards"], 状态: "active", 目标CardTableID: "missing-table", ResourceLibraryIDs: ["missing-library"], 匹配优先级: [{ 类型: "uniqueName", 来源路径: ["name"] }] }],
       导出: {
-        字段映射: [{ 来源模块ID: "missing-export-module", 目标路径: ["name"] }], Countable映射: [], 图片映射: [],
+        字段映射: [{ 来源模块ID: "missing-export-module", 目标路径: ["name"] }], Checkbox映射: [{ 来源模块ID: "checks", 选项映射: [{ 来源选项IDs: ["missing-export-option"], 目标路径: ["check"] }] }], Countable映射: [], 图片映射: [],
         Card映射: [{ 来源CardTableID: "missing-export-table", 状态: "active", 目标路径: ["cards"], ResourceLibraryIDs: ["missing-export-library"], 字段映射: [] }],
       },
     };
     const result = validateSystemPackage({
       ...minimalSystemPackage,
+      modules: [...minimalSystemPackage.modules, { ID: "checks", 类型: "checkboxResource", 标签: "Checks", 选项: [{ ID: "known", 标签: "Known" }] }],
       resourceFormatAdapters: [resourceAdapter, { ...resourceAdapter }],
       characterFormatAdapters: [characterAdapter, { ...characterAdapter }],
     });
@@ -542,6 +543,7 @@ describe("validateSystemPackage Sheet Modules", () => {
       "MISSING_RESOURCE_ADAPTER_LIBRARY_REFERENCE", "MISSING_CHARACTER_ADAPTER_MODULE_REFERENCE",
       "MISSING_CHARACTER_ADAPTER_CARD_TABLE_REFERENCE", "MISSING_CHARACTER_ADAPTER_LIBRARY_REFERENCE",
       "INVALID_CHARACTER_ADAPTER_MODULE_TYPE",
+      "MISSING_CHARACTER_ADAPTER_CHECKBOX_OPTION_REFERENCE",
     ]));
   });
 

@@ -834,9 +834,11 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
   for (const [adapterIndex, adapter] of (systemPackage.characterFormatAdapters ?? []).entries()) {
     const referencedModules = [
       ...adapter.字段映射.map((mapping) => mapping.目标模块ID),
+      ...adapter.Checkbox映射.map((mapping) => mapping.目标模块ID),
       ...adapter.Countable映射.map((mapping) => mapping.目标模块ID),
       ...adapter.图片映射.map((mapping) => mapping.目标模块ID),
       ...(adapter.导出?.字段映射.map((mapping) => mapping.来源模块ID) ?? []),
+      ...(adapter.导出?.Checkbox映射.map((mapping) => mapping.来源模块ID) ?? []),
       ...(adapter.导出?.Countable映射.map((mapping) => mapping.来源模块ID) ?? []),
       ...(adapter.导出?.图片映射.map((mapping) => mapping.来源模块ID) ?? []),
     ];
@@ -851,9 +853,11 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     }
     const adapterModuleContracts = [
       ...adapter.字段映射.map((mapping, index) => ({ moduleId: mapping.目标模块ID, types: ["freeText", "longText"], path: `characterFormatAdapters.${adapterIndex}.字段映射.${index}.目标模块ID` })),
+      ...adapter.Checkbox映射.map((mapping, index) => ({ moduleId: mapping.目标模块ID, types: ["checkboxResource"], path: `characterFormatAdapters.${adapterIndex}.Checkbox映射.${index}.目标模块ID` })),
       ...adapter.Countable映射.map((mapping, index) => ({ moduleId: mapping.目标模块ID, types: ["countableResource"], path: `characterFormatAdapters.${adapterIndex}.Countable映射.${index}.目标模块ID` })),
       ...adapter.图片映射.map((mapping, index) => ({ moduleId: mapping.目标模块ID, types: ["imageField"], path: `characterFormatAdapters.${adapterIndex}.图片映射.${index}.目标模块ID` })),
       ...(adapter.导出?.字段映射.map((mapping, index) => ({ moduleId: mapping.来源模块ID, types: ["freeText", "longText"], path: `characterFormatAdapters.${adapterIndex}.导出.字段映射.${index}.来源模块ID` })) ?? []),
+      ...(adapter.导出?.Checkbox映射.map((mapping, index) => ({ moduleId: mapping.来源模块ID, types: ["checkboxResource"], path: `characterFormatAdapters.${adapterIndex}.导出.Checkbox映射.${index}.来源模块ID` })) ?? []),
       ...(adapter.导出?.Countable映射.map((mapping, index) => ({ moduleId: mapping.来源模块ID, types: ["countableResource"], path: `characterFormatAdapters.${adapterIndex}.导出.Countable映射.${index}.来源模块ID` })) ?? []),
       ...(adapter.导出?.图片映射.map((mapping, index) => ({ moduleId: mapping.来源模块ID, types: ["imageField"], path: `characterFormatAdapters.${adapterIndex}.导出.图片映射.${index}.来源模块ID` })) ?? []),
     ];
@@ -864,6 +868,32 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
         level: "error", code: "INVALID_CHARACTER_ADAPTER_MODULE_TYPE",
         text: `Character Format Adapter 的 Module ${contract.moduleId} 类型 ${module.类型} 不支持此映射。`, path: contract.path,
       });
+    }
+    for (const [mappingIndex, mapping] of adapter.Checkbox映射.entries()) {
+      const module = adapterModuleById.get(mapping.目标模块ID);
+      if (module?.类型 !== "checkboxResource") continue;
+      const optionIds = new Set(module.选项.map((option) => option.ID));
+      mapping.选项映射.forEach((optionMapping, optionMappingIndex) => optionMapping.目标选项IDs.forEach((optionId, optionIndex) => {
+        if (optionIds.has(optionId)) return;
+        issues.push({
+          level: "error", code: "MISSING_CHARACTER_ADAPTER_CHECKBOX_OPTION_REFERENCE",
+          text: `Character Format Adapter 引用了不存在的 Checkbox 选项：${optionId}`,
+          path: `characterFormatAdapters.${adapterIndex}.Checkbox映射.${mappingIndex}.选项映射.${optionMappingIndex}.目标选项IDs.${optionIndex}`,
+        });
+      }));
+    }
+    for (const [mappingIndex, mapping] of (adapter.导出?.Checkbox映射 ?? []).entries()) {
+      const module = adapterModuleById.get(mapping.来源模块ID);
+      if (module?.类型 !== "checkboxResource") continue;
+      const optionIds = new Set(module.选项.map((option) => option.ID));
+      mapping.选项映射.forEach((optionMapping, optionMappingIndex) => optionMapping.来源选项IDs.forEach((optionId, optionIndex) => {
+        if (optionIds.has(optionId)) return;
+        issues.push({
+          level: "error", code: "MISSING_CHARACTER_ADAPTER_CHECKBOX_OPTION_REFERENCE",
+          text: `Character Format Adapter 导出引用了不存在的 Checkbox 选项：${optionId}`,
+          path: `characterFormatAdapters.${adapterIndex}.导出.Checkbox映射.${mappingIndex}.选项映射.${optionMappingIndex}.来源选项IDs.${optionIndex}`,
+        });
+      }));
     }
     for (const [cardIndex, cardMapping] of adapter.Card映射.entries()) {
       if (adapterModuleById.get(cardMapping.目标CardTableID)?.类型 !== "cardTable") {

@@ -62,6 +62,16 @@ export function exportExternalCharacterData(data: CharacterData, adapter: Charac
       diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_EXPORT_FIELD_SKIPPED", text: `字段 ${mapping.来源模块ID} 无法导出。` });
     } else if (writeSafePath(document, mapping.目标路径, converted)) exportedFields += 1;
   }
+  for (const mapping of declaration.Checkbox映射 ?? []) {
+    const value = data.character.values[mapping.来源模块ID];
+    if (!isRecord(value)) { skippedFields += 1; continue; }
+    const checkboxState = value as Record<string, unknown>;
+    for (const optionMapping of mapping.选项映射) {
+      const selected = optionMapping.来源选项IDs.every((optionId) => checkboxState[optionId] === true);
+      writeSafePath(document, optionMapping.目标路径, selected ? 1 : 0);
+    }
+    exportedFields += 1;
+  }
   for (const mapping of declaration.Countable映射) {
     const value = data.character.values[mapping.来源模块ID];
     if (!isCountable(value)) { skippedFields += 1; continue; }
@@ -112,6 +122,7 @@ export function exportExternalCharacterData(data: CharacterData, adapter: Charac
   skippedCards += data.cards.instances.filter((card) => !exportedCardIds.has(card.instanceId)).length;
   const mappedModuleIds = new Set([
     ...declaration.字段映射.map((mapping) => mapping.来源模块ID),
+    ...(declaration.Checkbox映射 ?? []).map((mapping) => mapping.来源模块ID),
     ...declaration.Countable映射.map((mapping) => mapping.来源模块ID),
     ...declaration.图片映射.map((mapping) => mapping.来源模块ID),
   ]);
@@ -192,6 +203,25 @@ export function convertExternalCharacterSource(source: ExternalCharacterSource, 
       continue;
     }
     values[mapping.目标模块ID] = converted;
+    convertedFields += 1;
+  }
+
+  for (const mapping of adapter.Checkbox映射 ?? []) {
+    const existing = values[mapping.目标模块ID];
+    const checkboxState: Record<string, boolean> = isRecord(existing) ? { ...existing } as Record<string, boolean> : {};
+    let mappedOptions = 0;
+    for (const optionMapping of mapping.选项映射) {
+      const selected = convertExternalCheckboxValue(readSafePath(source.document, optionMapping.来源路径));
+      if (selected === undefined) continue;
+      for (const optionId of optionMapping.目标选项IDs) checkboxState[optionId] = selected;
+      mappedOptions += 1;
+    }
+    if (mappedOptions === 0) {
+      skippedFields += 1;
+      diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_CHECKBOX_SKIPPED", text: `Checkbox Resource 无法转换到 ${mapping.目标模块ID}。` });
+      continue;
+    }
+    values[mapping.目标模块ID] = checkboxState;
     convertedFields += 1;
   }
 
@@ -320,6 +350,12 @@ function convertCount(value: unknown, operation: "number" | "truthyCount" | "che
   if (!values) return undefined;
   if (operation === "triStateCount") return values.filter((item) => item === 1 || item === "1").length;
   return values.filter(isTruthyExternal).length;
+}
+
+function convertExternalCheckboxValue(value: unknown): boolean | undefined {
+  if (value === 1 || value === "1") return true;
+  if (value === 0 || value === "0" || value === 2 || value === "2") return false;
+  return undefined;
 }
 
 function isTruthyExternal(value: unknown): boolean {

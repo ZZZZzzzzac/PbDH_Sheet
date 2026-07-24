@@ -48,6 +48,8 @@ describe("Character Format Adapter", () => {
       "secondary-weapon-description": "保护：护甲值+2。",
       "armor-description": "灵活：闪避值+1。",
       inventory: "小型生命药水: 立刻恢复 1d4 生命点。\n《神州要术》：本次村规中，选择领域卡与升级选项时，你的临时等级视作五级",
+      "advancement-tier-2": expect.objectContaining({ "traits-3": true, "stress-2": true, experiences: true, evasion: true }),
+      "advancement-tier-3": expect.objectContaining({ "traits-3": true, experiences: true, subclass: true, evasion: true, "multiclass-1": false, "multiclass-2": false }),
     }));
     expect(Object.values(converted.data.playerImages)).toEqual([expect.objectContaining({ mimeType: "image/jpeg", dataUrl: expect.stringMatching(/^data:image\/jpeg;base64,/u) })]);
     expect(converted.report.convertedImages).toBe(1);
@@ -72,6 +74,29 @@ describe("Character Format Adapter", () => {
       ArmorTraitTextbox: "灵活：闪避值+1。",
       ItemSlot1Textbox: "小型生命药水: 立刻恢复 1d4 生命点。\n《神州要术》：本次村规中，选择领域卡与升级选项时，你的临时等级视作五级",
     }));
+  });
+
+  it("maps ZZZ advancement checkboxes while ignoring unavailable state 2", () => {
+    const document = JSON.parse(readFileSync(join(migrationRoot, "啄页_匕首之心人物卡_zzz.json"), "utf8")) as Record<string, unknown>;
+    document.LevelupT3_F1 = "2";
+    document.LevelupT3_H1 = "1";
+    document.LevelupT3_I1 = "1";
+    const detection = parseAndDetectCharacterSource(JSON.stringify(document), "advancements_zzz.json", daggerheartPackage.characterFormatAdapters ?? []);
+    expect(detection.status).toBe("match");
+    if (detection.status !== "match") return;
+
+    const converted = convertExternalCharacterSource(detection.source, detection.adapter, daggerheartPackage);
+    expect(converted.data.character.values["advancement-tier-3"]).toEqual(expect.objectContaining({
+      subclass: false,
+      "proficiency-1": true,
+      "proficiency-2": true,
+      "multiclass-1": true,
+      "multiclass-2": true,
+    }));
+    const exported = exportExternalCharacterData(converted.data, detection.adapter, daggerheartPackage);
+    expect("error" in exported).toBe(false);
+    if ("error" in exported) return;
+    expect(exported.document).toEqual(expect.objectContaining({ LevelupT3_F1: 0, LevelupT3_H1: 1, LevelupT3_I1: 1 }));
   });
 
   it("maps ZZZ tri-state slots as 0 empty, 1 filled, and 2 unavailable", () => {

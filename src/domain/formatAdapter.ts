@@ -144,6 +144,14 @@ export const characterImageMappingSchema = z.object({
   名称: z.string().optional(),
 });
 
+export const characterCheckboxMappingSchema = z.object({
+  目标模块ID: z.string().min(1),
+  选项映射: z.array(z.object({
+    目标选项IDs: z.array(z.string().min(1)).min(1),
+    来源路径: safePathSchema,
+  })).min(1),
+});
+
 const cardMatchRuleSchema = z.object({
   类型: z.enum(["externalId", "fields", "uniqueName", "exactDescription"]),
   来源路径: safePathSchema.optional(),
@@ -169,6 +177,10 @@ export const characterExportSchema = z.object({
   文件后缀: z.literal(".json").default(".json"),
   默认值: z.record(z.string(), z.unknown()).default({}),
   字段映射: z.array(z.object({ 来源模块ID: z.string().min(1), 目标路径: safePathSchema, 转换: z.enum(["text", "number"]).default("text") })),
+  Checkbox映射: z.array(z.object({
+    来源模块ID: z.string().min(1),
+    选项映射: z.array(z.object({ 来源选项IDs: z.array(z.string().min(1)).min(1), 目标路径: safePathSchema })).min(1),
+  })).default([]),
   Countable映射: z.array(z.object({ 来源模块ID: z.string().min(1), 目标路径: safePathSchema.optional(), 目标路径列表: z.array(safePathSchema).optional(), 最大值目标路径: safePathSchema.optional(), 转换: z.enum(["number", "booleanArray", "triStateArray"]), 长度: z.number().int().min(0).optional() }).refine((value) => value.目标路径 || value.目标路径列表, { message: "Countable 导出必须声明目标路径或目标路径列表。" })).default([]),
   图片映射: z.array(z.object({ 来源模块ID: z.string().min(1), 目标路径: safePathSchema })).default([]),
   Card映射: z.array(z.object({
@@ -187,6 +199,7 @@ export const characterFormatAdapterSchema = z.object({
   载体: z.array(formatCarrierSchema).min(1),
   角色名来源路径: safePathSchema.optional(),
   字段映射: z.array(characterTextMappingSchema),
+  Checkbox映射: z.array(characterCheckboxMappingSchema).default([]),
   Countable映射: z.array(characterCountMappingSchema).default([]),
   图片映射: z.array(characterImageMappingSchema).default([]),
   Card映射: z.array(characterCardMappingSchema).default([]),
