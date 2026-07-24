@@ -5,7 +5,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 import { loadResourceExtensionFromFile } from "../loaders/resourceExtensionLoader";
 import type { SystemPackage } from "./systemPackage";
-import { convertExternalResourceSource } from "./resourceFormatAdapter";
+import { convertExternalResourceSource, detectResourceFormatAdapter } from "./resourceFormatAdapter";
 import type { ResourceFormatAdapter } from "./formatAdapter";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "daggerheart-core");
@@ -37,6 +37,7 @@ describe("Resource Format Adapter", () => {
       ["domain-cards", 101],
     ]);
     expect(loaded.extension.resourceLibraries.find((library) => library.ID === "classes")?.entries[0]).toEqual(expect.objectContaining({ 名称: "机械师", 领域: "机械+机械" }));
+    expect(loaded.extension).toMatchObject({ 名称: "与龙同行战役框架卡牌包_zzz", 版本: "未声明" });
     expect(loaded.assets).toHaveLength(0);
   });
 
@@ -129,6 +130,38 @@ describe("Resource Format Adapter", () => {
     expect(loaded.assets).toEqual([]);
     expect(loaded.issues.map((issue) => issue.code)).toEqual(expect.arrayContaining(["RESOURCE_ADAPTER_IMAGE_INVALID", "RESOURCE_ADAPTER_IMAGE_MISSING"]));
     expect(loaded.conversion?.counts.convertedEntries).toBe(1);
+  });
+
+  it("keeps deterministic identity independent of version and blocks a missing package name", () => {
+    const base = {
+      ID: "identity", 名称: "Identity", 载体: [{ 类型: "json", 根类型: "object", 检测: [{ 路径: ["records"], 存在: true }] }],
+      包名: { 类型: "路径", 路径: ["name"] }, 版本: { 类型: "路径", 路径: ["version"] }, 记录路径: ["records"], 类型路径: ["type"],
+      已知类型: [{ 值: "card", 资源库ID: "domain-cards", 字段映射: [{ 字段: "名称", 来源路径: ["name"], 必填: true }] }],
+    } satisfies ResourceFormatAdapter;
+    const convert = (name: string, version: string, adapter = base, systemPackage = daggerheartPackage) => convertExternalResourceSource({ document: { name, version, records: [{ type: "card", name: "Card" }] }, fileName: "pack.json", assets: new Map(), sourceType: "json" }, adapter, systemPackage);
+    const first = convert(" Stable   Name ", "1");
+    const upgraded = convert("Stable Name", "2");
+    expect("error" in first || "error" in upgraded).toBe(false);
+    if ("error" in first || "error" in upgraded) return;
+    expect(first.extensionDocument.ID).toBe(upgraded.extensionDocument.ID);
+    expect(first.extensionDocument.版本).toBe("1");
+    expect(upgraded.extensionDocument.版本).toBe("2");
+    expect(convert("   ", "1")).toEqual(expect.objectContaining({ error: expect.objectContaining({ code: "RESOURCE_ADAPTER_PACKAGE_NAME_MISSING" }) }));
+    const otherAdapter = convert("Stable Name", "1", { ...base, ID: "identity-other" });
+    const otherPackage = convert("Stable Name", "1", base, { ...daggerheartPackage, manifest: { ...daggerheartPackage.manifest, ID: "other-system" } });
+    expect("error" in otherAdapter || "error" in otherPackage).toBe(false);
+    if ("error" in otherAdapter || "error" in otherPackage) return;
+    expect(new Set([first.extensionDocument.ID, otherAdapter.extensionDocument.ID, otherPackage.extensionDocument.ID]).size).toBe(3);
+  });
+
+  it("requires the declared JSON root shape and explicit selection for ambiguous matches", () => {
+    const adapter = daggerheartPackage.resourceFormatAdapters?.find((candidate) => candidate.ID === "zzz-resource-json");
+    expect(adapter).toBeTruthy();
+    if (!adapter) return;
+    const objectSource = { document: { 类型: "主职", 名称: "Wrong root" }, fileName: "wrong.json", assets: new Map(), sourceType: "json" as const };
+    expect(detectResourceFormatAdapter(objectSource, [adapter]).status).toBe("none");
+    const arraySource = { ...objectSource, document: [{ 类型: "主职", 名称: "Match" }] };
+    expect(detectResourceFormatAdapter(arraySource, [adapter, { ...adapter, ID: "second" }])).toEqual(expect.objectContaining({ status: "ambiguous", adapters: expect.any(Array) }));
   });
 });
 

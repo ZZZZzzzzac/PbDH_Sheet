@@ -40,6 +40,11 @@ describe("Character Format Adapter", () => {
       hope: { current: 2, max: 6 },
       "armor-slots": { current: 6, max: 6 },
       proficiency: { current: 1, max: 5 },
+      "handful-gold": { current: 1, max: 9 },
+      "bag-gold": { current: 0, max: 9 },
+      "chest-gold": { current: 0, max: null },
+      "experience-1": "【逐渐遗忘的藏经阁器灵】",
+      "experience-modifier-1": "+5",
     }));
     expect(Object.values(converted.data.playerImages)).toEqual([expect.objectContaining({ mimeType: "image/jpeg", dataUrl: expect.stringMatching(/^data:image\/jpeg;base64,/u) })]);
     expect(converted.report.convertedImages).toBe(1);
@@ -199,6 +204,21 @@ describe("Character Format Adapter", () => {
     const converted = convertExternalCharacterSource({ document: { cards: [{ id: "extension-external-id" }] }, fileName: "extension-card.json", carrier: adapter.载体[0] }, adapter, effective);
     expect(converted.data.cards.instances[0]?.definitionRef).toEqual({ type: "resourceLibrary", libraryId: "domain-cards", entryId: "extension-card" });
     expect(daggerheartPackage.resourceLibraries?.find((library) => library.ID === "domain-cards")?.entries.some((entry) => entry.ID === "extension-card")).toBe(false);
+  });
+
+  it("skips duplicate Card definitions that declare conflicting external states", () => {
+    const base = daggerheartPackage.characterFormatAdapters?.find((candidate) => candidate.ID === "dhsheet-character");
+    expect(base).toBeTruthy();
+    if (!base) return;
+    const mapping = { 状态: "配置", 目标CardTableID: "character-card-table", ResourceLibraryIDs: ["domain-cards"], 匹配优先级: [{ 类型: "externalId", 来源路径: ["id"], Resource字段: "ID" }] };
+    const adapter = { ...base, 字段映射: [], Countable映射: [], 图片映射: [], Card映射: [{ ...mapping, 来源路径: ["active"] }, { ...mapping, 来源路径: ["vault"], 状态: "宝库" }] } as typeof base;
+    const entryId = daggerheartPackage.resourceLibraries?.find((library) => library.ID === "domain-cards")?.entries[0]?.ID;
+    expect(entryId).toBeTruthy();
+    if (!entryId) return;
+    const converted = convertExternalCharacterSource({ document: { active: [{ id: entryId }], vault: [{ id: entryId }] }, fileName: "conflict.json", carrier: adapter.载体[0] }, adapter, daggerheartPackage);
+    expect(converted.data.cards.instances).toEqual([]);
+    expect(converted.report).toMatchObject({ matchedCards: 0, skippedCards: 2 });
+    expect(converted.report.diagnostics).toContainEqual(expect.objectContaining({ code: "CHARACTER_ADAPTER_CARD_STATE_CONFLICT" }));
   });
 
   it("does not fabricate an exported Card when external identity and required embedded fields are missing", () => {

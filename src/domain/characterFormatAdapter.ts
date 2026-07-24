@@ -78,7 +78,10 @@ export function exportExternalCharacterData(data: CharacterData, adapter: Charac
   for (const mapping of declaration.图片映射) {
     const value = data.character.values[mapping.来源模块ID];
     const image = isRecord(value) && "kind" in value && value.kind === "player-image" && typeof value.imageId === "string" ? data.playerImages[value.imageId] : undefined;
-    if (!image) { skippedImages += 1; continue; }
+    if (!image) {
+      if (value !== undefined) skippedImages += 1;
+      continue;
+    }
     if (writeSafePath(document, mapping.目标路径, image.dataUrl)) exportedImages += 1;
   }
   for (const mapping of declaration.Card映射) {
@@ -106,8 +109,29 @@ export function exportExternalCharacterData(data: CharacterData, adapter: Charac
     }
     writeSafePath(document, mapping.目标路径, outputCards);
   }
-  const declaredTables = new Set(declaration.Card映射.map((mapping) => mapping.来源CardTableID));
-  skippedCards += data.cards.instances.filter((card) => declaredTables.has(card.tableModuleId) && !exportedCardIds.has(card.instanceId)).length;
+  skippedCards += data.cards.instances.filter((card) => !exportedCardIds.has(card.instanceId)).length;
+  const mappedModuleIds = new Set([
+    ...declaration.字段映射.map((mapping) => mapping.来源模块ID),
+    ...declaration.Countable映射.map((mapping) => mapping.来源模块ID),
+    ...declaration.图片映射.map((mapping) => mapping.来源模块ID),
+  ]);
+  const defaultValues = createEmptyCharacterData(systemPackage, "export-default").character.values;
+  const unmappedModules = Object.entries(data.character.values).filter(([moduleId, value]) => !mappedModuleIds.has(moduleId) && JSON.stringify(value) !== JSON.stringify(defaultValues[moduleId]));
+  for (const [, value] of unmappedModules) {
+    if (isRecord(value) && "kind" in value && value.kind === "player-image") skippedImages += 1;
+    else skippedFields += 1;
+  }
+  if (unmappedModules.length > 0) diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_EXPORT_UNMAPPED_VALUES", text: `${unmappedModules.length} 个非默认 Character Value 没有外部格式映射。` });
+  const referencedImageIds = new Set(Object.values(data.character.values).flatMap((value) => {
+    return isRecord(value) && "kind" in value && value.kind === "player-image" && typeof value.imageId === "string" ? [value.imageId] : [];
+  }));
+  const orphanPlayerImages = Object.keys(data.playerImages).filter((imageId) => !referencedImageIds.has(imageId)).length;
+  skippedImages += orphanPlayerImages;
+  if (orphanPlayerImages > 0) diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_EXPORT_UNMAPPED_IMAGES", text: `${orphanPlayerImages} 张 Player Image 没有外部格式映射。` });
+  if (Object.keys(data.compositeResources).length > 0 || Object.keys(data.resourceSelections ?? {}).length > 0) {
+    skippedFields += Object.keys(data.compositeResources).length + Object.keys(data.resourceSelections ?? {}).length;
+    diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_EXPORT_RESOURCE_STATE_SKIPPED", text: "外部格式不表示 PbDH Composite Resources 或 Resource Selection Snapshots。" });
+  }
   if (skippedCards > 0) diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_EXPORT_CARD_SKIPPED", text: `${skippedCards} 张 Card 无法映射到外部格式。` });
   if (skippedImages > 0) diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_EXPORT_IMAGE_SKIPPED", text: `${skippedImages} 个图片槽位没有可导出的图片。` });
   return { adapter, document, report: { exportedFields, skippedFields, exportedCards, skippedCards, exportedImages, skippedImages, diagnostics } };
@@ -210,6 +234,7 @@ export function convertExternalCharacterSource(source: ExternalCharacterSource, 
   }
 
   const cards: CardInstance[] = [];
+  const conflictedCardKeys = new Set<string>();
   let skippedCards = 0;
   for (const cardMapping of adapter.Card映射) {
     const sourceCards = readSafePath(source.document, cardMapping.来源路径);
@@ -223,6 +248,23 @@ export function convertExternalCharacterSource(source: ExternalCharacterSource, 
       if (!match.ok) {
         skippedCards += 1;
         diagnostics.push({ level: "warning", code: match.code, text: match.text });
+        continue;
+      }
+      const cardKey = `${cardMapping.目标CardTableID}\u001f${match.libraryId}\u001f${match.entry.ID}`;
+      if (conflictedCardKeys.has(cardKey)) {
+        skippedCards += 1;
+        continue;
+      }
+      const conflictingIndexes = cards.flatMap((card, index) => card.tableModuleId === cardMapping.目标CardTableID
+        && card.definitionRef?.type === "resourceLibrary"
+        && card.definitionRef.libraryId === match.libraryId
+        && card.definitionRef.entryId === match.entry.ID
+        && card.state !== cardMapping.状态 ? [index] : []);
+      if (conflictingIndexes.length > 0) {
+        for (const index of conflictingIndexes.reverse()) cards.splice(index, 1);
+        skippedCards += conflictingIndexes.length + 1;
+        conflictedCardKeys.add(cardKey);
+        diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_CARD_STATE_CONFLICT", text: "同一 Card 同时声明了冲突状态，相关 Card 已跳过。" });
         continue;
       }
       const siblingIndex = cards.filter((card) => card.tableModuleId === cardMapping.目标CardTableID).length;

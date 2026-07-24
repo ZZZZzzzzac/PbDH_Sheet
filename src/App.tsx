@@ -568,7 +568,7 @@ export default function App() {
               </button>
               <button className="menu-item" type="button" onClick={() => void beginOutput("json")} aria-label="导出 Character JSON" disabled={!characterData}>
                 <Download aria-hidden="true" size={16} />
-                <span>导出 JSON</span>
+                <span>导出 PbDH Format</span>
               </button>
               {currentPackage?.characterFormatAdapters?.filter((adapter) => adapter.导出).map((adapter) => (
                 <button className="menu-item" type="button" key={adapter.ID} onClick={() => exportWithCharacterAdapter(adapter.ID)} disabled={!characterData}>

@@ -91,8 +91,31 @@ export const resourceFormatAdapterSchema = z.object({
     Slot字段映射: z.array(z.object({ Slot: z.string().min(1), 字段: z.string().min(1), 来源路径: safePathSchema, 转换: z.enum(["text", "number", "boolean", "json"]).default("text") })).min(1),
     图片Slot优先级: z.array(z.string().min(1)).optional(),
   }).optional(),
-}).refine((adapter) => adapter.记录路径 !== undefined || adapter.记录源 !== undefined, {
-  message: "Resource Format Adapter 必须声明 记录路径 或 记录源。",
+}).superRefine((adapter, context) => {
+  if ((adapter.记录路径 === undefined) === (adapter.记录源 === undefined)) {
+    context.addIssue({ code: "custom", message: "Resource Format Adapter 必须且只能声明 记录路径 或 记录源。" });
+  }
+  const knownTypes = adapter.已知类型.map((mapping) => normalizeExternalName(mapping.值));
+  if (new Set(knownTypes).size !== knownTypes.length) context.addIssue({ code: "custom", path: ["已知类型"], message: "已知类型值必须唯一。" });
+  for (const [carrierIndex, carrier] of adapter.载体.entries()) {
+    if (carrier.类型 !== "zip") continue;
+    const paths = carrier.JSON成员.map((member) => member.路径.toLocaleLowerCase());
+    const keys = carrier.JSON成员.map((member) => member.键);
+    if (new Set(paths).size !== paths.length) context.addIssue({ code: "custom", path: ["载体", carrierIndex, "JSON成员"], message: "ZIP JSON member 路径不能重复。" });
+    if (new Set(keys).size !== keys.length) context.addIssue({ code: "custom", path: ["载体", carrierIndex, "JSON成员"], message: "ZIP JSON member 键不能重复。" });
+  }
+  if (!adapter.分组) return;
+  const slotNames = adapter.分组.Slots.map((slot) => slot.名称);
+  const slotValues = adapter.分组.Slots.map((slot) => `${typeof slot.值}:${String(slot.值)}`);
+  if (new Set(slotNames).size !== slotNames.length) context.addIssue({ code: "custom", path: ["分组", "Slots"], message: "分组 Slot 名称必须唯一。" });
+  if (new Set(slotValues).size !== slotValues.length) context.addIssue({ code: "custom", path: ["分组", "Slots"], message: "分组 Slot 值必须唯一。" });
+  adapter.分组.Slot字段映射.forEach((mapping, index) => {
+    if (!slotNames.includes(mapping.Slot)) context.addIssue({ code: "custom", path: ["分组", "Slot字段映射", index, "Slot"], message: "Slot 字段映射必须引用已声明 Slot。" });
+  });
+  const priority = adapter.分组.图片Slot优先级 ?? [];
+  if (new Set(priority).size !== priority.length || priority.some((slot) => !slotNames.includes(slot))) {
+    context.addIssue({ code: "custom", path: ["分组", "图片Slot优先级"], message: "图片 Slot 优先级必须唯一并引用已声明 Slot。" });
+  }
 });
 export type ResourceFormatAdapter = z.infer<typeof resourceFormatAdapterSchema>;
 

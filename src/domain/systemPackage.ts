@@ -849,6 +849,22 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
         path: `characterFormatAdapters.${adapterIndex}`,
       });
     }
+    const adapterModuleContracts = [
+      ...adapter.字段映射.map((mapping, index) => ({ moduleId: mapping.目标模块ID, types: ["freeText", "longText"], path: `characterFormatAdapters.${adapterIndex}.字段映射.${index}.目标模块ID` })),
+      ...adapter.Countable映射.map((mapping, index) => ({ moduleId: mapping.目标模块ID, types: ["countableResource"], path: `characterFormatAdapters.${adapterIndex}.Countable映射.${index}.目标模块ID` })),
+      ...adapter.图片映射.map((mapping, index) => ({ moduleId: mapping.目标模块ID, types: ["imageField"], path: `characterFormatAdapters.${adapterIndex}.图片映射.${index}.目标模块ID` })),
+      ...(adapter.导出?.字段映射.map((mapping, index) => ({ moduleId: mapping.来源模块ID, types: ["freeText", "longText"], path: `characterFormatAdapters.${adapterIndex}.导出.字段映射.${index}.来源模块ID` })) ?? []),
+      ...(adapter.导出?.Countable映射.map((mapping, index) => ({ moduleId: mapping.来源模块ID, types: ["countableResource"], path: `characterFormatAdapters.${adapterIndex}.导出.Countable映射.${index}.来源模块ID` })) ?? []),
+      ...(adapter.导出?.图片映射.map((mapping, index) => ({ moduleId: mapping.来源模块ID, types: ["imageField"], path: `characterFormatAdapters.${adapterIndex}.导出.图片映射.${index}.来源模块ID` })) ?? []),
+    ];
+    for (const contract of adapterModuleContracts) {
+      const module = adapterModuleById.get(contract.moduleId);
+      if (!module || contract.types.includes(module.类型)) continue;
+      issues.push({
+        level: "error", code: "INVALID_CHARACTER_ADAPTER_MODULE_TYPE",
+        text: `Character Format Adapter 的 Module ${contract.moduleId} 类型 ${module.类型} 不支持此映射。`, path: contract.path,
+      });
+    }
     for (const [cardIndex, cardMapping] of adapter.Card映射.entries()) {
       if (adapterModuleById.get(cardMapping.目标CardTableID)?.类型 !== "cardTable") {
         issues.push({

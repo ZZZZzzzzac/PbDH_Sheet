@@ -524,7 +524,7 @@ describe("validateSystemPackage Sheet Modules", () => {
     };
     const characterAdapter = {
       ID: "duplicate", 名称: "Character", 载体: [{ 类型: "json", 根类型: "object", 检测: [{ 路径: ["name"], 存在: true }] }],
-      字段映射: [{ 目标模块ID: "missing-module", 来源路径: ["name"] }], Countable映射: [], 图片映射: [],
+      字段映射: [{ 目标模块ID: "missing-module", 来源路径: ["name"] }], Countable映射: [{ 目标模块ID: "character-name", 来源路径: ["hp"], 转换: "number" }], 图片映射: [],
       Card映射: [{ 来源路径: ["cards"], 状态: "active", 目标CardTableID: "missing-table", ResourceLibraryIDs: ["missing-library"], 匹配优先级: [{ 类型: "uniqueName", 来源路径: ["name"] }] }],
       导出: {
         字段映射: [{ 来源模块ID: "missing-export-module", 目标路径: ["name"] }], Countable映射: [], 图片映射: [],
@@ -541,6 +541,20 @@ describe("validateSystemPackage Sheet Modules", () => {
       "DUPLICATE_RESOURCE_FORMAT_ADAPTER_ID", "DUPLICATE_CHARACTER_FORMAT_ADAPTER_ID",
       "MISSING_RESOURCE_ADAPTER_LIBRARY_REFERENCE", "MISSING_CHARACTER_ADAPTER_MODULE_REFERENCE",
       "MISSING_CHARACTER_ADAPTER_CARD_TABLE_REFERENCE", "MISSING_CHARACTER_ADAPTER_LIBRARY_REFERENCE",
+      "INVALID_CHARACTER_ADAPTER_MODULE_TYPE",
     ]));
+  });
+
+  it("rejects contradictory Resource Adapter record sources and invalid grouping slots", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      resourceFormatAdapters: [{
+        ID: "invalid-group", 名称: "Invalid", 载体: [{ 类型: "json", 检测: [{ 路径: ["records"], 存在: true }] }],
+        包名: { 类型: "常量", 值: "Invalid" }, 记录路径: ["records"], 记录源: [{ 路径: ["other"] }], 类型路径: ["type"], 已知类型: [],
+        分组: { 适用类型: "group", 分组键路径: ["name"], Slot路径: ["slot"], Slots: [{ 名称: "A", 值: 1 }, { 名称: "A", 值: 2 }], 资源库ID: "missing", 公共字段映射: [], Slot字段映射: [{ Slot: "B", 字段: "value", 来源路径: ["value"] }], 图片Slot优先级: ["B"] },
+      }],
+    });
+    expect(result.ok).toBe(false);
+    expect(result.issues).toContainEqual(expect.objectContaining({ code: "PACKAGE_SHAPE_INVALID", path: expect.stringContaining("resourceFormatAdapters") }));
   });
 });

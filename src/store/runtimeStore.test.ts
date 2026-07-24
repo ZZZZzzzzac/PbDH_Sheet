@@ -732,6 +732,13 @@ describe("runtime store", () => {
     await useRuntimeStore.getState().confirmResourceExtensionConversion();
     expect(useRuntimeStore.getState().currentPackage?.resourceLibraries?.[0].entries[0].fields.名称).toBe("External");
     expect(await memoryStorage.listResourceExtensions(basePackage.manifest.ID)).toHaveLength(1);
+
+    await useRuntimeStore.getState().uploadResourceExtensionFromFile(source());
+    await useRuntimeStore.getState().selectResourceFormatAdapter("external-cards");
+    await useRuntimeStore.getState().confirmResourceExtensionConversion();
+    expect(useRuntimeStore.getState().pendingResourceExtensionReplacement?.extension.名称).toBe("cards");
+    useRuntimeStore.getState().cancelResourceExtensionReplacement();
+    expect(await memoryStorage.listResourceExtensions(basePackage.manifest.ID)).toHaveLength(1);
   });
 
   it("does not mutate the active Character Save until a lossy external conversion is confirmed", async () => {
