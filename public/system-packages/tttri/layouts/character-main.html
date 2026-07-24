@@ -6,13 +6,13 @@
     </div>
     <div class="identity-fields">
       <div class="identity-field"><pb-module id="character-name"></pb-module></div>
-      <div class="picker-field identity-field">
+      <div class="picker-field identity-field" data-guide-region-id="class">
         <pb-module id="class-name"></pb-module>
         <pb-module id="pick-class"></pb-module>
       </div>
-      <div class="identity-field-wrapper" data-guide-region-id="ancestry-community">
-        <div class="picker-field identity-field"><pb-module id="ancestry-name"></pb-module><pb-module id="pick-ancestry"></pb-module></div>
-        <div class="picker-field identity-field"><pb-module id="community-name"></pb-module><pb-module id="pick-community"></pb-module></div>
+      <div class="identity-field-wrapper">
+        <div class="picker-field identity-field" data-guide-region-id="ancestry"><pb-module id="ancestry-name"></pb-module><pb-module id="pick-ancestry"></pb-module></div>
+        <div class="picker-field identity-field" data-guide-region-id="community"><pb-module id="community-name"></pb-module><pb-module id="pick-community"></pb-module></div>
       </div>
     </div>
     <div class="level-field"><pb-module id="level"></pb-module></div>
@@ -29,7 +29,7 @@
       <pb-module id="primary-domain"></pb-module>
       <pb-module id="secondary-domain"></pb-module>
     </div>
-    <div class="trait-summary">
+    <div class="trait-summary" data-guide-region-id="attributes">
       <pb-module id="agility"></pb-module>
       <pb-module id="strength"></pb-module>
       <pb-module id="finesse"></pb-module>

@@ -1,0 +1,201 @@
+{
+  "kind": "pbdh-character-data",
+  "schemaVersion": "0.1.0",
+  "systemPackage": {
+    "id": "tttri",
+    "version": "0.1.0"
+  },
+  "character": {
+    "id": "character-9f07003f-d5a5-4db8-b385-08a5af769b19",
+    "values": {
+      "character-name": "",
+      "level": "1",
+      "class-name": "辅助",
+      "evasion": "10",
+      "thresholds": "8 / 17",
+      "armor-value": "4",
+      "hp": {
+        "current": 0,
+        "max": 5
+      },
+      "stress": {
+        "current": 0,
+        "max": 6
+      },
+      "hope": {
+        "current": 2,
+        "max": 6
+      },
+      "proficiency": {
+        "current": 1,
+        "max": 6
+      },
+      "agility": "2",
+      "strength": "1",
+      "finesse": "1",
+      "instinct": "0",
+      "presence": "0",
+      "knowledge": "-1",
+      "primary-domain": "支柱",
+      "secondary-domain": "奥术",
+      "class-hope-feature": "共勉前路：花费 3 希望点，为攻击范围内的一名盟友清除 2 压力点，或为你和一名盟友各清除 1 压力点。",
+      "class-feature": "状态分析：每次休息一次，辨识一个可触及目标正处于的所有状态。你可以标记 1 压力点以向主持人询问其中一项状态可能的缓解或解除方法。",
+      "subclass-name": "护佑者",
+      "subclass-stage": "预备",
+      "subclass-current": "庇护生机：当你攻击范围内的友方角色即将受到伤害时，你可以花费 2 希望点，展开庇护单元，投掷使用你施法属性的d4，这些角色受到的伤害减少此次掷骰结果的数值。",
+      "weapon-summary": "庇护单元 中距离/双手 d6/法术",
+      "weapon-feature": "",
+      "ancestry-name": "乌萨斯",
+      "ancestry-experience": "",
+      "ancestry-experience-modifier": "",
+      "community-name": "博识之民",
+      "experience-1": "",
+      "experience-modifier-1": "",
+      "experience-2": "",
+      "experience-modifier-2": "",
+      "experience-3": "",
+      "experience-modifier-3": "",
+      "experience-4": "",
+      "experience-modifier-4": "",
+      "experience-5": "",
+      "experience-modifier-5": "",
+      "armor-summary": "全板甲 | 阈值 8/17 | 护甲值 4",
+      "armor-feature": ":red[**极重**]：闪避值-2，敏捷-1。",
+      "armor-slots": {
+        "current": 0,
+        "max": 4
+      },
+      "inventory": "",
+      "handful-gold": {
+        "current": 1,
+        "max": 9
+      },
+      "bag-gold": {
+        "current": 0,
+        "max": 9
+      },
+      "chest-gold": {
+        "current": 0,
+        "max": null
+      },
+      "advancement-tier-2": {
+        "traits-1": false,
+        "traits-2": false,
+        "traits-3": false,
+        "hp-1": false,
+        "hp-2": false,
+        "stress-1": false,
+        "stress-2": false,
+        "experiences": false,
+        "domain-card": false,
+        "subclass": false,
+        "evasion": false,
+        "multiclass-1": false,
+        "multiclass-2": false
+      },
+      "advancement-tier-3": {
+        "traits-1": false,
+        "traits-2": false,
+        "traits-3": false,
+        "hp-1": false,
+        "hp-2": false,
+        "stress-1": false,
+        "stress-2": false,
+        "experiences": false,
+        "domain-card": false,
+        "subclass": false,
+        "evasion": false,
+        "proficiency-1": false,
+        "proficiency-2": false,
+        "multiclass-1": false,
+        "multiclass-2": false
+      },
+      "advancement-tier-4": {
+        "traits-1": false,
+        "traits-2": false,
+        "traits-3": false,
+        "hp-1": false,
+        "hp-2": false,
+        "stress-1": false,
+        "stress-2": false,
+        "experiences": false,
+        "domain-card": false,
+        "subclass-elite": false,
+        "evasion": false,
+        "proficiency-1": false,
+        "proficiency-2": false,
+        "multiclass-1": false,
+        "multiclass-2": false
+      },
+      "background-story": "",
+      "notes": "",
+      "background-question-1": "[待补充：背景问题1]",
+      "background-answer-1": "",
+      "background-question-2": "[待补充：背景问题2]",
+      "background-answer-2": "",
+      "background-question-3": "[待补充：背景问题3]",
+      "background-answer-3": "",
+      "connection-question-1": "[待补充：关系问题1]",
+      "connection-answer-1": "",
+      "connection-question-2": "[待补充：关系问题2]",
+      "connection-answer-2": "",
+      "connection-question-3": "[待补充：关系问题3]",
+      "connection-answer-3": ""
+    }
+  },
+  "cards": {
+    "instances": [
+      {
+        "instanceId": "种族:乌萨斯:362ecdb3-2095-4600-98db-ed0a4283fbf6",
+        "tableModuleId": "character-card-table",
+        "definitionRef": {
+          "type": "resourceLibrary",
+          "libraryId": "ancestries",
+          "entryId": "种族:乌萨斯"
+        },
+        "state": "配置",
+        "xPct": 1.582591493570722,
+        "yPct": 1.2075471698113207,
+        "zIndex": 1,
+        "face": "front",
+        "rotation": 0,
+        "scale": 1,
+        "indicators": []
+      },
+      {
+        "instanceId": "社群:博识之民:8548232a-dc20-4823-b1c3-ba0a283b83d5",
+        "tableModuleId": "character-card-table",
+        "definitionRef": {
+          "type": "resourceLibrary",
+          "libraryId": "communities",
+          "entryId": "社群:博识之民"
+        },
+        "state": "配置",
+        "xPct": 27.893175074183976,
+        "yPct": 1.2075471698113207,
+        "zIndex": 2,
+        "face": "front",
+        "rotation": 0,
+        "scale": 1,
+        "indicators": []
+      }
+    ]
+  },
+  "compositeResources": {},
+  "resourceSelections": {
+    "pick-ancestry": {
+      "libraryId": "ancestries",
+      "entryIds": [
+        "种族:乌萨斯"
+      ]
+    },
+    "pick-class": {
+      "libraryId": "classes",
+      "entryIds": [
+        "职业:辅助"
+      ]
+    }
+  },
+  "playerImages": {},
+  "updatedAt": "2026-07-24T02:53:04.089Z"
+}

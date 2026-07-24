@@ -71,8 +71,8 @@ describe("TTTRI System Package", () => {
       skin.layoutOverrides.shell.htmlContent,
     ].join("\n");
     const guideRegions = [
-      "identity", "core-stats", "class-features", "subclass", "weapon-prototype",
-      "ancestry-community", "experiences", "background-questions", "connection-questions",
+      "identity", "class", "core-stats", "attributes", "class-features", "subclass", "weapon-prototype",
+      "ancestry", "community", "experiences", "background-questions", "connection-questions",
       "equipment", "inventory", "advancement", "character-cards",
     ];
     for (const regionId of guideRegions) {
@@ -184,7 +184,7 @@ describe("TTTRI System Package", () => {
     const systemPackage = loadedResult.package;
     const cases = [
       { moduleIds: ["pick-class"], libraryId: "classes", visible: ["名称", "生命点", "闪避值", "希望特性", "职业特性", "主领域"] },
-      { moduleIds: ["pick-subclass-t1"], libraryId: "subclasses", visible: ["主职", "名称", "等级", "推荐领域", "武器原型", "子职提升"] },
+      { moduleIds: ["pick-subclass-t1"], libraryId: "subclasses", visible: ["主职", "名称", "等级", "推荐次领域", "武器原型", "子职提升"] },
       { moduleIds: ["pick-ancestry"], libraryId: "ancestries", visible: ["名称", "简介", "推荐经历"] },
     ];
 
@@ -397,6 +397,8 @@ describe("TTTRI System Package", () => {
       `${armor.fields.名称} | 阈值 ${armor.fields.重度阈值}/${armor.fields.严重阈值} | 护甲值 ${armor.fields.护甲值}`,
     );
     expect(data.character.values["armor-feature"]).toBe(armor.fields.描述);
+    expect(data.character.values.thresholds).toBe(`${armor.fields.重度阈值} / ${armor.fields.严重阈值}`);
+    expect(data.character.values["armor-value"]).toBe(armor.fields.护甲值);
     expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "armor-summary", 类型: "freeText" }));
     expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "weapon-feature", 类型: "longText", 标签: "" }));
     expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "armor-feature", 类型: "longText", 标签: "" }));
@@ -424,7 +426,9 @@ describe("TTTRI System Package", () => {
     expect(t3.选项.find((option) => option.ID === "subclass")?.标签).toBe("升级干员");
     expect(t4.选项.find((option) => option.ID === "subclass-elite")?.标签).toBe("升级干员");
     for (const tier of [t2, t3, t4]) {
-      expect(tier.选项.filter((option) => option.分组 === "multiclass")).toHaveLength(2);
+      const multiclassOptions = tier.选项.filter((option) => option.分组 === "multiclass");
+      expect(multiclassOptions).toHaveLength(2);
+      expect(multiclassOptions.every((option) => option.标签 === "兼职：选择一张等级不高于角色等级一半的任意领域卡")).toBe(true);
     }
     expect(systemPackage.modules.some((module) => ["pick-subclass-t2", "pick-subclass-t3", "pick-class-module", "class-module-name"].includes(module.ID))).toBe(false);
     expect(systemPackage.resourceLibraries.some((library) => library.ID === "class-modules")).toBe(false);
@@ -448,19 +452,6 @@ describe("TTTRI System Package", () => {
     ]));
     expect(JSON.stringify(empty)).toBe(before);
 
-    empty.character.values["armor-summary"] = "**填充布甲** · 重度 5 / 严重 11 · 护甲值 3";
-    const missingCurrentArmorIssues = await runValidationChecksInProcess({
-      characterData: empty,
-      resourceLibraries: systemPackage.resourceLibraries,
-      packageMetadata: { id: "tttri", version: "0.1.0" },
-      checks: systemPackage.validationChecks,
-    });
-    expect(missingCurrentArmorIssues.map((issue) => issue.code)).toEqual(expect.arrayContaining([
-      "CURRENT_THRESHOLDS_INVALID", "CURRENT_ARMOR_VALUE_INVALID",
-    ]));
-    empty.character.values.thresholds = "6 / 12";
-    empty.character.values["armor-value"] = "4";
-
     empty.character.values.level = "8";
     const t4MissingIssues = await runValidationChecksInProcess({
       characterData: empty,
@@ -468,7 +459,16 @@ describe("TTTRI System Package", () => {
       packageMetadata: { id: "tttri", version: "0.1.0" },
       checks: systemPackage.validationChecks,
     });
-    expect(t4MissingIssues.map((issue) => issue.code)).toContain("T4_ELITE_SUBCLASS_MISSING");
+    expect(t4MissingIssues.map((issue) => issue.code)).not.toContain("T4_ELITE_SUBCLASS_MISSING");
+
+    empty.character.values["advancement-tier-4"] = { "subclass-elite": true };
+    const selectedT4UpgradeIssues = await runValidationChecksInProcess({
+      characterData: empty,
+      resourceLibraries: systemPackage.resourceLibraries,
+      packageMetadata: { id: "tttri", version: "0.1.0" },
+      checks: systemPackage.validationChecks,
+    });
+    expect(selectedT4UpgradeIssues.map((issue) => issue.code)).toContain("T4_ELITE_SUBCLASS_MISSING");
 
     const selectedClass = systemPackage.resourceLibraries.find((library) => library.ID === "classes")!.entries[0]!;
     const selectedSubclass = systemPackage.resourceLibraries.find((library) => library.ID === "subclasses")!.entries.find((entry) => entry.fields.主职 === selectedClass.fields.名称 && entry.fields.阶段 === "T4X")!;
@@ -482,7 +482,38 @@ describe("TTTRI System Package", () => {
       packageMetadata: { id: "tttri", version: "0.1.0" },
       checks: systemPackage.validationChecks,
     });
-    expect(validIssues.filter((issue) => ["CLASS_MISSING", "SUBCLASS_MISSING", "SUBCLASS_STAGE_INVALID", "SUBCLASS_UNKNOWN", "CURRENT_THRESHOLDS_INVALID", "CURRENT_ARMOR_VALUE_INVALID", "T4_ELITE_SUBCLASS_MISSING"].includes(issue.code ?? ""))).toEqual([]);
+    expect(validIssues.filter((issue) => ["CLASS_MISSING", "SUBCLASS_MISSING", "SUBCLASS_STAGE_INVALID", "SUBCLASS_UNKNOWN", "T4_ELITE_SUBCLASS_MISSING"].includes(issue.code ?? ""))).toEqual([]);
+  });
+
+  it("checks current thresholds against armor base thresholds plus level", async () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const systemPackage = loadedResult.package;
+    const armor = systemPackage.resourceLibraries.find((library) => library.ID === "armor")!.entries[0]!;
+    let data = createEmptyCharacterData(systemPackage);
+    const armorResult = evaluateDependencies(data, systemPackage, {
+      type: "resourceSelected", sourceModuleId: "pick-armor", libraryId: "armor", selectedEntries: [armor],
+    });
+    data = applyDependencyResultToCharacterData(data, armorResult);
+
+    const baseIssues = await runValidationChecksInProcess({
+      characterData: data,
+      resourceLibraries: systemPackage.resourceLibraries,
+      packageMetadata: { id: "tttri", version: "0.1.0" },
+      checks: systemPackage.validationChecks,
+    });
+    expect(baseIssues.find((issue) => issue.code === "CURRENT_THRESHOLDS_MISMATCH")?.text).toContain(
+      `当前阈值应为 ${Number(armor.fields.重度阈值) + 1} / ${Number(armor.fields.严重阈值) + 1}`,
+    );
+
+    data.character.values.thresholds = `${Number(armor.fields.重度阈值) + 1} / ${Number(armor.fields.严重阈值) + 1}`;
+    const correctedIssues = await runValidationChecksInProcess({
+      characterData: data,
+      resourceLibraries: systemPackage.resourceLibraries,
+      packageMetadata: { id: "tttri", version: "0.1.0" },
+      checks: systemPackage.validationChecks,
+    });
+    expect(correctedIssues.map((issue) => issue.code)).not.toContain("CURRENT_THRESHOLDS_MISMATCH");
   });
 
   it("restores persistent values and pure filters/placeholders from a Character Save round trip", () => {

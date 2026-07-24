@@ -658,7 +658,7 @@ function validateCatalogs(catalogs) {
   const domainCards = catalogs.resources["domain-cards.json"];
 
   assertRequiredTextFields(classes, ["名称", "类型", "描述", "生命点", "闪避值", "主领域", "希望特性", "职业特性"], "职业");
-  assertRequiredTextFields(subclasses, ["主职", "名称", "类型", "阶段", "等级", "推荐领域", "武器原型", "子职提升"], "子职");
+  assertRequiredTextFields(subclasses, ["主职", "名称", "类型", "阶段", "等级", "推荐次领域", "武器原型", "子职提升"], "子职");
   assertRequiredTextFields(ancestries, ["名称", "原名", "类型", "简介", "推荐经历", "默认种族经历", "默认种族经历修正", "显示方式"], "种族");
   assertRequiredTextFields(communities, ["名称", "类型", "简介", "描述", "参考出身", "显示方式"], "社群");
   assertRequiredTextFields(domainCards, ["名称", "类型", "领域", "等级", "属性", "回想", "描述", "显示方式"], "领域卡");
