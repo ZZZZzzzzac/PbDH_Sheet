@@ -23,6 +23,7 @@ describe("Character Format Adapter", () => {
 
   it("converts the real ZZZ character fixture including tri-state counters and embedded avatar", () => {
     const text = readFileSync(join(migrationRoot, "啄页_匕首之心人物卡_zzz.json"), "utf8");
+    const document = JSON.parse(text) as Record<string, unknown>;
     const detection = parseAndDetectCharacterSource(text, "啄页_匕首之心人物卡_zzz.json", daggerheartPackage.characterFormatAdapters ?? []);
     expect(detection.status).toBe("match");
     if (detection.status !== "match") return;
@@ -35,18 +36,19 @@ describe("Character Format Adapter", () => {
       "class-name": "法师-知识学派",
       level: "3",
       agility: "3",
-      hp: { current: 0, max: 5 },
-      stress: { current: 0, max: 7 },
-      hope: { current: 2, max: 6 },
-      "armor-slots": { current: 0, max: 6 },
-      proficiency: { current: 1, max: 5 },
-      "handful-gold": { current: 1, max: 9 },
-      "bag-gold": { current: 0, max: 9 },
-      "chest-gold": { current: 0, max: null },
+      hp: expectedTriState(document, "HpSlotCheckbox", 12),
+      stress: expectedTriState(document, "StressSlotCheckbox", 12),
+      hope: { current: selectedSlotCount(document, "HopeSlotCheckbox", 6), max: 6 },
+      "armor-slots": expectedTriState(document, "ArmorSlotCheckbox", 12),
+      proficiency: { current: selectedSlotCount(document, "ProficiencyCheckbox", 5), max: 5 },
+      "handful-gold": { current: selectedSlotCount(document, "HandfulGoldCheckbox", 9), max: 9 },
+      "bag-gold": { current: selectedSlotCount(document, "BagGoldCheckbox", 9), max: 9 },
+      "chest-gold": { current: Number(document.ChestGoldCheckbox1), max: null },
       "experience-1": "【逐渐遗忘的藏经阁器灵】",
       "experience-modifier-1": "+5",
       "secondary-weapon-description": "保护：护甲值+2。",
       "armor-description": "灵活：闪避值+1。",
+      "armor-value": String(document.ArmorTextbox),
       inventory: "小型生命药水: 立刻恢复 1d4 生命点。\n《神州要术》：本次村规中，选择领域卡与升级选项时，你的临时等级视作五级",
       "advancement-tier-2": expect.objectContaining({ "traits-3": true, "stress-2": true, experiences: true, evasion: true }),
       "advancement-tier-3": expect.objectContaining({ "traits-3": true, experiences: true, subclass: true, evasion: true, "multiclass-1": false, "multiclass-2": false }),
@@ -74,6 +76,22 @@ describe("Character Format Adapter", () => {
       ArmorTraitTextbox: "灵活：闪避值+1。",
       ItemSlot1Textbox: "小型生命药水: 立刻恢复 1d4 生命点。\n《神州要术》：本次村规中，选择领域卡与升级选项时，你的临时等级视作五级",
     }));
+    const roundTripTextFields = [
+      "NameTextbox", "RaceTextbox", "CommunityTextbox", "ClassTextbox", "LevelTextbox", "EvasionTextbox",
+      "AgilityTextbox", "StrengthTextbox", "FinesseTextbox", "InstinctTextbox", "PresenceTextbox", "KnowledgeTextbox",
+      "MajorTextbox", "SevereTextbox", "ClassFeatureTextbox",
+      "PrimaryWeaponNameTextbox", "PrimaryWeaponTraitTextbox", "SecondaryWeaponNameTextbox", "SecondaryWeaponTraitTextbox",
+      "Backup1WeaponNameTextbox", "Backup1WeaponTraitTextbox", "Backup2WeaponNameTextbox", "Backup2WeaponTraitTextbox",
+      "ArmorNameTextbox", "ArmorTextbox", "ArmorTraitTextbox", "ItemSlot1Textbox", "EventLogTextbox",
+      ...Array.from({ length: 5 }, (_, index) => [`Experience${index + 1}Textbox`, `Experience${index + 1}ModifierTextbox`]).flat(),
+      ...Array.from({ length: 3 }, (_, index) => [`BackgroundQuestion${index + 1}Textbox`, `ConnectQuestion${index + 1}Textbox`, `BackgroundAnswer${index + 1}Textbox`, `ConnectAnswer${index + 1}Textbox`]).flat(),
+    ];
+    for (const field of roundTripTextFields) expect(exported.document[field], field).toBe(document[field]);
+    expect(exported.document.ArmorScoreTextbox).toBeUndefined();
+    for (const prefix of ["HandfulGoldCheckbox", "BagGoldCheckbox"]) {
+      for (let index = 1; index <= 9; index += 1) expect(Boolean(exported.document[`${prefix}${index}`]), `${prefix}${index}`).toBe(Number(document[`${prefix}${index}`]) === 1);
+    }
+    expect(exported.document.ChestGoldCheckbox1).toBe(Number(document.ChestGoldCheckbox1));
   });
 
   it("maps ZZZ advancement checkboxes while ignoring unavailable state 2", () => {
@@ -354,6 +372,15 @@ describe("Character Format Adapter", () => {
     expect((exported.document.cards as Array<Record<string, unknown>>)[1]).not.toHaveProperty("id");
   });
 });
+
+function selectedSlotCount(document: Record<string, unknown>, prefix: string, length: number): number {
+  return Array.from({ length }, (_, index) => Number(document[`${prefix}${index + 1}`])).filter((value) => value === 1).length;
+}
+
+function expectedTriState(document: Record<string, unknown>, prefix: string, length: number): { current: number; max: number } {
+  const values = Array.from({ length }, (_, index) => Number(document[`${prefix}${index + 1}`]));
+  return { current: values.filter((value) => value === 1).length, max: values.filter((value) => value === 0 || value === 1).length };
+}
 
 function createPackageZip(): Uint8Array {
   return zipSync(Object.fromEntries(walkFiles(packageRoot).map((path) => [relative(packageRoot, path).replaceAll("\\", "/"), new Uint8Array(readFileSync(path))])), { level: 0 });
