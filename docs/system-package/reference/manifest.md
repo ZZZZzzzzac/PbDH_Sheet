@@ -16,6 +16,8 @@
 | `defaultSkin` | string | 声明 Skin 时是 | 引用 `skins[].ID` | 默认表现 |
 | `dependencies` | path string | 否 | — | Dependency array |
 | `characterCreationGuide` | path string | 否 | — | Guide object |
+| `resourceFormatAdapters` | path string | 否 | — | Resource Format Adapter 数组；见 [Format Adapters](format-adapters.md) |
+| `characterFormatAdapters` | path string | 否 | — | Character Format Adapter 数组；见 [Format Adapters](format-adapters.md) |
 | `resourceLibraries` | array | 否 | `[]` | `{ID, 名称, 路径}` |
 | `validationChecks` | array | 否 | `[]` | `{ID, 脚本}` |
 

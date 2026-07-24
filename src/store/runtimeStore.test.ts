@@ -149,6 +149,10 @@ describe("runtime store", () => {
       resourceCatalog: null,
       installedResourceExtensions: [],
       resourceExtensionImport: null,
+      pendingResourceExtensionReplacement: null,
+      pendingResourceExtensionConversion: null,
+      pendingResourceFormatSelection: null,
+      pendingResourceExtensionRemoval: null,
       packageAssetUrls: {},
       characterData: null,
       packageIssues: [],
@@ -164,6 +168,8 @@ describe("runtime store", () => {
       storageStatus: "idle",
       importError: null,
       importNotice: null,
+      pendingCharacterConversion: null,
+      pendingCharacterFormatSelection: null,
       authorPreviewActive: false,
     });
     await useRuntimeStore.getState().initialize();
@@ -686,6 +692,86 @@ describe("runtime store", () => {
     await useRuntimeStore.getState().confirmResourceExtensionRemoval();
     expect(useRuntimeStore.getState().installedResourceExtensions).toEqual([]);
     expect(useRuntimeStore.getState().characterData).toBe(characterWithCard);
+    expect(await memoryStorage.listResourceExtensions(basePackage.manifest.ID)).toEqual([]);
+  });
+
+  it("previews external resource conversion and keeps catalog/storage unchanged on cancel", async () => {
+    const basePackage = {
+      ...minimalSystemPackage,
+      resourceLibraries: [{ ID: "cards", 名称: "卡牌", 路径: "cards.json", fields: [], entries: [] }],
+      resourceFormatAdapters: [{
+        ID: "external-cards", 名称: "External Cards",
+        载体: [{ 类型: "json", 根类型: "array", 文件后缀: ".json", 检测: [{ 路径: [0, "kind"], 等于: "card" }] }],
+        包名: { 类型: "文件名" }, 记录路径: [], 类型路径: ["kind"], EntryID路径: ["id"],
+        已知类型: [{ 值: "card", 资源库ID: "cards", 字段映射: [{ 字段: "名称", 来源路径: ["name"], 必填: true }] }],
+        未知类型: { 启用: false, LibraryID前缀: "external:", 运行时字段: [] },
+      }, {
+        ID: "external-cards-second", 名称: "External Cards Second",
+        载体: [{ 类型: "json", 根类型: "array", 文件后缀: ".json", 检测: [{ 路径: [0, "kind"], 等于: "card" }] }],
+        包名: { 类型: "文件名" }, 记录路径: [], 类型路径: ["kind"], EntryID路径: ["id"],
+        已知类型: [{ 值: "card", 资源库ID: "cards", 字段映射: [{ 字段: "名称", 来源路径: ["name"], 必填: true }] }],
+        未知类型: { 启用: false, LibraryID前缀: "external:", 运行时字段: [] },
+      }],
+    } as unknown as SystemPackage;
+    configureRuntimeDependencies({ loadSystemPackageFromFile: async () => ({ ok: true, package: basePackage, issues: [] }), storage: memoryStorage });
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    const source = () => new File([JSON.stringify([{ kind: "card", name: "External" }])], "cards.json", { type: "application/json" });
+
+    await useRuntimeStore.getState().uploadResourceExtensionFromFile(source());
+    expect(useRuntimeStore.getState().pendingResourceFormatSelection?.adapters).toHaveLength(2);
+    expect(await memoryStorage.listResourceExtensions(basePackage.manifest.ID)).toEqual([]);
+    await useRuntimeStore.getState().selectResourceFormatAdapter("external-cards");
+    expect(useRuntimeStore.getState().pendingResourceExtensionConversion?.loaded.conversion?.counts.convertedEntries).toBe(1);
+    expect(useRuntimeStore.getState().currentPackage?.resourceLibraries?.[0].entries).toEqual([]);
+    expect(await memoryStorage.listResourceExtensions(basePackage.manifest.ID)).toEqual([]);
+    useRuntimeStore.getState().cancelResourceExtensionConversion();
+    expect(await memoryStorage.listResourceExtensions(basePackage.manifest.ID)).toEqual([]);
+
+    await useRuntimeStore.getState().uploadResourceExtensionFromFile(source());
+    await useRuntimeStore.getState().selectResourceFormatAdapter("external-cards");
+    await useRuntimeStore.getState().confirmResourceExtensionConversion();
+    expect(useRuntimeStore.getState().currentPackage?.resourceLibraries?.[0].entries[0].fields.名称).toBe("External");
+    expect(await memoryStorage.listResourceExtensions(basePackage.manifest.ID)).toHaveLength(1);
+  });
+
+  it("does not mutate the active Character Save until a lossy external conversion is confirmed", async () => {
+    const basePackage = {
+      ...minimalSystemPackage,
+      characterFormatAdapters: [{
+        ID: "external-character", 名称: "External Character",
+        载体: [{ 类型: "json", 根类型: "object", 文件后缀: ".json", 检测: [{ 路径: ["external"], 等于: true }] }],
+        角色名来源路径: ["name"],
+        字段映射: [
+          { 目标模块ID: "character-name", 来源路径: ["name"], 转换: "text" },
+          { 目标模块ID: "missing-field", 来源路径: ["missing"], 转换: "text" },
+        ], Countable映射: [], 图片映射: [], Card映射: [],
+      }, {
+        ID: "external-character-second", 名称: "External Character Second",
+        载体: [{ 类型: "json", 根类型: "object", 文件后缀: ".json", 检测: [{ 路径: ["external"], 等于: true }] }],
+        角色名来源路径: ["name"], 字段映射: [{ 目标模块ID: "character-name", 来源路径: ["name"], 转换: "text" }],
+        Countable映射: [], 图片映射: [], Card映射: [],
+      }],
+    } as unknown as SystemPackage;
+    configureRuntimeDependencies({ loadSystemPackageFromFile: async () => ({ ok: true, package: basePackage, issues: [] }), storage: memoryStorage });
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    const before = useRuntimeStore.getState().characterData;
+    const saveCount = (await memoryStorage.listCharacterSaves(basePackage.manifest.ID)).length;
+
+    await useRuntimeStore.getState().importCharacterDataFromFile(new File([JSON.stringify({ external: true, name: "Converted" })], "character.json"));
+    expect(useRuntimeStore.getState().pendingCharacterFormatSelection?.adapters).toHaveLength(2);
+    await useRuntimeStore.getState().selectCharacterFormatAdapter("external-character");
+    expect(useRuntimeStore.getState().pendingCharacterConversion?.report.skippedFields).toBe(1);
+    expect(useRuntimeStore.getState().characterData).toBe(before);
+    expect(await memoryStorage.listCharacterSaves(basePackage.manifest.ID)).toHaveLength(saveCount);
+    useRuntimeStore.getState().cancelCharacterConversion();
+    expect(useRuntimeStore.getState().characterData).toBe(before);
+
+    await useRuntimeStore.getState().importCharacterDataFromFile(new File([JSON.stringify({ external: true, name: "Converted" })], "character.json"));
+    await useRuntimeStore.getState().selectCharacterFormatAdapter("external-character");
+    await useRuntimeStore.getState().confirmCharacterConversion();
+    expect(useRuntimeStore.getState().characterData?.character.values["character-name"]).toBe("Converted");
+    expect(useRuntimeStore.getState().activeCharacterSaveId).not.toBe(before?.character.id);
+    expect(await memoryStorage.listCharacterSaves(basePackage.manifest.ID)).toHaveLength(saveCount + 1);
     expect(await memoryStorage.listResourceExtensions(basePackage.manifest.ID)).toEqual([]);
   });
 

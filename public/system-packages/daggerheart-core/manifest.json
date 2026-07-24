@@ -43,6 +43,8 @@
   "modules": "modules.json",
   "dependencies": "dependencies.json",
   "characterCreationGuide": "guides/character-creation.json",
+  "resourceFormatAdapters": "adapters/resource-formats.json",
+  "characterFormatAdapters": "adapters/character-formats.json",
   "validationChecks": [
     {
       "ID": "character-consistency",

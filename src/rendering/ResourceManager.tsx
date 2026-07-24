@@ -3,7 +3,7 @@ import { useEffect, useRef, type ChangeEvent } from "react";
 import type { EffectiveResourceCatalog } from "../domain/effectiveResourceCatalog";
 import type { ResourceExtensionIssue } from "../domain/resourceExtension";
 import { getOtherResourceLibraries, getResourcePickerLinks, type SystemPackage } from "../domain/systemPackage";
-import type { PendingResourceExtensionRemoval, PendingResourceExtensionReplacement, ResourceExtensionImportState } from "../store/runtimeStore";
+import type { PendingResourceExtensionConversion, PendingResourceExtensionRemoval, PendingResourceExtensionReplacement, PendingResourceFormatSelection, ResourceExtensionImportState } from "../store/runtimeStore";
 
 interface ResourceManagerProps {
   catalog: EffectiveResourceCatalog;
@@ -11,6 +11,8 @@ interface ResourceManagerProps {
   assetUrls: Record<string, string>;
   importState: ResourceExtensionImportState | null;
   pendingReplacement: PendingResourceExtensionReplacement | null;
+  pendingConversion: PendingResourceExtensionConversion | null;
+  pendingSelection: PendingResourceFormatSelection | null;
   pendingRemoval: PendingResourceExtensionRemoval | null;
   referenceIssues: ResourceExtensionIssue[];
   onUpload: (file: File) => Promise<void>;
@@ -19,10 +21,13 @@ interface ResourceManagerProps {
   onRequestRemoval: (extensionId: string) => void;
   onConfirmRemoval: () => Promise<void>;
   onCancelRemoval: () => void;
+  onSelectFormat: (adapterId: string) => Promise<void>;
+  onConfirmConversion: () => Promise<void>;
+  onCancelConversion: () => void;
   onClose: () => void;
 }
 
-export function ResourceManager({ catalog, systemPackage, assetUrls, importState, pendingReplacement, pendingRemoval, referenceIssues, onUpload, onConfirmReplacement, onCancelReplacement, onRequestRemoval, onConfirmRemoval, onCancelRemoval, onClose }: ResourceManagerProps) {
+export function ResourceManager({ catalog, systemPackage, assetUrls, importState, pendingReplacement, pendingConversion, pendingSelection, pendingRemoval, referenceIssues, onUpload, onConfirmReplacement, onCancelReplacement, onRequestRemoval, onConfirmRemoval, onCancelRemoval, onSelectFormat, onConfirmConversion, onCancelConversion, onClose }: ResourceManagerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -57,10 +62,12 @@ export function ResourceManager({ catalog, systemPackage, assetUrls, importState
               <span>关闭</span>
             </button>
           </div>
-          <input ref={fileInputRef} className="visually-hidden" type="file" accept="application/json,application/zip,.json,.zip" onChange={(event) => void handleFile(event)} aria-label="上传 Resource Extension" />
+          <input ref={fileInputRef} className="visually-hidden" type="file" accept="application/json,application/zip,.json,.zip,.dhcb" onChange={(event) => void handleFile(event)} aria-label="上传 Resource Extension" />
         </header>
 
         {importState ? <ImportResult state={importState} /> : null}
+        {pendingSelection ? <FormatSelection pending={pendingSelection} onSelect={onSelectFormat} onCancel={onCancelConversion} /> : null}
+        {pendingConversion ? <ConversionConfirmation pending={pendingConversion} onConfirm={onConfirmConversion} onCancel={onCancelConversion} /> : null}
         {pendingReplacement ? <ReplacementConfirmation pending={pendingReplacement} onConfirm={onConfirmReplacement} onCancel={onCancelReplacement} /> : null}
         {pendingRemoval ? <RemovalConfirmation pending={pendingRemoval} onConfirm={onConfirmRemoval} onCancel={onCancelRemoval} /> : null}
 
@@ -115,6 +122,26 @@ export function ResourceManager({ catalog, systemPackage, assetUrls, importState
       </section>
     </div>
   );
+}
+
+function FormatSelection({ pending, onSelect, onCancel }: { pending: PendingResourceFormatSelection; onSelect: (id: string) => Promise<void>; onCancel: () => void }) {
+  return <section className="resource-manager-confirm" role="alertdialog" aria-label="选择资源格式">
+    <div><strong>多个格式适配器匹配</strong><span>请选择本次导入使用的格式；选择前不会写入资源目录。</span></div>
+    <div className="dialog-actions">{pending.adapters.map((adapter) => <button className="icon-button" type="button" key={adapter.ID} onClick={() => void onSelect(adapter.ID)}>{adapter.名称}</button>)}<button className="icon-button secondary-button" type="button" onClick={onCancel}>取消</button></div>
+  </section>;
+}
+
+function ConversionConfirmation({ pending, onConfirm, onCancel }: { pending: PendingResourceExtensionConversion; onConfirm: () => Promise<void>; onCancel: () => void }) {
+  const conversion = pending.loaded.conversion!;
+  const counts = conversion.counts;
+  return <section className="resource-manager-confirm" role="alertdialog" aria-label="确认外部资源转换">
+    <div><strong>确认转换并安装 {conversion.adapterName}？</strong>
+      <span>来源 {counts.sourceEntries} · 已转换 {counts.convertedEntries} · 跳过 {counts.skippedEntries}</span>
+      <span>字段 {counts.convertedFields} 已转换 / {counts.skippedFields} 跳过 · 图片 {counts.boundImages} 绑定 / {counts.orphanImages} 孤立</span>
+      {pending.loaded.issues.length > 0 ? <ul>{pending.loaded.issues.map((issue, index) => <li key={`${issue.code}:${issue.path ?? index}`}><code>{issue.code}</code>：{issue.text}</li>)}</ul> : null}
+    </div>
+    <div className="dialog-actions"><button className="icon-button" type="button" onClick={() => void onConfirm()}>确认安装</button><button className="icon-button secondary-button" type="button" onClick={onCancel}>取消</button></div>
+  </section>;
 }
 
 function ReplacementConfirmation({ pending, onConfirm, onCancel }: { pending: PendingResourceExtensionReplacement; onConfirm: () => Promise<void>; onCancel: () => void }) {

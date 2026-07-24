@@ -515,4 +515,32 @@ describe("validateSystemPackage Sheet Modules", () => {
       ]),
     );
   });
+
+  it("validates Format Adapter IDs and all Module, Library, and Card Table references", () => {
+    const resourceAdapter = {
+      ID: "duplicate", 名称: "Resource", 载体: [{ 类型: "json", 根类型: "array", 检测: [{ 路径: [0], 存在: true }] }],
+      包名: { 类型: "文件名" }, 记录路径: [], 类型路径: ["type"],
+      已知类型: [{ 值: "card", 资源库ID: "missing-library", 字段映射: [{ 字段: "名称", 来源路径: ["name"] }] }],
+    };
+    const characterAdapter = {
+      ID: "duplicate", 名称: "Character", 载体: [{ 类型: "json", 根类型: "object", 检测: [{ 路径: ["name"], 存在: true }] }],
+      字段映射: [{ 目标模块ID: "missing-module", 来源路径: ["name"] }], Countable映射: [], 图片映射: [],
+      Card映射: [{ 来源路径: ["cards"], 状态: "active", 目标CardTableID: "missing-table", ResourceLibraryIDs: ["missing-library"], 匹配优先级: [{ 类型: "uniqueName", 来源路径: ["name"] }] }],
+      导出: {
+        字段映射: [{ 来源模块ID: "missing-export-module", 目标路径: ["name"] }], Countable映射: [], 图片映射: [],
+        Card映射: [{ 来源CardTableID: "missing-export-table", 状态: "active", 目标路径: ["cards"], ResourceLibraryIDs: ["missing-export-library"], 字段映射: [] }],
+      },
+    };
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      resourceFormatAdapters: [resourceAdapter, { ...resourceAdapter }],
+      characterFormatAdapters: [characterAdapter, { ...characterAdapter }],
+    });
+    expect(result.ok).toBe(false);
+    expect(result.issues.map((issue) => issue.code)).toEqual(expect.arrayContaining([
+      "DUPLICATE_RESOURCE_FORMAT_ADAPTER_ID", "DUPLICATE_CHARACTER_FORMAT_ADAPTER_ID",
+      "MISSING_RESOURCE_ADAPTER_LIBRARY_REFERENCE", "MISSING_CHARACTER_ADAPTER_MODULE_REFERENCE",
+      "MISSING_CHARACTER_ADAPTER_CARD_TABLE_REFERENCE", "MISSING_CHARACTER_ADAPTER_LIBRARY_REFERENCE",
+    ]));
+  });
 });

@@ -14,6 +14,12 @@ import {
   characterCreationGuideSchema,
   type CharacterCreationGuide,
 } from "./characterCreationGuide";
+import {
+  characterFormatAdapterSchema,
+  resourceFormatAdapterSchema,
+  type CharacterFormatAdapter,
+  type ResourceFormatAdapter,
+} from "./formatAdapter";
 
 export const frameworkSchemaVersion = "0.2.0";
 
@@ -503,6 +509,8 @@ const systemPackageEnvelopeSchema = z.object({
   dependencies: z.array(z.unknown()).optional(),
   validationChecks: z.array(validationCheckSchema).optional(),
   characterCreationGuide: z.unknown().optional(),
+  resourceFormatAdapters: z.array(resourceFormatAdapterSchema).optional(),
+  characterFormatAdapters: z.array(characterFormatAdapterSchema).optional(),
 });
 
 export interface SystemPackage {
@@ -517,6 +525,8 @@ export interface SystemPackage {
   dependencies?: DependencyRule[];
   validationChecks?: ValidationCheck[];
   characterCreationGuide?: CharacterCreationGuide;
+  resourceFormatAdapters?: ResourceFormatAdapter[];
+  characterFormatAdapters?: CharacterFormatAdapter[];
 }
 export type FreeTextModule = z.infer<typeof freeTextModuleSchema>;
 export type LongTextModule = z.infer<typeof longTextModuleSchema>;
@@ -540,6 +550,7 @@ export type DependencyTrigger = z.infer<typeof dependencyTriggerSchema>;
 export type DependencyCondition = z.infer<typeof dependencyConditionSchema>;
 export type DependencyAction = z.infer<typeof dependencyActionSchema>;
 export type ValidationCheck = z.infer<typeof validationCheckSchema>;
+export type { CharacterFormatAdapter, ResourceFormatAdapter };
 export type { ResourceLibrary };
 
 export type PackageIssueLevel = "fatal" | "error" | "warning" | "info" | "debug";
@@ -796,6 +807,85 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     "validationChecks",
     issues,
   );
+  collectDuplicateIdIssues(systemPackage.resourceFormatAdapters ?? [], "Resource Format Adapter", "DUPLICATE_RESOURCE_FORMAT_ADAPTER_ID", "resourceFormatAdapters", issues);
+  collectDuplicateIdIssues(systemPackage.characterFormatAdapters ?? [], "Character Format Adapter", "DUPLICATE_CHARACTER_FORMAT_ADAPTER_ID", "characterFormatAdapters", issues);
+
+  for (const [adapterIndex, adapter] of (systemPackage.resourceFormatAdapters ?? []).entries()) {
+    for (const [typeIndex, mapping] of adapter.已知类型.entries()) {
+      if (findResourceLibrary(systemPackage, mapping.资源库ID)) continue;
+      issues.push({
+        level: "error",
+        code: "MISSING_RESOURCE_ADAPTER_LIBRARY_REFERENCE",
+        text: `Resource Format Adapter 引用了不存在的 Resource Library：${mapping.资源库ID}`,
+        path: `resourceFormatAdapters.${adapterIndex}.已知类型.${typeIndex}.资源库ID`,
+      });
+    }
+    if (adapter.分组 && !findResourceLibrary(systemPackage, adapter.分组.资源库ID)) {
+      issues.push({
+        level: "error",
+        code: "MISSING_RESOURCE_ADAPTER_LIBRARY_REFERENCE",
+        text: `Resource Format Adapter 分组引用了不存在的 Resource Library：${adapter.分组.资源库ID}`,
+        path: `resourceFormatAdapters.${adapterIndex}.分组.资源库ID`,
+      });
+    }
+  }
+
+  const adapterModuleById = new Map(systemPackage.modules.map((module) => [module.ID, module]));
+  for (const [adapterIndex, adapter] of (systemPackage.characterFormatAdapters ?? []).entries()) {
+    const referencedModules = [
+      ...adapter.字段映射.map((mapping) => mapping.目标模块ID),
+      ...adapter.Countable映射.map((mapping) => mapping.目标模块ID),
+      ...adapter.图片映射.map((mapping) => mapping.目标模块ID),
+      ...(adapter.导出?.字段映射.map((mapping) => mapping.来源模块ID) ?? []),
+      ...(adapter.导出?.Countable映射.map((mapping) => mapping.来源模块ID) ?? []),
+      ...(adapter.导出?.图片映射.map((mapping) => mapping.来源模块ID) ?? []),
+    ];
+    for (const moduleId of referencedModules) {
+      if (adapterModuleById.has(moduleId)) continue;
+      issues.push({
+        level: "error",
+        code: "MISSING_CHARACTER_ADAPTER_MODULE_REFERENCE",
+        text: `Character Format Adapter 引用了不存在的 Sheet Module：${moduleId}`,
+        path: `characterFormatAdapters.${adapterIndex}`,
+      });
+    }
+    for (const [cardIndex, cardMapping] of adapter.Card映射.entries()) {
+      if (adapterModuleById.get(cardMapping.目标CardTableID)?.类型 !== "cardTable") {
+        issues.push({
+          level: "error",
+          code: "MISSING_CHARACTER_ADAPTER_CARD_TABLE_REFERENCE",
+          text: `Character Format Adapter 引用了不存在的 Card Table：${cardMapping.目标CardTableID}`,
+          path: `characterFormatAdapters.${adapterIndex}.Card映射.${cardIndex}.目标CardTableID`,
+        });
+      }
+      cardMapping.ResourceLibraryIDs.forEach((libraryId, libraryIndex) => {
+        if (findResourceLibrary(systemPackage, libraryId)) return;
+        issues.push({
+          level: "error",
+          code: "MISSING_CHARACTER_ADAPTER_LIBRARY_REFERENCE",
+          text: `Character Format Adapter 引用了不存在的 Resource Library：${libraryId}`,
+          path: `characterFormatAdapters.${adapterIndex}.Card映射.${cardIndex}.ResourceLibraryIDs.${libraryIndex}`,
+        });
+      });
+    }
+    for (const [cardIndex, cardMapping] of (adapter.导出?.Card映射 ?? []).entries()) {
+      if (adapterModuleById.get(cardMapping.来源CardTableID)?.类型 !== "cardTable") {
+        issues.push({
+          level: "error", code: "MISSING_CHARACTER_ADAPTER_CARD_TABLE_REFERENCE",
+          text: `Character Format Adapter 导出引用了不存在的 Card Table：${cardMapping.来源CardTableID}`,
+          path: `characterFormatAdapters.${adapterIndex}.导出.Card映射.${cardIndex}.来源CardTableID`,
+        });
+      }
+      cardMapping.ResourceLibraryIDs.forEach((libraryId, libraryIndex) => {
+        if (findResourceLibrary(systemPackage, libraryId)) return;
+        issues.push({
+          level: "error", code: "MISSING_CHARACTER_ADAPTER_LIBRARY_REFERENCE",
+          text: `Character Format Adapter 导出引用了不存在的 Resource Library：${libraryId}`,
+          path: `characterFormatAdapters.${adapterIndex}.导出.Card映射.${cardIndex}.ResourceLibraryIDs.${libraryIndex}`,
+        });
+      });
+    }
+  }
 
   if (parsed.data.manifest.schemaVersion !== frameworkSchemaVersion) {
     issues.push({

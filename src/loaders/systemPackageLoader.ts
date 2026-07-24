@@ -35,6 +35,8 @@ const packageManifestSchema = z.object({
   defaultSkin: z.string().min(1).optional(),
   dependencies: z.string().min(1).optional(),
   characterCreationGuide: z.string().min(1).optional(),
+  resourceFormatAdapters: z.string().min(1).optional(),
+  characterFormatAdapters: z.string().min(1).optional(),
   assets: z.never().optional(),
   resourceLibraries: z.array(resourceLibraryReferenceSchema).optional(),
   validationChecks: z
@@ -139,6 +141,14 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
   if (guideJson && !guideJson.ok) {
     return { ok: false, issues: [guideJson.issue] };
   }
+  const resourceFormatAdapters = manifest.data.resourceFormatAdapters
+    ? readPackageJsonFile(vfs, manifest.data.resourceFormatAdapters)
+    : undefined;
+  if (resourceFormatAdapters && !resourceFormatAdapters.ok) return { ok: false, issues: [resourceFormatAdapters.issue] };
+  const characterFormatAdapters = manifest.data.characterFormatAdapters
+    ? readPackageJsonFile(vfs, manifest.data.characterFormatAdapters)
+    : undefined;
+  if (characterFormatAdapters && !characterFormatAdapters.ok) return { ok: false, issues: [characterFormatAdapters.issue] };
 
   const resourceLibraries = loadResourceLibraryFilesFromVfs(vfs, manifest.data.resourceLibraries ?? []);
   if (!resourceLibraries.ok) {
@@ -159,6 +169,8 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
     dependenciesJson?.value,
     validationChecks.value,
     guideJson?.value,
+    resourceFormatAdapters?.value,
+    characterFormatAdapters?.value,
     shell?.value,
     skins.value,
     packageAssets,
@@ -182,6 +194,8 @@ function normalizeManifestPackage(
   dependencies?: unknown,
   validationChecks?: Array<{ ID: string; 脚本: string; scriptContent: string }>,
   characterCreationGuide?: unknown,
+  resourceFormatAdapters?: unknown,
+  characterFormatAdapters?: unknown,
   shell?: unknown,
   skins?: Array<{ ID: string; 名称: string; cssContent: string; 推荐框架配色: "light" | "dark" }>,
   packageAssets: RuntimePackageAsset[] = [],
@@ -205,6 +219,8 @@ function normalizeManifestPackage(
     dependencies,
     validationChecks,
     characterCreationGuide,
+    resourceFormatAdapters,
+    characterFormatAdapters,
   }, sourceMap);
 }
 
@@ -215,6 +231,8 @@ function buildPackageSourceMap(manifest: z.infer<typeof packageManifestSchema>, 
     modules: manifest.modules,
     ...(manifest.dependencies ? { dependencies: manifest.dependencies } : {}),
     ...(manifest.characterCreationGuide ? { characterCreationGuide: manifest.characterCreationGuide } : {}),
+    ...(manifest.resourceFormatAdapters ? { resourceFormatAdapters: manifest.resourceFormatAdapters } : {}),
+    ...(manifest.characterFormatAdapters ? { characterFormatAdapters: manifest.characterFormatAdapters } : {}),
     ...(manifest.shell ? { shell: manifest.shell.html } : {}),
   };
   manifest.resourceLibraries?.forEach((library) => {

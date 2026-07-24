@@ -1,6 +1,7 @@
 import { Archive, Copy, Download, Eye, FileText, Library, Map, Plus, Printer, ShieldCheck, Trash2, Type, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type InputHTMLAttributes } from "react";
 import { exportCharacterData } from "./domain/characterData";
+import { exportExternalCharacterData } from "./domain/characterFormatAdapter";
 import { createCardTableLayout } from "./domain/cardEngine";
 import {
   nextGuideStep,
@@ -25,6 +26,8 @@ import { printablePages } from "./rendering/pagePresentation";
 import { waitForTextFits } from "./rendering/textFit";
 import { GuideSpotlight } from "./rendering/GuideSpotlight";
 import { ResourceManager } from "./rendering/ResourceManager";
+import { CharacterImportDialogs } from "./rendering/CharacterImportDialogs";
+import { CharacterExportDialog, type PendingCharacterExport } from "./rendering/CharacterExportDialog";
 import { useRuntimeStore } from "./store/runtimeStore";
 import presetSystemPackages from "virtual:preset-system-packages";
 
@@ -141,12 +144,15 @@ export default function App() {
   const [printMode, setPrintMode] = useState(false);
   const [guideSession, setGuideSession] = useState<GuideSession | null>(null);
   const [resourceManagerOpen, setResourceManagerOpen] = useState(false);
+  const [pendingExternalExport, setPendingExternalExport] = useState<PendingCharacterExport | null>(null);
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
   const selectedSkinId = useRuntimeStore((state) => state.selectedSkinId);
   const frameworkColorSchemePreference = useRuntimeStore((state) => state.frameworkColorSchemePreference);
   const resourceCatalog = useRuntimeStore((state) => state.resourceCatalog);
   const resourceExtensionImport = useRuntimeStore((state) => state.resourceExtensionImport);
   const pendingResourceExtensionReplacement = useRuntimeStore((state) => state.pendingResourceExtensionReplacement);
+  const pendingResourceExtensionConversion = useRuntimeStore((state) => state.pendingResourceExtensionConversion);
+  const pendingResourceFormatSelection = useRuntimeStore((state) => state.pendingResourceFormatSelection);
   const pendingResourceExtensionRemoval = useRuntimeStore((state) => state.pendingResourceExtensionRemoval);
   const resourceReferenceIssues = useRuntimeStore((state) => state.resourceReferenceIssues);
   const packageAssetUrls = useRuntimeStore((state) => state.packageAssetUrls);
@@ -168,7 +174,12 @@ export default function App() {
   const renameCharacterSave = useRuntimeStore((state) => state.renameCharacterSave);
   const duplicateCharacterSave = useRuntimeStore((state) => state.duplicateCharacterSave);
   const deleteCharacterSave = useRuntimeStore((state) => state.deleteCharacterSave);
-  const importCharacterDataFromText = useRuntimeStore((state) => state.importCharacterDataFromText);
+  const importCharacterDataFromFile = useRuntimeStore((state) => state.importCharacterDataFromFile);
+  const pendingCharacterConversion = useRuntimeStore((state) => state.pendingCharacterConversion);
+  const pendingCharacterFormatSelection = useRuntimeStore((state) => state.pendingCharacterFormatSelection);
+  const selectCharacterFormatAdapter = useRuntimeStore((state) => state.selectCharacterFormatAdapter);
+  const confirmCharacterConversion = useRuntimeStore((state) => state.confirmCharacterConversion);
+  const cancelCharacterConversion = useRuntimeStore((state) => state.cancelCharacterConversion);
   const uploadSystemPackageFromFile = useRuntimeStore((state) => state.uploadSystemPackageFromFile);
   const uploadSystemPackageFromDirectory = useRuntimeStore((state) => state.uploadSystemPackageFromDirectory);
   const switchToPresetSystemPackage = useRuntimeStore((state) => state.switchToPresetSystemPackage);
@@ -177,6 +188,9 @@ export default function App() {
   const uploadResourceExtensionFromFile = useRuntimeStore((state) => state.uploadResourceExtensionFromFile);
   const confirmResourceExtensionReplacement = useRuntimeStore((state) => state.confirmResourceExtensionReplacement);
   const cancelResourceExtensionReplacement = useRuntimeStore((state) => state.cancelResourceExtensionReplacement);
+  const selectResourceFormatAdapter = useRuntimeStore((state) => state.selectResourceFormatAdapter);
+  const confirmResourceExtensionConversion = useRuntimeStore((state) => state.confirmResourceExtensionConversion);
+  const cancelResourceExtensionConversion = useRuntimeStore((state) => state.cancelResourceExtensionConversion);
   const requestResourceExtensionRemoval = useRuntimeStore((state) => state.requestResourceExtensionRemoval);
   const confirmResourceExtensionRemoval = useRuntimeStore((state) => state.confirmResourceExtensionRemoval);
   const cancelResourceExtensionRemoval = useRuntimeStore((state) => state.cancelResourceExtensionRemoval);
@@ -237,6 +251,25 @@ export default function App() {
     } finally {
       setPrintMode(false);
     }
+  };
+
+  const exportWithCharacterAdapter = (adapterId: string) => {
+    if (!characterData || !currentPackage) return;
+    const adapter = currentPackage.characterFormatAdapters?.find((candidate) => candidate.ID === adapterId);
+    if (!adapter?.导出) return;
+    const result = exportExternalCharacterData(characterData, adapter, currentPackage);
+    if ("error" in result) {
+      useRuntimeStore.setState({ importError: result.error.text });
+      return;
+    }
+    const { report } = result;
+    const lossy = report.skippedFields + report.skippedCards + report.skippedImages > 0;
+    const fileName = `${sanitizeFileName(activeCharacterSaveName)}.${adapter.ID}.json`;
+    if (lossy) {
+      setPendingExternalExport({ conversion: result, fileName });
+      return;
+    }
+    downloadText(`${JSON.stringify(result.document, null, 2)}\n`, fileName, "application/json");
   };
 
   const beginOutput = async (kind: OutputKind) => {
@@ -315,7 +348,7 @@ export default function App() {
       return;
     }
 
-    await importCharacterDataFromText(await file.text());
+    await importCharacterDataFromFile(file);
     event.target.value = "";
   };
 
@@ -537,6 +570,12 @@ export default function App() {
                 <Download aria-hidden="true" size={16} />
                 <span>导出 JSON</span>
               </button>
+              {currentPackage?.characterFormatAdapters?.filter((adapter) => adapter.导出).map((adapter) => (
+                <button className="menu-item" type="button" key={adapter.ID} onClick={() => exportWithCharacterAdapter(adapter.ID)} disabled={!characterData}>
+                  <Download aria-hidden="true" size={16} />
+                  <span>导出 {adapter.名称}</span>
+                </button>
+              ))}
               <button className="menu-item" type="button" onClick={() => void beginOutput("html")} aria-label="导出 HTML snapshot" disabled={!characterData}>
                 <FileText aria-hidden="true" size={16} />
                 <span>导出 HTML</span>
@@ -700,17 +739,38 @@ export default function App() {
           assetUrls={packageAssetUrls}
           importState={resourceExtensionImport}
           pendingReplacement={pendingResourceExtensionReplacement}
+          pendingConversion={pendingResourceExtensionConversion}
+          pendingSelection={pendingResourceFormatSelection}
           pendingRemoval={pendingResourceExtensionRemoval}
           referenceIssues={resourceReferenceIssues}
           onUpload={uploadResourceExtensionFromFile}
           onConfirmReplacement={confirmResourceExtensionReplacement}
           onCancelReplacement={cancelResourceExtensionReplacement}
+          onSelectFormat={selectResourceFormatAdapter}
+          onConfirmConversion={confirmResourceExtensionConversion}
+          onCancelConversion={cancelResourceExtensionConversion}
           onRequestRemoval={requestResourceExtensionRemoval}
           onConfirmRemoval={confirmResourceExtensionRemoval}
           onCancelRemoval={cancelResourceExtensionRemoval}
           onClose={closeResourceManager}
         />
       ) : null}
+      <CharacterImportDialogs
+        pendingConversion={pendingCharacterConversion}
+        pendingSelection={pendingCharacterFormatSelection}
+        onSelect={selectCharacterFormatAdapter}
+        onConfirm={confirmCharacterConversion}
+        onCancel={cancelCharacterConversion}
+      />
+      <CharacterExportDialog
+        pending={pendingExternalExport}
+        onCancel={() => setPendingExternalExport(null)}
+        onConfirm={() => {
+          if (!pendingExternalExport) return;
+          downloadText(`${JSON.stringify(pendingExternalExport.conversion.document, null, 2)}\n`, pendingExternalExport.fileName, "application/json");
+          setPendingExternalExport(null);
+        }}
+      />
     </div>
   );
 }

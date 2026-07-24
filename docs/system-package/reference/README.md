@@ -8,6 +8,7 @@
 - [Sheet Modules](sheet-modules.md)
 - [Resource Libraries](resource-libraries.md)
 - [Resource Extensions](resource-extensions.md)
+- [Format Adapters](format-adapters.md)
 - [Resource Composer](resource-composer.md)
 - [Dependency Rules](dependency-rules.md)
 - [Cards](cards.md)
