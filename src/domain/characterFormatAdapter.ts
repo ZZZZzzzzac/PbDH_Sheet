@@ -196,10 +196,18 @@ export function convertExternalCharacterSource(source: ExternalCharacterSource, 
   let skippedImages = 0;
 
   for (const mapping of adapter.字段映射) {
-    const converted = convertText(readSafePath(source.document, mapping.来源路径), mapping.转换, mapping.分隔符);
+    const sourceValue = mapping.来源路径列表
+      ? mapping.来源路径列表.map((path) => readSafePath(source.document, path))
+      : readSafePath(source.document, mapping.来源路径 ?? []);
+    const converted = convertText(sourceValue, mapping.转换, mapping.分隔符);
     if (converted === undefined) {
       skippedFields += 1;
-      diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_FIELD_SKIPPED", text: `字段无法转换到 ${mapping.目标模块ID}。`, path: mapping.来源路径.join(".") });
+      diagnostics.push({
+        level: "warning",
+        code: "CHARACTER_ADAPTER_FIELD_SKIPPED",
+        text: `字段无法转换到 ${mapping.目标模块ID}。`,
+        path: mapping.来源路径列表?.map((path) => path.join(".")).join(", ") ?? mapping.来源路径?.join("."),
+      });
       continue;
     }
     values[mapping.目标模块ID] = converted;
@@ -334,7 +342,9 @@ export function extractEmbeddedJson(text: string, startMarker: string, endMarker
 
 function convertText(value: unknown, operation: "text" | "integerText" | "joinedText", separator = "\n"): string | undefined {
   if (value === undefined || value === null) return undefined;
-  if (operation === "joinedText") return Array.isArray(value) ? value.map((item) => String(item ?? "")).join(separator) : undefined;
+  if (operation === "joinedText") return Array.isArray(value)
+    ? value.map((item) => String(item ?? "")).filter((item) => item.trim() !== "").join(separator)
+    : undefined;
   if (operation === "integerText") {
     const integer = toInteger(value);
     return integer === undefined ? undefined : String(integer);

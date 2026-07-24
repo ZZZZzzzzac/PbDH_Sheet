@@ -46,7 +46,10 @@ describe("Character Format Adapter", () => {
       "chest-gold": { current: Number(document.ChestGoldCheckbox1), max: null },
       "experience-1": "【逐渐遗忘的藏经阁器灵】",
       "experience-modifier-1": "+5",
+      "primary-weapon-name": joinedFixtureText(document, "PrimaryWeaponNameTextbox", "PrimaryWeaponStatTextbox", "PrimaryWeaponDamageTextbox"),
+      "secondary-weapon-name": joinedFixtureText(document, "SecondaryWeaponNameTextbox", "SecondaryWeaponStatTextbox", "SecondaryWeaponDamageTextbox"),
       "secondary-weapon-description": "保护：护甲值+2。",
+      "armor-name": joinedFixtureText(document, "ArmorNameTextbox", "ArmorThresholdTextbox", "ArmorScoreTextbox"),
       "armor-description": "灵活：闪避值+1。",
       "armor-value": String(document.ArmorTextbox),
       inventory: "小型生命药水: 立刻恢复 1d4 生命点。\n《神州要术》：本次村规中，选择领域卡与升级选项时，你的临时等级视作五级",
@@ -80,9 +83,9 @@ describe("Character Format Adapter", () => {
       "NameTextbox", "RaceTextbox", "CommunityTextbox", "ClassTextbox", "LevelTextbox", "EvasionTextbox",
       "AgilityTextbox", "StrengthTextbox", "FinesseTextbox", "InstinctTextbox", "PresenceTextbox", "KnowledgeTextbox",
       "MajorTextbox", "SevereTextbox", "ClassFeatureTextbox",
-      "PrimaryWeaponNameTextbox", "PrimaryWeaponTraitTextbox", "SecondaryWeaponNameTextbox", "SecondaryWeaponTraitTextbox",
+      "PrimaryWeaponTraitTextbox", "SecondaryWeaponTraitTextbox",
       "Backup1WeaponNameTextbox", "Backup1WeaponTraitTextbox", "Backup2WeaponNameTextbox", "Backup2WeaponTraitTextbox",
-      "ArmorNameTextbox", "ArmorTextbox", "ArmorTraitTextbox", "ItemSlot1Textbox", "EventLogTextbox",
+      "ArmorTextbox", "ArmorTraitTextbox", "ItemSlot1Textbox", "EventLogTextbox",
       ...Array.from({ length: 5 }, (_, index) => [`Experience${index + 1}Textbox`, `Experience${index + 1}ModifierTextbox`]).flat(),
       ...Array.from({ length: 3 }, (_, index) => [`BackgroundQuestion${index + 1}Textbox`, `ConnectQuestion${index + 1}Textbox`, `BackgroundAnswer${index + 1}Textbox`, `ConnectAnswer${index + 1}Textbox`]).flat(),
     ];
@@ -380,6 +383,10 @@ function selectedSlotCount(document: Record<string, unknown>, prefix: string, le
 function expectedTriState(document: Record<string, unknown>, prefix: string, length: number): { current: number; max: number } {
   const values = Array.from({ length }, (_, index) => Number(document[`${prefix}${index + 1}`]));
   return { current: values.filter((value) => value === 1).length, max: values.filter((value) => value === 0 || value === 1).length };
+}
+
+function joinedFixtureText(document: Record<string, unknown>, ...fields: string[]): string {
+  return fields.map((field) => String(document[field] ?? "").trim()).filter(Boolean).join("｜");
 }
 
 function createPackageZip(): Uint8Array {

@@ -121,9 +121,17 @@ export type ResourceFormatAdapter = z.infer<typeof resourceFormatAdapterSchema>;
 
 export const characterTextMappingSchema = z.object({
   目标模块ID: z.string().min(1),
-  来源路径: safePathSchema,
+  来源路径: safePathSchema.optional(),
+  来源路径列表: z.array(safePathSchema).min(1).optional(),
   转换: z.enum(["text", "integerText", "joinedText"]).default("text"),
   分隔符: z.string().optional(),
+}).superRefine((mapping, context) => {
+  if ((mapping.来源路径 === undefined) === (mapping.来源路径列表 === undefined)) {
+    context.addIssue({ code: "custom", message: "文本映射必须且只能声明 来源路径 或 来源路径列表。" });
+  }
+  if (mapping.来源路径列表 && mapping.转换 !== "joinedText") {
+    context.addIssue({ code: "custom", path: ["转换"], message: "来源路径列表只支持 joinedText 转换。" });
+  }
 });
 
 export const characterCountMappingSchema = z.object({
