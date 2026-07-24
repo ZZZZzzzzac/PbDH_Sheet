@@ -128,6 +128,10 @@ _Avoid_: Name-based lookup, second current ID, Player-visible resource field
 An independently distributed JSON or image-bearing ZIP bundle that targets one System Package and contributes entries to one or more existing or new Resource Libraries without modifying that System Package.
 _Avoid_: Updated System Package, resource patch
 
+**Resource Format Adapter**:
+An Author-declared, non-executable mapping from one external resource-pack format into the Current System Package's Resource Extension contract.
+_Avoid_: Resource import script, plugin
+
 **Resource Manager**:
 A Base Framework surface that lists effective Resource Libraries and their contributors, installs Resource Extensions, and reports extension status for the Current System Package.
 _Avoid_: System Package editor, Player-configured Picker links
@@ -320,6 +324,13 @@ _Avoid_: Script plugin
 - System Packages and ZIP **Resource Extensions** automatically discover images under `assets/**`; Author Data references images only by source-relative path, and explicit Asset manifest entries or Author-defined Asset IDs are not part of the contract.
 - Image identity is scoped by its owning System Package or Resource Extension plus normalized relative path, so separate sources may use the same `assets/**` path without collision.
 - A **Resource Extension** remains stored separately from its target **System Package**; installing one never rewrites the cached or distributed package.
+- A **Resource Format Adapter** converts a matching external resource pack into a native **Resource Extension** before the normal validation, conflict, confirmation, storage, and Effective Resource Catalog pipeline; the Base Framework does not know game-specific format identities or fields.
+- A **Resource Format Adapter** is import-only; exporting Resource Extensions, System Package resources, or the Effective Resource Catalog to an external resource-pack format is outside its contract.
+- External resource-pack images without a converted Resource Entry reference are discarded and reported as non-blocking warnings before the native **Resource Extension** pipeline, so orphan assets do not enter IndexedDB.
+- External resource conversion blocks only when the source cannot be read or parsed, no declared **Resource Format Adapter** matches, no valid Resource Entry remains, or the converted output fails the native Resource Extension structural contract; individual Entry, field, type, and image failures are skipped and reported as warnings, while native atomic ID-conflict rejection remains unchanged.
+- When an external resource pack lacks a native Extension ID, its **Resource Format Adapter** derives a deterministic ID from the Current System Package ID, Adapter ID, and normalized package name without the version, so reimport enters the native replacement-confirmation flow; package-specific metadata rules determine the name and version, with a missing usable name treated as a structural error.
+- A **Resource Format Adapter** uses an Author-declared external type-to-Library map for known resource types; every unmapped non-empty external type becomes a separate standalone Resource Library grouped by that exact normalized type, while an Entry without a usable type is skipped and reported.
+- A **Resource Format Adapter** may declaratively group multiple external Entries into one Resource Entry when the target Library owns a composite source shape; incomplete groups may produce a partial Entry with warnings, while ambiguous duplicate group slots are skipped rather than guessed.
 - The **Resource Manager** is opened from the top toolbar's System Package menu and presents effective Resource Libraries as its top-level units, with contributing System Package and Resource Extension details nested beneath each library.
 - The **Resource Manager** may uninstall a locally installed Resource Extension but never removes System Package-owned resources; uninstalling recomputes effective libraries without rewriting Character Data, and any resulting stale resource references are reported instead of silently repaired.
 - The **Resource Manager** installs a new valid extension immediately, but replacing or uninstalling an extension requires a summary and confirmation because either operation can remove definitions referenced by Character Data; failed validation leaves installed state unchanged.
