@@ -46,6 +46,8 @@ describe("Character Format Adapter", () => {
       "experience-1": "【逐渐遗忘的藏经阁器灵】",
       "experience-modifier-1": "+5",
       "secondary-weapon-description": "保护：护甲值+2。",
+      "armor-description": "灵活：闪避值+1。",
+      inventory: "小型生命药水: 立刻恢复 1d4 生命点。\n《神州要术》：本次村规中，选择领域卡与升级选项时，你的临时等级视作五级",
     }));
     expect(Object.values(converted.data.playerImages)).toEqual([expect.objectContaining({ mimeType: "image/jpeg", dataUrl: expect.stringMatching(/^data:image\/jpeg;base64,/u) })]);
     expect(converted.report.convertedImages).toBe(1);
@@ -63,6 +65,13 @@ describe("Character Format Adapter", () => {
       expect(entry, `${card.definitionRef.libraryId}/${card.definitionRef.entryId}`).toBeDefined();
       expect(entry?.fields["卡图"]).toMatch(/^assets\/cards\/.+\.webp$/u);
     }
+    const exported = exportExternalCharacterData(converted.data, detection.adapter, daggerheartPackage);
+    expect("error" in exported).toBe(false);
+    if ("error" in exported) return;
+    expect(exported.document).toEqual(expect.objectContaining({
+      ArmorTraitTextbox: "灵活：闪避值+1。",
+      ItemSlot1Textbox: "小型生命药水: 立刻恢复 1d4 生命点。\n《神州要术》：本次村规中，选择领域卡与升级选项时，你的临时等级视作五级",
+    }));
   });
 
   it("maps both ZZZ weapon trait textboxes to weapon description Modules", () => {

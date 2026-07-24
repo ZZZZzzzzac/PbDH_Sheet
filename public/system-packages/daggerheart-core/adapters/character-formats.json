@@ -38,6 +38,8 @@
       { "目标模块ID": "backup-weapon-2-name", "来源路径": ["Backup2WeaponNameTextbox"] },
       { "目标模块ID": "armor-name", "来源路径": ["ArmorNameTextbox"] },
       { "目标模块ID": "armor-value", "来源路径": ["ArmorScoreTextbox"] },
+      { "目标模块ID": "armor-description", "来源路径": ["ArmorTraitTextbox"] },
+      { "目标模块ID": "inventory", "来源路径": ["ItemSlot1Textbox"] },
       { "目标模块ID": "event-log", "来源路径": ["EventLogTextbox"] },
       { "目标模块ID": "experience-1", "来源路径": ["Experience1Textbox"] },
       { "目标模块ID": "experience-modifier-1", "来源路径": ["Experience1ModifierTextbox"] },
@@ -141,7 +143,9 @@
         { "来源模块ID": "presence", "目标路径": ["PresenceTextbox"] },
         { "来源模块ID": "knowledge", "目标路径": ["KnowledgeTextbox"] },
         { "来源模块ID": "primary-weapon-description", "目标路径": ["PrimaryWeaponTraitTextbox"] },
-        { "来源模块ID": "secondary-weapon-description", "目标路径": ["SecondaryWeaponTraitTextbox"] }
+        { "来源模块ID": "secondary-weapon-description", "目标路径": ["SecondaryWeaponTraitTextbox"] },
+        { "来源模块ID": "armor-description", "目标路径": ["ArmorTraitTextbox"] },
+        { "来源模块ID": "inventory", "目标路径": ["ItemSlot1Textbox"] }
       ],
       "Countable映射": [
         { "来源模块ID": "hope", "目标路径列表": [["HopeSlotCheckbox1"], ["HopeSlotCheckbox2"], ["HopeSlotCheckbox3"], ["HopeSlotCheckbox4"], ["HopeSlotCheckbox5"], ["HopeSlotCheckbox6"]], "转换": "booleanArray", "长度": 6 },
