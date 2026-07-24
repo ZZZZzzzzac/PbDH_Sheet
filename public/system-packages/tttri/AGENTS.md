@@ -41,7 +41,7 @@ Profession Markdown remains the rules-text source. Matching DOCX files provide o
 - `skins/rhodes-island/` 是 `defaultSkin`:Arknights 工业档案风(深色档案头、警示黄 accent、危险斜纹、条码、套准角标),零图片资产。
 - `skins/terra-portal/` 是第二 Skin:还原 `ak.hypergryph.com/archive/dynamicCompile`(纯黑底、白字、灰辅、`#63bfd1` 强调、中英双标、扁平几何)。卡牌桌面纹章引用 `assets/icons/domain-*.svg`(11 领域图标水印,SVG 内置 SMIL 动画,源自 `docs/pbdh/粥/领域图标动画规范.md`),并按 `data-value-primary-domain` 与主领域联动,默认纹章为奇迹。
 - Skin 写 `skins/<skin-id>/**`、`manifest.json` 中该 Skin 的注册项,以及 `assets/icons/` 下该 Skin 引用的装饰 SVG;不改 Base `layouts/`、`modules.json`、`pages.json`。
-- 皮肤 CSS 的作用域处理器会丢弃 `@keyframes`;装饰动画用 SVG 内置 SMIL(有限循环,不用 `infinite`)或 CSS transition。
+- 皮肤 CSS 的作用域处理器会丢弃 `@keyframes`;装饰动画用 SVG 内置 SMIL(`indefinite` 无限循环或有限 `repeatCount`)或 CSS transition。
 - 纹章 SVG 的透明度统一由包裹组 `opacity` 控制,部件保持不透明填充;若用 `fill-opacity`,部件重叠处会半透明叠加变深。
 - HTML override 必须保持每个 Page/Shell 的 `<pb-module>` ID 多重集合与全部 Guide Region 不变;Shell 保持唯一 `<pb-page-outlet>` 与一个 `data-print-page="true"`。
 - 装饰一律绝对定位或零高度手段(box-shadow 描边),不改 Base 几何;A4 容量由 `tests/tttri.spec.ts` 验收,改动后必跑。
