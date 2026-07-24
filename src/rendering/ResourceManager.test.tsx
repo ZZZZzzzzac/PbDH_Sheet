@@ -10,10 +10,15 @@ describe("Resource Manager", () => {
     systemPackage: minimalSystemPackage,
     assetUrls: {},
     pendingReplacement: null,
+    pendingConversion: null,
+    pendingSelection: null,
     pendingRemoval: null,
     referenceIssues: [],
     onConfirmReplacement: async () => {},
     onCancelReplacement: () => {},
+    onSelectFormat: async () => {},
+    onConfirmConversion: async () => {},
+    onCancelConversion: () => {},
     onRequestRemoval: () => {},
     onConfirmRemoval: async () => {},
     onCancelRemoval: () => {},
@@ -84,5 +89,31 @@ describe("Resource Manager", () => {
     expect(screen.getByRole("alertdialog", { name: "确认卸载 Resource Extension" })).toHaveTextContent("Character Data 不会修改");
     fireEvent.click(screen.getByRole("button", { name: "确认卸载" }));
     expect(confirmRemoval).toHaveBeenCalledOnce();
+  });
+
+  it("requires explicit format selection and confirmation before an external conversion", () => {
+    const loaded = loadResourceExtensionJson(JSON.stringify({
+      ID: "converted", 名称: "Converted", 版本: "1", 目标系统包ID: minimalSystemPackage.manifest.ID,
+      resourceLibraries: [{ ID: "library", 名称: "Library", entries: [{ ID: "entry", 名称: "Entry" }] }],
+    }), minimalSystemPackage.manifest.ID);
+    if (!loaded.ok) throw new Error(JSON.stringify(loaded.issues));
+    const onSelect = vi.fn(async () => {});
+    const onConfirm = vi.fn(async () => {});
+    const onCancel = vi.fn();
+    const catalog = createEffectiveResourceCatalog(minimalSystemPackage, []);
+    const { rerender } = render(<ResourceManager {...workflowProps} catalog={catalog} importState={null} pendingSelection={{ file: new File(["[]"], "source.json"), adapters: [{ ID: "a", 名称: "Format A" }, { ID: "b", 名称: "Format B" }] }} onSelectFormat={onSelect} onCancelConversion={onCancel} onUpload={async () => {}} onClose={() => {}} />);
+    expect(screen.getByRole("alertdialog", { name: "选择资源格式" })).toHaveTextContent("选择前不会写入资源目录");
+    fireEvent.click(screen.getByRole("button", { name: "Format B" }));
+    expect(onSelect).toHaveBeenCalledWith("b");
+
+    rerender(<ResourceManager {...workflowProps} catalog={catalog} importState={null} pendingConversion={{ loaded: {
+      ok: true, extension: loaded.extension, assets: [], generatedIds: [], issues: [{ level: "warning", code: "LOSS", text: "Skipped" }],
+      normalizedArtifact: { fileName: "converted.json", mimeType: "application/json", bytes: new Uint8Array() },
+      conversion: { adapterId: "a", adapterName: "Format A", counts: { sourceEntries: 3, convertedEntries: 2, skippedEntries: 1, convertedFields: 4, skippedFields: 1, boundImages: 1, orphanImages: 2 } },
+    } }} onConfirmConversion={onConfirm} onCancelConversion={onCancel} onUpload={async () => {}} onClose={() => {}} />);
+    expect(screen.getByRole("alertdialog", { name: "确认外部资源转换" })).toHaveTextContent("来源 3 · 已转换 2 · 跳过 1");
+    expect(screen.getByRole("alertdialog", { name: "确认外部资源转换" })).toHaveTextContent("图片 1 绑定 / 2 孤立");
+    fireEvent.click(screen.getByRole("button", { name: "确认安装" }));
+    expect(onConfirm).toHaveBeenCalledOnce();
   });
 });
