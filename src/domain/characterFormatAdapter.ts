@@ -242,8 +242,8 @@ export function convertExternalCharacterSource(source: ExternalCharacterSource, 
       diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_CARD_COLLECTION_INVALID", text: "Card 来源路径不是数组。", path: cardMapping.来源路径.join(".") });
       continue;
     }
-    for (const sourceCard of sourceCards) {
-      const match = matchCard(sourceCard, cardMapping, systemPackage);
+    for (const [sourceIndex, sourceCard] of sourceCards.entries()) {
+      const match = matchCard(sourceCard, sourceIndex, cardMapping, systemPackage);
       if (!match.ok) {
         skippedCards += 1;
         diagnostics.push({ level: "warning", code: match.code, text: match.text });
@@ -341,10 +341,12 @@ function isImageDataUrl(value: string): boolean {
 
 function matchCard(
   source: unknown,
+  sourceIndex: number,
   mapping: CharacterFormatAdapter["Card映射"][number],
   systemPackage: SystemPackage,
 ): { ok: true; libraryId: string; entry: ResourceLibraryEntry } | { ok: false; code: string; text: string } {
   const libraries = (systemPackage.resourceLibraries ?? []).filter((library) => mapping.ResourceLibraryIDs.includes(library.ID));
+  const sourceLabel = describeSourceCard(source, sourceIndex, mapping);
   for (const rule of mapping.匹配优先级) {
     let candidates: Array<{ libraryId: string; entry: ResourceLibraryEntry }> = [];
     if (rule.类型 === "fields" && rule.字段) {
@@ -359,9 +361,32 @@ function matchCard(
       candidates = libraries.flatMap((library) => library.entries.filter((entry) => normalizeComparable(applyCardMatchConversion(readResourceField(entry, resourceField), rule.Resource转换)) === normalizeComparable(sourceValue)).map((entry) => ({ libraryId: library.ID, entry })));
     }
     if (candidates.length === 1) return { ok: true, ...candidates[0] };
-    if (candidates.length > 1) return { ok: false, code: "CHARACTER_ADAPTER_CARD_AMBIGUOUS", text: "Card 匹配到多个 Resource Entry，已跳过。" };
+    if (candidates.length > 1) return { ok: false, code: "CHARACTER_ADAPTER_CARD_AMBIGUOUS", text: `${sourceLabel}匹配到多个 Resource Entry，已跳过。` };
   }
-  return { ok: false, code: "CHARACTER_ADAPTER_CARD_NOT_FOUND", text: "Card 没有匹配的 Resource Entry，已跳过。" };
+  return { ok: false, code: "CHARACTER_ADAPTER_CARD_NOT_FOUND", text: `${sourceLabel}没有匹配的 Resource Entry，已跳过。` };
+}
+
+function describeSourceCard(source: unknown, sourceIndex: number, mapping: CharacterFormatAdapter["Card映射"][number]): string {
+  const preferredRules = ["uniqueName", "fields", "externalId"] as const;
+  for (const ruleType of preferredRules) {
+    for (const rule of mapping.匹配优先级) {
+      if (rule.类型 !== ruleType) continue;
+      const values = rule.类型 === "fields"
+        ? (rule.字段 ?? []).map((field) => readSafePath(source, field.来源路径))
+        : [applyCardMatchConversion(rule.来源路径 ? readSafePath(source, rule.来源路径) : undefined, rule.来源转换)];
+      const label = values.map(formatCardDiagnosticValue).find((value) => value !== undefined);
+      if (label) return `Card「${label}」`;
+    }
+  }
+  return `Card（${mapping.状态}第 ${sourceIndex + 1} 项）`;
+}
+
+function formatCardDiagnosticValue(value: unknown): string | undefined {
+  if (typeof value !== "string" && typeof value !== "number") return undefined;
+  const normalized = normalizeExternalName(String(value));
+  if (!normalized) return undefined;
+  const characters = Array.from(normalized);
+  return characters.length <= 80 ? normalized : `${characters.slice(0, 77).join("")}...`;
 }
 
 function applyCardMatchConversion(value: unknown, conversion: "fileStem" | undefined): unknown {

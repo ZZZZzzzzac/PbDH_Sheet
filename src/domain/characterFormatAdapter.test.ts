@@ -50,6 +50,10 @@ describe("Character Format Adapter", () => {
     expect(Object.values(converted.data.playerImages)).toEqual([expect.objectContaining({ mimeType: "image/jpeg", dataUrl: expect.stringMatching(/^data:image\/jpeg;base64,/u) })]);
     expect(converted.report.convertedImages).toBe(1);
     expect(converted.report).toMatchObject({ matchedCards: 13, skippedCards: 1 });
+    expect(converted.report.diagnostics).toContainEqual(expect.objectContaining({
+      code: "CHARACTER_ADAPTER_CARD_NOT_FOUND",
+      text: "Card「器灵-木鸟」没有匹配的 Resource Entry，已跳过。",
+    }));
     expect(converted.data.cards.instances).toHaveLength(13);
     for (const card of converted.data.cards.instances) {
       expect(card.definitionRef?.type).toBe("resourceLibrary");
@@ -212,13 +216,19 @@ describe("Character Format Adapter", () => {
       { description: "  Gamma   description " },
       { name: "Shared" },
       { name: "missing" },
+      {},
     ] }, fileName: "cards.json", carrier: adapter.载体[0] }, adapter, systemPackage);
     expect(converted.data.cards.instances.map((card) => card.definitionRef)).toEqual([
       expect.objectContaining({ entryId: "a" }), expect.objectContaining({ entryId: "b" }),
       expect.objectContaining({ entryId: "c" }), expect.objectContaining({ entryId: "c" }),
     ]);
-    expect(converted.report).toMatchObject({ matchedCards: 4, skippedCards: 2 });
+    expect(converted.report).toMatchObject({ matchedCards: 4, skippedCards: 3 });
     expect(converted.report.diagnostics.map((item) => item.code)).toEqual(expect.arrayContaining(["CHARACTER_ADAPTER_CARD_AMBIGUOUS", "CHARACTER_ADAPTER_CARD_NOT_FOUND"]));
+    expect(converted.report.diagnostics.map((item) => item.text)).toEqual(expect.arrayContaining([
+      "Card「Shared」匹配到多个 Resource Entry，已跳过。",
+      "Card「missing」没有匹配的 Resource Entry，已跳过。",
+      "Card（配置第 7 项）没有匹配的 Resource Entry，已跳过。",
+    ]));
   });
 
   it("matches a Card contributed by an enabled Resource Extension without mutating the catalog", () => {
