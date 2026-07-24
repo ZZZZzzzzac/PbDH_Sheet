@@ -68,7 +68,7 @@ export function exportExternalCharacterData(data: CharacterData, adapter: Charac
     const length = mapping.长度 ?? value.max ?? value.current;
     const converted = mapping.转换 === "number" ? value.current
       : mapping.转换 === "booleanArray" ? Array.from({ length }, (_, index) => index < value.current)
-        : Array.from({ length }, (_, index) => index < value.current ? 0 : index < (value.max ?? length) ? 1 : 2);
+        : Array.from({ length }, (_, index) => index < value.current ? 1 : index < (value.max ?? length) ? 0 : 2);
     if (mapping.目标路径列表 && Array.isArray(converted)) {
       mapping.目标路径列表.forEach((path, index) => writeSafePath(document, path, converted[index]));
       exportedFields += 1;
@@ -318,7 +318,7 @@ function convertCount(value: unknown, operation: "number" | "truthyCount" | "che
   if (operation === "number") return toInteger(value);
   const values = Array.isArray(value) ? value : undefined;
   if (!values) return undefined;
-  if (operation === "triStateCount") return values.filter((item) => item === 0 || item === "0").length;
+  if (operation === "triStateCount") return values.filter((item) => item === 1 || item === "1").length;
   return values.filter(isTruthyExternal).length;
 }
 

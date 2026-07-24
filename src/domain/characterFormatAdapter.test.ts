@@ -35,10 +35,10 @@ describe("Character Format Adapter", () => {
       "class-name": "法师-知识学派",
       level: "3",
       agility: "3",
-      hp: { current: 5, max: 5 },
-      stress: { current: 7, max: 7 },
+      hp: { current: 0, max: 5 },
+      stress: { current: 0, max: 7 },
       hope: { current: 2, max: 6 },
-      "armor-slots": { current: 6, max: 6 },
+      "armor-slots": { current: 0, max: 6 },
       proficiency: { current: 1, max: 5 },
       "handful-gold": { current: 1, max: 9 },
       "bag-gold": { current: 0, max: 9 },
@@ -72,6 +72,21 @@ describe("Character Format Adapter", () => {
       ArmorTraitTextbox: "灵活：闪避值+1。",
       ItemSlot1Textbox: "小型生命药水: 立刻恢复 1d4 生命点。\n《神州要术》：本次村规中，选择领域卡与升级选项时，你的临时等级视作五级",
     }));
+  });
+
+  it("maps ZZZ tri-state slots as 0 empty, 1 filled, and 2 unavailable", () => {
+    const document = JSON.parse(readFileSync(join(migrationRoot, "啄页_匕首之心人物卡_zzz.json"), "utf8")) as Record<string, unknown>;
+    [1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2, 2].forEach((value, index) => { document[`HpSlotCheckbox${index + 1}`] = value; });
+    const detection = parseAndDetectCharacterSource(JSON.stringify(document), "tri-state_zzz.json", daggerheartPackage.characterFormatAdapters ?? []);
+    expect(detection.status).toBe("match");
+    if (detection.status !== "match") return;
+
+    const converted = convertExternalCharacterSource(detection.source, detection.adapter, daggerheartPackage);
+    expect(converted.data.character.values.hp).toEqual({ current: 3, max: 4 });
+    const exported = exportExternalCharacterData(converted.data, detection.adapter, daggerheartPackage);
+    expect("error" in exported).toBe(false);
+    if ("error" in exported) return;
+    expect(Array.from({ length: 12 }, (_, index) => exported.document[`HpSlotCheckbox${index + 1}`])).toEqual([1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2, 2]);
   });
 
   it("maps both ZZZ weapon trait textboxes to weapon description Modules", () => {
