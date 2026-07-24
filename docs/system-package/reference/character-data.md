@@ -1,6 +1,6 @@
 # Character Data boundary
 
-Character Data 是 Player-owned save，不是 System Package export。它保存 package identity/version、Sheet Values、Card Instance state 和 Player 上传图片；不复制 Resource Libraries、Layouts、Author Assets 或 Validation Scripts。
+Character Data 是 Player-owned save，不是 System Package export。它保存 package identity/version、Sheet Values、Card Instance state 和 Player 上传图片；不复制 Resource Libraries、Layouts、Author Assets 或 Validation Scripts。Player 图片字段只保存 `imageId` 引用，图片的 base64 data URL 集中存于顶层 `playerImages`。
 
 Character Data 还保存每个 Resource Composer 的一个稳定 Composite Resource。只保存 normalized 输出字段，不保存 Player 当时选择的来源 Entry。Card Instance 可通过显式 Resource Definition Reference 引用包内 Resource Entry 或 Composite Resource。
 
@@ -22,4 +22,4 @@ Resource Composer 不保存来源槽位快照；其稳定 Composite Resource 已
 
 `fillText` 写入的文本与 `fillCountable` 写入的 `{current,max}` 都是持久化 Sheet Values。`fillText` 的模板只在 Dependency 触发时生成普通文本；追加模式把新文本合并进自由输入 freeText/longText，Player 后续可继续自由编辑，不保存模板或 Resource Entry 引用。下拉 Free Text 只允许替换写入；列表外结果仍保留供 Player 查看并改选。`fillCountable` 未指定的成员保留原值；动态 max 属于 Player save，而不是对 System Package Module 配置的修改。
 
-System Package cache 与 Character Saves 位于 IndexedDB，小指针/UI preference 位于 localStorage，Preview session 位于 sessionStorage。Character JSON 是跨设备恢复机制；HTML snapshot 是只读输出，不可导回编辑。
+System Package cache 与 Character Saves 位于 IndexedDB，小指针/UI preference 位于 localStorage，Preview session 位于 sessionStorage。Character JSON 是跨设备恢复机制；为保证单文件可完整恢复，Player 上传图片直接嵌入 JSON。导出时顶层 `playerImages` 固定在最后，避免 base64 payload 打断前面的可读角色数据。HTML snapshot 是只读输出，不可导回编辑。

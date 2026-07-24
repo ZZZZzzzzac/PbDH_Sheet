@@ -160,6 +160,7 @@ describe("Character Data import/export", () => {
       mimeType: "image/png",
       dataUrl: "data:image/png;base64,AA==",
     });
+    expect(Object.keys(exported).at(-1)).toBe("playerImages");
     expect(result.ok).toBe(true);
   });
 

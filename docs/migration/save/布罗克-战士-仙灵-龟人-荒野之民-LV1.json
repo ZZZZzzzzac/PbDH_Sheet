@@ -1,0 +1,1134 @@
+{
+  "ruleSetId": "daggerheart",
+  "name": "布罗克",
+  "characterImage": "",
+  "level": "1",
+  "proficiency": [
+    true,
+    true,
+    true,
+    true,
+    false,
+    false
+  ],
+  "ancestry1": "Faerie-Luckbender",
+  "ancestry2": "Galapa-Retract",
+  "mixedAncestryEnabled": true,
+  "profession": "Warrior",
+  "community": "WILDBORNE",
+  "subclass": "Call-of-the-Brave-Foundation",
+  "professionRef": {
+    "id": "Warrior",
+    "name": "战士  -  利刃&骸骨"
+  },
+  "ancestry1Ref": {
+    "id": "Faerie-Luckbender",
+    "name": "运气操控者"
+  },
+  "ancestry2Ref": {
+    "id": "Galapa-Retract",
+    "name": "缩壳"
+  },
+  "communityRef": {
+    "id": "WILDBORNE",
+    "name": "荒野之民"
+  },
+  "subclassRef": {
+    "id": "Call-of-the-Brave-Foundation",
+    "name": "勇气呼唤基石"
+  },
+  "evasion": "11",
+  "evasionManualModifier": "1",
+  "agility": {
+    "checked": false,
+    "value": "1",
+    "spellcasting": false
+  },
+  "strength": {
+    "checked": true,
+    "value": "4",
+    "spellcasting": false
+  },
+  "finesse": {
+    "checked": false,
+    "value": "0",
+    "spellcasting": false
+  },
+  "instinct": {
+    "checked": true,
+    "value": "3",
+    "spellcasting": true
+  },
+  "presence": {
+    "checked": false,
+    "value": "0",
+    "spellcasting": false
+  },
+  "knowledge": {
+    "checked": false,
+    "value": "-1",
+    "spellcasting": false
+  },
+  "gold": [
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "experience": [
+    "俺是砍柴滴",
+    "不自知的神选者",
+    "俺是笨，不是傻",
+    "俺的好朋友霍莫特",
+    ""
+  ],
+  "experienceValues": [
+    "4",
+    "4",
+    "2",
+    "2",
+    ""
+  ],
+  "ancestryExperience": [],
+  "ancestryExperienceValues": [],
+  "hope": 0,
+  "hopeMax": 6,
+  "hp": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "stress": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "hpMax": 6,
+  "stressMax": 9,
+  "armorBoxes": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "armorValue": "9",
+  "armorValueManualModifier": "0",
+  "armorBonus": "",
+  "armorMax": 9,
+  "minorThreshold": "14",
+  "majorThreshold": "32",
+  "minorThresholdManualModifier": "",
+  "majorThresholdManualModifier": "",
+  "inventory": [
+    "一瓶次级耐力药水",
+    "霍莫特的秘药: 饮用后，你的下一次攻击掷骰自动关键成功。",
+    "恩宠点: ◎ ◎ ◎ ◎ ◎ ◎",
+    "打算卖的“柴火”",
+    ""
+  ],
+  "characterBackground": "一心在深林砍柴的布罗克并不知道\"秽野\"是什么, 他只是感觉森林中的生物越来越坚硬和顽皮了. 还好他跟他好朋友霍莫特一起游荡玩耍的时候练就了一副好身体, 力气小的家伙恐怕还砍不动这颗深黑色的大树呢.\n只是不知道为什么当他拖着那捆\"柴火\"来到镇上贩卖时, 前来收购的不是木匠和烧炭工人, 而是一堆军人和学者. 他们嘴里一边说着什么\"秽野魔树\"之类听不懂的话, 一边把布罗克硬是塞入了讨伐神明的冒险小队里.\n布罗克本不想做打打杀杀之事, 但他想起自己出发时, 霍莫特曾嘱咐他去看望一下她远方受伤的朋友. 或许这就是个不错的契机. 只不过...他好像忘记霍莫特说过的, 那个叫做妮克塔的朋友住在哪里了...",
+  "characterAppearance": "愚笨但友善的男性人类, 身体十分的健康和强壮. 布罗克的身体并没有任何超出常理的力量和魔法, 但仔细检查便会发现他的\"正常\"与\"健康\"却是远超常理的.\n年龄在他身上似乎失去了痕迹, 永远处于壮年的顶峰. 疾病与伤痛在他身上见不到一丝踪影, 连常年握斧劈柴的手掌都没有丝毫老茧.\n若是强行用刀剑或魔法伤害他, 就能观察到一股无形的力量在掠夺周边的生机填补他的创伤, 但本人似乎完全没有意识到这件事.",
+  "characterMotivation": "宗主：“奔跑少女” 霍莫特\n权能：生机与竞争 +4\n\n霍莫特钟爱充满生机与活力的生物, 往往会在追逐与竞赛中引导或祝福人们寻求和使用自身体内的力量.\n樵夫布罗克的小屋与她的居所毗邻, 憨愚的头脑并未认出她弱等神祇的本质, 而矫健强壮的身体获得了她的祝福. 两者意外的成为了朋友.\n霍莫特原本是四季牧者妮克塔的闺蜜, 在发觉秽野狂暴不受控制的本质后, 指引布罗克前去参加弑神小队, 尝试寻找安抚和治愈友人的办法.",
+  "cards": [
+    {
+      "standarized": true,
+      "id": "Warrior",
+      "name": "战士",
+      "type": "profession",
+      "description": "***借机攻击：*** 如果近战范围内的敌人试图离开该范围，你可以使用你选择的属性进行一次反应掷骰，对抗其难度。成功时选择一个效果，关键成功时选择两个：\n- 敌人只能原地不动。\n- 你对敌人造成相当于你主武器伤害的伤害。\n- 你随敌人一同移动。\n\n***战斗专训：*** 装备武器时，你忽略其负荷。当你造成物理伤害时，你的伤害掷骰获得等同于你等级的加值。",
+      "hint": "成为一名战士需要经年累月——往往耗费一生的时间——投入武器与战斗技艺的磨炼。当多数好战之人仅锤炼蛮力时，战士深谙敏捷的身手与机敏头脑的重要性，这使他们成为诸界域中最受追捧的斗士。战士常受雇于军队、佣兵团乃至王室卫队，但无法继续精进武艺的职位终将埋没他们的潜力。众所周知，战士们都有自己偏爱的武器；挡在他们和他们的锋刃之间将是一个致命的错误。",
+      "imageUrl": "/builtin-cards/profession/warrior.webp",
+      "class": "战士",
+      "headerDisplay": "战士",
+      "cardSelectDisplay": {
+        "item1": "利刃",
+        "item2": "骸骨"
+      },
+      "professionSpecial": {
+        "起始生命": 6,
+        "起始闪避": 11,
+        "起始物品": "爱人的画像或一块磨刀石",
+        "希望特性": "***绝不手软：*** **花费 3 希望点**，直到你下次休息前，你的攻击掷骰获得 +1 加值。"
+      },
+      "batchId": "SYSTEM_BUILTIN_CARDS",
+      "source": "builtin"
+    },
+    {
+      "standarized": true,
+      "id": "Call-of-the-Brave-Foundation",
+      "name": "勇气呼唤基石",
+      "type": "subclass",
+      "description": "***勇气可嘉：*** 当你掷出恐惧失败时，你**获得 1 希望点**。\n\n***战斗仪式：*** 每长休一次，在你尝试进行极其危险的行动或面对明显强于你的敌人之前，描述你执行的仪式或进行的准备。当你这样做时，**清除 2 压力点**并**获得 2 希望点**。",
+      "imageUrl": "/builtin-cards/subclass/call-of-the-brave.webp",
+      "class": "战士",
+      "level": 1,
+      "headerDisplay": "勇气呼唤",
+      "cardSelectDisplay": {
+        "item1": "战士",
+        "item2": "基石",
+        "item3": "不可施法"
+      },
+      "batchId": "SYSTEM_BUILTIN_CARDS",
+      "source": "builtin"
+    },
+    {
+      "standarized": true,
+      "id": "Faerie-Luckbender",
+      "name": "运气操控者",
+      "type": "ancestry",
+      "description": "每场游戏一次，在你或一个近距离范围内的自愿盟友进行动作掷骰后，你可以**花费 3 希望点**重新掷二元骰。",
+      "hint": "仙灵是拥有昆虫特征的带翼人形生物",
+      "imageUrl": "/builtin-cards/ancestry/faerie.webp",
+      "level": 1,
+      "class": "仙灵",
+      "headerDisplay": "运气操控者",
+      "cardSelectDisplay": {
+        "item1": "仙灵"
+      },
+      "batchId": "SYSTEM_BUILTIN_CARDS",
+      "source": "builtin"
+    },
+    {
+      "standarized": true,
+      "id": "Galapa-Retract",
+      "name": "缩壳",
+      "type": "ancestry",
+      "description": "**标记 1 压力点**来缩入你的龟壳中。在龟壳中时，你获得物理伤害抗性，但动作掷骰有劣势，并且无法移动。",
+      "hint": "龟人有着类似拟人化乌龟的外观，拥有一副巨大而圆润的甲壳，头部和四肢可以缩回其中",
+      "imageUrl": "/builtin-cards/ancestry/galapa.webp",
+      "level": 2,
+      "class": "龟人",
+      "headerDisplay": "缩壳",
+      "cardSelectDisplay": {
+        "item1": "龟人"
+      },
+      "batchId": "SYSTEM_BUILTIN_CARDS",
+      "source": "builtin"
+    },
+    {
+      "standarized": true,
+      "id": "WILDBORNE",
+      "name": "荒野之民",
+      "type": "community",
+      "description": "你的移动天然无声。在试图不被察觉的移动掷骰中具有优势。",
+      "hint": "作为荒野之民的一分子，意味着你生活在森林深处",
+      "imageUrl": "/builtin-cards/community/wildborne.webp",
+      "class": "荒野之民",
+      "headerDisplay": "荒野之民",
+      "cardSelectDisplay": {
+        "item1": "轻盈步伐"
+      },
+      "batchId": "SYSTEM_BUILTIN_CARDS",
+      "source": "builtin"
+    },
+    {
+      "standarized": true,
+      "id": "empty-oz0e6u1",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-3vcpcx4",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "a-soldiers-bond",
+      "name": "老兵羁绊",
+      "type": "domain",
+      "description": "每长休一次，当你赞美某人或询问他们擅长的事物时，你们双方都可以**获得 3 希望点**。",
+      "imageUrl": "/builtin-cards/domain/a-soldiers-bond.webp",
+      "class": "利刃",
+      "level": 2,
+      "cardSelectDisplay": {
+        "item1": "利刃",
+        "item2": "能力",
+        "item3": "RC.1",
+        "item4": "LV.2"
+      },
+      "batchId": "SYSTEM_BUILTIN_CARDS",
+      "source": "builtin"
+    },
+    {
+      "standarized": true,
+      "id": "versatile-fighter",
+      "name": "多面武者",
+      "type": "domain",
+      "description": "你可以为已装备的武器使用不同的属性，而不是武器所要求的属性。\n当你造成伤害时，你可以**标记 1 压力点**，将其中一个伤害骰取最大结果，而不是其掷骰结果。",
+      "imageUrl": "/builtin-cards/domain/versatile-fighter.webp",
+      "class": "利刃",
+      "level": 3,
+      "cardSelectDisplay": {
+        "item1": "利刃",
+        "item2": "能力",
+        "item3": "RC.1",
+        "item4": "LV.3"
+      },
+      "batchId": "SYSTEM_BUILTIN_CARDS",
+      "source": "builtin"
+    },
+    {
+      "standarized": true,
+      "id": "deadly-focus",
+      "name": "致命专注",
+      "type": "domain",
+      "description": "每次休息一次，你可以集中所有注意力于你选择的一个目标。你获得+1熟练加值，直至你攻击另一个生物、击败该目标或战斗结束时。",
+      "imageUrl": "/builtin-cards/domain/deadly-focus.webp",
+      "class": "利刃",
+      "level": 4,
+      "cardSelectDisplay": {
+        "item1": "利刃",
+        "item2": "能力",
+        "item3": "RC.2",
+        "item4": "LV.4"
+      },
+      "batchId": "SYSTEM_BUILTIN_CARDS",
+      "source": "builtin"
+    },
+    {
+      "standarized": true,
+      "id": "VOID-1.5整合卡牌包-RidRisR-prof-邪术师",
+      "name": "邪术师",
+      "type": "profession",
+      "description": "*__邪术师宗主 WARLOCK PATRON__*：你已向某位宗主（神明、恶魔、精怪或其他超自然存在）宣誓效忠以换取力量。将祂的名讳书写在上方空白处。随后，在**游戏主持人**的裁定下选择宗主的权能领域（自然与诡计、爱情与战争、知识与暗影等），将其记录在下方并将对应数值设为 **+2**。每当你提升位阶时，这些权能领域也会获得永久的 **+1加值**。在进行与宗主权能领域相关的**动作掷骰**前，你可**花费 1 恩宠点** 向其祈求，并将该领域数值加至检定结果。\n\n*__恩宠 FAVOR__*：你初始拥有 **3 恩宠点**（上限六点）。在休息时，选择一项**休整行动**向你的宗主献祭。当你这样做时，获得等同于你风度属性的**恩宠点**。若你选择放弃献祭，则**游戏主持人**将获得 **1 恐惧点**。",
+      "hint": "那些为了强大的力量而将自己的生命，甚至灵魂，献给异界宗主的存在，被称为邪术师。通常，这些凡人在做出如此牺牲时正处于极度绝望的境地——为了保护自己或挚爱之人，协助社群，寻求复仇，提升地位，或是追逐某种野心。",
+      "imageUrl": "/Void1.5卡牌整合包/profession/邪术师.webp",
+      "class": "邪术师",
+      "headerDisplay": "邪术师",
+      "cardSelectDisplay": {
+        "item1": "恐怖",
+        "item2": "优雅"
+      },
+      "professionSpecial": {
+        "起始生命": 5,
+        "起始闪避": 11,
+        "起始物品": "一枚象征你宗主的雕刻护符或一枚无法摘下的戒指",
+        "希望特性": "*__宗主恩惠 Patron's Boon__*：**花费 3 希望点** 来向你的宗主求助，获得 **1d4 恩宠点**。"
+      },
+      "batchId": "batch_1782803850610_xyrzt",
+      "source": "custom"
+    },
+    {
+      "standarized": true,
+      "id": "VOID-1.5整合卡牌包-RidRisR-subc-愤怒之契基石",
+      "name": "愤怒之契基石",
+      "type": "subclass",
+      "description": "***恩赐武器 Favored Weapon***：**标记 1 压力点**，将宗主的怒火灌入你的武器之中，直到你受到**严重伤害**为止。当**灌注武器**成功攻击时，你可以**花费**任意数量的**恩宠点**，获得同等数量的**d6伤害骰加值**。\n\n***死亡令使 Herald of Death***：**攻击掷骰失败**时，你可以**花费 1 恩宠点**来重骰此次攻击。如果再次失败时，你必须**标记 1 压力点**并接受新的结果。",
+      "imageUrl": "/Void1.5卡牌整合包/subclass/愤怒之契基石.webp",
+      "class": "邪术师",
+      "level": 1,
+      "headerDisplay": "愤怒之契",
+      "cardSelectDisplay": {
+        "item1": "邪术师",
+        "item2": "基石",
+        "item3": "风度"
+      },
+      "batchId": "batch_1782803850610_xyrzt",
+      "source": "custom"
+    },
+    {
+      "standarized": true,
+      "id": "VOID-1.5整合卡牌包-RidRisR-doma-抽取精魄",
+      "name": "抽取精魄",
+      "type": "domain",
+      "description": "对**邻近范围**内一个目标进行一次**施法掷骰**。成功时，每次**长休**一次，目标受到使用你熟练值的**d20魔法伤害**。目标**标记**多少**生命点**，你便恢复多少**生命点**。如果你掷出**恐惧成功**，此次攻击的熟练值获得**+1加值**。",
+      "imageUrl": "/Void1.5卡牌整合包/domain/抽取精魄.webp",
+      "class": "恐怖",
+      "level": 2,
+      "cardSelectDisplay": {
+        "item1": "恐怖",
+        "item2": "法术",
+        "item3": "RC.1",
+        "item4": "LV.2"
+      },
+      "batchId": "batch_1782803850610_xyrzt",
+      "source": "custom"
+    },
+    {
+      "standarized": true,
+      "id": "VOID-1.5整合卡牌包-RidRisR-doma-共享创伤",
+      "name": "共享创伤",
+      "type": "domain",
+      "description": "你能将痛苦从一个生物转移至另一个。每次休息一次，对一个**近战范围**内的**自愿生物**，**标记**任意数量的**生命点**，恢复另一个**近战范围**内**自愿生物**同等数量的**生命点**。你可以选择自己成为两个**自愿生物**之一。",
+      "imageUrl": "/Void1.5卡牌整合包/domain/共享创伤.webp",
+      "class": "恐怖",
+      "level": 3,
+      "cardSelectDisplay": {
+        "item1": "恐怖",
+        "item2": "法术",
+        "item3": "RC.1",
+        "item4": "LV.3"
+      },
+      "batchId": "batch_1782803850610_xyrzt",
+      "source": "custom"
+    },
+    {
+      "standarized": true,
+      "id": "empty-rjnwpq3",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-rxthyie",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-08u7ls5",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-1il6fi1",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-we87a9u",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-3p4uctc",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    }
+  ],
+  "inventory_cards": [
+    {
+      "standarized": true,
+      "id": "deft-maneuvers",
+      "name": "灵巧机动",
+      "type": "domain",
+      "description": "每次休息一次，**标记 1 压力点**，可以在远距离范围内冲刺到任意地点，无需进行敏捷掷骰。\n如果你在此移动结束时处于某个敌人的近战范围内，并立即对其发起攻击，你的攻击掷骰获得+1加值。",
+      "imageUrl": "/builtin-cards/domain/deft-maneuvers.webp",
+      "class": "骸骨",
+      "level": 1,
+      "cardSelectDisplay": {
+        "item1": "骸骨",
+        "item2": "能力",
+        "item3": "RC.0",
+        "item4": "LV.1"
+      },
+      "batchId": "SYSTEM_BUILTIN_CARDS",
+      "source": "builtin"
+    },
+    {
+      "standarized": true,
+      "id": "vitality",
+      "name": "蓬勃生命",
+      "type": "domain",
+      "description": "当你选择此牌时，选择永久获得下列选项中的两项：\n- 一个压力槽\n- 一个生命槽\n- 你的所有伤害阈值获得+2加值\n\n然后将此牌永久放入你的宝库。",
+      "imageUrl": "/builtin-cards/domain/vitality.webp",
+      "class": "利刃",
+      "level": 5,
+      "cardSelectDisplay": {
+        "item1": "利刃",
+        "item2": "能力",
+        "item3": "RC.0",
+        "item4": "LV.5"
+      },
+      "batchId": "SYSTEM_BUILTIN_CARDS",
+      "source": "builtin"
+    },
+    {
+      "standarized": true,
+      "id": "whirlwind",
+      "name": "旋风猛袭",
+      "type": "domain",
+      "description": "当你对邻近范围内的一个目标进行一次成功的攻击时，你可以**花费 1 希望点**来对邻近范围内的所有其他目标使用这次攻击。你用此能力成功攻击的所有额外敌人承受一半伤害。",
+      "imageUrl": "/builtin-cards/domain/whirlwind.webp",
+      "class": "利刃",
+      "level": 1,
+      "cardSelectDisplay": {
+        "item1": "利刃",
+        "item2": "能力",
+        "item3": "RC.0",
+        "item4": "LV.1"
+      },
+      "batchId": "SYSTEM_BUILTIN_CARDS",
+      "source": "builtin"
+    },
+    {
+      "standarized": true,
+      "id": "empty-5kgbcpy",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-g9lca08",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-ibwms2v",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-yg8nwsh",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-f4w6a0c",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-50rhk6s",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-25hpn3y",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-5yx5wlu",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-jzjqvfa",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-nf134ku",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-9iaw16f",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-mxzrvge",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-waq1xjg",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-juwby0z",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-edvgn22",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-hyuwvw4",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    },
+    {
+      "standarized": true,
+      "id": "empty-jqu4k85",
+      "name": "",
+      "class": "",
+      "description": "",
+      "imageUrl": "",
+      "type": "unknown",
+      "cardSelectDisplay": {
+        "item1": "",
+        "item2": "",
+        "item3": ""
+      }
+    }
+  ],
+  "checkedUpgrades": {
+    "tier1": {},
+    "tier2": {},
+    "tier3": {},
+    "tier1-0-0": {
+      "0": true
+    },
+    "tier1-3-0": {
+      "3": true
+    },
+    "tier1-1-1": {
+      "1": true
+    },
+    "tier1-2-1": {
+      "2": true
+    },
+    "tier1-2-0": {
+      "2": true
+    },
+    "tier1-1-0": {
+      "1": true
+    },
+    "tier2-0-0": {
+      "0": true
+    },
+    "tier2-3-0": {
+      "3": true
+    },
+    "tier2-6-0": {
+      "6": false
+    },
+    "tier2-8": {
+      "8": true
+    },
+    "tier2-7": {
+      "7": true
+    }
+  },
+  "primaryWeaponName": "伐木斧",
+  "primaryWeaponSelection": {
+    "mode": "custom",
+    "id": "伐木斧"
+  },
+  "primaryWeaponTrait": "物理/双手/近战",
+  "primaryWeaponDamage": "力量: d12+16",
+  "primaryWeaponFeature": "重型: 闪避值-1。",
+  "secondaryWeaponName": "高级圆盾",
+  "secondaryWeaponSelection": {
+    "mode": "preset",
+    "id": "高级圆盾"
+  },
+  "secondaryWeaponTrait": "物理/副手/近战",
+  "secondaryWeaponDamage": "力量: d4+4",
+  "secondaryWeaponFeature": "保护: 护甲值+3",
+  "armorName": "高级链甲",
+  "armorSelection": {
+    "mode": "preset",
+    "id": "高级链甲"
+  },
+  "armorBaseScore": "6",
+  "armorThreshold": "13/31",
+  "armorFeature": "重型: 闪避值-1",
+  "inventoryWeapon1Name": "",
+  "inventoryWeapon1Trait": "",
+  "inventoryWeapon1Damage": "",
+  "inventoryWeapon1Feature": "",
+  "inventoryWeapon1Primary": false,
+  "inventoryWeapon1Secondary": false,
+  "inventoryWeapon2Name": "",
+  "inventoryWeapon2Trait": "",
+  "inventoryWeapon2Damage": "",
+  "inventoryWeapon2Feature": "",
+  "inventoryWeapon2Primary": false,
+  "inventoryWeapon2Secondary": false,
+  "companionImage": "",
+  "companionName": "",
+  "companionDescription": "",
+  "companionRange": "",
+  "companionStress": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "companionEvasion": "",
+  "companionStressMax": 0,
+  "companionWeapon": "",
+  "companionExperience": [
+    "",
+    "",
+    "",
+    "",
+    ""
+  ],
+  "companionExperienceValue": [
+    "",
+    "",
+    "",
+    "",
+    ""
+  ],
+  "trainingOptions": {
+    "intelligent": [
+      false,
+      false,
+      false
+    ],
+    "radiantInDarkness": [
+      false
+    ],
+    "creatureComfort": [
+      false
+    ],
+    "armored": [
+      false
+    ],
+    "vicious": [
+      false,
+      false,
+      false
+    ],
+    "resilient": [
+      false,
+      false,
+      false
+    ],
+    "bonded": [
+      false
+    ],
+    "aware": [
+      false,
+      false,
+      false
+    ]
+  },
+  "pageVisibility": {
+    "rangerCompanion": false,
+    "armorTemplate": false,
+    "adventureNotes": true
+  },
+  "armorTemplate": {
+    "weaponName": "",
+    "description": "",
+    "upgradeSlots": [
+      {
+        "checked": false,
+        "text": ""
+      },
+      {
+        "checked": false,
+        "text": ""
+      },
+      {
+        "checked": false,
+        "text": ""
+      },
+      {
+        "checked": false,
+        "text": ""
+      },
+      {
+        "checked": false,
+        "text": ""
+      }
+    ],
+    "upgrades": {
+      "basic": {
+        "强力：+1伤害": [
+          false,
+          false
+        ],
+        "扩域：将攻击范围增加一级（近战到邻近等）": [
+          false,
+          false
+        ],
+        "屏蔽：+1护甲值": [
+          true,
+          true
+        ],
+        "收敛：+1攻击检定": [
+          true,
+          true
+        ]
+      },
+      "tier2": {},
+      "tier3": {},
+      "tier4": {}
+    },
+    "scrapMaterials": {
+      "fragments": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "metals": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "components": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "relics": [
+        "",
+        "",
+        "",
+        "",
+        ""
+      ]
+    },
+    "electronicCoins": 0
+  },
+  "adventureNotes": {
+    "characterProfile": {},
+    "playerInfo": {},
+    "backstory": "",
+    "milestones": "",
+    "adventureLog": [
+      {
+        "name": "",
+        "levelRange": "",
+        "trauma": "",
+        "date": ""
+      },
+      {
+        "name": "",
+        "levelRange": "",
+        "trauma": "",
+        "date": ""
+      },
+      {
+        "name": "",
+        "levelRange": "",
+        "trauma": "",
+        "date": ""
+      },
+      {
+        "name": "",
+        "levelRange": "",
+        "trauma": "",
+        "date": ""
+      },
+      {
+        "name": "",
+        "levelRange": "",
+        "trauma": "",
+        "date": ""
+      },
+      {
+        "name": "",
+        "levelRange": "",
+        "trauma": "",
+        "date": ""
+      },
+      {
+        "name": "",
+        "levelRange": "",
+        "trauma": "",
+        "date": ""
+      },
+      {
+        "name": "",
+        "levelRange": "",
+        "trauma": "",
+        "date": ""
+      }
+    ]
+  },
+  "notebook": {
+    "pages": [
+      {
+        "id": "page-1",
+        "lines": []
+      }
+    ],
+    "currentPageIndex": 0,
+    "isOpen": false
+  },
+  "presetEquipmentCalcVersion": 1,
+  "domainCardAutomation": {
+    "appliedPermanentCardIds": [
+      "vitality"
+    ],
+    "vitalityChoices": [
+      "stress",
+      "hp"
+    ]
+  },
+  "branchUpgradeCount": 0,
+  "rulesetAutomationVersions": {
+    "daggerheart": 0,
+    "rhodes-island": 0
+  }
+}

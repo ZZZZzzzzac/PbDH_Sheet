@@ -232,7 +232,8 @@ function isPlayerImageValue(value: unknown): value is PlayerImageValue {
 }
 
 export function exportCharacterData(data: CharacterData): string {
-  return JSON.stringify(data, null, 2);
+  const { playerImages, ...readableData } = data;
+  return JSON.stringify({ ...readableData, playerImages }, null, 2);
 }
 
 export function parseCharacterDataJson(text: string, currentPackage: SystemPackage): CharacterImportResult {

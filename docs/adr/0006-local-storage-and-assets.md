@@ -1,6 +1,6 @@
 # ADR-0006: Local Storage And Assets
 
-状态：Accepted
+状态：Superseded by ADR-0028
 日期：2026-07-06
 
 ## 背景

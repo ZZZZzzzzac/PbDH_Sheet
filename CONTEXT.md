@@ -177,8 +177,24 @@ Human-editable system data written with Chinese field names so Authors can inspe
 _Avoid_: English-only internal schema as the author-facing format
 
 **Character Data**:
-Player-owned saved data for one character, containing filled values, Composite Resources, and card state but not the full System Package.
+Player-owned saved data for one character, containing filled values, Composite Resources, card state, and embedded Player Image payloads but not the full System Package.
 _Avoid_: System Package export
+
+**PbDH Format**:
+The Base Framework's native Character Data JSON format.
+_Avoid_: Base format
+
+**dhSheet Format**:
+The external character JSON format used by DaggerHeart CharacterSheet.
+_Avoid_: DaggerHeart CharacterSheet format
+
+**ZZZ Format**:
+The external character JSON format used by DaggerHeart_Character.
+_Avoid_: DaggerHeart_Character format
+
+**Character Format Adapter**:
+An Author-declared, non-executable mapping between one external character format and the Current System Package's Character Data contract.
+_Avoid_: Import script, plugin
 
 **Character Save**:
 A local saved instance of Character Data under the Current System Package.
@@ -336,14 +352,27 @@ _Avoid_: Script plugin
 - Card movement rules should be checked by **Validation Checks**, not hard-coded into the Card system.
 - Author-facing card data requires `ID`, `名称`, and `描述`; other fields are extensible and not fixed in the first-version requirements.
 - **Author Data** uses Chinese keys in author-facing formats and may use the same Chinese keys directly in code objects; an English-key mapping layer is not a requirement.
-- **Character Data** exports only character-specific state plus a System Package identifier/version, not the complete System Package.
+- **Character Data** exports only character-specific state, embedded Player Images, and a System Package identifier/version, not the complete System Package.
+- When converting an external character file, a **Card** that cannot be matched to a Resource Entry in the **Current System Package** is skipped and reported; the Base Framework does not synthesize a replacement Card or copy its description into an unrelated Sheet Value.
+- External Card matching uses the current effective Resource Catalog, including enabled Resource Extension contributions allowed by the **Character Format Adapter**; zero, ambiguous, or conflicting matches are skipped and reported.
+- A **Character Format Adapter** may use normalized full-description equality as a low-priority Card disambiguator after stable IDs and structured identity fields; it never uses fuzzy text matching.
+- A **Character Format Adapter** never creates, installs, or updates a **Resource Extension** from card payloads embedded in an external character file; external resource conversion and installation remain a separate explicit workflow.
+- External-format export may use a **Character Format Adapter** to generate an embedded target-format Card object from a matched Resource Entry without inventing an external resource ID; Cards missing target-required fields are skipped and reported.
+- External character fields without an explicit **System Package** compatibility mapping are not preserved as hidden **Character Data**; conversion reports the resulting information loss to the Player.
+- A successful external character import always creates and selects a new **Character Save** under the **Current System Package**; it never overwrites the previously active Character Save.
+- A Player explicitly chooses **PbDH Format**, **dhSheet Format**, or **ZZZ Format** for each character export; Character Data does not remember or infer an original external format.
+- The Base Framework owns the bounded **Character Format Adapter** engine and its path, type, collection, image, Card matching, embedded-JSON extraction, and loss-reporting operations; each **System Package** owns its declarative external-format detection, Module and Resource mapping, export defaults, and Card matching priorities.
+- The Base Framework is external-format and game-rule agnostic: format identities such as **dhSheet Format** and **ZZZ Format**, their labels, detection signatures, data paths, and mappings exist only in the owning **System Package** and are discovered dynamically by framework UI.
+- External character import first applies a **Character Format Adapter** to produce current-package **PbDH Format**, then reuses the native Character Data validation, migration, persistence, and dependency-rebuild pipeline; downstream import code does not interpret external formats.
+- A **Character Format Adapter** may safely extract embedded JSON from a declared external HTML carrier without parsing its DOM or executing scripts; external-format HTML rendering and export remain outside the compatibility boundary, while the existing PbDH HTML snapshot remains unchanged.
+- Character conversion blocks only when the source cannot be read or parsed, no declared Adapter matches, or the converted PbDH Format fails the native structural contract; field, Card, Countable Resource, and image conversion failures remain reportable warnings that the Player may accept and continue past.
 - **Resource Keyword Search** is transient Browser UI state. Field templates may declare `可搜索`; when omitted it follows `默认显示`. With no field template, all normalized text fields are searchable. Search is case-insensitive, trimmed, and never stored in Character Data or Dependency Logic defaults.
 - A **Card Detail View** only enlarges the card's existing presentation. It is entered through the Card Table right-click or long-press context menu and does not edit Card Instance state or introduce another Resource Library Browser detail flow.
 - A Card Definition may reference another Card Definition in the same Resource Library as its reverse face. A Card Instance retains its front identity while face, quarter-turn rotation, and Card Indicator values remain Player-owned Character Data.
 - A Card Definition or Composite Resource may instead carry a direct card-back image path when its reverse has no separate rules definition. Direct card-back art keeps the front Definition identity and only changes the rendered artwork while the Card Instance is showing its back.
 - Card Instance state values are Author-defined through the Card Table. An Author may map selected states to Card Face background colors; unmapped states retain the framework default, and only the state string belongs to Character Data.
 - Every Card Instance can add up to ten **Card Indicators** without Author configuration. Each receives a stable color from the framework palette; badges stay outside Card Face text fitting and are not Countable Resource Sheet Modules or Dependency Logic targets.
-- First-version **Character Data** stores text and state. System images should be referenced rather than copied, but Player-provided portraits or character art may be stored with the Character Data.
+- First-version **Character Data** stores text, state, and Player-provided portraits or character art. Player Image fields store stable references while one top-level `playerImages` collection embeds their base64 payloads; exported JSON places that collection last. System images are referenced rather than copied.
 - System Package distribution is file/package based in the first version; package marketplaces, publishing platforms, and full source-code exports are outside the first-version requirement.
 - **Display Content**, adventure notes, names, and rule reference pages are all uses of **Sheet Modules**, not separate base features.
 - An **HTML Layout Template** may include **Static Layout Content** and module placeholders, but editable Character Data still belongs to **Sheet Modules**.
@@ -411,7 +440,7 @@ _Avoid_: Script plugin
 > **Domain Expert:** "No. The guide only explains and highlights; all rule legality belongs in Validation Checks."
 
 > **Dev:** "Does a Character Save include image files?"
-> **Domain Expert:** "Usually no for System Package images, but yes for Player-provided portraits or character art."
+> **Domain Expert:** "System Package images remain references. Player-provided portraits or character art are embedded in the Character Data JSON so one file is a complete backup."
 
 > **Dev:** "Is documentation secondary?"
 > **Domain Expert:** "No. The framework depends on AI-Readable Documentation so Authors and AI assistants can produce valid System Packages."
