@@ -23,7 +23,7 @@ ZIP Adapter 可用 `图片`把来源 ID 绑定到包内图片。未绑定图片�
 
 导入声明包括文本、Countable、Player Image 和 Card 映射。Countable 支持数字、truthy/checked 数组与 tri-state 数组，并可从固定值、来源路径、数组长度或可用槽数取得 max。图片只接受支持的 `data:image/*;base64` URL，并写入 Character Data 顶层 `playerImages`。
 
-Card 按声明顺序尝试 external ID、结构化字段组合、唯一名称、规范化后的完整描述精确匹配；不做模糊匹配。空来源值不参与匹配；某一级多命中即报告 ambiguous 并跳过。查找范围是声明的 Libraries，运行时传入 Effective System Package，因此已安装 Extension 的 Entries 也可命中，但人物卡导入本身不会安装资源包。
+Card 按声明顺序尝试 external ID、结构化字段组合、唯一名称、规范化后的完整描述精确匹配；不做模糊匹配。非 `fields` 规则可在来源或 Resource 字段上声明 `fileStem` 转换，从 `/` 或 `\\` 分隔的路径取不含最后扩展名的文件名，再进行精确比较；这适合外部格式以卡图路径代表卡牌的情况。空来源值不参与匹配；某一级多命中即报告 ambiguous 并跳过。查找范围是声明的 Libraries，运行时传入 Effective System Package，因此已安装 Extension 的 Entries 也可命中，但人物卡导入本身不会安装资源包。
 
 有跳过或 warning 的人物卡先显示报告；确认后才创建并选择新的 Character Save，取消不改变当前存档。
 

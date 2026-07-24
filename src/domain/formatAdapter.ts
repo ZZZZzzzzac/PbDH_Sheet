@@ -147,11 +147,14 @@ export const characterImageMappingSchema = z.object({
 const cardMatchRuleSchema = z.object({
   类型: z.enum(["externalId", "fields", "uniqueName", "exactDescription"]),
   来源路径: safePathSchema.optional(),
+  来源转换: z.enum(["fileStem"]).optional(),
   Resource字段: z.string().min(1).optional(),
+  Resource转换: z.enum(["fileStem"]).optional(),
   字段: z.array(z.object({ 来源路径: safePathSchema, Resource字段: z.string().min(1) })).min(1).optional(),
 }).superRefine((rule, context) => {
   if (rule.类型 === "fields" && !rule.字段) context.addIssue({ code: "custom", message: "fields 匹配必须声明字段。" });
   if (rule.类型 !== "fields" && !rule.来源路径) context.addIssue({ code: "custom", message: `${rule.类型} 匹配必须声明来源路径。` });
+  if (rule.类型 === "fields" && (rule.来源转换 || rule.Resource转换)) context.addIssue({ code: "custom", message: "fields 匹配不支持规则级转换。" });
 });
 
 export const characterCardMappingSchema = z.object({

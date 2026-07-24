@@ -243,7 +243,6 @@ export function convertExternalCharacterSource(source: ExternalCharacterSource, 
       continue;
     }
     for (const sourceCard of sourceCards) {
-      if (!isRecord(sourceCard)) { skippedCards += 1; continue; }
       const match = matchCard(sourceCard, cardMapping, systemPackage);
       if (!match.ok) {
         skippedCards += 1;
@@ -341,7 +340,7 @@ function isImageDataUrl(value: string): boolean {
 }
 
 function matchCard(
-  source: Record<string, unknown>,
+  source: unknown,
   mapping: CharacterFormatAdapter["Card映射"][number],
   systemPackage: SystemPackage,
 ): { ok: true; libraryId: string; entry: ResourceLibraryEntry } | { ok: false; code: string; text: string } {
@@ -354,15 +353,21 @@ function matchCard(
         return sourceValue !== "" && sourceValue === normalizeComparable(readResourceField(entry, field.Resource字段));
       })).map((entry) => ({ libraryId: library.ID, entry })));
     } else {
-      const sourceValue = rule.来源路径 ? readSafePath(source, rule.来源路径) : undefined;
+      const sourceValue = applyCardMatchConversion(rule.来源路径 ? readSafePath(source, rule.来源路径) : undefined, rule.来源转换);
       if (normalizeComparable(sourceValue) === "") continue;
       const resourceField = rule.Resource字段 ?? (rule.类型 === "externalId" ? "ID" : rule.类型 === "uniqueName" ? "名称" : "描述");
-      candidates = libraries.flatMap((library) => library.entries.filter((entry) => normalizeComparable(readResourceField(entry, resourceField)) === normalizeComparable(sourceValue)).map((entry) => ({ libraryId: library.ID, entry })));
+      candidates = libraries.flatMap((library) => library.entries.filter((entry) => normalizeComparable(applyCardMatchConversion(readResourceField(entry, resourceField), rule.Resource转换)) === normalizeComparable(sourceValue)).map((entry) => ({ libraryId: library.ID, entry })));
     }
     if (candidates.length === 1) return { ok: true, ...candidates[0] };
     if (candidates.length > 1) return { ok: false, code: "CHARACTER_ADAPTER_CARD_AMBIGUOUS", text: "Card 匹配到多个 Resource Entry，已跳过。" };
   }
   return { ok: false, code: "CHARACTER_ADAPTER_CARD_NOT_FOUND", text: "Card 没有匹配的 Resource Entry，已跳过。" };
+}
+
+function applyCardMatchConversion(value: unknown, conversion: "fileStem" | undefined): unknown {
+  if (conversion !== "fileStem" || typeof value !== "string") return value;
+  const fileName = value.replace(/\\/gu, "/").split("/").at(-1) ?? "";
+  return fileName.replace(/\.[^.]+$/u, "");
 }
 
 function readResourceField(entry: ResourceLibraryEntry, field: string): unknown {

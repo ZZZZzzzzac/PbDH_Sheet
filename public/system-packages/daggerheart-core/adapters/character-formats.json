@@ -117,6 +117,7 @@
         "匹配优先级": [
           { "类型": "externalId", "来源路径": ["data", "原名"], "Resource字段": "原名" },
           { "类型": "uniqueName", "来源路径": ["data", "名称"], "Resource字段": "名称" },
+          { "类型": "uniqueName", "来源路径": ["data"], "来源转换": "fileStem", "Resource字段": "卡图", "Resource转换": "fileStem" },
           { "类型": "exactDescription", "来源路径": ["data", "描述"], "Resource字段": "描述" }
         ]
       }

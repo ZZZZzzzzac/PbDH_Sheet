@@ -48,7 +48,16 @@ describe("Character Format Adapter", () => {
     }));
     expect(Object.values(converted.data.playerImages)).toEqual([expect.objectContaining({ mimeType: "image/jpeg", dataUrl: expect.stringMatching(/^data:image\/jpeg;base64,/u) })]);
     expect(converted.report.convertedImages).toBe(1);
-    expect(converted.report).toMatchObject({ matchedCards: 0, skippedCards: 14 });
+    expect(converted.report).toMatchObject({ matchedCards: 13, skippedCards: 1 });
+    expect(converted.data.cards.instances).toHaveLength(13);
+    for (const card of converted.data.cards.instances) {
+      expect(card.definitionRef?.type).toBe("resourceLibrary");
+      if (card.definitionRef?.type !== "resourceLibrary") continue;
+      const library = daggerheartPackage.resourceLibraries?.find((candidate) => candidate.ID === card.definitionRef?.libraryId);
+      const entry = library?.entries.find((candidate) => candidate.ID === card.definitionRef?.entryId);
+      expect(entry, `${card.definitionRef.libraryId}/${card.definitionRef.entryId}`).toBeDefined();
+      expect(entry?.fields["卡图"]).toMatch(/^assets\/cards\/.+\.webp$/u);
+    }
   });
 
   it("produces equivalent representative values from real dhSheet JSON and HTML", () => {
