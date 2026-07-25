@@ -59,21 +59,6 @@ function convertedZzzAncestry(record, fallbackId, counts) {
   }
   return entry;
 }
-function findAsset(assets, id) {
-  if (!id) return undefined;
-  const base = `images/${id}`;
-  for (const asset of assets) if ((asset.path === base || asset.path.startsWith(`${base}.`)) && /\.(?:png|jpe?g|webp|gif|avif|svg)$/iu.test(asset.path)) return asset.path;
-  return undefined;
-}
-function bindImage(entry, record, assets, retainedAssets, counts, diagnostics) {
-  if (!record.id) return;
-  const sourcePath = findAsset(assets, record.id);
-  if (!sourcePath) { diagnostics.push({ level: "warning", code: "RESOURCE_ADAPTER_IMAGE_MISSING", text: `记录图片不存在：${record.id}` }); return; }
-  const targetPath = `assets/external/${sourcePath.split("/").pop()}`;
-  entry.卡图 = targetPath;
-  if (!retainedAssets.some((asset) => asset.sourcePath === sourcePath)) retainedAssets.push({ sourcePath, targetPath });
-  counts.boundImages += 1;
-}
 function importZzz(input) {
   const records = Array.isArray(input.document) ? input.document : [];
   const libraries = new Map(); const diagnostics = [];
@@ -104,7 +89,7 @@ function importDh(input) {
     if (known) { libraryId = known[0]; libraryName = input.resourceLibraries.find((item) => item.ID === libraryId)?.名称 || type; entry = convertedEntry(record, known[1], `external:dhsheet:${index}`, counts); }
     else { libraryId = `外部类型:${type}`; libraryName = type; entry = { ID: normalize(record.id) || `external:dhsheet:${index}` }; Object.entries(record).forEach(([key, value]) => { if (!["id", "imageUrl", "hasLocalImage", "localId"].includes(key)) { entry[key] = value; counts.convertedFields += 1; } }); }
     if (!normalize(entry.名称)) { counts.skippedEntries += 1; return; }
-    bindImage(entry, record, input.assets, retainedAssets, counts, diagnostics); addLibrary(libraries, libraryId, libraryName, entry); counts.convertedEntries += 1;
+    addLibrary(libraries, libraryId, libraryName, entry); counts.convertedEntries += 1;
   });
   for (const [name, group] of ancestry) {
     const slots = new Map(); group.forEach(({ record }) => { const slot = Number(record.category) === 1 ? "A" : Number(record.category) === 2 ? "B" : ""; const list = slots.get(slot) || []; list.push(record); slots.set(slot, list); });
@@ -113,11 +98,8 @@ function importDh(input) {
     if (slots.get("A")?.[0]) entry.特性A = slots.get("A")[0].description; else counts.skippedFields += 1;
     if (slots.get("B")?.[0]) entry.特性B = slots.get("B")[0].description; else counts.skippedFields += 1;
     counts.convertedFields += 1 + (entry.特性A !== undefined ? 1 : 0) + (entry.特性B !== undefined ? 1 : 0);
-    bindImage(entry, slots.get("A")?.[0] || slots.get("B")?.[0] || first, input.assets, retainedAssets, counts, diagnostics);
     addLibrary(libraries, "ancestries", input.resourceLibraries.find((item) => item.ID === "ancestries")?.名称 || "种族", entry); counts.convertedEntries += 1;
   }
-  const used = new Set(retainedAssets.map((item) => item.sourcePath)); const imagePaths = input.assets.map((asset) => asset.path).filter((path) => /\.(?:png|jpe?g|webp|gif|avif|svg)$/iu.test(path));
-  counts.orphanImages = imagePaths.filter((path) => !used.has(path)).length; if (counts.orphanImages) diagnostics.push({ level: "warning", code: "RESOURCE_ADAPTER_ORPHAN_IMAGES", text: `${counts.orphanImages} 张未绑定图片已丢弃。` });
   return { name: normalize(document.manifest && document.manifest.name) || input.fileName.replace(/\.[^.]+$/u, ""), version: normalize(document.manifest && document.manifest.version) || "未声明", resourceLibraries: [...libraries.values()], diagnostics, retainedAssets, counts };
 }
 module.exports = function (input) { return Array.isArray(input.document) ? importZzz(input) : importDh(input); };

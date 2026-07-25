@@ -83,15 +83,16 @@ describe("Resource Format Adapter scripts", () => {
     expect(loaded.issues).toContainEqual(expect.objectContaining({ code: "RESOURCE_ADAPTER_ANCESTRY_AMBIGUOUS", level: "warning" }));
   });
 
-  it("converts the real DHCB fixture, retaining 159 images and reporting 16 orphans", async () => {
+  it("converts the real DHCB fixture as text-only resources without retaining card images", async () => {
     const bytes = readFileSync(join(migrationRoot, "与龙同行战役框架卡牌包.dhcb"));
     const loaded = await loadResourceExtensionFromFile(new File([bytes], "与龙同行战役框架卡牌包.dhcb", { type: "application/zip" }), daggerheartPackage);
     expect(loaded.ok, loaded.ok ? undefined : JSON.stringify(loaded.issues, null, 2)).toBe(true);
     if (!loaded.ok) return;
-    expect(loaded.conversion).toEqual(expect.objectContaining({ adapterId: "dhsheet-dhcb", counts: expect.objectContaining({ sourceEntries: 159, convertedEntries: 159, boundImages: 159, orphanImages: 16 }) }));
-    expect(loaded.assets).toHaveLength(159);
-    expect(loaded.issues).toContainEqual(expect.objectContaining({ code: "RESOURCE_ADAPTER_ORPHAN_IMAGES", level: "warning" }));
-    expect(loaded.normalizedArtifact.mimeType).toBe("application/zip");
+    expect(loaded.conversion).toEqual(expect.objectContaining({ adapterId: "dhsheet-dhcb", counts: expect.objectContaining({ sourceEntries: 159, convertedEntries: 159, boundImages: 0, orphanImages: 0 }) }));
+    expect(loaded.assets).toHaveLength(0);
+    expect(loaded.extension.resourceLibraries.flatMap((library) => library.entries).every((entry) => !("卡图" in entry))).toBe(true);
+    expect(loaded.issues).not.toContainEqual(expect.objectContaining({ code: "RESOURCE_ADAPTER_ORPHAN_IMAGES" }));
+    expect(loaded.normalizedArtifact.mimeType).toBe("application/json");
   });
 
   it("requires the declared root shape and explicit selection for ambiguous matches", () => {
