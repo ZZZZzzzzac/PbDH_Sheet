@@ -27,6 +27,12 @@ describe("Resource Format Adapter scripts", () => {
     expect(loaded.conversion).toEqual(expect.objectContaining({ adapterId: "zzz-resource-json", counts: expect.objectContaining({ sourceEntries: 159, convertedEntries: 159 }) }));
     expect(loaded.extension.resourceLibraries.map((library) => [library.ID, library.entries.length])).toEqual([["classes", 4], ["communities", 3], ["subclasses", 51], ["domain-cards", 101]]);
     expect(loaded.extension).toMatchObject({ 名称: "与龙同行战役框架卡牌包_zzz", 版本: "未声明" });
+    const domainCards = loaded.extension.resourceLibraries.find((library) => library.ID === "domain-cards")?.entries ?? [];
+    expect(domainCards).not.toHaveLength(0);
+    for (const card of domainCards) {
+      expect(card.等级, `${card.名称}.等级`).toMatch(/^(?:[1-9]|10)级$/u);
+      expect(card.回想, `${card.名称}.回想`).toMatch(/^\d+⚡$/u);
+    }
     expect(loaded.assets).toHaveLength(0);
   });
 

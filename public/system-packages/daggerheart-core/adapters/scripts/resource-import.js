@@ -1,11 +1,20 @@
 function normalize(value) { return value === undefined || value === null ? "" : String(value).normalize("NFKC").trim(); }
-function convert(value, kind) { if (value === undefined || value === null) return undefined; if (kind === "number") { const number = Number(value); return Number.isFinite(number) ? number : undefined; } return value; }
+function convert(value, kind) {
+  if (value === undefined || value === null) return undefined;
+  if (kind === "number") { const number = Number(value); return Number.isFinite(number) ? number : undefined; }
+  if (kind === "domainLevel" || kind === "recall") {
+    const text = normalize(value); if (!text) return undefined;
+    const suffix = kind === "domainLevel" ? "级" : "⚡";
+    return text.endsWith(suffix) ? text : `${text}${suffix}`;
+  }
+  return value;
+}
 function mapping(type) {
   const common = {
     主职: ["classes", [["名称", "名称"], ["描述", "简介"], ["领域", "领域"], ["闪避值", "初始闪避值", "number"], ["生命点", "初始生命点", "number"], ["希望特性", "希望特性"], ["职业特性", "职业特性"], ["背景问题", "背景问题"], ["关系问题", "关系问题"]]],
     子职: ["subclasses", [["名称", "名称"], ["主职", "主职"], ["等级", "等级"], ["施法属性", "施法属性"], ["描述", "描述"]]],
     社群: ["communities", [["名称", "名称"], ["简介", "简介"], ["性格", "性格"], ["描述", "描述"]]],
-    领域卡: ["domain-cards", [["名称", "名称"], ["领域", "领域"], ["等级", "等级"], ["属性", "属性"], ["回想", "回想"], ["描述", "描述"]]],
+    领域卡: ["domain-cards", [["名称", "名称"], ["领域", "领域"], ["等级", "等级", "domainLevel"], ["属性", "属性"], ["回想", "回想", "recall"], ["描述", "描述"]]],
   };
   return common[type];
 }
