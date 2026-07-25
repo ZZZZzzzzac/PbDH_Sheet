@@ -7,7 +7,7 @@ import { minimalSystemPackage } from "../test/fixtures";
 import { CharacterExportDialog } from "./CharacterExportDialog";
 import { CharacterImportDialogs } from "./CharacterImportDialogs";
 
-const adapter = { ID: "external", 名称: "External", 载体: [], 字段映射: [], Countable映射: [], 图片映射: [], Card映射: [] } as unknown as CharacterFormatAdapter;
+const adapter = { ID: "external", 名称: "External", 载体: [], 导入脚本: "adapters/import.js", importScriptContent: "module.exports=()=>({values:{}})", 导出文件后缀: ".json" } as unknown as CharacterFormatAdapter;
 
 describe("Character format dialogs", () => {
   it("shows ambiguity choices and a structured lossy-import report", () => {

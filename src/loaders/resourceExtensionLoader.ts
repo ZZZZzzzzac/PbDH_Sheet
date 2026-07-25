@@ -59,7 +59,7 @@ export async function loadResourceExtensionFromFile(
       ambiguousAdapters: detection.status === "ambiguous" ? detection.adapters.map(({ ID, 名称 }) => ({ ID, 名称 })) : [],
     };
   }
-  const converted = convertExternalResourceSource(sourceResult.source, adapter, currentPackage);
+  const converted = await convertExternalResourceSource(sourceResult.source, adapter, currentPackage);
   if ("error" in converted) return { ok: false, issues: [converted.error] };
   const loaded = loadResourceExtensionJson(JSON.stringify(converted.extensionDocument), currentPackage.manifest.ID, context);
   if (!loaded.ok) return loaded;

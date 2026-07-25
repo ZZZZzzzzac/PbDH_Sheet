@@ -702,15 +702,13 @@ describe("runtime store", () => {
       resourceFormatAdapters: [{
         ID: "external-cards", 名称: "External Cards",
         载体: [{ 类型: "json", 根类型: "array", 文件后缀: ".json", 检测: [{ 路径: [0, "kind"], 等于: "card" }] }],
-        包名: { 类型: "文件名" }, 记录路径: [], 类型路径: ["kind"], EntryID路径: ["id"],
-        已知类型: [{ 值: "card", 资源库ID: "cards", 字段映射: [{ 字段: "名称", 来源路径: ["name"], 必填: true }] }],
-        未知类型: { 启用: false, LibraryID前缀: "external:", 运行时字段: [] },
+        导入脚本: "adapters/import.js",
+        importScriptContent: "module.exports=({document,fileName})=>({name:fileName.replace(/\\.json$/,''),resourceLibraries:[{ID:'cards',名称:'卡牌',entries:document.map((item,index)=>({ID:item.id||`external-${index}`,名称:item.name}))}],counts:{sourceEntries:document.length,convertedEntries:document.length,skippedEntries:0,convertedFields:document.length,skippedFields:0,boundImages:0,orphanImages:0}})",
       }, {
         ID: "external-cards-second", 名称: "External Cards Second",
         载体: [{ 类型: "json", 根类型: "array", 文件后缀: ".json", 检测: [{ 路径: [0, "kind"], 等于: "card" }] }],
-        包名: { 类型: "文件名" }, 记录路径: [], 类型路径: ["kind"], EntryID路径: ["id"],
-        已知类型: [{ 值: "card", 资源库ID: "cards", 字段映射: [{ 字段: "名称", 来源路径: ["name"], 必填: true }] }],
-        未知类型: { 启用: false, LibraryID前缀: "external:", 运行时字段: [] },
+        导入脚本: "adapters/import.js",
+        importScriptContent: "module.exports=({document,fileName})=>({name:fileName.replace(/\\.json$/,''),resourceLibraries:[{ID:'cards',名称:'卡牌',entries:document.map((item,index)=>({ID:item.id||`external-${index}`,名称:item.name}))}],counts:{sourceEntries:document.length,convertedEntries:document.length,skippedEntries:0,convertedFields:document.length,skippedFields:0,boundImages:0,orphanImages:0}})",
       }],
     } as unknown as SystemPackage;
     configureRuntimeDependencies({ loadSystemPackageFromFile: async () => ({ ok: true, package: basePackage, issues: [] }), storage: memoryStorage });
@@ -747,16 +745,13 @@ describe("runtime store", () => {
       characterFormatAdapters: [{
         ID: "external-character", 名称: "External Character",
         载体: [{ 类型: "json", 根类型: "object", 文件后缀: ".json", 检测: [{ 路径: ["external"], 等于: true }] }],
-        角色名来源路径: ["name"],
-        字段映射: [
-          { 目标模块ID: "character-name", 来源路径: ["name"], 转换: "text" },
-          { 目标模块ID: "missing-field", 来源路径: ["missing"], 转换: "text" },
-        ], Countable映射: [], 图片映射: [], Card映射: [],
+        导入脚本: "adapters/import.js",
+        importScriptContent: "module.exports=({document})=>({values:{'character-name':document.name},suggestedSaveName:document.name,skippedFields:1,diagnostics:[{level:'warning',code:'TEST_SKIPPED',text:'one skipped field'}]})",
       }, {
         ID: "external-character-second", 名称: "External Character Second",
         载体: [{ 类型: "json", 根类型: "object", 文件后缀: ".json", 检测: [{ 路径: ["external"], 等于: true }] }],
-        角色名来源路径: ["name"], 字段映射: [{ 目标模块ID: "character-name", 来源路径: ["name"], 转换: "text" }],
-        Countable映射: [], 图片映射: [], Card映射: [],
+        导入脚本: "adapters/import.js",
+        importScriptContent: "module.exports=({document})=>({values:{'character-name':document.name},suggestedSaveName:document.name})",
       }],
     } as unknown as SystemPackage;
     configureRuntimeDependencies({ loadSystemPackageFromFile: async () => ({ ok: true, package: basePackage, issues: [] }), storage: memoryStorage });

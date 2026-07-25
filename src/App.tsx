@@ -253,11 +253,11 @@ export default function App() {
     }
   };
 
-  const exportWithCharacterAdapter = (adapterId: string) => {
+  const exportWithCharacterAdapter = async (adapterId: string) => {
     if (!characterData || !currentPackage) return;
     const adapter = currentPackage.characterFormatAdapters?.find((candidate) => candidate.ID === adapterId);
-    if (!adapter?.导出) return;
-    const result = exportExternalCharacterData(characterData, adapter, currentPackage);
+    if (!adapter?.exportScriptContent) return;
+    const result = await exportExternalCharacterData(characterData, adapter, currentPackage);
     if ("error" in result) {
       useRuntimeStore.setState({ importError: result.error.text });
       return;
@@ -570,8 +570,8 @@ export default function App() {
                 <Download aria-hidden="true" size={16} />
                 <span>导出 PbDH Format</span>
               </button>
-              {currentPackage?.characterFormatAdapters?.filter((adapter) => adapter.导出).map((adapter) => (
-                <button className="menu-item" type="button" key={adapter.ID} onClick={() => exportWithCharacterAdapter(adapter.ID)} disabled={!characterData}>
+              {currentPackage?.characterFormatAdapters?.filter((adapter) => adapter.exportScriptContent).map((adapter) => (
+                <button className="menu-item" type="button" key={adapter.ID} onClick={() => void exportWithCharacterAdapter(adapter.ID)} disabled={!characterData}>
                   <Download aria-hidden="true" size={16} />
                   <span>导出 {adapter.名称}</span>
                 </button>

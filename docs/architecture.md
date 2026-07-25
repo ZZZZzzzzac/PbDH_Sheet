@@ -19,10 +19,10 @@ PbDH Sheet Framework 是一个无服务器 API 的静态 Web 应用。Author 上
 - Base Framework 不提供账号、云同步、系统包市场、服务器 PDF 或在线 AI 生成。
 - Character Data 按模块/字段 ID 存，不按页面布局树存。
 - Character Data 可保存最小 Derived Source Snapshot，用于从当前 System Package 重建纯派生展示；不保存最终 visibility 或默认查询。
-- System Package 是声明式数据包，不能修改 Base Framework 模块代码。
+- System Package 以声明式数据为主，不能修改 Base Framework 模块代码；受限 Validation Script 与 Format Adapter Script 只能通过各自固定 seam 返回待验证的数据结果。
 - Sheet Renderer 在第一版渲染 HTML Layout Template，并在 `<pb-module>` 占位符处挂载 Sheet Modules。
 - 游戏值默认按字符串处理；框架只严格校验结构字段、ID、引用和路径。
-- 复杂规则检查用 JS Validation Scripts，只读输入，输出 issue list。
+- 复杂规则检查用 JS Validation Scripts，只读输入，输出 issue list；复杂外部格式语义转换用隔离 Format Adapter Scripts，输出待原生合同验证的转换结果。
 
 ## 质量属性
 
@@ -446,6 +446,8 @@ Validation Scripts：
 - 输出包含 `level` 和 `text` 的 issue list。
 - 无 DOM、无框架修改 API、无外部依赖。
 
+Format Adapter Scripts 复用同一 Package Script Worker seam，但只在显式导入/导出动作中运行。Base 在执行前完成 Carrier、ZIP 与 embedded JSON 安全读取，在执行后验证 Module、Card、Resource、图片和原生数据合同；脚本不能直接创建存档、安装 Extension 或修改 Effective Resource Catalog。
+
 ## 技术基线
 
 - Vite。
@@ -481,6 +483,7 @@ Validation Scripts：
 - 不支持链式触发的集中式 Dependency Engine。
 - 声明式线性 Guide Session 与 Spotlight Surface。
 - 在 Web Worker 中运行 JS Validation Scripts。
+- 在 Web Worker 中运行 Format Adapter Scripts，并验证其 Character Data / Resource Extension 转换结果。
 - 支持翻面、旋转和数字指示物的 Card Instance 模型。
 - IndexedDB 持久化。
 - HTML 快照和浏览器打印/PDF。
@@ -520,3 +523,4 @@ Validation Scripts：
 - [ADR-0021：车卡指引支持布局区域目标](adr/0021-guide-layout-region-target.md)
 - [ADR-0022：车卡指引支持长说明与跨页目标](adr/0022-guide-long-form-instructions-and-cross-page-targets.md)
 - [ADR-0023：System Package Skin 拥有包级作用域表现](adr/0023-system-package-skins-own-package-scoped-presentation.md)
+- [ADR-0029：Format Adapter Script Runner](adr/0029-format-adapter-script-runner.md)

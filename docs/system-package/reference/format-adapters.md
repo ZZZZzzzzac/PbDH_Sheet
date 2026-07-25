@@ -1,30 +1,66 @@
 # Format Adapters
 
-Format Adapter 是 System Package Author Data。它声明外部资源包或人物卡如何映射到 Base Framework 的原生 Resource Extension / Character Data；Base 不内置任何游戏名、外部字段名、类型值或 Card 语义。
+Format Adapter 是 System Package 提供的受限外部格式转换脚本。Base Framework 不内置游戏名、外部字段名、类型值或 Card 语义；System Package Script 负责语义转换，Base 负责文件安全、隔离执行、输出验证、确认与原生持久化管线。
 
-manifest 可用 `resourceFormatAdapters` 与 `characterFormatAdapters` 指向两个 JSON 数组。完整现行示例见 `public/system-packages/daggerheart-core/adapters/`。
+manifest 可用 `resourceFormatAdapters` 与 `characterFormatAdapters` 指向两个 JSON 数组。现行示例见 `public/system-packages/daggerheart-core/adapters/`。
 
-## 共同边界
+## 声明与执行边界
 
-- 所有路径都是 `(string | non-negative integer)[]`，逐段读取或写入 own property；不接受点号表达式、原型链、脚本或任意求值。
-- Carrier 可声明 JSON object/array、带明确首尾 marker 的 embedded JSON，或受 Package VFS 安全限制的 ZIP JSON members。HTML carrier 只提取并 `JSON.parse` 文本，不创建 DOM、不执行脚本。
-- `检测` 是路径存在/严格相等规则。零命中为 unsupported；多 Adapter 命中必须由 Player 明确选择，不能按顺序猜测。
-- Adapter ID 在同类数组内唯一。所有 Module、Card Table 与已有 Resource Library 引用在包加载时校验。
+共同 JSON 字段：
 
-## Resource Format Adapter
+- `ID`、`名称`：同类 Adapter 内唯一。
+- `载体`：JSON object/array、带明确首尾 marker 的 embedded JSON，或受 Package VFS 限制的 ZIP JSON members。
+- `导入脚本`：System Package 内安全相对路径，脚本用 CommonJS `module.exports = function (input) { ... }` 返回结果。
+- Character Adapter 可额外声明 `导出脚本` 与 `导出文件后缀`。
 
-Adapter 声明 package name/version 来源、一个 `记录路径` 或多个带固定类型值的 `记录源`、类型与 Entry ID 路径、已知类型路由及显式字段投影。未知类型只能在 `未知类型.启用` 时生成独立 Library；`运行时字段`在投影前移除。
+`检测`只支持安全路径的存在/严格相等规则。零命中为 unsupported；多 Adapter 命中必须由 Player 选择。HTML carrier 只提取并 `JSON.parse` 文本，不创建 DOM、不执行来源脚本或加载资源。
 
-ZIP Adapter 可用 `图片`把来源 ID 绑定到包内图片。未绑定图片不进入规范化 Extension，并作为 orphan 计数报告。`分组`可按 group key + slot 合并多条记录；缺 slot 是 warning，同组同 slot 重复会拒绝该组，图片按声明的 slot 优先级选择。
+Adapter Script 在独立 Web Worker 中运行，有固定超时。输入先结构化克隆并冻结；脚本没有 UI、DOM、存储、当前 Character Save 或 Effective Resource Catalog 的可变引用。脚本语法在 System Package 加载时校验，运行异常、超时及非法输出均由 Base 生成稳定诊断。
 
-转换先生成原生 Resource Extension，再走同一 schema、冲突检查、Effective Catalog 和存储管线。外部转换总是显示来源/转换/跳过/图片计数与诊断；确认前、取消后均不修改目录或 IndexedDB。规范化 JSON/ZIP 可作为之后的稳定更新源。
+## Resource Import Script
 
-## Character Format Adapter
+输入包含 `document`、`fileName`、ZIP `assets`（`{ path, bytes }[]`）副本以及当前 `resourceLibraries` 只读副本。脚本返回：
 
-导入声明包括文本、Checkbox、Countable、Player Image 和 Card 映射。文本映射通常读取单个`来源路径`；`joinedText` 也可读取`来源路径列表`，按声明顺序忽略空值并用`分隔符`拼接，适合把外部格式拆开的同一显示字段投影到一个 Free Text/Long Text Module。`Checkbox映射`可把一个外部路径投影到一个或多个 Checkbox Resource 选项；只把数值或字符串 `1` 视为选中，`0` 与 `2` 均导入为未选中，因此外部格式的 disabled/unavailable 状态不会进入 Character Data。反向导出在声明的来源选项全部选中时写 `1`，否则写 `0`。Countable 支持数字、truthy/checked 数组与 tri-state 数组，并可从固定值、来源路径、数组长度或可用槽数取得 max。tri-state 的固定语义是 `0 = 空`、`1 = 满`、`2 = 不可用`：current 为 1 的数量，`availableCount` max 为 0 与 1 的总数；反向导出使用相同编码。图片只接受支持的 `data:image/*;base64` URL，并写入 Character Data 顶层 `playerImages`。
+```js
+{
+  name: "External Package",
+  version: "1.0",
+  resourceLibraries: [/* native Resource Library contributions */],
+  retainedAssets: [{ sourcePath: "images/a.webp", targetPath: "assets/external/a.webp" }],
+  diagnostics: [],
+  counts: {
+    sourceEntries: 1, convertedEntries: 1, skippedEntries: 0,
+    convertedFields: 4, skippedFields: 0,
+    boundImages: 1, orphanImages: 0
+  }
+}
+```
 
-Card 按声明顺序尝试 external ID、结构化字段组合、唯一名称、规范化后的完整描述精确匹配；不做模糊匹配。非 `fields` 规则可在来源或 Resource 字段上声明 `fileStem` 转换，从 `/` 或 `\\` 分隔的路径取不含最后扩展名的文件名，再进行精确比较；这适合外部格式以卡图路径代表卡牌的情况。空来源值不参与匹配；某一级多命中即报告 ambiguous 并跳过。查找范围是声明的 Libraries，运行时传入 Effective System Package，因此已安装 Extension 的 Entries 也可命中，但人物卡导入本身不会安装资源包。
+Base 验证保留资产确实存在、路径安全且目标不重复，并从 Current System Package ID、Adapter ID 与规范化名称生成稳定 Extension ID。转换结果随后进入原生 Resource Extension schema、冲突检查、确认、存储和 Effective Resource Catalog 管线。脚本不能直接安装 Extension。
 
-有跳过或 warning 的人物卡先显示报告；确认后才创建并选择新的 Character Save，取消不改变当前存档。
+Resource Adapter 仅支持导入；外部资源格式导出不在合同内。
 
-可选 `导出`声明反向字段、Countable、图片与 Card 投影。Base 从当前 System Package 动态列出可导出格式；无法表达的字段/Card/图片进入 lossy report，Player 确认后才下载 JSON。原生 PbDH JSON 与只读 HTML snapshot 仍使用原有稳定输出合同。
+## Character Import Script
+
+输入包含 `document`、`fileName` 与当前有效 `resourceLibraries` 只读副本。脚本返回：
+
+```js
+{
+  values: { "character-name": "Ada", hp: { current: 3, max: 6 } },
+  cards: [{ tableModuleId: "character-card-table", state: "配置", libraryId: "domain-cards", entryId: "card-id" }],
+  images: [{ moduleId: "character-avatar", name: "Avatar", dataUrl: "data:image/webp;base64,..." }],
+  suggestedSaveName: "Ada",
+  skippedFields: 0, skippedCards: 0, skippedImages: 0,
+  diagnostics: []
+}
+```
+
+Base 验证每个 Module ID 与值类型、Card Table/Library/Entry 引用和图片 data URL，再生成稳定 Card Instance / Player Image ID，创建原生 Character Data，并重新走原生解析与保存管线。脚本可在传入的有效 Catalog 中匹配 Extension 贡献的 Card，但不能安装资源或修改 Catalog。
+
+有跳过或 warning 的转换先显示报告；确认后才创建并选择新的 Character Save，取消不改变当前存档。
+
+## Character Export Script
+
+导出输入包含 `adapterId`、原生 `characterData` 与有效 `resourceLibraries` 副本。脚本返回 `document`，并可返回 `exportedFields`、`skippedFields`、`exportedCards`、`skippedCards`、`exportedImages`、`skippedImages` 与 `diagnostics`。Base 验证结果为可序列化对象；有损结果确认后才下载 JSON。原生 PbDH JSON 与只读 HTML snapshot 使用原有稳定输出合同。
+
+复杂匹配、分组、外部字段组合、三态槽位及互斥语义都属于包脚本的 Implementation Depth，不应扩展 Base 为新的转换 DSL。Base 的稳定 Seam 只有 Carrier 输入与上述输出合同。

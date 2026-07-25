@@ -626,7 +626,11 @@ async function importCharacterSource(text: string, fileName: string, selectedAda
     set({ importError: "导入失败：选择的 Character Format Adapter 不匹配此文件。", importNotice: null });
     return;
   }
-  const conversion = convertExternalCharacterSource(source, adapter, currentPackage);
+  const conversion = await convertExternalCharacterSource(source, adapter, currentPackage);
+  if ("error" in conversion) {
+    set({ importError: `导入失败：${conversion.error.text}`, importNotice: null, pendingCharacterConversion: null });
+    return;
+  }
   const normalized = parseCharacterDataText(exportCharacterData(conversion.data), currentPackage);
   if (!normalized.ok) {
     set({ importError: `导入失败：转换结果不符合当前 Character Data 合同。${normalized.error}`, importNotice: null, pendingCharacterConversion: null });

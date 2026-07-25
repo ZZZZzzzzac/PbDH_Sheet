@@ -516,20 +516,16 @@ describe("validateSystemPackage Sheet Modules", () => {
     );
   });
 
-  it("validates Format Adapter IDs and all Module, Library, and Card Table references", () => {
+  it("validates Format Adapter IDs and script syntax", () => {
     const resourceAdapter = {
       ID: "duplicate", 名称: "Resource", 载体: [{ 类型: "json", 根类型: "array", 检测: [{ 路径: [0], 存在: true }] }],
-      包名: { 类型: "文件名" }, 记录路径: [], 类型路径: ["type"],
-      已知类型: [{ 值: "card", 资源库ID: "missing-library", 字段映射: [{ 字段: "名称", 来源路径: ["name"] }] }],
+      导入脚本: "adapters/import.js", importScriptContent: "module.exports = function () {",
     };
     const characterAdapter = {
       ID: "duplicate", 名称: "Character", 载体: [{ 类型: "json", 根类型: "object", 检测: [{ 路径: ["name"], 存在: true }] }],
-      字段映射: [{ 目标模块ID: "missing-module", 来源路径: ["name"] }], Checkbox映射: [{ 目标模块ID: "checks", 选项映射: [{ 目标选项IDs: ["missing-option"], 来源路径: ["check"] }] }], Countable映射: [{ 目标模块ID: "character-name", 来源路径: ["hp"], 转换: "number" }], 图片映射: [],
-      Card映射: [{ 来源路径: ["cards"], 状态: "active", 目标CardTableID: "missing-table", ResourceLibraryIDs: ["missing-library"], 匹配优先级: [{ 类型: "uniqueName", 来源路径: ["name"] }] }],
-      导出: {
-        字段映射: [{ 来源模块ID: "missing-export-module", 目标路径: ["name"] }], Checkbox映射: [{ 来源模块ID: "checks", 选项映射: [{ 来源选项IDs: ["missing-export-option"], 目标路径: ["check"] }] }], Countable映射: [], 图片映射: [],
-        Card映射: [{ 来源CardTableID: "missing-export-table", 状态: "active", 目标路径: ["cards"], ResourceLibraryIDs: ["missing-export-library"], 字段映射: [] }],
-      },
+      导入脚本: "adapters/import.js", importScriptContent: "module.exports = () => ({ values: {} });",
+      导出脚本: "adapters/export.js", exportScriptContent: "module.exports = () => ({",
+      导出文件后缀: ".json",
     };
     const result = validateSystemPackage({
       ...minimalSystemPackage,
@@ -540,14 +536,11 @@ describe("validateSystemPackage Sheet Modules", () => {
     expect(result.ok).toBe(false);
     expect(result.issues.map((issue) => issue.code)).toEqual(expect.arrayContaining([
       "DUPLICATE_RESOURCE_FORMAT_ADAPTER_ID", "DUPLICATE_CHARACTER_FORMAT_ADAPTER_ID",
-      "MISSING_RESOURCE_ADAPTER_LIBRARY_REFERENCE", "MISSING_CHARACTER_ADAPTER_MODULE_REFERENCE",
-      "MISSING_CHARACTER_ADAPTER_CARD_TABLE_REFERENCE", "MISSING_CHARACTER_ADAPTER_LIBRARY_REFERENCE",
-      "INVALID_CHARACTER_ADAPTER_MODULE_TYPE",
-      "MISSING_CHARACTER_ADAPTER_CHECKBOX_OPTION_REFERENCE",
+      "FORMAT_ADAPTER_SCRIPT_SYNTAX_INVALID",
     ]));
   });
 
-  it("rejects contradictory Resource Adapter record sources and invalid grouping slots", () => {
+  it("rejects the removed declarative Resource Adapter DSL", () => {
     const result = validateSystemPackage({
       ...minimalSystemPackage,
       resourceFormatAdapters: [{

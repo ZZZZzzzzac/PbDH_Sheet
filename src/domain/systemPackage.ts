@@ -810,129 +810,6 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
   collectDuplicateIdIssues(systemPackage.resourceFormatAdapters ?? [], "Resource Format Adapter", "DUPLICATE_RESOURCE_FORMAT_ADAPTER_ID", "resourceFormatAdapters", issues);
   collectDuplicateIdIssues(systemPackage.characterFormatAdapters ?? [], "Character Format Adapter", "DUPLICATE_CHARACTER_FORMAT_ADAPTER_ID", "characterFormatAdapters", issues);
 
-  for (const [adapterIndex, adapter] of (systemPackage.resourceFormatAdapters ?? []).entries()) {
-    for (const [typeIndex, mapping] of adapter.已知类型.entries()) {
-      if (findResourceLibrary(systemPackage, mapping.资源库ID)) continue;
-      issues.push({
-        level: "error",
-        code: "MISSING_RESOURCE_ADAPTER_LIBRARY_REFERENCE",
-        text: `Resource Format Adapter 引用了不存在的 Resource Library：${mapping.资源库ID}`,
-        path: `resourceFormatAdapters.${adapterIndex}.已知类型.${typeIndex}.资源库ID`,
-      });
-    }
-    if (adapter.分组 && !findResourceLibrary(systemPackage, adapter.分组.资源库ID)) {
-      issues.push({
-        level: "error",
-        code: "MISSING_RESOURCE_ADAPTER_LIBRARY_REFERENCE",
-        text: `Resource Format Adapter 分组引用了不存在的 Resource Library：${adapter.分组.资源库ID}`,
-        path: `resourceFormatAdapters.${adapterIndex}.分组.资源库ID`,
-      });
-    }
-  }
-
-  const adapterModuleById = new Map(systemPackage.modules.map((module) => [module.ID, module]));
-  for (const [adapterIndex, adapter] of (systemPackage.characterFormatAdapters ?? []).entries()) {
-    const referencedModules = [
-      ...adapter.字段映射.map((mapping) => mapping.目标模块ID),
-      ...adapter.Checkbox映射.map((mapping) => mapping.目标模块ID),
-      ...adapter.Countable映射.map((mapping) => mapping.目标模块ID),
-      ...adapter.图片映射.map((mapping) => mapping.目标模块ID),
-      ...(adapter.导出?.字段映射.map((mapping) => mapping.来源模块ID) ?? []),
-      ...(adapter.导出?.Checkbox映射.map((mapping) => mapping.来源模块ID) ?? []),
-      ...(adapter.导出?.Countable映射.map((mapping) => mapping.来源模块ID) ?? []),
-      ...(adapter.导出?.图片映射.map((mapping) => mapping.来源模块ID) ?? []),
-    ];
-    for (const moduleId of referencedModules) {
-      if (adapterModuleById.has(moduleId)) continue;
-      issues.push({
-        level: "error",
-        code: "MISSING_CHARACTER_ADAPTER_MODULE_REFERENCE",
-        text: `Character Format Adapter 引用了不存在的 Sheet Module：${moduleId}`,
-        path: `characterFormatAdapters.${adapterIndex}`,
-      });
-    }
-    const adapterModuleContracts = [
-      ...adapter.字段映射.map((mapping, index) => ({ moduleId: mapping.目标模块ID, types: ["freeText", "longText"], path: `characterFormatAdapters.${adapterIndex}.字段映射.${index}.目标模块ID` })),
-      ...adapter.Checkbox映射.map((mapping, index) => ({ moduleId: mapping.目标模块ID, types: ["checkboxResource"], path: `characterFormatAdapters.${adapterIndex}.Checkbox映射.${index}.目标模块ID` })),
-      ...adapter.Countable映射.map((mapping, index) => ({ moduleId: mapping.目标模块ID, types: ["countableResource"], path: `characterFormatAdapters.${adapterIndex}.Countable映射.${index}.目标模块ID` })),
-      ...adapter.图片映射.map((mapping, index) => ({ moduleId: mapping.目标模块ID, types: ["imageField"], path: `characterFormatAdapters.${adapterIndex}.图片映射.${index}.目标模块ID` })),
-      ...(adapter.导出?.字段映射.map((mapping, index) => ({ moduleId: mapping.来源模块ID, types: ["freeText", "longText"], path: `characterFormatAdapters.${adapterIndex}.导出.字段映射.${index}.来源模块ID` })) ?? []),
-      ...(adapter.导出?.Checkbox映射.map((mapping, index) => ({ moduleId: mapping.来源模块ID, types: ["checkboxResource"], path: `characterFormatAdapters.${adapterIndex}.导出.Checkbox映射.${index}.来源模块ID` })) ?? []),
-      ...(adapter.导出?.Countable映射.map((mapping, index) => ({ moduleId: mapping.来源模块ID, types: ["countableResource"], path: `characterFormatAdapters.${adapterIndex}.导出.Countable映射.${index}.来源模块ID` })) ?? []),
-      ...(adapter.导出?.图片映射.map((mapping, index) => ({ moduleId: mapping.来源模块ID, types: ["imageField"], path: `characterFormatAdapters.${adapterIndex}.导出.图片映射.${index}.来源模块ID` })) ?? []),
-    ];
-    for (const contract of adapterModuleContracts) {
-      const module = adapterModuleById.get(contract.moduleId);
-      if (!module || contract.types.includes(module.类型)) continue;
-      issues.push({
-        level: "error", code: "INVALID_CHARACTER_ADAPTER_MODULE_TYPE",
-        text: `Character Format Adapter 的 Module ${contract.moduleId} 类型 ${module.类型} 不支持此映射。`, path: contract.path,
-      });
-    }
-    for (const [mappingIndex, mapping] of adapter.Checkbox映射.entries()) {
-      const module = adapterModuleById.get(mapping.目标模块ID);
-      if (module?.类型 !== "checkboxResource") continue;
-      const optionIds = new Set(module.选项.map((option) => option.ID));
-      mapping.选项映射.forEach((optionMapping, optionMappingIndex) => optionMapping.目标选项IDs.forEach((optionId, optionIndex) => {
-        if (optionIds.has(optionId)) return;
-        issues.push({
-          level: "error", code: "MISSING_CHARACTER_ADAPTER_CHECKBOX_OPTION_REFERENCE",
-          text: `Character Format Adapter 引用了不存在的 Checkbox 选项：${optionId}`,
-          path: `characterFormatAdapters.${adapterIndex}.Checkbox映射.${mappingIndex}.选项映射.${optionMappingIndex}.目标选项IDs.${optionIndex}`,
-        });
-      }));
-    }
-    for (const [mappingIndex, mapping] of (adapter.导出?.Checkbox映射 ?? []).entries()) {
-      const module = adapterModuleById.get(mapping.来源模块ID);
-      if (module?.类型 !== "checkboxResource") continue;
-      const optionIds = new Set(module.选项.map((option) => option.ID));
-      mapping.选项映射.forEach((optionMapping, optionMappingIndex) => optionMapping.来源选项IDs.forEach((optionId, optionIndex) => {
-        if (optionIds.has(optionId)) return;
-        issues.push({
-          level: "error", code: "MISSING_CHARACTER_ADAPTER_CHECKBOX_OPTION_REFERENCE",
-          text: `Character Format Adapter 导出引用了不存在的 Checkbox 选项：${optionId}`,
-          path: `characterFormatAdapters.${adapterIndex}.导出.Checkbox映射.${mappingIndex}.选项映射.${optionMappingIndex}.来源选项IDs.${optionIndex}`,
-        });
-      }));
-    }
-    for (const [cardIndex, cardMapping] of adapter.Card映射.entries()) {
-      if (adapterModuleById.get(cardMapping.目标CardTableID)?.类型 !== "cardTable") {
-        issues.push({
-          level: "error",
-          code: "MISSING_CHARACTER_ADAPTER_CARD_TABLE_REFERENCE",
-          text: `Character Format Adapter 引用了不存在的 Card Table：${cardMapping.目标CardTableID}`,
-          path: `characterFormatAdapters.${adapterIndex}.Card映射.${cardIndex}.目标CardTableID`,
-        });
-      }
-      cardMapping.ResourceLibraryIDs.forEach((libraryId, libraryIndex) => {
-        if (findResourceLibrary(systemPackage, libraryId)) return;
-        issues.push({
-          level: "error",
-          code: "MISSING_CHARACTER_ADAPTER_LIBRARY_REFERENCE",
-          text: `Character Format Adapter 引用了不存在的 Resource Library：${libraryId}`,
-          path: `characterFormatAdapters.${adapterIndex}.Card映射.${cardIndex}.ResourceLibraryIDs.${libraryIndex}`,
-        });
-      });
-    }
-    for (const [cardIndex, cardMapping] of (adapter.导出?.Card映射 ?? []).entries()) {
-      if (adapterModuleById.get(cardMapping.来源CardTableID)?.类型 !== "cardTable") {
-        issues.push({
-          level: "error", code: "MISSING_CHARACTER_ADAPTER_CARD_TABLE_REFERENCE",
-          text: `Character Format Adapter 导出引用了不存在的 Card Table：${cardMapping.来源CardTableID}`,
-          path: `characterFormatAdapters.${adapterIndex}.导出.Card映射.${cardIndex}.来源CardTableID`,
-        });
-      }
-      cardMapping.ResourceLibraryIDs.forEach((libraryId, libraryIndex) => {
-        if (findResourceLibrary(systemPackage, libraryId)) return;
-        issues.push({
-          level: "error", code: "MISSING_CHARACTER_ADAPTER_LIBRARY_REFERENCE",
-          text: `Character Format Adapter 导出引用了不存在的 Resource Library：${libraryId}`,
-          path: `characterFormatAdapters.${adapterIndex}.导出.Card映射.${cardIndex}.ResourceLibraryIDs.${libraryIndex}`,
-        });
-      });
-    }
-  }
-
   if (parsed.data.manifest.schemaVersion !== frameworkSchemaVersion) {
     issues.push({
       level: "warning",
@@ -1849,6 +1726,44 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
   }
 
   // --- Validation checks syntax ---
+  const adapterScripts = [
+    ...(systemPackage.resourceFormatAdapters ?? []).map((adapter, index) => ({
+      content: adapter.importScriptContent,
+      id: adapter.ID,
+      path: `resourceFormatAdapters.${index}.importScriptContent`,
+      pointer: ["resourceFormatAdapters", index, "importScriptContent"] as Array<string | number>,
+    })),
+    ...(systemPackage.characterFormatAdapters ?? []).flatMap((adapter, index) => [
+      {
+        content: adapter.importScriptContent,
+        id: adapter.ID,
+        path: `characterFormatAdapters.${index}.importScriptContent`,
+        pointer: ["characterFormatAdapters", index, "importScriptContent"] as Array<string | number>,
+      },
+      ...(adapter.exportScriptContent ? [{
+        content: adapter.exportScriptContent,
+        id: adapter.ID,
+        path: `characterFormatAdapters.${index}.exportScriptContent`,
+        pointer: ["characterFormatAdapters", index, "exportScriptContent"] as Array<string | number>,
+      }] : []),
+    ]),
+  ];
+  for (const script of adapterScripts) {
+    try {
+      parseJavaScript(script.content, { ecmaVersion: "latest", sourceType: "script", locations: true });
+    } catch (error) {
+      const location = getJavaScriptErrorLocation(error);
+      issues.push({
+        level: "error",
+        code: "FORMAT_ADAPTER_SCRIPT_SYNTAX_INVALID",
+        text: `Format Adapter Script JavaScript 语法错误：${script.id}${location ? `（${location.line}:${location.column}）` : ""}`,
+        path: script.path,
+        location: { pointer: script.pointer, line: location?.line, column: location?.column },
+        evidence: [{ label: "parserMessage", value: getErrorMessage(error) }],
+      });
+    }
+  }
+
   for (const [checkIndex, check] of (systemPackage.validationChecks ?? []).entries()) {
     try {
       parseJavaScript(check.scriptContent, { ecmaVersion: "latest", sourceType: "script", locations: true });

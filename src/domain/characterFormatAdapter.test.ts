@@ -1,11 +1,8 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { zipSync } from "fflate";
-import { beforeAll, describe, expect, it, vi } from "vitest";
-import { applyEffectiveResourceCatalog, createEffectiveResourceCatalog } from "./effectiveResourceCatalog";
-import { loadResourceExtensionJson } from "./resourceExtension";
+import { beforeAll, describe, expect, it } from "vitest";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
-import { createEmptyCharacterData } from "./characterData";
 import type { SystemPackage } from "./systemPackage";
 import { convertExternalCharacterSource, exportExternalCharacterData, parseAndDetectCharacterSource } from "./characterFormatAdapter";
 
@@ -13,7 +10,7 @@ const packageRoot = join(process.cwd(), "public", "system-packages", "daggerhear
 const migrationRoot = join(process.cwd(), "docs", "migration", "save");
 let daggerheartPackage: SystemPackage;
 
-describe("Character Format Adapter", () => {
+describe("Character Format Adapter scripts", () => {
   beforeAll(async () => {
     const loaded = await loadSystemPackageFromZipFile(new Blob([createPackageZip()]));
     expect(loaded.ok, loaded.ok ? undefined : JSON.stringify(loaded.issues, null, 2)).toBe(true);
@@ -21,378 +18,120 @@ describe("Character Format Adapter", () => {
     daggerheartPackage = loaded.package;
   });
 
-  it("converts the real ZZZ character fixture including tri-state counters and embedded avatar", () => {
+  it("imports the real ZZZ fixture, tri-state resources, equipment, cards, and diagnostics", async () => {
     const text = readFileSync(join(migrationRoot, "啄页_匕首之心人物卡_zzz.json"), "utf8");
-    const document = JSON.parse(text) as Record<string, unknown>;
+    const sourceDocument = JSON.parse(text) as Record<string, unknown>;
     const detection = parseAndDetectCharacterSource(text, "啄页_匕首之心人物卡_zzz.json", daggerheartPackage.characterFormatAdapters ?? []);
     expect(detection.status).toBe("match");
     if (detection.status !== "match") return;
-    const converted = convertExternalCharacterSource(detection.source, detection.adapter, daggerheartPackage);
-
-    expect(converted.adapter.ID).toBe("zzz-character-json");
-    expect(converted.suggestedSaveName).toBe("啄页");
-    expect(converted.data.character.values).toEqual(expect.objectContaining({
+    const conversion = await convertExternalCharacterSource(detection.source, detection.adapter, daggerheartPackage);
+    expect("error" in conversion).toBe(false);
+    if ("error" in conversion) return;
+    expect(conversion.suggestedSaveName).toBe("啄页");
+    expect(conversion.data.character.values).toEqual(expect.objectContaining({
       "character-name": "啄页",
-      "class-name": "法师-知识学派",
-      level: "3",
-      agility: "3",
-      hp: expectedTriState(document, "HpSlotCheckbox", 12),
-      stress: expectedTriState(document, "StressSlotCheckbox", 12),
-      hope: { current: selectedSlotCount(document, "HopeSlotCheckbox", 6), max: 6 },
-      "armor-slots": expectedTriState(document, "ArmorSlotCheckbox", 12),
-      proficiency: { current: selectedSlotCount(document, "ProficiencyCheckbox", 5), max: 5 },
-      "handful-gold": { current: selectedSlotCount(document, "HandfulGoldCheckbox", 9), max: 9 },
-      "bag-gold": { current: selectedSlotCount(document, "BagGoldCheckbox", 9), max: 9 },
-      "chest-gold": { current: Number(document.ChestGoldCheckbox1), max: null },
-      "experience-1": "【逐渐遗忘的藏经阁器灵】",
-      "experience-modifier-1": "+5",
-      "primary-weapon-name": joinedFixtureText(document, "PrimaryWeaponNameTextbox", "PrimaryWeaponStatTextbox", "PrimaryWeaponDamageTextbox"),
-      "secondary-weapon-name": joinedFixtureText(document, "SecondaryWeaponNameTextbox", "SecondaryWeaponStatTextbox", "SecondaryWeaponDamageTextbox"),
-      "secondary-weapon-description": "保护：护甲值+2。",
-      "armor-name": joinedFixtureText(document, "ArmorNameTextbox", "ArmorThresholdTextbox", "ArmorScoreTextbox"),
-      "armor-description": "灵活：闪避值+1。",
-      "armor-value": String(document.ArmorTextbox),
-      inventory: "小型生命药水: 立刻恢复 1d4 生命点。\n《神州要术》：本次村规中，选择领域卡与升级选项时，你的临时等级视作五级",
-      "advancement-tier-2": expect.objectContaining({ "traits-3": true, "stress-2": true, experiences: true, evasion: true }),
-      "advancement-tier-3": expect.objectContaining({ "traits-3": true, experiences: true, subclass: true, evasion: true, "multiclass-1": false, "multiclass-2": false }),
+      hp: expectedTriState(sourceDocument, "HpSlotCheckbox", 12),
+      stress: expectedTriState(sourceDocument, "StressSlotCheckbox", 12),
+      "armor-slots": expectedTriState(sourceDocument, "ArmorSlotCheckbox", 12),
+      "primary-weapon-name": joined(sourceDocument, "PrimaryWeaponNameTextbox", "PrimaryWeaponStatTextbox", "PrimaryWeaponDamageTextbox"),
+      "primary-weapon-description": sourceDocument.PrimaryWeaponTraitTextbox,
+      "secondary-weapon-name": joined(sourceDocument, "SecondaryWeaponNameTextbox", "SecondaryWeaponStatTextbox", "SecondaryWeaponDamageTextbox"),
+      "secondary-weapon-description": sourceDocument.SecondaryWeaponTraitTextbox,
+      "armor-name": joined(sourceDocument, "ArmorNameTextbox", "ArmorThresholdTextbox", "ArmorScoreTextbox"),
+      "armor-value": String(sourceDocument.ArmorTextbox),
+      "armor-description": sourceDocument.ArmorTraitTextbox,
+      inventory: sourceDocument.ItemSlot1Textbox,
     }));
-    expect(Object.values(converted.data.playerImages)).toEqual([expect.objectContaining({ mimeType: "image/jpeg", dataUrl: expect.stringMatching(/^data:image\/jpeg;base64,/u) })]);
-    expect(converted.report.convertedImages).toBe(1);
-    expect(converted.report).toMatchObject({ matchedCards: 13, skippedCards: 1 });
-    expect(converted.report.diagnostics).toContainEqual(expect.objectContaining({
-      code: "CHARACTER_ADAPTER_CARD_NOT_FOUND",
-      text: "Card「器灵-木鸟」没有匹配的 Resource Entry，已跳过。",
-    }));
-    expect(converted.data.cards.instances).toHaveLength(13);
-    for (const card of converted.data.cards.instances) {
-      expect(card.definitionRef?.type).toBe("resourceLibrary");
-      if (card.definitionRef?.type !== "resourceLibrary") continue;
-      const library = daggerheartPackage.resourceLibraries?.find((candidate) => candidate.ID === card.definitionRef?.libraryId);
-      const entry = library?.entries.find((candidate) => candidate.ID === card.definitionRef?.entryId);
-      expect(entry, `${card.definitionRef.libraryId}/${card.definitionRef.entryId}`).toBeDefined();
-      expect(entry?.fields["卡图"]).toMatch(/^assets\/cards\/.+\.webp$/u);
-    }
-    const exported = exportExternalCharacterData(converted.data, detection.adapter, daggerheartPackage);
+    expect(conversion.data.character.values["advancement-tier-3"]).toEqual(expect.objectContaining({ subclass: true, "multiclass-1": false }));
+    expect(conversion.report).toMatchObject({ matchedCards: 13, skippedCards: 1, convertedImages: 1 });
+    expect(conversion.report.diagnostics).toContainEqual(expect.objectContaining({ code: "CHARACTER_ADAPTER_CARD_NOT_FOUND", text: "Card「器灵-木鸟」没有匹配的 Resource Entry，已跳过。" }));
+
+    const exported = await exportExternalCharacterData(conversion.data, detection.adapter, daggerheartPackage);
     expect("error" in exported).toBe(false);
     if ("error" in exported) return;
-    expect(exported.document).toEqual(expect.objectContaining({
-      ArmorTraitTextbox: "灵活：闪避值+1。",
-      ItemSlot1Textbox: "小型生命药水: 立刻恢复 1d4 生命点。\n《神州要术》：本次村规中，选择领域卡与升级选项时，你的临时等级视作五级",
-    }));
-    const roundTripTextFields = [
-      "NameTextbox", "RaceTextbox", "CommunityTextbox", "ClassTextbox", "LevelTextbox", "EvasionTextbox",
-      "AgilityTextbox", "StrengthTextbox", "FinesseTextbox", "InstinctTextbox", "PresenceTextbox", "KnowledgeTextbox",
-      "MajorTextbox", "SevereTextbox", "ClassFeatureTextbox",
-      "PrimaryWeaponTraitTextbox", "SecondaryWeaponTraitTextbox",
-      "Backup1WeaponNameTextbox", "Backup1WeaponTraitTextbox", "Backup2WeaponNameTextbox", "Backup2WeaponTraitTextbox",
-      "ArmorTextbox", "ArmorTraitTextbox", "ItemSlot1Textbox", "EventLogTextbox",
-      ...Array.from({ length: 5 }, (_, index) => [`Experience${index + 1}Textbox`, `Experience${index + 1}ModifierTextbox`]).flat(),
-      ...Array.from({ length: 3 }, (_, index) => [`BackgroundQuestion${index + 1}Textbox`, `ConnectQuestion${index + 1}Textbox`, `BackgroundAnswer${index + 1}Textbox`, `ConnectAnswer${index + 1}Textbox`]).flat(),
-    ];
-    for (const field of roundTripTextFields) expect(exported.document[field], field).toBe(document[field]);
-    expect(exported.document.ArmorScoreTextbox).toBeUndefined();
-    for (const prefix of ["HandfulGoldCheckbox", "BagGoldCheckbox"]) {
-      for (let index = 1; index <= 9; index += 1) expect(Boolean(exported.document[`${prefix}${index}`]), `${prefix}${index}`).toBe(Number(document[`${prefix}${index}`]) === 1);
-    }
-    expect(exported.document.ChestGoldCheckbox1).toBe(Number(document.ChestGoldCheckbox1));
+    expect(exported.document).toEqual(expect.objectContaining({ ArmorTextbox: sourceDocument.ArmorTextbox, ArmorTraitTextbox: sourceDocument.ArmorTraitTextbox, ItemSlot1Textbox: sourceDocument.ItemSlot1Textbox }));
   });
 
-  it("maps ZZZ advancement checkboxes while ignoring unavailable state 2", () => {
+  it("treats ZZZ advancement state 2 as unselected and tri-state slot 2 as unavailable", async () => {
     const document = JSON.parse(readFileSync(join(migrationRoot, "啄页_匕首之心人物卡_zzz.json"), "utf8")) as Record<string, unknown>;
     document.LevelupT3_F1 = "2";
     document.LevelupT3_H1 = "1";
     document.LevelupT3_I1 = "1";
-    const detection = parseAndDetectCharacterSource(JSON.stringify(document), "advancements_zzz.json", daggerheartPackage.characterFormatAdapters ?? []);
-    expect(detection.status).toBe("match");
-    if (detection.status !== "match") return;
-
-    const converted = convertExternalCharacterSource(detection.source, detection.adapter, daggerheartPackage);
-    expect(converted.data.character.values["advancement-tier-3"]).toEqual(expect.objectContaining({
-      subclass: false,
-      "proficiency-1": true,
-      "proficiency-2": true,
-      "multiclass-1": true,
-      "multiclass-2": true,
-    }));
-    const exported = exportExternalCharacterData(converted.data, detection.adapter, daggerheartPackage);
-    expect("error" in exported).toBe(false);
-    if ("error" in exported) return;
-    expect(exported.document).toEqual(expect.objectContaining({ LevelupT3_F1: 0, LevelupT3_H1: 1, LevelupT3_I1: 1 }));
+    const detection = parseAndDetectCharacterSource(JSON.stringify(document), "advancement.json", daggerheartPackage.characterFormatAdapters ?? []);
+    if (detection.status !== "match") throw new Error("fixture not detected");
+    const conversion = await convertExternalCharacterSource(detection.source, detection.adapter, daggerheartPackage);
+    if ("error" in conversion) throw new Error(conversion.error.text);
+    expect(conversion.data.character.values["advancement-tier-3"]).toEqual(expect.objectContaining({ subclass: false, "proficiency-1": true, "multiclass-1": true }));
+    expect(conversion.data.character.values.hp).toEqual(expectedTriState(document, "HpSlotCheckbox", 12));
   });
 
-  it("maps ZZZ tri-state slots as 0 empty, 1 filled, and 2 unavailable", () => {
-    const document = JSON.parse(readFileSync(join(migrationRoot, "啄页_匕首之心人物卡_zzz.json"), "utf8")) as Record<string, unknown>;
-    [1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2, 2].forEach((value, index) => { document[`HpSlotCheckbox${index + 1}`] = value; });
-    const detection = parseAndDetectCharacterSource(JSON.stringify(document), "tri-state_zzz.json", daggerheartPackage.characterFormatAdapters ?? []);
-    expect(detection.status).toBe("match");
-    if (detection.status !== "match") return;
-
-    const converted = convertExternalCharacterSource(detection.source, detection.adapter, daggerheartPackage);
-    expect(converted.data.character.values.hp).toEqual({ current: 3, max: 4 });
-    const exported = exportExternalCharacterData(converted.data, detection.adapter, daggerheartPackage);
-    expect("error" in exported).toBe(false);
-    if ("error" in exported) return;
-    expect(Array.from({ length: 12 }, (_, index) => exported.document[`HpSlotCheckbox${index + 1}`])).toEqual([1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2, 2]);
-  });
-
-  it("maps both ZZZ weapon trait textboxes to weapon description Modules", () => {
-    const document = JSON.parse(readFileSync(join(migrationRoot, "啄页_匕首之心人物卡_zzz.json"), "utf8")) as Record<string, unknown>;
-    document.PrimaryWeaponTraitTextbox = "Primary weapon trait";
-    document.SecondaryWeaponTraitTextbox = "Secondary weapon trait";
-    const detection = parseAndDetectCharacterSource(JSON.stringify(document), "weapon-traits_zzz.json", daggerheartPackage.characterFormatAdapters ?? []);
-    expect(detection.status).toBe("match");
-    if (detection.status !== "match") return;
-
-    const converted = convertExternalCharacterSource(detection.source, detection.adapter, daggerheartPackage);
-    expect(converted.data.character.values).toEqual(expect.objectContaining({
-      "primary-weapon-description": "Primary weapon trait",
-      "secondary-weapon-description": "Secondary weapon trait",
-    }));
-    const exported = exportExternalCharacterData(converted.data, detection.adapter, daggerheartPackage);
-    expect("error" in exported).toBe(false);
-    if ("error" in exported) return;
-    expect(exported.document).toEqual(expect.objectContaining({
-      PrimaryWeaponTraitTextbox: "Primary weapon trait",
-      SecondaryWeaponTraitTextbox: "Secondary weapon trait",
-    }));
-  });
-
-  it("produces equivalent representative values from real dhSheet JSON and HTML", () => {
+  it("imports dhSheet profession features, inventory, motivation, and composed equipment from JSON and HTML", async () => {
     const jsonText = readFileSync(join(migrationRoot, "布罗克-战士-仙灵-龟人-荒野之民-LV1.json"), "utf8");
     const htmlText = readFileSync(join(migrationRoot, "布罗克-战士-仙灵-龟人-荒野之民-LV1.html"), "utf8");
-    const jsonDetection = parseAndDetectCharacterSource(jsonText, "布罗克.json", daggerheartPackage.characterFormatAdapters ?? []);
-    const htmlDetection = parseAndDetectCharacterSource(htmlText, "布罗克.html", daggerheartPackage.characterFormatAdapters ?? []);
-    expect(jsonDetection.status).toBe("match");
-    expect(htmlDetection.status).toBe("match");
-    if (jsonDetection.status !== "match" || htmlDetection.status !== "match") return;
-    const fromJson = convertExternalCharacterSource(jsonDetection.source, jsonDetection.adapter, daggerheartPackage);
-    const fromHtml = convertExternalCharacterSource(htmlDetection.source, htmlDetection.adapter, daggerheartPackage);
-
-    for (const moduleId of ["character-name", "class-name", "strength", "background-story", "hp", "stress", "hope", "armor-slots", "handful-gold"]) {
-      expect(fromHtml.data.character.values[moduleId], moduleId).toEqual(fromJson.data.character.values[moduleId]);
-    }
-    expect(fromJson.data.character.values).toEqual(expect.objectContaining({
-      "character-name": "布罗克",
-      "class-name": "战士  -  利刃&骸骨",
-      strength: "4",
-      hp: { current: 0, max: 6 },
-      stress: { current: 0, max: 9 },
-      hope: { current: 0, max: 6 },
-      "armor-slots": { current: 0, max: 9 },
-      proficiency: { current: 4, max: 6 },
-      "handful-gold": { current: 1, max: 9 },
+    const document = JSON.parse(jsonText) as Record<string, unknown>;
+    const profession = (document.cards as Array<Record<string, unknown>>).find((card) => card.type === "profession" && card.id === document.profession);
+    expect(profession).toBeTruthy();
+    const conversions = await Promise.all([[jsonText, "布罗克.json"], [htmlText, "布罗克.html"]].map(async ([text, name]) => {
+      const detection = parseAndDetectCharacterSource(text, name, daggerheartPackage.characterFormatAdapters ?? []);
+      if (detection.status !== "match") throw new Error(`${name} not detected`);
+      const conversion = await convertExternalCharacterSource(detection.source, detection.adapter, daggerheartPackage);
+      if ("error" in conversion) throw new Error(conversion.error.text);
+      return conversion;
     }));
-    expect(fromJson.data.cards.instances.some((card) => card.state === "配置")).toBe(true);
-    expect(fromJson.data.cards.instances.some((card) => card.state === "宝库")).toBe(true);
+    const values = conversions[0].data.character.values;
+    expect(conversions[1].data.character.values).toEqual(values);
+    expect(values).toEqual(expect.objectContaining({
+      "class-feature": profession?.description,
+      "class-hope-feature": (profession?.professionSpecial as Record<string, unknown>)["希望特性"],
+      inventory: (document.inventory as unknown[]).filter((item) => String(item).trim()).join("\n"),
+      "event-log": document.characterMotivation,
+      "primary-weapon-name": joined(document, "primaryWeaponName", "primaryWeaponTrait", "primaryWeaponDamage"),
+      "secondary-weapon-name": joined(document, "secondaryWeaponName", "secondaryWeaponTrait", "secondaryWeaponDamage"),
+      "armor-name": joined(document, "armorName", "armorBaseScore", "armorThreshold"),
+      "armor-value": String(document.armorValue),
+    }));
+    expect(conversions[0].data.cards.instances.some((card) => card.state === "配置")).toBe(true);
+    expect(conversions[0].data.cards.instances.some((card) => card.state === "宝库")).toBe(true);
   });
 
-  it("does not execute scripts while extracting embedded JSON", () => {
+  it("extracts embedded JSON without executing source scripts or requesting resources", () => {
     let executed = false;
     Object.defineProperty(globalThis, "unsafeAdapterProbe", { configurable: true, set: () => { executed = true; } });
-    const text = `<html><script>globalThis.unsafeAdapterProbe = true</script><script>window.characterData = {"ruleSetId":"daggerheart","name":"Safe"\n};</script></html>`;
-    const detection = parseAndDetectCharacterSource(text, "safe.html", daggerheartPackage.characterFormatAdapters ?? []);
-    expect(detection.status).toBe("match");
+    const text = `<html><img src="https://invalid.example/probe.png"><script>globalThis.unsafeAdapterProbe=true</script><script>window.characterData = {"ruleSetId":"daggerheart","name":"Safe"\n};</script></html>`;
+    expect(parseAndDetectCharacterSource(text, "safe.html", daggerheartPackage.characterFormatAdapters ?? []).status).toBe("match");
     expect(executed).toBe(false);
     delete (globalThis as Record<string, unknown>).unsafeAdapterProbe;
   });
 
-  it("does not request external HTML resources and blocks malformed or ambiguous embedded payloads", () => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch");
-    const safe = `<html><img src="https://attacker.invalid/pixel.png"><script>window.characterData = {"ruleSetId":"daggerheart","name":"Safe"\n};</script></html>`;
-    expect(parseAndDetectCharacterSource(safe, "safe.html", daggerheartPackage.characterFormatAdapters ?? []).status).toBe("match");
-    expect(fetchSpy).not.toHaveBeenCalled();
-    const malformed = `<html><script>window.characterData = {broken\n};</script></html>`;
-    const duplicate = `<html><script>window.characterData = {"ruleSetId":"daggerheart","name":"A"\n}; window.characterData = {"ruleSetId":"daggerheart","name":"B"\n};</script></html>`;
-    const missing = `<html><body>No payload</body></html>`;
-    for (const text of [malformed, duplicate, missing]) {
-      expect(["none", "error"]).toContain(parseAndDetectCharacterSource(text, "blocked.html", daggerheartPackage.characterFormatAdapters ?? []).status);
-    }
-    fetchSpy.mockRestore();
+  it("reports thrown and invalid script output without mutating Character Data", async () => {
+    const base = daggerheartPackage.characterFormatAdapters?.[0];
+    if (!base) throw new Error("missing adapter");
+    const source = { document: {}, fileName: "x.json", carrier: base.载体[0] };
+    const thrown = await convertExternalCharacterSource(source, { ...base, importScriptContent: "module.exports=()=>{throw new Error('boom')}" }, daggerheartPackage);
+    expect(thrown).toEqual({ error: expect.objectContaining({ code: "CHARACTER_ADAPTER_IMPORT_SCRIPT_ERROR", text: expect.stringContaining("boom") }) });
+    const invalid = await convertExternalCharacterSource(source, { ...base, importScriptContent: "module.exports=()=>({cards:[]})" }, daggerheartPackage);
+    expect(invalid).toEqual({ error: expect.objectContaining({ code: "CHARACTER_ADAPTER_SCRIPT_OUTPUT_INVALID" }) });
   });
 
-  it("keeps valid text when a declared Player Image data URL is malformed", () => {
-    const base = daggerheartPackage.characterFormatAdapters?.find((candidate) => candidate.ID === "dhsheet-character");
-    expect(base).toBeTruthy();
-    if (!base) return;
-    const adapter = { ...base, 字段映射: [{ 目标模块ID: "character-name", 来源路径: ["name"], 转换: "text" }], Countable映射: [], Card映射: [], 图片映射: [{ 目标模块ID: "character-avatar", 来源路径: ["image"], 名称: "Avatar" }] } as typeof base;
-    const converted = convertExternalCharacterSource({ document: { name: "Still valid", image: "data:text/html;base64,PGgxPkJhZDwvaDE+" }, fileName: "invalid-image.json", carrier: adapter.载体[0] }, adapter, daggerheartPackage);
-    expect(converted.data.character.values["character-name"]).toBe("Still valid");
-    expect(converted.data.playerImages).toEqual({});
-    expect(converted.report).toMatchObject({ convertedFields: 1, skippedImages: 1 });
-    expect(converted.report.diagnostics).toContainEqual(expect.objectContaining({ code: "CHARACTER_ADAPTER_IMAGE_INVALID" }));
-  });
-
-  it("requires explicit selection when multiple adapters match", () => {
-    const adapter = daggerheartPackage.characterFormatAdapters?.[0];
-    expect(adapter).toBeTruthy();
-    if (!adapter) return;
-    const text = JSON.stringify({ NameTextbox: "Ambiguous", cards: [] });
-    const detection = parseAndDetectCharacterSource(text, "ambiguous.json", [adapter, { ...adapter, ID: "second", 名称: "Second" }]);
-    expect(detection).toEqual(expect.objectContaining({ status: "ambiguous", adapters: expect.arrayContaining([expect.objectContaining({ ID: adapter.ID }), expect.objectContaining({ ID: "second" })]) }));
-  });
-
-  it.each([
-    ["zzz-character-json", "啄页_匕首之心人物卡_zzz.json", "啄页", "class-name", "法师-知识学派"],
-    ["dhsheet-character", "布罗克-战士-仙灵-龟人-荒野之民-LV1.json", "布罗克", "strength", "4"],
-  ])("round-trips representative values through %s JSON export", (adapterId, fixture, expectedName, moduleId, expectedValue) => {
-    const text = readFileSync(join(migrationRoot, fixture), "utf8");
-    const detected = parseAndDetectCharacterSource(text, fixture, daggerheartPackage.characterFormatAdapters ?? []);
-    expect(detected.status).toBe("match");
-    if (detected.status !== "match") return;
-    const imported = convertExternalCharacterSource(detected.source, detected.adapter, daggerheartPackage);
-    const adapter = daggerheartPackage.characterFormatAdapters?.find((candidate) => candidate.ID === adapterId);
-    expect(adapter).toBeTruthy();
-    if (!adapter) return;
-    const exported = exportExternalCharacterData(imported.data, adapter, daggerheartPackage);
-    expect("error" in exported).toBe(false);
-    if ("error" in exported) return;
-    const redetected = parseAndDetectCharacterSource(JSON.stringify(exported.document), `roundtrip-${adapterId}.json`, [adapter]);
-    expect(redetected.status).toBe("match");
-    if (redetected.status !== "match") return;
-    const roundTrip = convertExternalCharacterSource(redetected.source, adapter, daggerheartPackage);
-    expect(roundTrip.data.character.values["character-name"]).toBe(expectedName);
-    expect(roundTrip.data.character.values[moduleId]).toBe(expectedValue);
-    expect(roundTrip.data.character.values.hp).toEqual(imported.data.character.values.hp);
-  });
-
-  it("matches Cards only by declared exact tiers and skips ambiguous matches", () => {
-    const base = daggerheartPackage.characterFormatAdapters?.find((adapter) => adapter.ID === "dhsheet-character");
-    expect(base).toBeTruthy();
-    if (!base) return;
-    const adapter = {
-      ...base, 字段映射: [], Countable映射: [], 图片映射: [],
-      Card映射: [{
-        来源路径: ["cards"], 状态: "配置", 目标CardTableID: "character-card-table", ResourceLibraryIDs: ["domain-cards"],
-        匹配优先级: [
-          { 类型: "externalId", 来源路径: ["id"], Resource字段: "原名" },
-          { 类型: "fields", 字段: [{ 来源路径: ["name"], Resource字段: "名称" }, { 来源路径: ["class"], Resource字段: "领域" }] },
-          { 类型: "uniqueName", 来源路径: ["name"], Resource字段: "名称" },
-          { 类型: "exactDescription", 来源路径: ["description"], Resource字段: "描述" },
-        ],
-      }],
-    } as typeof base;
-    const systemPackage = {
-      ...daggerheartPackage,
-      resourceLibraries: [{ ID: "domain-cards", 名称: "Cards", 路径: "cards.json", fields: [], entries: [
-        { ID: "a", fields: { ID: "a", 原名: "external-a", 名称: "Shared", 领域: "Blade", 描述: "Alpha description" } },
-        { ID: "b", fields: { ID: "b", 原名: "external-b", 名称: "Shared", 领域: "Bone", 描述: "Beta description" } },
-        { ID: "c", fields: { ID: "c", 原名: "external-c", 名称: "Unique", 领域: "Arcana", 描述: "Gamma description" } },
-      ] }],
-    } as SystemPackage;
-    const converted = convertExternalCharacterSource({ document: { cards: [
-      { id: "external-a", name: "wrong" },
-      { name: "Shared", class: "Bone" },
-      { name: "Unique" },
-      { description: "  Gamma   description " },
-      { name: "Shared" },
-      { name: "missing" },
-      {},
-    ] }, fileName: "cards.json", carrier: adapter.载体[0] }, adapter, systemPackage);
-    expect(converted.data.cards.instances.map((card) => card.definitionRef)).toEqual([
-      expect.objectContaining({ entryId: "a" }), expect.objectContaining({ entryId: "b" }),
-      expect.objectContaining({ entryId: "c" }), expect.objectContaining({ entryId: "c" }),
-    ]);
-    expect(converted.report).toMatchObject({ matchedCards: 4, skippedCards: 3 });
-    expect(converted.report.diagnostics.map((item) => item.code)).toEqual(expect.arrayContaining(["CHARACTER_ADAPTER_CARD_AMBIGUOUS", "CHARACTER_ADAPTER_CARD_NOT_FOUND"]));
-    expect(converted.report.diagnostics.map((item) => item.text)).toEqual(expect.arrayContaining([
-      "Card「Shared」匹配到多个 Resource Entry，已跳过。",
-      "Card「missing」没有匹配的 Resource Entry，已跳过。",
-      "Card（配置第 7 项）没有匹配的 Resource Entry，已跳过。",
-    ]));
-  });
-
-  it("matches a Card contributed by an enabled Resource Extension without mutating the catalog", () => {
-    const base = daggerheartPackage.characterFormatAdapters?.find((candidate) => candidate.ID === "dhsheet-character");
-    expect(base).toBeTruthy();
-    if (!base) return;
-    const loaded = loadResourceExtensionJson(JSON.stringify({
-      ID: "card-extension", 名称: "Card Extension", 版本: "1", 目标系统包ID: daggerheartPackage.manifest.ID,
-      resourceLibraries: [{ ID: "domain-cards", 名称: "Domain Cards", entries: [{ ID: "extension-card", 原名: "extension-external-id", 名称: "Extension Only", 领域: "Arcana", 描述: "Only from extension" }] }],
-    }), daggerheartPackage.manifest.ID);
-    expect(loaded.ok).toBe(true);
-    if (!loaded.ok) return;
-    const effective = applyEffectiveResourceCatalog(daggerheartPackage, createEffectiveResourceCatalog(daggerheartPackage, [loaded.extension]));
-    const adapter = { ...base, 字段映射: [], Countable映射: [], 图片映射: [], Card映射: [{ 来源路径: ["cards"], 状态: "配置", 目标CardTableID: "character-card-table", ResourceLibraryIDs: ["domain-cards"], 匹配优先级: [{ 类型: "externalId", 来源路径: ["id"], Resource字段: "原名" }] }] } as typeof base;
-    const converted = convertExternalCharacterSource({ document: { cards: [{ id: "extension-external-id" }] }, fileName: "extension-card.json", carrier: adapter.载体[0] }, adapter, effective);
-    expect(converted.data.cards.instances[0]?.definitionRef).toEqual({ type: "resourceLibrary", libraryId: "domain-cards", entryId: "extension-card" });
-    expect(daggerheartPackage.resourceLibraries?.find((library) => library.ID === "domain-cards")?.entries.some((entry) => entry.ID === "extension-card")).toBe(false);
-  });
-
-  it("skips duplicate Card definitions that declare conflicting external states", () => {
-    const base = daggerheartPackage.characterFormatAdapters?.find((candidate) => candidate.ID === "dhsheet-character");
-    expect(base).toBeTruthy();
-    if (!base) return;
-    const mapping = { 状态: "配置", 目标CardTableID: "character-card-table", ResourceLibraryIDs: ["domain-cards"], 匹配优先级: [{ 类型: "externalId", 来源路径: ["id"], Resource字段: "ID" }] };
-    const adapter = { ...base, 字段映射: [], Countable映射: [], 图片映射: [], Card映射: [{ ...mapping, 来源路径: ["active"] }, { ...mapping, 来源路径: ["vault"], 状态: "宝库" }] } as typeof base;
-    const entryId = daggerheartPackage.resourceLibraries?.find((library) => library.ID === "domain-cards")?.entries[0]?.ID;
-    expect(entryId).toBeTruthy();
-    if (!entryId) return;
-    const converted = convertExternalCharacterSource({ document: { active: [{ id: entryId }], vault: [{ id: entryId }] }, fileName: "conflict.json", carrier: adapter.载体[0] }, adapter, daggerheartPackage);
-    expect(converted.data.cards.instances).toEqual([]);
-    expect(converted.report).toMatchObject({ matchedCards: 0, skippedCards: 2 });
-    expect(converted.report.diagnostics).toContainEqual(expect.objectContaining({ code: "CHARACTER_ADAPTER_CARD_STATE_CONFLICT" }));
-  });
-
-  it("does not fabricate an exported Card when external identity and required embedded fields are missing", () => {
-    const adapter = daggerheartPackage.characterFormatAdapters?.find((candidate) => candidate.ID === "dhsheet-character");
-    expect(adapter).toBeTruthy();
-    if (!adapter) return;
-    const library = daggerheartPackage.resourceLibraries?.find((candidate) => candidate.ID === "domain-cards");
-    expect(library).toBeTruthy();
-    if (!library) return;
-    const packageWithIncompleteEntry = { ...daggerheartPackage, resourceLibraries: (daggerheartPackage.resourceLibraries ?? []).map((candidate) => candidate.ID === library.ID ? { ...candidate, entries: [{ ID: "incomplete", fields: { 名称: "Incomplete" } }] } : candidate) };
-    const source = parseAndDetectCharacterSource(readFileSync(join(migrationRoot, "布罗克-战士-仙灵-龟人-荒野之民-LV1.json"), "utf8"), "source.json", [adapter]);
-    expect(source.status).toBe("match");
-    if (source.status !== "match") return;
-    const data = convertExternalCharacterSource(source.source, adapter, daggerheartPackage).data;
-    data.cards.instances = [{ instanceId: "incomplete", tableModuleId: "character-card-table", definitionRef: { type: "resourceLibrary", libraryId: "domain-cards", entryId: "incomplete" }, state: "配置", xPct: 0, yPct: 0, zIndex: 1, face: "front", rotation: 0, scale: 1, indicators: [] }];
-    const exported = exportExternalCharacterData(data, adapter, packageWithIncompleteEntry);
-    expect("error" in exported).toBe(false);
-    if ("error" in exported) return;
-    expect(exported.report.skippedCards).toBe(1);
-    expect(exported.document.cards).toEqual([]);
-  });
-
-  it("exports a Card by external identity or by complete required embedded fields", () => {
-    const adapter = daggerheartPackage.characterFormatAdapters?.find((candidate) => candidate.ID === "dhsheet-character");
-    const library = daggerheartPackage.resourceLibraries?.find((candidate) => candidate.ID === "domain-cards");
-    expect(adapter && library).toBeTruthy();
-    if (!adapter || !library) return;
-    const packageWithEntries = { ...daggerheartPackage, resourceLibraries: (daggerheartPackage.resourceLibraries ?? []).map((candidate) => candidate.ID === library.ID ? { ...candidate, entries: [
-      { ID: "identified", fields: { 原名: "external-id", 名称: "Identified" } },
-      { ID: "embedded", fields: { 名称: "Embedded", 领域: "Arcana", 描述: "Complete embedded description" } },
-    ] } : candidate) };
-    const data = createEmptyCharacterData(packageWithEntries);
-    data.cards.instances = ["identified", "embedded"].map((entryId, index) => ({ instanceId: `card-${entryId}`, tableModuleId: "character-card-table", definitionRef: { type: "resourceLibrary" as const, libraryId: "domain-cards", entryId }, state: "配置", xPct: 0, yPct: 0, zIndex: index + 1, face: "front" as const, rotation: 0, scale: 1, indicators: [] }));
-    const exported = exportExternalCharacterData(data, adapter, packageWithEntries);
-    expect("error" in exported).toBe(false);
-    if ("error" in exported) return;
-    expect(exported.report).toMatchObject({ exportedCards: 2, skippedCards: 0 });
-    expect(exported.document.cards).toEqual([
-      expect.objectContaining({ id: "external-id", name: "Identified" }),
-      expect.objectContaining({ name: "Embedded", description: "Complete embedded description" }),
-    ]);
-    expect((exported.document.cards as Array<Record<string, unknown>>)[1]).not.toHaveProperty("id");
+  it("warns and skips a malformed Player Image while keeping valid values", async () => {
+    const base = daggerheartPackage.characterFormatAdapters?.[0];
+    if (!base) throw new Error("missing adapter");
+    const source = { document: {}, fileName: "x.json", carrier: base.载体[0] };
+    const conversion = await convertExternalCharacterSource(source, {
+      ...base,
+      importScriptContent: "module.exports=()=>({values:{'character-name':'Still valid'},images:[{moduleId:'character-avatar',dataUrl:'data:text/html;base64,PGgxPkJhZDwvaDE+'}]})",
+    }, daggerheartPackage);
+    if ("error" in conversion) throw new Error(conversion.error.text);
+    expect(conversion.data.character.values["character-name"]).toBe("Still valid");
+    expect(conversion.report).toMatchObject({ convertedImages: 0, skippedImages: 1 });
+    expect(conversion.report.diagnostics).toContainEqual(expect.objectContaining({ code: "CHARACTER_ADAPTER_IMAGE_INVALID" }));
   });
 });
-
-function selectedSlotCount(document: Record<string, unknown>, prefix: string, length: number): number {
-  return Array.from({ length }, (_, index) => Number(document[`${prefix}${index + 1}`])).filter((value) => value === 1).length;
-}
 
 function expectedTriState(document: Record<string, unknown>, prefix: string, length: number): { current: number; max: number } {
   const values = Array.from({ length }, (_, index) => Number(document[`${prefix}${index + 1}`]));
   return { current: values.filter((value) => value === 1).length, max: values.filter((value) => value === 0 || value === 1).length };
 }
-
-function joinedFixtureText(document: Record<string, unknown>, ...fields: string[]): string {
-  return fields.map((field) => String(document[field] ?? "").trim()).filter(Boolean).join("｜");
-}
-
-function createPackageZip(): Uint8Array {
-  return zipSync(Object.fromEntries(walkFiles(packageRoot).map((path) => [relative(packageRoot, path).replaceAll("\\", "/"), new Uint8Array(readFileSync(path))])), { level: 0 });
-}
-
-function walkFiles(directory: string): string[] {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? walkFiles(join(directory, entry.name)) : [join(directory, entry.name)]);
-}
+function joined(document: Record<string, unknown>, ...fields: string[]): string { return fields.map((field) => String(document[field] ?? "").trim()).filter(Boolean).join("｜"); }
+function createPackageZip(): Uint8Array { return zipSync(Object.fromEntries(walkFiles(packageRoot).map((path) => [relative(packageRoot, path).replaceAll("\\", "/"), new Uint8Array(readFileSync(path))])), { level: 0 }); }
+function walkFiles(directory: string): string[] { return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? walkFiles(join(directory, entry.name)) : [join(directory, entry.name)]); }

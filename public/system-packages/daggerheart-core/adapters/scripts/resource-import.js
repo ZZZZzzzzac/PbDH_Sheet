@@ -1,0 +1,85 @@
+function normalize(value) { return value === undefined || value === null ? "" : String(value).normalize("NFKC").trim(); }
+function convert(value, kind) { if (value === undefined || value === null) return undefined; if (kind === "number") { const number = Number(value); return Number.isFinite(number) ? number : undefined; } return value; }
+function mapping(type) {
+  const common = {
+    主职: ["classes", [["名称", "名称"], ["描述", "简介"], ["领域", "领域"], ["闪避值", "初始闪避值", "number"], ["生命点", "初始生命点", "number"], ["希望特性", "希望特性"], ["职业特性", "职业特性"], ["背景问题", "背景问题"], ["关系问题", "关系问题"]]],
+    子职: ["subclasses", [["名称", "名称"], ["主职", "主职"], ["等级", "等级"], ["施法属性", "施法属性"], ["描述", "描述"]]],
+    社群: ["communities", [["名称", "名称"], ["简介", "简介"], ["性格", "性格"], ["描述", "描述"]]],
+    领域卡: ["domain-cards", [["名称", "名称"], ["领域", "领域"], ["等级", "等级"], ["属性", "属性"], ["回想", "回想"], ["描述", "描述"]]],
+  };
+  return common[type];
+}
+function dhMapping(type) {
+  const result = mapping(type);
+  if (!result) return result;
+  const fields = result[1].map((item) => item.slice());
+  if (type === "主职") fields.forEach((item) => { if (item[0] === "闪避值") item[1] = "起始闪避"; if (item[0] === "生命点") item[1] = "起始生命"; });
+  if (type === "子职") fields.forEach((item) => { if (item[0] === "施法属性") item[1] = "施法"; });
+  return [result[0], fields];
+}
+function addLibrary(map, id, name, entry) { const library = map.get(id) || { ID: id, 名称: name, entries: [] }; library.entries.push(entry); map.set(id, library); }
+function convertedEntry(record, fields, fallbackId, counts) {
+  const entry = { ID: normalize(record.原名 || record.id) || fallbackId };
+  for (const [target, source, kind] of fields) { const value = convert(record[source], kind); if (value === undefined) counts.skippedFields += 1; else { entry[target] = value; counts.convertedFields += 1; } }
+  return entry;
+}
+function findAsset(assets, id) {
+  if (!id) return undefined;
+  const base = `images/${id}`;
+  for (const asset of assets) if ((asset.path === base || asset.path.startsWith(`${base}.`)) && /\.(?:png|jpe?g|webp|gif|avif|svg)$/iu.test(asset.path)) return asset.path;
+  return undefined;
+}
+function bindImage(entry, record, assets, retainedAssets, counts, diagnostics) {
+  if (!record.id) return;
+  const sourcePath = findAsset(assets, record.id);
+  if (!sourcePath) { diagnostics.push({ level: "warning", code: "RESOURCE_ADAPTER_IMAGE_MISSING", text: `记录图片不存在：${record.id}` }); return; }
+  const targetPath = `assets/external/${sourcePath.split("/").pop()}`;
+  entry.卡图 = targetPath;
+  if (!retainedAssets.some((asset) => asset.sourcePath === sourcePath)) retainedAssets.push({ sourcePath, targetPath });
+  counts.boundImages += 1;
+}
+function importZzz(input) {
+  const records = Array.isArray(input.document) ? input.document : [];
+  const libraries = new Map(); const diagnostics = [];
+  const counts = { sourceEntries: records.length, convertedEntries: 0, skippedEntries: 0, convertedFields: 0, skippedFields: 0, boundImages: 0, orphanImages: 0 };
+  records.forEach((record, index) => {
+    if (!record || typeof record !== "object") { counts.skippedEntries += 1; return; }
+    const type = normalize(record.类型); const known = mapping(type);
+    let entry; let libraryId; let libraryName;
+    if (known) { libraryId = known[0]; libraryName = input.resourceLibraries.find((item) => item.ID === libraryId)?.名称 || type; entry = convertedEntry(record, known[1], `external:zzz:${index}`, counts); }
+    else { libraryId = `外部类型:${type}`; libraryName = type; entry = { ID: normalize(record.原名) || `external:zzz:${index}` }; Object.entries(record).forEach(([key, value]) => { if (!["原名", "imageUrl", "hasLocalImage", "localId"].includes(key)) { entry[key] = value; counts.convertedFields += 1; } }); }
+    if (!normalize(entry.名称)) { counts.skippedEntries += 1; diagnostics.push({ level: "warning", code: "RESOURCE_ADAPTER_ENTRY_NAME_MISSING", text: `记录 ${index + 1} 转换后缺少名称，已跳过。` }); return; }
+    addLibrary(libraries, libraryId, libraryName, entry); counts.convertedEntries += 1;
+  });
+  return { name: input.fileName.replace(/\.[^.]+$/u, ""), version: "未声明", resourceLibraries: [...libraries.values()], diagnostics, retainedAssets: [], counts };
+}
+function importDh(input) {
+  const document = input.document || {}; const cards = document.cards || {}; const records = [];
+  [["profession", "主职"], ["ancestry", "种族"], ["community", "社群"], ["subclass", "子职"], ["domain", "领域卡"], ["variant", "变体"]].forEach(([key, type]) => { if (Array.isArray(cards[key])) cards[key].forEach((record) => records.push({ record, type })); });
+  const libraries = new Map(); const diagnostics = []; const retainedAssets = [];
+  const counts = { sourceEntries: records.length, convertedEntries: 0, skippedEntries: 0, convertedFields: 0, skippedFields: 0, boundImages: 0, orphanImages: 0 };
+  const ancestry = new Map();
+  records.forEach(({ record, type }, index) => {
+    if (!record || typeof record !== "object") { counts.skippedEntries += 1; return; }
+    if (type === "种族") { const key = normalize(record.ancestryName); const group = ancestry.get(key) || []; group.push({ record, index }); ancestry.set(key, group); return; }
+    const known = dhMapping(type); let entry; let libraryId; let libraryName;
+    if (known) { libraryId = known[0]; libraryName = input.resourceLibraries.find((item) => item.ID === libraryId)?.名称 || type; entry = convertedEntry(record, known[1], `external:dhsheet:${index}`, counts); }
+    else { libraryId = `外部类型:${type}`; libraryName = type; entry = { ID: normalize(record.id) || `external:dhsheet:${index}` }; Object.entries(record).forEach(([key, value]) => { if (!["id", "imageUrl", "hasLocalImage", "localId"].includes(key)) { entry[key] = value; counts.convertedFields += 1; } }); }
+    if (!normalize(entry.名称)) { counts.skippedEntries += 1; return; }
+    bindImage(entry, record, input.assets, retainedAssets, counts, diagnostics); addLibrary(libraries, libraryId, libraryName, entry); counts.convertedEntries += 1;
+  });
+  for (const [name, group] of ancestry) {
+    const slots = new Map(); group.forEach(({ record }) => { const slot = Number(record.category) === 1 ? "A" : Number(record.category) === 2 ? "B" : ""; const list = slots.get(slot) || []; list.push(record); slots.set(slot, list); });
+    if (!name || [...slots.values()].some((items) => items.length > 1)) { counts.skippedEntries += group.length; diagnostics.push({ level: "warning", code: "RESOURCE_ADAPTER_GROUP_AMBIGUOUS", text: `种族分组 ${name || "（无名称）"} 无法唯一配对，已跳过。` }); continue; }
+    const first = group[0].record; const entry = { ID: normalize(first.id) || `external:ancestry:${name}`, 名称: name, 简介: first.hint };
+    if (slots.get("A")?.[0]) entry.特性A = slots.get("A")[0].description; else counts.skippedFields += 1;
+    if (slots.get("B")?.[0]) entry.特性B = slots.get("B")[0].description; else counts.skippedFields += 1;
+    counts.convertedFields += 1 + (entry.特性A !== undefined ? 1 : 0) + (entry.特性B !== undefined ? 1 : 0);
+    bindImage(entry, slots.get("A")?.[0] || slots.get("B")?.[0] || first, input.assets, retainedAssets, counts, diagnostics);
+    addLibrary(libraries, "ancestries", input.resourceLibraries.find((item) => item.ID === "ancestries")?.名称 || "种族", entry); counts.convertedEntries += 1;
+  }
+  const used = new Set(retainedAssets.map((item) => item.sourcePath)); const imagePaths = input.assets.map((asset) => asset.path).filter((path) => /\.(?:png|jpe?g|webp|gif|avif|svg)$/iu.test(path));
+  counts.orphanImages = imagePaths.filter((path) => !used.has(path)).length; if (counts.orphanImages) diagnostics.push({ level: "warning", code: "RESOURCE_ADAPTER_ORPHAN_IMAGES", text: `${counts.orphanImages} 张未绑定图片已丢弃。` });
+  return { name: normalize(document.manifest && document.manifest.name) || input.fileName.replace(/\.[^.]+$/u, ""), version: normalize(document.manifest && document.manifest.version) || "未声明", resourceLibraries: [...libraries.values()], diagnostics, retainedAssets, counts };
+}
+module.exports = function (input) { return Array.isArray(input.document) ? importZzz(input) : importDh(input); };

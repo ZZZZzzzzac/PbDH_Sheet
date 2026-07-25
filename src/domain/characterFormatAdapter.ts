@@ -1,151 +1,47 @@
-import { createEmptyCharacterData, createCharacterId, type CharacterData, type CountableState, type PlayerImageData } from "./characterData";
+import { createEmptyCharacterData, createCharacterId, type CharacterData, type PlayerImageData, type SheetValue } from "./characterData";
 import type { CardInstance } from "./cardEngine";
-import {
-  carrierMatches,
-  normalizeExternalName,
-  readSafePath,
-  stableAdapterId,
-  writeSafePath,
-  type CharacterFormatAdapter,
-  type FormatCarrier,
-  type FormatDiagnostic,
-} from "./formatAdapter";
-import type { ResourceLibraryEntry } from "./resourceLibrary";
+import { carrierMatches, stableAdapterId, type CharacterFormatAdapter, type FormatCarrier, type FormatDiagnostic } from "./formatAdapter";
+import { executePackageScriptInWorker } from "./packageScriptRunner";
 import type { SystemPackage } from "./systemPackage";
 
-export interface ExternalCharacterSource {
-  document: unknown;
-  fileName: string;
-  carrier: FormatCarrier;
-}
+export interface ExternalCharacterSource { document: unknown; fileName: string; carrier: FormatCarrier }
+export interface CharacterConversionReport { convertedFields: number; skippedFields: number; matchedCards: number; skippedCards: number; convertedImages: number; skippedImages: number; diagnostics: FormatDiagnostic[] }
+export interface CharacterAdapterConversion { adapter: CharacterFormatAdapter; data: CharacterData; suggestedSaveName?: string; report: CharacterConversionReport }
+export interface CharacterAdapterExport { adapter: CharacterFormatAdapter; document: Record<string, unknown>; report: { exportedFields: number; skippedFields: number; exportedCards: number; skippedCards: number; exportedImages: number; skippedImages: number; diagnostics: FormatDiagnostic[] } }
 
-export interface CharacterConversionReport {
-  convertedFields: number;
-  skippedFields: number;
-  matchedCards: number;
-  skippedCards: number;
-  convertedImages: number;
-  skippedImages: number;
-  diagnostics: FormatDiagnostic[];
-}
-
-export interface CharacterAdapterConversion {
-  adapter: CharacterFormatAdapter;
-  data: CharacterData;
+interface ImportCard { tableModuleId: string; state: string; libraryId: string; entryId: string }
+interface ImportImage { moduleId: string; name?: string; dataUrl: string }
+interface CharacterImportResult {
+  values: Record<string, unknown>;
+  cards?: ImportCard[];
+  images?: ImportImage[];
   suggestedSaveName?: string;
-  report: CharacterConversionReport;
+  skippedFields?: number;
+  skippedCards?: number;
+  skippedImages?: number;
+  diagnostics?: FormatDiagnostic[];
 }
 
-export interface CharacterAdapterExport {
-  adapter: CharacterFormatAdapter;
-  document: Record<string, unknown>;
-  report: { exportedFields: number; skippedFields: number; exportedCards: number; skippedCards: number; exportedImages: number; skippedImages: number; diagnostics: FormatDiagnostic[] };
-}
-
-export function exportExternalCharacterData(data: CharacterData, adapter: CharacterFormatAdapter, systemPackage: SystemPackage): CharacterAdapterExport | { error: FormatDiagnostic } {
-  const declaration = adapter.导出;
-  if (!declaration) return { error: { level: "error", code: "CHARACTER_ADAPTER_EXPORT_UNSUPPORTED", text: `${adapter.名称} 不支持导出。` } };
-  const document = structuredClone(declaration.默认值) as Record<string, unknown>;
-  const diagnostics: FormatDiagnostic[] = [];
-  let exportedFields = 0;
-  let skippedFields = 0;
-  let exportedCards = 0;
-  let skippedCards = 0;
-  let exportedImages = 0;
-  let skippedImages = 0;
-  const exportedCardIds = new Set<string>();
-  for (const mapping of declaration.字段映射) {
-    const value = data.character.values[mapping.来源模块ID];
-    const converted = mapping.转换 === "number" && typeof value === "string" && value.trim() ? Number(value) : value;
-    if ((typeof converted !== "string" && typeof converted !== "number") || (typeof converted === "number" && !Number.isFinite(converted))) {
-      skippedFields += 1;
-      diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_EXPORT_FIELD_SKIPPED", text: `字段 ${mapping.来源模块ID} 无法导出。` });
-    } else if (writeSafePath(document, mapping.目标路径, converted)) exportedFields += 1;
+export async function exportExternalCharacterData(data: CharacterData, adapter: CharacterFormatAdapter, systemPackage: SystemPackage): Promise<CharacterAdapterExport | { error: FormatDiagnostic }> {
+  if (!adapter.exportScriptContent) return { error: { level: "error", code: "CHARACTER_ADAPTER_EXPORT_UNSUPPORTED", text: `${adapter.名称} 不支持导出。` } };
+  let raw: unknown;
+  try {
+    raw = await executePackageScriptInWorker(adapter.exportScriptContent, { adapterId: adapter.ID, characterData: data, resourceLibraries: systemPackage.resourceLibraries ?? [] }, `${adapter.名称} Character Export Script`);
+  } catch (error) {
+    return { error: scriptError("CHARACTER_ADAPTER_EXPORT_SCRIPT_ERROR", adapter, error) };
   }
-  for (const mapping of declaration.Checkbox映射 ?? []) {
-    const value = data.character.values[mapping.来源模块ID];
-    if (!isRecord(value)) { skippedFields += 1; continue; }
-    const checkboxState = value as Record<string, unknown>;
-    for (const optionMapping of mapping.选项映射) {
-      const selected = optionMapping.来源选项IDs.every((optionId) => checkboxState[optionId] === true);
-      writeSafePath(document, optionMapping.目标路径, selected ? 1 : 0);
-    }
-    exportedFields += 1;
-  }
-  for (const mapping of declaration.Countable映射) {
-    const value = data.character.values[mapping.来源模块ID];
-    if (!isCountable(value)) { skippedFields += 1; continue; }
-    const length = mapping.长度 ?? value.max ?? value.current;
-    const converted = mapping.转换 === "number" ? value.current
-      : mapping.转换 === "booleanArray" ? Array.from({ length }, (_, index) => index < value.current)
-        : Array.from({ length }, (_, index) => index < value.current ? 1 : index < (value.max ?? length) ? 0 : 2);
-    if (mapping.目标路径列表 && Array.isArray(converted)) {
-      mapping.目标路径列表.forEach((path, index) => writeSafePath(document, path, converted[index]));
-      exportedFields += 1;
-    } else if (mapping.目标路径 && writeSafePath(document, mapping.目标路径, converted)) exportedFields += 1;
-    if (mapping.最大值目标路径) writeSafePath(document, mapping.最大值目标路径, value.max);
-  }
-  for (const mapping of declaration.图片映射) {
-    const value = data.character.values[mapping.来源模块ID];
-    const image = isRecord(value) && "kind" in value && value.kind === "player-image" && typeof value.imageId === "string" ? data.playerImages[value.imageId] : undefined;
-    if (!image) {
-      if (value !== undefined) skippedImages += 1;
-      continue;
-    }
-    if (writeSafePath(document, mapping.目标路径, image.dataUrl)) exportedImages += 1;
-  }
-  for (const mapping of declaration.Card映射) {
-    const outputCards: Record<string, unknown>[] = [];
-    const cards = data.cards.instances.filter((card) => card.tableModuleId === mapping.来源CardTableID && card.state === mapping.状态);
-    for (const card of cards) {
-      if (card.definitionRef?.type !== "resourceLibrary" || !mapping.ResourceLibraryIDs.includes(card.definitionRef.libraryId)) continue;
-      const resourceLibrary = systemPackage.resourceLibraries?.find((item) => item.ID === (card.definitionRef?.type === "resourceLibrary" ? card.definitionRef.libraryId : ""));
-      const entry = resourceLibrary?.entries.find((item) => item.ID === (card.definitionRef?.type === "resourceLibrary" ? card.definitionRef.entryId : ""));
-      if (!entry) continue;
-      const output = structuredClone(mapping.默认值) as Record<string, unknown>;
-      let hasExternalIdentity = false;
-      let missingRequiredField = false;
-      for (const field of mapping.字段映射) {
-        const value = readResourceField(entry, field.来源Resource字段);
-        const present = value !== undefined && value !== null && (typeof value !== "string" || value.trim() !== "");
-        if (field.身份字段 && present) hasExternalIdentity = true;
-        if (field.必填 && !present) missingRequiredField = true;
-        if (present) writeSafePath(output, field.目标路径, value);
-      }
-      if (!hasExternalIdentity && missingRequiredField) continue;
-      outputCards.push(output);
-      exportedCardIds.add(card.instanceId);
-      exportedCards += 1;
-    }
-    writeSafePath(document, mapping.目标路径, outputCards);
-  }
-  skippedCards += data.cards.instances.filter((card) => !exportedCardIds.has(card.instanceId)).length;
-  const mappedModuleIds = new Set([
-    ...declaration.字段映射.map((mapping) => mapping.来源模块ID),
-    ...(declaration.Checkbox映射 ?? []).map((mapping) => mapping.来源模块ID),
-    ...declaration.Countable映射.map((mapping) => mapping.来源模块ID),
-    ...declaration.图片映射.map((mapping) => mapping.来源模块ID),
-  ]);
-  const defaultValues = createEmptyCharacterData(systemPackage, "export-default").character.values;
-  const unmappedModules = Object.entries(data.character.values).filter(([moduleId, value]) => !mappedModuleIds.has(moduleId) && JSON.stringify(value) !== JSON.stringify(defaultValues[moduleId]));
-  for (const [, value] of unmappedModules) {
-    if (isRecord(value) && "kind" in value && value.kind === "player-image") skippedImages += 1;
-    else skippedFields += 1;
-  }
-  if (unmappedModules.length > 0) diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_EXPORT_UNMAPPED_VALUES", text: `${unmappedModules.length} 个非默认 Character Value 没有外部格式映射。` });
-  const referencedImageIds = new Set(Object.values(data.character.values).flatMap((value) => {
-    return isRecord(value) && "kind" in value && value.kind === "player-image" && typeof value.imageId === "string" ? [value.imageId] : [];
-  }));
-  const orphanPlayerImages = Object.keys(data.playerImages).filter((imageId) => !referencedImageIds.has(imageId)).length;
-  skippedImages += orphanPlayerImages;
-  if (orphanPlayerImages > 0) diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_EXPORT_UNMAPPED_IMAGES", text: `${orphanPlayerImages} 张 Player Image 没有外部格式映射。` });
-  if (Object.keys(data.compositeResources).length > 0 || Object.keys(data.resourceSelections ?? {}).length > 0) {
-    skippedFields += Object.keys(data.compositeResources).length + Object.keys(data.resourceSelections ?? {}).length;
-    diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_EXPORT_RESOURCE_STATE_SKIPPED", text: "外部格式不表示 PbDH Composite Resources 或 Resource Selection Snapshots。" });
-  }
-  if (skippedCards > 0) diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_EXPORT_CARD_SKIPPED", text: `${skippedCards} 张 Card 无法映射到外部格式。` });
-  if (skippedImages > 0) diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_EXPORT_IMAGE_SKIPPED", text: `${skippedImages} 个图片槽位没有可导出的图片。` });
-  return { adapter, document, report: { exportedFields, skippedFields, exportedCards, skippedCards, exportedImages, skippedImages, diagnostics } };
+  if (!isRecord(raw) || !isRecord(raw.document)) return { error: invalidOutput(adapter, "导出脚本必须返回 document 对象。") };
+  const diagnostics = normalizeDiagnostics(raw.diagnostics);
+  if (!diagnostics) return { error: invalidOutput(adapter, "diagnostics 格式无效。") };
+  return {
+    adapter,
+    document: raw.document,
+    report: {
+      exportedFields: nonNegativeInt(raw.exportedFields), skippedFields: nonNegativeInt(raw.skippedFields),
+      exportedCards: nonNegativeInt(raw.exportedCards), skippedCards: nonNegativeInt(raw.skippedCards),
+      exportedImages: nonNegativeInt(raw.exportedImages), skippedImages: nonNegativeInt(raw.skippedImages), diagnostics,
+    },
+  };
 }
 
 export type CharacterSourceParseResult =
@@ -158,176 +54,99 @@ export function parseAndDetectCharacterSource(text: string, fileName: string, ad
   const candidates: Array<{ adapter: CharacterFormatAdapter; source: ExternalCharacterSource }> = [];
   let jsonDocument: unknown;
   let jsonParsed = false;
-  try { jsonDocument = JSON.parse(text); jsonParsed = true; } catch { /* HTML/text carriers may still match. */ }
-
-  for (const adapter of adapters) {
-    for (const carrier of adapter.载体) {
-      if (carrier.类型 === "zip") continue;
-      let document: unknown;
-      if (carrier.类型 === "json") {
-        if (!jsonParsed) continue;
-        document = jsonDocument;
-      } else {
-        const extracted = extractEmbeddedJson(text, carrier.开始标记, carrier.结束标记, carrier.结束标记包含字符数 ?? 0);
-        if (!extracted.ok) continue;
-        document = extracted.document;
-      }
-      if (carrierMatches(carrier, document, fileName)) candidates.push({ adapter, source: { document, fileName, carrier } });
+  try { jsonDocument = JSON.parse(text); jsonParsed = true; } catch { /* Embedded JSON carriers may still match. */ }
+  for (const adapter of adapters) for (const carrier of adapter.载体) {
+    if (carrier.类型 === "zip") continue;
+    let document: unknown;
+    if (carrier.类型 === "json") { if (!jsonParsed) continue; document = jsonDocument; }
+    else {
+      const extracted = extractEmbeddedJson(text, carrier.开始标记, carrier.结束标记, carrier.结束标记包含字符数 ?? 0);
+      if (!extracted.ok) continue;
+      document = extracted.document;
     }
+    if (carrierMatches(carrier, document, fileName)) candidates.push({ adapter, source: { document, fileName, carrier } });
   }
   if (candidates.length === 0) {
     if (!jsonParsed && !looksLikeHtml(text)) return { status: "error", diagnostic: { level: "error", code: "CHARACTER_FORMAT_JSON_INVALID", text: "人物卡 JSON 无法解析。" } };
     return { status: "none" };
   }
   const unique = new Map(candidates.map((candidate) => [candidate.adapter.ID, candidate]));
-  if (unique.size > 1) return { status: "ambiguous", adapters: [...unique.values()].map((item) => item.adapter), sources: [...unique.values()].map((item) => item.source) };
+  if (unique.size > 1) return { status: "ambiguous", adapters: [...unique.values()].map(({ adapter }) => adapter), sources: [...unique.values()].map(({ source }) => source) };
   const match = [...unique.values()][0];
   return { status: "match", adapter: match.adapter, source: match.source };
 }
 
-export function convertExternalCharacterSource(source: ExternalCharacterSource, adapter: CharacterFormatAdapter, systemPackage: SystemPackage): CharacterAdapterConversion {
+export async function convertExternalCharacterSource(source: ExternalCharacterSource, adapter: CharacterFormatAdapter, systemPackage: SystemPackage): Promise<CharacterAdapterConversion | { error: FormatDiagnostic }> {
+  let raw: unknown;
+  try {
+    raw = await executePackageScriptInWorker(adapter.importScriptContent, {
+      document: source.document,
+      fileName: source.fileName,
+      resourceLibraries: systemPackage.resourceLibraries ?? [],
+    }, `${adapter.名称} Character Import Script`);
+  } catch (error) {
+    return { error: scriptError("CHARACTER_ADAPTER_IMPORT_SCRIPT_ERROR", adapter, error) };
+  }
+  if (!isRecord(raw) || !isRecord(raw.values)) return { error: invalidOutput(adapter, "导入脚本必须返回 values 对象。") };
+  const result = raw as unknown as CharacterImportResult;
+  const diagnostics = normalizeDiagnostics(result.diagnostics);
+  if (!diagnostics || !optionalArray(result.cards) || !optionalArray(result.images)) return { error: invalidOutput(adapter, "cards、images 或 diagnostics 格式无效。") };
+
   const data = createEmptyCharacterData(systemPackage, createCharacterId());
+  const modules = new Map(systemPackage.modules.map((module) => [module.ID, module]));
   const values = { ...data.character.values };
-  const playerImages: Record<string, PlayerImageData> = {};
-  const diagnostics: FormatDiagnostic[] = [];
   let convertedFields = 0;
-  let skippedFields = 0;
+  for (const [moduleId, value] of Object.entries(result.values)) {
+    const module = modules.get(moduleId);
+    if (!module || !isSheetValue(value) || !valueMatchesModule(value, module)) return { error: invalidOutput(adapter, `values.${moduleId} 不符合当前 Module 合同。`) };
+    values[moduleId] = module.类型 === "checkboxResource" && isRecord(values[moduleId]) && isRecord(value)
+      ? { ...values[moduleId] as Record<string, boolean>, ...value as Record<string, boolean> }
+      : value;
+    convertedFields += 1;
+  }
+
+  const playerImages: Record<string, PlayerImageData> = {};
   let convertedImages = 0;
-  let skippedImages = 0;
-
-  for (const mapping of adapter.字段映射) {
-    const sourceValue = mapping.来源路径列表
-      ? mapping.来源路径列表.map((path) => readSafePath(source.document, path))
-      : readSafePath(source.document, mapping.来源路径 ?? []);
-    const converted = convertText(sourceValue, mapping.转换, mapping.分隔符);
-    if (converted === undefined) {
-      skippedFields += 1;
-      diagnostics.push({
-        level: "warning",
-        code: "CHARACTER_ADAPTER_FIELD_SKIPPED",
-        text: `字段无法转换到 ${mapping.目标模块ID}。`,
-        path: mapping.来源路径列表?.map((path) => path.join(".")).join(", ") ?? mapping.来源路径?.join("."),
-      });
+  let skippedImages = nonNegativeInt(result.skippedImages);
+  for (const [index, image] of (result.images ?? []).entries()) {
+    if (!isRecord(image) || typeof image.moduleId !== "string" || (image.name !== undefined && typeof image.name !== "string") || typeof image.dataUrl !== "string" || modules.get(image.moduleId)?.类型 !== "imageField") {
+      return { error: invalidOutput(adapter, `images.${index} 无效。`) };
+    }
+    if (!isImageDataUrl(image.dataUrl)) {
+      skippedImages += 1;
+      diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_IMAGE_INVALID", text: `Player Image 无效，已跳过 ${image.moduleId}。`, path: `images.${index}.dataUrl` });
       continue;
     }
-    values[mapping.目标模块ID] = converted;
-    convertedFields += 1;
-  }
-
-  for (const mapping of adapter.Checkbox映射 ?? []) {
-    const existing = values[mapping.目标模块ID];
-    const checkboxState: Record<string, boolean> = isRecord(existing) ? { ...existing } as Record<string, boolean> : {};
-    let mappedOptions = 0;
-    for (const optionMapping of mapping.选项映射) {
-      const selected = convertExternalCheckboxValue(readSafePath(source.document, optionMapping.来源路径));
-      if (selected === undefined) continue;
-      for (const optionId of optionMapping.目标选项IDs) checkboxState[optionId] = selected;
-      mappedOptions += 1;
-    }
-    if (mappedOptions === 0) {
-      skippedFields += 1;
-      diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_CHECKBOX_SKIPPED", text: `Checkbox Resource 无法转换到 ${mapping.目标模块ID}。` });
-      continue;
-    }
-    values[mapping.目标模块ID] = checkboxState;
-    convertedFields += 1;
-  }
-
-  for (const mapping of adapter.Countable映射) {
-    const sourceValues = mapping.来源路径列表
-      ? mapping.来源路径列表.map((path) => readSafePath(source.document, path))
-      : readSafePath(source.document, mapping.来源路径 ?? []);
-    const current = convertCount(sourceValues, mapping.转换);
-    if (current === undefined) {
-      skippedFields += 1;
-      diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_COUNT_SKIPPED", text: `Countable Resource 无法转换到 ${mapping.目标模块ID}。` });
-      continue;
-    }
-    const existing = values[mapping.目标模块ID];
-    const derivedMax = mapping.最大值转换 === "arrayLength" && Array.isArray(sourceValues)
-      ? sourceValues.length
-      : mapping.最大值转换 === "availableCount" && Array.isArray(sourceValues)
-        ? sourceValues.filter((value) => value !== 2 && value !== "2").length
-        : undefined;
-    const declaredMax = derivedMax ?? (mapping.最大值来源路径 ? toInteger(readSafePath(source.document, mapping.最大值来源路径)) : mapping.最大值);
-    const max = declaredMax !== undefined ? declaredMax : isCountable(existing) ? existing.max : null;
-    values[mapping.目标模块ID] = { current: Math.max(0, Math.min(current, max ?? current)), max };
-    convertedFields += 1;
-  }
-
-  for (const mapping of adapter.图片映射) {
-    const value = readSafePath(source.document, mapping.来源路径);
-    if (typeof value !== "string" || !isImageDataUrl(value)) {
-      if (value !== undefined && value !== "") {
-        diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_IMAGE_INVALID", text: `Player Image 无效，已跳过 ${mapping.目标模块ID}。`, path: mapping.来源路径.join(".") });
-        skippedImages += 1;
-      }
-      continue;
-    }
-    const mimeType = /^data:([^;,]+)/iu.exec(value)?.[1] ?? "image/png";
-    const imageId = `player-image-${stableAdapterId(adapter.ID, mapping.目标模块ID, value)}`;
-    values[mapping.目标模块ID] = { kind: "player-image", imageId };
-    playerImages[imageId] = { id: imageId, name: mapping.名称, mimeType, dataUrl: value };
+    const imageId = `player-image-${stableAdapterId(adapter.ID, image.moduleId, image.dataUrl)}`;
+    const mimeType = /^data:([^;,]+)/iu.exec(image.dataUrl)?.[1] ?? "image/png";
+    values[image.moduleId] = { kind: "player-image", imageId };
+    playerImages[imageId] = { id: imageId, ...(image.name ? { name: image.name } : {}), mimeType, dataUrl: image.dataUrl };
     convertedImages += 1;
   }
 
   const cards: CardInstance[] = [];
-  const conflictedCardKeys = new Set<string>();
-  let skippedCards = 0;
-  for (const cardMapping of adapter.Card映射) {
-    const sourceCards = readSafePath(source.document, cardMapping.来源路径);
-    if (!Array.isArray(sourceCards)) {
-      diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_CARD_COLLECTION_INVALID", text: "Card 来源路径不是数组。", path: cardMapping.来源路径.join(".") });
+  const seen = new Map<string, string>();
+  let skippedCards = nonNegativeInt(result.skippedCards);
+  for (const [index, card] of (result.cards ?? []).entries()) {
+    if (!isImportCard(card) || modules.get(card.tableModuleId)?.类型 !== "cardTable") return { error: invalidOutput(adapter, `cards.${index} 无效。`) };
+    const entry = systemPackage.resourceLibraries?.find((library) => library.ID === card.libraryId)?.entries.find((item) => item.ID === card.entryId);
+    if (!entry) return { error: invalidOutput(adapter, `cards.${index} 引用了不存在的 Resource Entry ${card.libraryId}/${card.entryId}。`) };
+    const key = `${card.tableModuleId}\u001f${card.libraryId}\u001f${card.entryId}`;
+    const previousState = seen.get(key);
+    if (previousState !== undefined) {
+      skippedCards += 1;
+      if (previousState !== card.state) diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_CARD_STATE_CONFLICT", text: `Card「${entry.fields.名称 ?? entry.ID}」同时声明了冲突状态，后续状态已跳过。` });
       continue;
     }
-    for (const [sourceIndex, sourceCard] of sourceCards.entries()) {
-      const match = matchCard(sourceCard, sourceIndex, cardMapping, systemPackage);
-      if (!match.ok) {
-        skippedCards += 1;
-        diagnostics.push({ level: "warning", code: match.code, text: match.text });
-        continue;
-      }
-      const cardKey = `${cardMapping.目标CardTableID}\u001f${match.libraryId}\u001f${match.entry.ID}`;
-      if (conflictedCardKeys.has(cardKey)) {
-        skippedCards += 1;
-        continue;
-      }
-      const conflictingIndexes = cards.flatMap((card, index) => card.tableModuleId === cardMapping.目标CardTableID
-        && card.definitionRef?.type === "resourceLibrary"
-        && card.definitionRef.libraryId === match.libraryId
-        && card.definitionRef.entryId === match.entry.ID
-        && card.state !== cardMapping.状态 ? [index] : []);
-      if (conflictingIndexes.length > 0) {
-        for (const index of conflictingIndexes.reverse()) cards.splice(index, 1);
-        skippedCards += conflictingIndexes.length + 1;
-        conflictedCardKeys.add(cardKey);
-        diagnostics.push({ level: "warning", code: "CHARACTER_ADAPTER_CARD_STATE_CONFLICT", text: "同一 Card 同时声明了冲突状态，相关 Card 已跳过。" });
-        continue;
-      }
-      const siblingIndex = cards.filter((card) => card.tableModuleId === cardMapping.目标CardTableID).length;
-      cards.push({
-        instanceId: `card-${stableAdapterId(adapter.ID, cardMapping.目标CardTableID, match.libraryId, match.entry.ID, String(siblingIndex))}`,
-        tableModuleId: cardMapping.目标CardTableID,
-        definitionRef: { type: "resourceLibrary", libraryId: match.libraryId, entryId: match.entry.ID },
-        state: cardMapping.状态,
-        xPct: 4 + (siblingIndex % 5) * 18,
-        yPct: 6 + Math.floor(siblingIndex / 5) * 24,
-        zIndex: siblingIndex + 1,
-        face: "front",
-        rotation: 0,
-        scale: 1,
-        indicators: [],
-      });
-    }
+    seen.set(key, card.state);
+    const siblingIndex = cards.filter((item) => item.tableModuleId === card.tableModuleId).length;
+    cards.push({ instanceId: `card-${stableAdapterId(adapter.ID, card.tableModuleId, card.libraryId, card.entryId, String(siblingIndex))}`, tableModuleId: card.tableModuleId, definitionRef: { type: "resourceLibrary", libraryId: card.libraryId, entryId: card.entryId }, state: card.state, xPct: 4 + (siblingIndex % 5) * 18, yPct: 6 + Math.floor(siblingIndex / 5) * 24, zIndex: siblingIndex + 1, face: "front", rotation: 0, scale: 1, indicators: [] });
   }
-
-  const nameValue = adapter.角色名来源路径 ? readSafePath(source.document, adapter.角色名来源路径) : undefined;
-  const suggestedSaveName = typeof nameValue === "string" && nameValue.trim() ? nameValue.trim() : undefined;
   return {
     adapter,
     data: { ...data, character: { ...data.character, values }, cards: { instances: cards }, playerImages, updatedAt: new Date().toISOString() },
-    suggestedSaveName,
-    report: { convertedFields, skippedFields, matchedCards: cards.length, skippedCards, convertedImages, skippedImages, diagnostics },
+    ...(typeof result.suggestedSaveName === "string" && result.suggestedSaveName.trim() ? { suggestedSaveName: result.suggestedSaveName.trim() } : {}),
+    report: { convertedFields, skippedFields: nonNegativeInt(result.skippedFields), matchedCards: cards.length, skippedCards, convertedImages, skippedImages, diagnostics },
   };
 }
 
@@ -340,120 +159,28 @@ export function extractEmbeddedJson(text: string, startMarker: string, endMarker
   try { return { ok: true, document: JSON.parse(text.slice(payloadStart, end + Math.min(includeEndPrefix, endMarker.length)).trim()) }; } catch { return { ok: false }; }
 }
 
-function convertText(value: unknown, operation: "text" | "integerText" | "joinedText", separator = "\n"): string | undefined {
-  if (value === undefined || value === null) return undefined;
-  if (operation === "joinedText") return Array.isArray(value)
-    ? value.map((item) => String(item ?? "")).filter((item) => item.trim() !== "").join(separator)
-    : undefined;
-  if (operation === "integerText") {
-    const integer = toInteger(value);
-    return integer === undefined ? undefined : String(integer);
+function scriptError(code: string, adapter: CharacterFormatAdapter, error: unknown): FormatDiagnostic { return { level: "error", code, text: `${adapter.名称} 执行失败：${error instanceof Error ? error.message : String(error)}` }; }
+function invalidOutput(adapter: CharacterFormatAdapter, detail: string): FormatDiagnostic { return { level: "error", code: "CHARACTER_ADAPTER_SCRIPT_OUTPUT_INVALID", text: `${adapter.名称} 输出无效：${detail}` }; }
+function nonNegativeInt(value: unknown): number { return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : 0; }
+function optionalArray(value: unknown): boolean { return value === undefined || Array.isArray(value); }
+function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
+function isSheetValue(value: unknown): value is SheetValue { return typeof value === "string" || (isRecord(value) && ((typeof value.current === "number" && (typeof value.max === "number" || value.max === null)) || (value.kind === "player-image" && typeof value.imageId === "string") || Object.values(value).every((item) => typeof item === "boolean"))); }
+function valueMatchesModule(value: SheetValue, module: SystemPackage["modules"][number]): boolean {
+  const record: Record<string, unknown> | undefined = isRecord(value) ? value : undefined;
+  if (module.类型 === "freeText" || module.类型 === "longText") return typeof value === "string";
+  if (module.类型 === "countableResource") {
+    const current = record?.current;
+    const max = record?.max;
+    return typeof current === "number" && Number.isInteger(current) && current >= 0
+      && (max === null || (typeof max === "number" && Number.isInteger(max) && max >= current));
   }
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  return undefined;
-}
-
-function convertCount(value: unknown, operation: "number" | "truthyCount" | "checkedCount" | "triStateCount"): number | undefined {
-  if (operation === "number") return toInteger(value);
-  const values = Array.isArray(value) ? value : undefined;
-  if (!values) return undefined;
-  if (operation === "triStateCount") return values.filter((item) => item === 1 || item === "1").length;
-  return values.filter(isTruthyExternal).length;
-}
-
-function convertExternalCheckboxValue(value: unknown): boolean | undefined {
-  if (value === 1 || value === "1") return true;
-  if (value === 0 || value === "0" || value === 2 || value === "2") return false;
-  return undefined;
-}
-
-function isTruthyExternal(value: unknown): boolean {
-  return value === true || value === 1 || value === "1" || (typeof value === "string" && value.toLocaleLowerCase() === "true");
-}
-
-function toInteger(value: unknown): number | undefined {
-  const number = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : Number.NaN;
-  return Number.isFinite(number) ? Math.max(0, Math.trunc(number)) : undefined;
-}
-
-function isCountable(value: unknown): value is CountableState {
-  return isRecord(value) && typeof value.current === "number" && (typeof value.max === "number" || value.max === null);
-}
-
-function isImageDataUrl(value: string): boolean {
-  return /^data:image\/(?:png|jpe?g|webp|gif|avif);base64,[a-z0-9+/=\s]+$/iu.test(value);
-}
-
-function matchCard(
-  source: unknown,
-  sourceIndex: number,
-  mapping: CharacterFormatAdapter["Card映射"][number],
-  systemPackage: SystemPackage,
-): { ok: true; libraryId: string; entry: ResourceLibraryEntry } | { ok: false; code: string; text: string } {
-  const libraries = (systemPackage.resourceLibraries ?? []).filter((library) => mapping.ResourceLibraryIDs.includes(library.ID));
-  const sourceLabel = describeSourceCard(source, sourceIndex, mapping);
-  for (const rule of mapping.匹配优先级) {
-    let candidates: Array<{ libraryId: string; entry: ResourceLibraryEntry }> = [];
-    if (rule.类型 === "fields" && rule.字段) {
-      candidates = libraries.flatMap((library) => library.entries.filter((entry) => rule.字段?.every((field) => {
-        const sourceValue = normalizeComparable(readSafePath(source, field.来源路径));
-        return sourceValue !== "" && sourceValue === normalizeComparable(readResourceField(entry, field.Resource字段));
-      })).map((entry) => ({ libraryId: library.ID, entry })));
-    } else {
-      const sourceValue = applyCardMatchConversion(rule.来源路径 ? readSafePath(source, rule.来源路径) : undefined, rule.来源转换);
-      if (normalizeComparable(sourceValue) === "") continue;
-      const resourceField = rule.Resource字段 ?? (rule.类型 === "externalId" ? "ID" : rule.类型 === "uniqueName" ? "名称" : "描述");
-      candidates = libraries.flatMap((library) => library.entries.filter((entry) => normalizeComparable(applyCardMatchConversion(readResourceField(entry, resourceField), rule.Resource转换)) === normalizeComparable(sourceValue)).map((entry) => ({ libraryId: library.ID, entry })));
-    }
-    if (candidates.length === 1) return { ok: true, ...candidates[0] };
-    if (candidates.length > 1) return { ok: false, code: "CHARACTER_ADAPTER_CARD_AMBIGUOUS", text: `${sourceLabel}匹配到多个 Resource Entry，已跳过。` };
+  if (module.类型 === "checkboxResource") {
+    const optionIds = new Set(module.选项.map((option) => option.ID));
+    return Boolean(record && Object.entries(record).every(([id, selected]) => optionIds.has(id) && typeof selected === "boolean"));
   }
-  return { ok: false, code: "CHARACTER_ADAPTER_CARD_NOT_FOUND", text: `${sourceLabel}没有匹配的 Resource Entry，已跳过。` };
+  return false;
 }
-
-function describeSourceCard(source: unknown, sourceIndex: number, mapping: CharacterFormatAdapter["Card映射"][number]): string {
-  const preferredRules = ["uniqueName", "fields", "externalId"] as const;
-  for (const ruleType of preferredRules) {
-    for (const rule of mapping.匹配优先级) {
-      if (rule.类型 !== ruleType) continue;
-      const values = rule.类型 === "fields"
-        ? (rule.字段 ?? []).map((field) => readSafePath(source, field.来源路径))
-        : [applyCardMatchConversion(rule.来源路径 ? readSafePath(source, rule.来源路径) : undefined, rule.来源转换)];
-      const label = values.map(formatCardDiagnosticValue).find((value) => value !== undefined);
-      if (label) return `Card「${label}」`;
-    }
-  }
-  return `Card（${mapping.状态}第 ${sourceIndex + 1} 项）`;
-}
-
-function formatCardDiagnosticValue(value: unknown): string | undefined {
-  if (typeof value !== "string" && typeof value !== "number") return undefined;
-  const normalized = normalizeExternalName(String(value));
-  if (!normalized) return undefined;
-  const characters = Array.from(normalized);
-  return characters.length <= 80 ? normalized : `${characters.slice(0, 77).join("")}...`;
-}
-
-function applyCardMatchConversion(value: unknown, conversion: "fileStem" | undefined): unknown {
-  if (conversion !== "fileStem" || typeof value !== "string") return value;
-  const fileName = value.replace(/\\/gu, "/").split("/").at(-1) ?? "";
-  return fileName.replace(/\.[^.]+$/u, "");
-}
-
-function readResourceField(entry: ResourceLibraryEntry, field: string): unknown {
-  if (field === "ID") return entry.ID;
-  return entry.fields[field] ?? (entry as unknown as Record<string, unknown>)[field];
-}
-
-function normalizeComparable(value: unknown): string {
-  return typeof value === "string" || typeof value === "number" ? normalizeExternalName(String(value)).replace(/\s+/gu, " ") : "";
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function looksLikeHtml(text: string): boolean {
-  return /<!doctype\s+html|<html\b/iu.test(text);
-}
+function isImportCard(value: unknown): value is ImportCard { return isRecord(value) && typeof value.tableModuleId === "string" && typeof value.state === "string" && typeof value.libraryId === "string" && typeof value.entryId === "string"; }
+function isImageDataUrl(value: string): boolean { return /^data:image\/(?:png|jpe?g|webp|gif|avif);base64,[a-z0-9+/=\s]+$/iu.test(value); }
+function normalizeDiagnostics(value: unknown): FormatDiagnostic[] | undefined { if (value === undefined) return []; if (!Array.isArray(value)) return undefined; const result: FormatDiagnostic[] = []; for (const item of value) { if (!isRecord(item) || (item.level !== "error" && item.level !== "warning") || typeof item.code !== "string" || typeof item.text !== "string" || (item.path !== undefined && typeof item.path !== "string")) return undefined; result.push({ level: item.level, code: item.code, text: item.text, ...(typeof item.path === "string" ? { path: item.path } : {}) }); } return result; }
+function looksLikeHtml(text: string): boolean { return /<!doctype\s+html|<html\b/iu.test(text); }
