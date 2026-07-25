@@ -106,6 +106,48 @@ describe("Character Format Adapter scripts", () => {
     expect(conversions[0].data.cards.instances.some((card) => card.state === "宝库")).toBe(true);
   });
 
+  it("exports a dhSheet-compatible document that can be imported again", async () => {
+    const text = readFileSync(join(migrationRoot, "布罗克-战士-仙灵-龟人-荒野之民-LV1.json"), "utf8");
+    const sourceDocument = JSON.parse(text) as Record<string, unknown>;
+    const detection = parseAndDetectCharacterSource(text, "布罗克.json", daggerheartPackage.characterFormatAdapters ?? []);
+    if (detection.status !== "match") throw new Error("fixture not detected");
+    const conversion = await convertExternalCharacterSource(detection.source, detection.adapter, daggerheartPackage);
+    if ("error" in conversion) throw new Error(conversion.error.text);
+
+    const exported = await exportExternalCharacterData(conversion.data, detection.adapter, daggerheartPackage);
+    if ("error" in exported) throw new Error(exported.error.text);
+    const document = exported.document as Record<string, unknown>;
+
+    expectDhSheetCompatible(document);
+    expect(document).toEqual(expect.objectContaining({
+      level: "1",
+      inventory: sourceDocument.inventory,
+      primaryWeaponName: sourceDocument.primaryWeaponName,
+      primaryWeaponTrait: sourceDocument.primaryWeaponTrait,
+      primaryWeaponDamage: sourceDocument.primaryWeaponDamage,
+      armorName: sourceDocument.armorName,
+      armorBaseScore: sourceDocument.armorBaseScore,
+      armorThreshold: sourceDocument.armorThreshold,
+      checkedUpgrades: expect.objectContaining({
+        "tier1-0-0": { 0: true },
+        "tier2-7": { 7: true },
+        "tier2-8": { 8: true },
+      }),
+    }));
+
+    const roundTripText = JSON.stringify(document);
+    const roundTripDetection = parseAndDetectCharacterSource(roundTripText, "round-trip.json", daggerheartPackage.characterFormatAdapters ?? []);
+    if (roundTripDetection.status !== "match") throw new Error("export not detected");
+    const roundTrip = await convertExternalCharacterSource(roundTripDetection.source, roundTripDetection.adapter, daggerheartPackage);
+    if ("error" in roundTrip) throw new Error(roundTrip.error.text);
+    expect(roundTrip.data.character.values).toEqual(expect.objectContaining({
+      "character-name": "布罗克",
+      "primary-weapon-name": conversion.data.character.values["primary-weapon-name"],
+      "armor-name": conversion.data.character.values["armor-name"],
+      "advancement-tier-3": expect.objectContaining({ "proficiency-1": true, "multiclass-1": true }),
+    }));
+  });
+
   it("extracts embedded JSON without executing source scripts or requesting resources", () => {
     let executed = false;
     Object.defineProperty(globalThis, "unsafeAdapterProbe", { configurable: true, set: () => { executed = true; } });
@@ -145,5 +187,12 @@ function expectedTriState(document: Record<string, unknown>, prefix: string, len
   return { current: values.filter((value) => value === 1).length, max: values.filter((value) => value === 0 || value === 1).length };
 }
 function joined(document: Record<string, unknown>, ...fields: string[]): string { return fields.map((field) => String(document[field] ?? "").trim()).filter(Boolean).join("｜"); }
+function expectDhSheetCompatible(document: Record<string, unknown>): void {
+  for (const field of ["name", "level", "gold", "experience", "hope", "inventory", "cards"]) expect(document).toHaveProperty(field);
+  for (const field of ["gold", "experience", "inventory", "cards"]) expect(Array.isArray(document[field]), `${field} must be an array`).toBe(true);
+  expect(typeof document.hope === "number" || Array.isArray(document.hope)).toBe(true);
+  const firstCard = (document.cards as Array<Record<string, unknown>>)[0];
+  if (firstCard) expect(firstCard).toEqual(expect.objectContaining({ id: expect.any(String), name: expect.any(String), type: expect.any(String) }));
+}
 function createPackageZip(): Uint8Array { return zipSync(Object.fromEntries(walkFiles(packageRoot).map((path) => [relative(packageRoot, path).replaceAll("\\", "/"), new Uint8Array(readFileSync(path))])), { level: 0 }); }
 function walkFiles(directory: string): string[] { return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? walkFiles(join(directory, entry.name)) : [join(directory, entry.name)]); }
