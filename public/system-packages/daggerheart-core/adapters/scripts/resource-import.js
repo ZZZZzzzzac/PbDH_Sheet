@@ -32,6 +32,33 @@ function convertedEntry(record, fields, fallbackId, counts) {
   for (const [target, source, kind] of fields) { const value = convert(record[source], kind); if (value === undefined) counts.skippedFields += 1; else { entry[target] = value; counts.convertedFields += 1; } }
   return entry;
 }
+function hasFeatureHeading(value) {
+  const text = value === undefined || value === null ? "" : String(value).trim();
+  const colon = text.search(/[:：]/u); const sentence = text.search(/[。！？.!?\n]/u);
+  return colon > 0 && colon <= 80 && (sentence < 0 || colon < sentence);
+}
+function convertedZzzAncestry(record, fallbackId, counts) {
+  const name = normalize(record.名称);
+  const explicitIntro = record.简介 === undefined || record.简介 === null ? "" : String(record.简介).trim();
+  const description = record.描述 === undefined || record.描述 === null ? "" : String(record.描述).trim();
+  const parts = description.split(/\r?\n\s*\r?\n/u).map((item) => item.trim()).filter(Boolean);
+  const explicitFeatures = [record.特性A, record.特性B];
+  let intro = explicitIntro; let features;
+  if (explicitFeatures.every((value) => value !== undefined && value !== null && normalize(value) !== "")) features = explicitFeatures;
+  else if (explicitFeatures.some((value) => value !== undefined && value !== null && normalize(value) !== "")) return undefined;
+  else if (explicitIntro && parts.length === 2 && parts.every(hasFeatureHeading)) features = parts;
+  else if (!explicitIntro && parts.length === 2 && parts.every(hasFeatureHeading)) features = parts;
+  else if (!explicitIntro && parts.length === 3 && !hasFeatureHeading(parts[0]) && parts.slice(1).every(hasFeatureHeading)) { intro = parts[0]; features = parts.slice(1); }
+  else return undefined;
+  const entry = { ID: normalize(record.原名 || record.id) || (name ? `种族:${name}` : fallbackId), 名称: name, 类型: "种族" };
+  counts.convertedFields += 2;
+  if (intro) { entry.简介 = intro; counts.convertedFields += 1; } else counts.skippedFields += 1;
+  for (const [index, value] of features.entries()) {
+    if (value === undefined || value === null || normalize(value) === "") counts.skippedFields += 1;
+    else { entry[index === 0 ? "特性A" : "特性B"] = value; counts.convertedFields += 1; }
+  }
+  return entry;
+}
 function findAsset(assets, id) {
   if (!id) return undefined;
   const base = `images/${id}`;
@@ -55,8 +82,10 @@ function importZzz(input) {
     if (!record || typeof record !== "object") { counts.skippedEntries += 1; return; }
     const type = normalize(record.类型); const known = mapping(type);
     let entry; let libraryId; let libraryName;
-    if (known) { libraryId = known[0]; libraryName = input.resourceLibraries.find((item) => item.ID === libraryId)?.名称 || type; entry = convertedEntry(record, known[1], `external:zzz:${index}`, counts); }
-    else { libraryId = `外部类型:${type}`; libraryName = type; entry = { ID: normalize(record.原名) || `external:zzz:${index}` }; Object.entries(record).forEach(([key, value]) => { if (!["原名", "imageUrl", "hasLocalImage", "localId"].includes(key)) { entry[key] = value; counts.convertedFields += 1; } }); }
+    const ancestry = type === "种族" ? convertedZzzAncestry(record, `external:zzz:${index}`, counts) : undefined;
+    if (ancestry) { libraryId = "ancestries"; libraryName = input.resourceLibraries.find((item) => item.ID === libraryId)?.名称 || type; entry = ancestry; }
+    else if (known) { libraryId = known[0]; libraryName = input.resourceLibraries.find((item) => item.ID === libraryId)?.名称 || type; entry = convertedEntry(record, known[1], `external:zzz:${index}`, counts); }
+    else { libraryId = `外部类型:${type}`; libraryName = type; entry = { ID: normalize(record.原名) || `external:zzz:${index}` }; Object.entries(record).forEach(([key, value]) => { if (!["原名", "imageUrl", "hasLocalImage", "localId"].includes(key)) { entry[key] = value; counts.convertedFields += 1; } }); if (type === "种族") diagnostics.push({ level: "warning", code: "RESOURCE_ADAPTER_ANCESTRY_AMBIGUOUS", text: `种族「${normalize(record.名称) || index + 1}」无法可靠拆分为两个特性，已保留为其他资源。` }); }
     if (!normalize(entry.名称)) { counts.skippedEntries += 1; diagnostics.push({ level: "warning", code: "RESOURCE_ADAPTER_ENTRY_NAME_MISSING", text: `记录 ${index + 1} 转换后缺少名称，已跳过。` }); return; }
     addLibrary(libraries, libraryId, libraryName, entry); counts.convertedEntries += 1;
   });
