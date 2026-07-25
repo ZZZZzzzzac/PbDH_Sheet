@@ -44,6 +44,7 @@
   "modules": "modules.json",
   "dependencies": "dependencies.json",
   "characterCreationGuide": "guides/character-creation.json",
+  "characterFormatAdapters": "adapters/character-formats.json",
   "validationChecks": [
     { "ID": "tttri-character-consistency", "脚本": "checks/character-consistency.js" }
   ],
