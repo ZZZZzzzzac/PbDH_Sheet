@@ -35,6 +35,8 @@ const packageManifestSchema = z.object({
   defaultSkin: z.string().min(1).optional(),
   dependencies: z.string().min(1).optional(),
   characterCreationGuide: z.string().min(1).optional(),
+  resourceFormatAdapters: z.string().min(1).optional(),
+  characterFormatAdapters: z.string().min(1).optional(),
   assets: z.never().optional(),
   resourceLibraries: z.array(resourceLibraryReferenceSchema).optional(),
   validationChecks: z
@@ -139,6 +141,22 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
   if (guideJson && !guideJson.ok) {
     return { ok: false, issues: [guideJson.issue] };
   }
+  const resourceFormatAdaptersJson = manifest.data.resourceFormatAdapters
+    ? readPackageJsonFile(vfs, manifest.data.resourceFormatAdapters)
+    : undefined;
+  if (resourceFormatAdaptersJson && !resourceFormatAdaptersJson.ok) return { ok: false, issues: [resourceFormatAdaptersJson.issue] };
+  const characterFormatAdaptersJson = manifest.data.characterFormatAdapters
+    ? readPackageJsonFile(vfs, manifest.data.characterFormatAdapters)
+    : undefined;
+  if (characterFormatAdaptersJson && !characterFormatAdaptersJson.ok) return { ok: false, issues: [characterFormatAdaptersJson.issue] };
+  const resourceFormatAdapters = resourceFormatAdaptersJson
+    ? loadFormatAdapterScriptFilesFromVfs(vfs, resourceFormatAdaptersJson.value, false)
+    : undefined;
+  if (resourceFormatAdapters && !resourceFormatAdapters.ok) return { ok: false, issues: [resourceFormatAdapters.issue] };
+  const characterFormatAdapters = characterFormatAdaptersJson
+    ? loadFormatAdapterScriptFilesFromVfs(vfs, characterFormatAdaptersJson.value, true)
+    : undefined;
+  if (characterFormatAdapters && !characterFormatAdapters.ok) return { ok: false, issues: [characterFormatAdapters.issue] };
 
   const resourceLibraries = loadResourceLibraryFilesFromVfs(vfs, manifest.data.resourceLibraries ?? []);
   if (!resourceLibraries.ok) {
@@ -159,6 +177,8 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
     dependenciesJson?.value,
     validationChecks.value,
     guideJson?.value,
+    resourceFormatAdapters?.value,
+    characterFormatAdapters?.value,
     shell?.value,
     skins.value,
     packageAssets,
@@ -182,6 +202,8 @@ function normalizeManifestPackage(
   dependencies?: unknown,
   validationChecks?: Array<{ ID: string; 脚本: string; scriptContent: string }>,
   characterCreationGuide?: unknown,
+  resourceFormatAdapters?: unknown,
+  characterFormatAdapters?: unknown,
   shell?: unknown,
   skins?: Array<{ ID: string; 名称: string; cssContent: string; 推荐框架配色: "light" | "dark" }>,
   packageAssets: RuntimePackageAsset[] = [],
@@ -205,6 +227,8 @@ function normalizeManifestPackage(
     dependencies,
     validationChecks,
     characterCreationGuide,
+    resourceFormatAdapters,
+    characterFormatAdapters,
   }, sourceMap);
 }
 
@@ -215,6 +239,8 @@ function buildPackageSourceMap(manifest: z.infer<typeof packageManifestSchema>, 
     modules: manifest.modules,
     ...(manifest.dependencies ? { dependencies: manifest.dependencies } : {}),
     ...(manifest.characterCreationGuide ? { characterCreationGuide: manifest.characterCreationGuide } : {}),
+    ...(manifest.resourceFormatAdapters ? { resourceFormatAdapters: manifest.resourceFormatAdapters } : {}),
+    ...(manifest.characterFormatAdapters ? { characterFormatAdapters: manifest.characterFormatAdapters } : {}),
     ...(manifest.shell ? { shell: manifest.shell.html } : {}),
   };
   manifest.resourceLibraries?.forEach((library) => {
@@ -352,6 +378,32 @@ function loadValidationScriptFilesFromVfs(
   }
 
   return { ok: true as const, value: normalizedChecks };
+}
+
+function loadFormatAdapterScriptFilesFromVfs(vfs: PackageVirtualFileSystem, adapters: unknown, includeExport: boolean) {
+  if (!Array.isArray(adapters)) return { ok: true as const, value: adapters };
+  const normalized = [];
+  for (const adapter of adapters) {
+    if (typeof adapter !== "object" || adapter === null || Array.isArray(adapter)) {
+      normalized.push(adapter);
+      continue;
+    }
+    const next = { ...(adapter as Record<string, unknown>) };
+    if (typeof next.导入脚本 === "string") {
+      const script = vfs.readText(next.导入脚本);
+      if (!script.ok) return { ok: false as const, issue: script.issue };
+      next.导入脚本 = script.path;
+      next.importScriptContent = script.value;
+    }
+    if (includeExport && typeof next.导出脚本 === "string") {
+      const script = vfs.readText(next.导出脚本);
+      if (!script.ok) return { ok: false as const, issue: script.issue };
+      next.导出脚本 = script.path;
+      next.exportScriptContent = script.value;
+    }
+    normalized.push(next);
+  }
+  return { ok: true as const, value: normalized };
 }
 
 function resolvePackageAssets(vfs: PackageVirtualFileSystem): LoadedPackageAsset[] {

@@ -129,8 +129,8 @@ An independently distributed JSON or image-bearing ZIP bundle that targets one S
 _Avoid_: Updated System Package, resource patch
 
 **Resource Format Adapter**:
-An Author-declared, non-executable mapping from one external resource-pack format into the Current System Package's Resource Extension contract.
-_Avoid_: Resource import script, plugin
+An Author-declared external resource-pack detector plus an isolated Import Script that converts one matching source into the Current System Package's Resource Extension contract before native validation and installation.
+_Avoid_: Resource plugin, direct Resource Catalog mutation
 
 **Resource Manager**:
 A Base Framework surface that lists effective Resource Libraries and their contributors, installs Resource Extensions, and reports extension status for the Current System Package.
@@ -197,8 +197,8 @@ The external character JSON format used by DaggerHeart_Character.
 _Avoid_: DaggerHeart_Character format
 
 **Character Format Adapter**:
-An Author-declared, non-executable mapping between one external character format and the Current System Package's Character Data contract.
-_Avoid_: Import script, plugin
+An Author-declared external character-format detector plus isolated Import and optional Export Scripts that convert at the Character Data seam without mutating the active Character Save.
+_Avoid_: Character plugin, live Character Data mutation script
 
 **Character Save**:
 A local saved instance of Character Data under the Current System Package.
@@ -249,7 +249,7 @@ A Base Framework-owned read-only check for common runtime, rendering, or output 
 _Avoid_: Validation Script, System Package Validator
 
 **Declarative System Package**:
-A System Package expressed through data, resources, layouts, styles, guide steps, dependencies, and validation rules rather than arbitrary executable scripts.
+A System Package expressed primarily through data, resources, layouts, styles, guide steps, dependencies, and validation rules. Its only Author script seams are bounded Validation Scripts and explicit Format Adapter conversion scripts; neither can modify UI or live runtime state.
 _Avoid_: Script plugin
 
 ## Relationships
@@ -329,8 +329,7 @@ _Avoid_: Script plugin
 - External resource-pack images without a converted Resource Entry reference are discarded and reported as non-blocking warnings before the native **Resource Extension** pipeline, so orphan assets do not enter IndexedDB.
 - External resource conversion blocks only when the source cannot be read or parsed, no declared **Resource Format Adapter** matches, no valid Resource Entry remains, or the converted output fails the native Resource Extension structural contract; individual Entry, field, type, and image failures are skipped and reported as warnings, while native atomic ID-conflict rejection remains unchanged.
 - When an external resource pack lacks a native Extension ID, its **Resource Format Adapter** derives a deterministic ID from the Current System Package ID, Adapter ID, and normalized package name without the version, so reimport enters the native replacement-confirmation flow; package-specific metadata rules determine the name and version, with a missing usable name treated as a structural error.
-- A **Resource Format Adapter** uses an Author-declared external type-to-Library map for known resource types; every unmapped non-empty external type becomes a separate standalone Resource Library grouped by that exact normalized type, while an Entry without a usable type is skipped and reported.
-- A **Resource Format Adapter** may declaratively group multiple external Entries into one Resource Entry when the target Library owns a composite source shape; incomplete groups may produce a partial Entry with warnings, while ambiguous duplicate group slots are skipped rather than guessed.
+- A **Resource Format Adapter** Script owns external type routing, field projection, grouping and asset binding; Base validates the returned native Resource Extension document and retained-asset references before the normal import pipeline.
 - The **Resource Manager** is opened from the top toolbar's System Package menu and presents effective Resource Libraries as its top-level units, with contributing System Package and Resource Extension details nested beneath each library.
 - The **Resource Manager** may uninstall a locally installed Resource Extension but never removes System Package-owned resources; uninstalling recomputes effective libraries without rewriting Character Data, and any resulting stale resource references are reported instead of silently repaired.
 - The **Resource Manager** installs a new valid extension immediately, but replacing or uninstalling an extension requires a summary and confirmation because either operation can remove definitions referenced by Character Data; failed validation leaves installed state unchanged.
@@ -372,7 +371,7 @@ _Avoid_: Script plugin
 - External character fields without an explicit **System Package** compatibility mapping are not preserved as hidden **Character Data**; conversion reports the resulting information loss to the Player.
 - A successful external character import always creates and selects a new **Character Save** under the **Current System Package**; it never overwrites the previously active Character Save.
 - A Player explicitly chooses **PbDH Format**, **dhSheet Format**, or **ZZZ Format** for each character export; Character Data does not remember or infer an original external format.
-- The Base Framework owns the bounded **Character Format Adapter** engine and its path, type, collection, image, Card matching, embedded-JSON extraction, and loss-reporting operations; each **System Package** owns its declarative external-format detection, Module and Resource mapping, export defaults, and Card matching priorities.
+- The Base Framework owns Carrier safety, isolated Script execution, output validation, embedded-JSON extraction, loss confirmation and the native import/export pipeline; each **System Package** owns external-format detection and semantic conversion inside its **Character Format Adapter** Scripts.
 - The Base Framework is external-format and game-rule agnostic: format identities such as **dhSheet Format** and **ZZZ Format**, their labels, detection signatures, data paths, and mappings exist only in the owning **System Package** and are discovered dynamically by framework UI.
 - External character import first applies a **Character Format Adapter** to produce current-package **PbDH Format**, then reuses the native Character Data validation, migration, persistence, and dependency-rebuild pipeline; downstream import code does not interpret external formats.
 - A **Character Format Adapter** may safely extract embedded JSON from a declared external HTML carrier without parsing its DOM or executing scripts; external-format HTML rendering and export remain outside the compatibility boundary, while the existing PbDH HTML snapshot remains unchanged.
@@ -421,7 +420,7 @@ _Avoid_: Script plugin
 > **Domain Expert:** "Not in the base requirement. A Validation Check can report the expected value and warn if the filled value differs."
 
 > **Dev:** "Can an Author write custom JavaScript to modify sheet state?"
-> **Domain Expert:** "No. First-version Authors describe the System Package declaratively; custom scripts are not part of the Author-facing contract."
+> **Domain Expert:** "Authors primarily describe the System Package declaratively. Only Validation Scripts and explicit Format Adapter conversion scripts cross bounded, isolated seams; neither is a general plugin contract."
 
 > **Dev:** "Can an Author write a script to check a strange threshold formula?"
 > **Domain Expert:** "Yes, as a Validation Script. It reads the whole sheet export and reports expected values, warnings, or errors, but cannot change the sheet."

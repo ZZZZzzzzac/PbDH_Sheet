@@ -1,6 +1,7 @@
 import type { CharacterData } from "./characterData";
 import type { ResourceLibrary } from "./resourceLibrary";
 import type { ValidationCheck } from "./systemPackage";
+import { cloneAndFreeze, executePackageScriptInContext } from "./packageScript";
 
 export type ValidationIssueLevel = "error" | "warning" | "info";
 
@@ -38,23 +39,8 @@ type ScriptIssueInput = Partial<Omit<ValidationIssue, "source">>;
 
 const validIssueLevels = new Set<ValidationIssueLevel>(["error", "warning", "info"]);
 
-export function buildScriptBody(scriptContent: string): string {
-  return [
-    '"use strict";',
-    scriptContent,
-    "const validationCheck = module.exports && (module.exports.default || module.exports.run || module.exports);",
-    'if (typeof validationCheck !== "function") {',
-    '  throw new Error("Validation Script must assign a function to module.exports.");',
-    "}",
-    "return validationCheck(input);",
-  ].join("\n");
-}
-
 export function executeScriptInContext(scriptContent: string, input: ScriptInput): Promise<unknown> {
-  const module = { exports: {} as unknown };
-  const exports = module.exports;
-  const runner = new Function("module", "exports", "input", buildScriptBody(scriptContent));
-  return Promise.resolve(runner(module, exports, input));
+  return executePackageScriptInContext(scriptContent, input, "Validation Script");
 }
 
 export function normalizeScriptIssues(source: string, rawIssues: unknown): ValidationIssue[] {
@@ -104,34 +90,6 @@ export function invalidIssue(source: string, index: number): ValidationIssue {
     text: `Validation Script 返回了无效 issue：${index}`,
     source,
   };
-}
-
-export function cloneAndFreeze<T>(value: T): T {
-  return deepFreeze(cloneData(value));
-}
-
-export function cloneData<T>(value: T): T {
-  if (typeof structuredClone === "function") {
-    return structuredClone(value);
-  }
-
-  return JSON.parse(JSON.stringify(value)) as T;
-}
-
-export function deepFreeze<T>(value: T): T {
-  if (!isRecord(value) && !Array.isArray(value)) {
-    return value;
-  }
-
-  Object.freeze(value);
-
-  for (const child of Object.values(value)) {
-    if ((isRecord(child) || Array.isArray(child)) && !Object.isFrozen(child)) {
-      deepFreeze(child);
-    }
-  }
-
-  return value;
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {

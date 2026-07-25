@@ -64,6 +64,23 @@ test("Daggerheart Resource Picker fills the adjacent Free Text height and center
   )).toBeLessThanOrEqual(1);
 });
 
+test("Daggerheart imports a dhSheet character through the isolated Format Adapter Worker", async ({ page }) => {
+  await page.goto("/");
+  await expectDefaultDaggerheart(page);
+
+  const fileChooserPromise = page.waitForEvent("filechooser");
+  await openExportMenu(page);
+  await page.getByRole("button", { name: "导入 Character JSON" }).click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(path.join(process.cwd(), "docs", "migration", "save", "布罗克-战士-仙灵-龟人-荒野之民-LV1.json"));
+
+  const confirmation = page.getByRole("alertdialog", { name: "确认有损人物卡转换" });
+  await expect(confirmation).toContainText("dhSheet Format");
+  await page.getByRole("button", { name: "确认并新建存档" }).click();
+  await expect(page.locator('[data-module-id="character-name"]')).toContainText("布罗克");
+  await expect(page.getByText("dhSheet Format 已导入为新的 Character Save。")).toBeVisible();
+});
+
 test("minimal loop edits, autosaves, exports and imports Character JSON", async ({ page }, testInfo) => {
   await page.goto("/");
 

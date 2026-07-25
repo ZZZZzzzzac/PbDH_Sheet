@@ -52,6 +52,6 @@ ZIP 使用与 System Package 相同的压缩体积、展开体积、文件数、
 
 ## 有效目录与生命周期
 
-Resource Manager 从 System Package 菜单打开。首次安装立即提交；替换与卸载必须确认。Extension 与图片独立存入 IndexedDB，刷新或同 ID System Package 更新后重新计算 Effective Resource Catalog。实际 Entry 冲突会禁用 Extension 并显示诊断，但不阻止 System Package；Character Data 不被自动修改，失效 Card/Snapshot 引用显示 warning。
+Resource Manager 从 System Package 菜单打开。原生 Extension 首次安装立即提交；外部格式经 [Resource Format Adapter](format-adapters.md) 转换时先显示结构化报告并确认。替换与卸载必须确认。Extension 与图片独立存入 IndexedDB，刷新或同 ID System Package 更新后重新计算 Effective Resource Catalog。实际 Entry 冲突会禁用 Extension 并显示诊断，但不阻止 System Package；Character Data 不被自动修改，失效 Card/Snapshot 引用显示 warning。
 
 固定完整示例见 `public/resource-extensions/the-void-20260710.json`。它把原始混合数组在制作阶段显式分成 6 个 contributions；Runtime 不按 `类型` 猜测 Library。

@@ -515,4 +515,41 @@ describe("validateSystemPackage Sheet Modules", () => {
       ]),
     );
   });
+
+  it("validates Format Adapter IDs and script syntax", () => {
+    const resourceAdapter = {
+      ID: "duplicate", 名称: "Resource", 载体: [{ 类型: "json", 根类型: "array", 检测: [{ 路径: [0], 存在: true }] }],
+      导入脚本: "adapters/import.js", importScriptContent: "module.exports = function () {",
+    };
+    const characterAdapter = {
+      ID: "duplicate", 名称: "Character", 载体: [{ 类型: "json", 根类型: "object", 检测: [{ 路径: ["name"], 存在: true }] }],
+      导入脚本: "adapters/import.js", importScriptContent: "module.exports = () => ({ values: {} });",
+      导出脚本: "adapters/export.js", exportScriptContent: "module.exports = () => ({",
+      导出文件后缀: ".json",
+    };
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      modules: [...minimalSystemPackage.modules, { ID: "checks", 类型: "checkboxResource", 标签: "Checks", 选项: [{ ID: "known", 标签: "Known" }] }],
+      resourceFormatAdapters: [resourceAdapter, { ...resourceAdapter }],
+      characterFormatAdapters: [characterAdapter, { ...characterAdapter }],
+    });
+    expect(result.ok).toBe(false);
+    expect(result.issues.map((issue) => issue.code)).toEqual(expect.arrayContaining([
+      "DUPLICATE_RESOURCE_FORMAT_ADAPTER_ID", "DUPLICATE_CHARACTER_FORMAT_ADAPTER_ID",
+      "FORMAT_ADAPTER_SCRIPT_SYNTAX_INVALID",
+    ]));
+  });
+
+  it("rejects the removed declarative Resource Adapter DSL", () => {
+    const result = validateSystemPackage({
+      ...minimalSystemPackage,
+      resourceFormatAdapters: [{
+        ID: "invalid-group", 名称: "Invalid", 载体: [{ 类型: "json", 检测: [{ 路径: ["records"], 存在: true }] }],
+        包名: { 类型: "常量", 值: "Invalid" }, 记录路径: ["records"], 记录源: [{ 路径: ["other"] }], 类型路径: ["type"], 已知类型: [],
+        分组: { 适用类型: "group", 分组键路径: ["name"], Slot路径: ["slot"], Slots: [{ 名称: "A", 值: 1 }, { 名称: "A", 值: 2 }], 资源库ID: "missing", 公共字段映射: [], Slot字段映射: [{ Slot: "B", 字段: "value", 来源路径: ["value"] }], 图片Slot优先级: ["B"] },
+      }],
+    });
+    expect(result.ok).toBe(false);
+    expect(result.issues).toContainEqual(expect.objectContaining({ code: "PACKAGE_SHAPE_INVALID", path: expect.stringContaining("resourceFormatAdapters") }));
+  });
 });

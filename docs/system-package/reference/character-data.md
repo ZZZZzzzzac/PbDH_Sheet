@@ -2,6 +2,8 @@
 
 Character Data 是 Player-owned save，不是 System Package export。它保存 package identity/version、Sheet Values、Card Instance state 和 Player 上传图片；不复制 Resource Libraries、Layouts、Author Assets 或 Validation Scripts。Player 图片字段只保存 `imageId` 引用，图片的 base64 data URL 集中存于顶层 `playerImages`。
 
+外部人物卡导入/导出由 System Package 的 [Character Format Adapter](format-adapters.md) 声明。导入先转换为新的原生 Character Data；有损结果确认前不修改当前 Character Save。外部导出不改变原生 JSON 字段顺序或只读 HTML snapshot 合同。
+
 Character Data 还保存每个 Resource Composer 的一个稳定 Composite Resource。只保存 normalized 输出字段，不保存 Player 当时选择的来源 Entry。Card Instance 可通过显式 Resource Definition Reference 引用包内 Resource Entry 或 Composite Resource。
 
 Card Instance state 包含 Definition 身份、桌面位置与层级、Player 状态、当前正反面、四分之一圈旋转，以及最多十个带稳定 ID、palette 颜色索引和非负数值的通用指示物。背面 Card Definition 来自当前 System Package；指示物由框架提供，不需要 Author Data。指示物值 `0` 有意义并会保留，在 0 上再次执行减少才删除。

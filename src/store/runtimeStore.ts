@@ -22,6 +22,7 @@ import {
   updateResourceSelectionSnapshot,
   removePlayerImage as removePlayerImageData,
   type CharacterData,
+  exportCharacterData,
   type PlayerImageData,
   type PlayerImageValue,
   type SheetValue,
@@ -38,9 +39,10 @@ import { createRuntimeAssetResolver, type RuntimeAssetResolver, type RuntimePack
 import type { PackageDirectoryHandle } from "../loaders/packageVfs";
 import { loadSystemPackageFromDirectoryFiles, loadSystemPackageFromDirectoryHandle, loadSystemPackageFromZipFile, type PackageLoadResult } from "../loaders/systemPackageLoader";
 import { loadPresetSystemPackage, type PresetLoadProgress, type PresetSystemPackage } from "../loaders/presetSystemPackageLoader";
-import { loadResourceExtensionFromJsonText, loadResourceExtensionFromZipFile, type NormalizedResourceExtensionArtifact } from "../loaders/resourceExtensionLoader";
+import { loadResourceExtensionFromFile, type NormalizedResourceExtensionArtifact, type ResourceExtensionFileLoadResult } from "../loaders/resourceExtensionLoader";
 import { loadAuthorPreviewDirectoryHandle, saveAuthorPreviewDirectoryHandle, storageService, type CharacterSaveSummary, type StorageService } from "../storage/storageService";
 import { generateId } from "../utils";
+import { convertExternalCharacterSource, parseAndDetectCharacterSource, type CharacterAdapterConversion } from "../domain/characterFormatAdapter";
 import {
   createCardInstancesFromSelection,
   createCardInstanceFromComposite,
@@ -68,6 +70,8 @@ interface RuntimeState {
   installedResourceExtensions: ResourceExtension[];
   resourceExtensionImport: ResourceExtensionImportState | null;
   pendingResourceExtensionReplacement: PendingResourceExtensionReplacement | null;
+  pendingResourceExtensionConversion: PendingResourceExtensionConversion | null;
+  pendingResourceFormatSelection: PendingResourceFormatSelection | null;
   pendingResourceExtensionRemoval: PendingResourceExtensionRemoval | null;
   resourceReferenceIssues: ResourceExtensionIssue[];
   packageAssetUrls: Record<string, string>;
@@ -89,6 +93,8 @@ interface RuntimeState {
   storageStatus: StorageStatus;
   importError: string | null;
   importNotice: string | null;
+  pendingCharacterConversion: PendingCharacterConversion | null;
+  pendingCharacterFormatSelection: PendingCharacterFormatSelection | null;
   authorPreviewActive: boolean;
   initialize: () => Promise<void>;
   uploadSystemPackageFromFile: (file: Blob) => Promise<void>;
@@ -97,6 +103,9 @@ interface RuntimeState {
   selectSystemPackageSkin: (skinId: string) => void;
   setFrameworkColorSchemePreference: (preference: FrameworkColorSchemePreference) => void;
   uploadResourceExtensionFromFile: (file: Blob) => Promise<void>;
+  selectResourceFormatAdapter: (adapterId: string) => Promise<void>;
+  confirmResourceExtensionConversion: () => Promise<void>;
+  cancelResourceExtensionConversion: () => void;
   confirmResourceExtensionReplacement: () => Promise<void>;
   cancelResourceExtensionReplacement: () => void;
   requestResourceExtensionRemoval: (extensionId: string) => void;
@@ -130,6 +139,10 @@ interface RuntimeState {
   uploadPlayerImage: (moduleId: string, file: File) => Promise<void>;
   removePlayerImage: (moduleId: string) => Promise<void>;
   importCharacterDataFromText: (text: string) => Promise<void>;
+  importCharacterDataFromFile: (file: File) => Promise<void>;
+  selectCharacterFormatAdapter: (adapterId: string) => Promise<void>;
+  confirmCharacterConversion: () => Promise<void>;
+  cancelCharacterConversion: () => void;
   clearImportMessage: () => void;
 }
 
@@ -268,6 +281,8 @@ async function loadPackageIntoState(
       installedResourceExtensions,
       resourceExtensionImport: null,
       pendingResourceExtensionReplacement: null,
+      pendingResourceExtensionConversion: null,
+      pendingResourceFormatSelection: null,
       pendingResourceExtensionRemoval: null,
       resourceReferenceIssues: collectStaleResourceReferenceIssues(loaded.characterData, resourceCatalog),
       packageAssetUrls: nextAssetResolver.urls,
@@ -300,6 +315,23 @@ async function loadPackageIntoState(
     });
     return false;
   }
+}
+
+export interface PendingResourceExtensionConversion {
+  loaded: Extract<ResourceExtensionFileLoadResult, { ok: true }>;
+}
+
+export interface PendingResourceFormatSelection {
+  file: Blob;
+  adapters: Array<{ ID: string; 名称: string }>;
+}
+
+export interface PendingCharacterConversion extends CharacterAdapterConversion {}
+
+export interface PendingCharacterFormatSelection {
+  text: string;
+  fileName: string;
+  adapters: Array<{ ID: string; 名称: string }>;
 }
 
 function resolveSkinPreference(systemPackage: SystemPackage): { skinId: string | null; fellBack: boolean } {
@@ -344,6 +376,8 @@ async function clearCachedPackageAndResetState(set: (partial: Partial<RuntimeSta
     installedResourceExtensions: [],
     resourceExtensionImport: null,
     pendingResourceExtensionReplacement: null,
+    pendingResourceExtensionConversion: null,
+    pendingResourceFormatSelection: null,
     pendingResourceExtensionRemoval: null,
     resourceReferenceIssues: [],
     packageAssetUrls: {},
@@ -478,6 +512,139 @@ function collectStaleResourceReferenceIssues(characterData: CharacterData | null
   return issues;
 }
 
+type RuntimeSet = (partial: Partial<RuntimeState>) => void;
+type RuntimeGet = () => RuntimeState;
+
+async function installResourceExtensionCandidate(
+  loaded: Extract<ResourceExtensionFileLoadResult, { ok: true }>,
+  set: RuntimeSet,
+  get: RuntimeGet,
+  conversionConfirmed = false,
+) {
+  const basePackage = get().basePackage;
+  if (!basePackage) return;
+  const installed = get().installedResourceExtensions;
+  const nextExtensions = [...installed.filter((extension) => extension.ID !== loaded.extension.ID), loaded.extension];
+  const nextCatalog = createEffectiveResourceCatalog(basePackage, nextExtensions);
+  const candidateStatus = nextCatalog.extensions.find((status) => status.extension.ID === loaded.extension.ID);
+  if (!candidateStatus || candidateStatus.status === "disabled") {
+    set({ resourceExtensionImport: { status: "error", issues: candidateStatus?.issues ?? [{ level: "error", code: "RESOURCE_EXTENSION_INSTALL_FAILED", text: "Resource Extension 无法加入有效资源目录。" }] } });
+    return;
+  }
+  if (loaded.conversion && !conversionConfirmed) {
+    set({ pendingResourceExtensionConversion: { loaded }, pendingResourceFormatSelection: null, resourceExtensionImport: null });
+    return;
+  }
+  const previous = installed.find((extension) => extension.ID === loaded.extension.ID);
+  if (previous) {
+    const storedAssets = await runtimeDependencies.storage.loadResourceExtensionAssets(basePackage.manifest.ID);
+    set({
+      pendingResourceExtensionConversion: null,
+      pendingResourceExtensionReplacement: {
+        extension: loaded.extension, assets: loaded.assets, generatedIds: loaded.generatedIds,
+        normalizedArtifact: loaded.normalizedArtifact, issues: loaded.issues,
+        differences: resourceExtensionDifferences(previous, loaded.extension),
+        previousImageCount: storedAssets.filter((asset) => asset.sourceId === previous.ID).length,
+        nextImageCount: loaded.assets.length,
+      },
+      resourceExtensionImport: null,
+    });
+    return;
+  }
+  try {
+    await runtimeDependencies.storage.saveResourceExtension(loaded.extension, loaded.assets);
+  } catch {
+    set({ resourceExtensionImport: { status: "error", issues: [{ level: "error", code: "RESOURCE_EXTENSION_STORAGE_FAILED", text: "Resource Extension 无法写入本地存储。" }] } });
+    return;
+  }
+  const effectivePackage = applyEffectiveResourceCatalog(basePackage, nextCatalog);
+  const characterData = get().characterData;
+  const assetResolver = await reloadRuntimeAssets(basePackage.manifest.ID);
+  set({
+    currentPackage: effectivePackage, resourceCatalog: nextCatalog, installedResourceExtensions: nextExtensions,
+    packageAssetUrls: assetResolver.urls,
+    ...(characterData ? rebuildDependencyRuntimeState(characterData, effectivePackage) : {}),
+    resourceReferenceIssues: collectStaleResourceReferenceIssues(characterData, nextCatalog),
+    pendingResourceExtensionConversion: null,
+    resourceExtensionImport: {
+      status: "success", extensionId: loaded.extension.ID,
+      contributionCount: loaded.extension.resourceLibraries.length,
+      entryCount: loaded.extension.resourceLibraries.reduce((count, library) => count + library.library.entries.length, 0),
+      generatedIds: loaded.generatedIds, normalizedArtifact: loaded.normalizedArtifact, issues: loaded.issues,
+    },
+  });
+}
+
+async function persistImportedCharacter(data: CharacterData, saveName: string, notice: string, set: RuntimeSet, get: RuntimeGet) {
+  const currentPackage = get().currentPackage;
+  if (!currentPackage) return;
+  set({
+    characterData: data,
+    activeCharacterSaveId: data.character.id,
+    ...emptyDerivedState(),
+    ...rebuildDependencyRuntimeState(data, currentPackage),
+    importError: null,
+    importNotice: notice,
+    pendingCharacterConversion: null,
+    pendingCharacterFormatSelection: null,
+    resourceReferenceIssues: get().resourceCatalog ? collectStaleResourceReferenceIssues(data, get().resourceCatalog!) : [],
+  });
+  await runtimeDependencies.storage.saveCharacterSave({ id: data.character.id, packageId: data.systemPackage.id, name: saveName, updatedAt: data.updatedAt, data });
+  await runtimeDependencies.storage.setActiveCharacterSaveId(data.systemPackage.id, data.character.id);
+  set({ characterSaves: await runtimeDependencies.storage.listCharacterSaves(data.systemPackage.id), activeCharacterSaveId: data.character.id });
+  scheduleAutosave(() => get().characterData, (status) => set({ storageStatus: status }));
+}
+
+async function importCharacterSource(text: string, fileName: string, selectedAdapterId: string | undefined, set: RuntimeSet, get: RuntimeGet) {
+  const currentPackage = get().currentPackage;
+  if (!currentPackage) {
+    set({ importError: "导入失败：当前没有可用的 System Package。", importNotice: null });
+    return;
+  }
+  const native = parseCharacterDataText(text, currentPackage);
+  if (native.ok) {
+    await persistImportedCharacter(native.data, "导入角色", "Character Data 已导入为 Character Save。", set, get);
+    return;
+  }
+  const detection = parseAndDetectCharacterSource(text, fileName, currentPackage.characterFormatAdapters ?? []);
+  if (detection.status === "error" || detection.status === "none") {
+    set({ importError: detection.status === "error" ? detection.diagnostic.text : "导入失败：当前 System Package 不支持此人物卡格式。", importNotice: null });
+    return;
+  }
+  if (detection.status === "ambiguous" && !selectedAdapterId) {
+    set({
+      pendingCharacterFormatSelection: { text, fileName, adapters: detection.adapters.map(({ ID, 名称 }) => ({ ID, 名称 })) },
+      pendingCharacterConversion: null,
+      importError: null,
+      importNotice: null,
+    });
+    return;
+  }
+  const adapter = detection.status === "match" ? detection.adapter : detection.adapters.find((candidate) => candidate.ID === selectedAdapterId);
+  const source = detection.status === "match" ? detection.source : detection.sources[detection.adapters.findIndex((candidate) => candidate.ID === selectedAdapterId)];
+  if (!adapter || !source) {
+    set({ importError: "导入失败：选择的 Character Format Adapter 不匹配此文件。", importNotice: null });
+    return;
+  }
+  const conversion = await convertExternalCharacterSource(source, adapter, currentPackage);
+  if ("error" in conversion) {
+    set({ importError: `导入失败：${conversion.error.text}`, importNotice: null, pendingCharacterConversion: null });
+    return;
+  }
+  const normalized = parseCharacterDataText(exportCharacterData(conversion.data), currentPackage);
+  if (!normalized.ok) {
+    set({ importError: `导入失败：转换结果不符合当前 Character Data 合同。${normalized.error}`, importNotice: null, pendingCharacterConversion: null });
+    return;
+  }
+  conversion.data = normalized.data;
+  const lossy = conversion.report.diagnostics.length > 0 || conversion.report.skippedCards > 0 || conversion.report.skippedFields > 0 || conversion.report.skippedImages > 0;
+  if (lossy) {
+    set({ pendingCharacterConversion: conversion, pendingCharacterFormatSelection: null, importError: null, importNotice: null });
+    return;
+  }
+  await persistImportedCharacter(conversion.data, conversion.suggestedSaveName ?? "导入角色", `${adapter.名称} 已导入为新的 Character Save。`, set, get);
+}
+
 export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   basePackage: null,
   currentPackage: null,
@@ -487,6 +654,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   installedResourceExtensions: [],
   resourceExtensionImport: null,
   pendingResourceExtensionReplacement: null,
+  pendingResourceExtensionConversion: null,
+  pendingResourceFormatSelection: null,
   pendingResourceExtensionRemoval: null,
   resourceReferenceIssues: [],
   packageAssetUrls: {},
@@ -501,6 +670,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   storageStatus: "idle",
   importError: null,
   importNotice: null,
+  pendingCharacterConversion: null,
+  pendingCharacterFormatSelection: null,
   authorPreviewActive: false,
 
   // ========== Package lifecycle & boot ==========
@@ -534,6 +705,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
           installedResourceExtensions: [],
           resourceExtensionImport: null,
           pendingResourceExtensionReplacement: null,
+          pendingResourceExtensionConversion: null,
+          pendingResourceFormatSelection: null,
           pendingResourceExtensionRemoval: null,
           resourceReferenceIssues: [],
           packageAssetUrls: {},
@@ -566,6 +739,8 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
         installedResourceExtensions: [],
         resourceExtensionImport: null,
         pendingResourceExtensionReplacement: null,
+        pendingResourceExtensionConversion: null,
+        pendingResourceFormatSelection: null,
         pendingResourceExtensionRemoval: null,
         resourceReferenceIssues: [],
         packageAssetUrls: {},
@@ -688,76 +863,49 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       libraryIds: currentCatalog.resourceLibraries.map((library) => library.ID),
       entryIdsByLibrary,
     };
-    const fileName = "name" in file && typeof file.name === "string" ? file.name : "";
-    const isZip = fileName.toLocaleLowerCase().endsWith(".zip") || file.type === "application/zip";
     let loaded;
     try {
-      loaded = isZip
-        ? await loadResourceExtensionFromZipFile(file, basePackage.manifest.ID, idContext)
-        : loadResourceExtensionFromJsonText(await file.text(), basePackage.manifest.ID, idContext);
+      loaded = await loadResourceExtensionFromFile(file, basePackage, idContext);
     } catch {
       set({ resourceExtensionImport: { status: "error", issues: [{ level: "error", code: "RESOURCE_EXTENSION_READ_FAILED", text: "无法读取 Resource Extension 文件。" }] } });
       return;
     }
     if (!loaded.ok) {
+      if ("ambiguousAdapters" in loaded && loaded.ambiguousAdapters.length > 0) {
+        set({ pendingResourceFormatSelection: { file, adapters: loaded.ambiguousAdapters }, pendingResourceExtensionConversion: null, resourceExtensionImport: null });
+        return;
+      }
       set({ resourceExtensionImport: { status: "error", issues: loaded.issues } });
       return;
     }
+    await installResourceExtensionCandidate(loaded, set, get);
+  },
 
-    const nextExtensions = [...installed.filter((extension) => extension.ID !== loaded.extension.ID), loaded.extension];
-    const nextCatalog = createEffectiveResourceCatalog(basePackage, nextExtensions);
-    const candidateStatus = nextCatalog.extensions.find((status) => status.extension.ID === loaded.extension.ID);
-    if (!candidateStatus || candidateStatus.status === "disabled") {
-      set({ resourceExtensionImport: { status: "error", issues: candidateStatus?.issues ?? [{ level: "error", code: "RESOURCE_EXTENSION_INSTALL_FAILED", text: "Resource Extension 无法加入有效资源目录。" }] } });
+  async selectResourceFormatAdapter(adapterId) {
+    const pending = get().pendingResourceFormatSelection;
+    const basePackage = get().basePackage;
+    if (!pending || !basePackage) return;
+    const installed = get().installedResourceExtensions;
+    const currentCatalog = createEffectiveResourceCatalog(basePackage, installed);
+    const loaded = await loadResourceExtensionFromFile(pending.file, basePackage, {
+      extensionIds: installed.map((extension) => extension.ID),
+      libraryIds: currentCatalog.resourceLibraries.map((library) => library.ID),
+      entryIdsByLibrary: new Map(currentCatalog.resourceLibraries.map((library) => [library.ID, new Set(library.entries.map((entry) => entry.ID))])),
+    }, adapterId);
+    if (!loaded.ok) {
+      set({ pendingResourceFormatSelection: null, resourceExtensionImport: { status: "error", issues: loaded.issues } });
       return;
     }
+    await installResourceExtensionCandidate(loaded, set, get);
+  },
 
-    const previous = installed.find((extension) => extension.ID === loaded.extension.ID);
-    if (previous) {
-      const storedAssets = await runtimeDependencies.storage.loadResourceExtensionAssets(basePackage.manifest.ID);
-      set({
-        pendingResourceExtensionReplacement: {
-          extension: loaded.extension,
-          assets: loaded.assets,
-          generatedIds: loaded.generatedIds,
-          normalizedArtifact: loaded.normalizedArtifact,
-          issues: loaded.issues,
-          differences: resourceExtensionDifferences(previous, loaded.extension),
-          previousImageCount: storedAssets.filter((asset) => asset.sourceId === previous.ID).length,
-          nextImageCount: loaded.assets.length,
-        },
-        resourceExtensionImport: null,
-      });
-      return;
-    }
+  async confirmResourceExtensionConversion() {
+    const pending = get().pendingResourceExtensionConversion;
+    if (pending) await installResourceExtensionCandidate(pending.loaded, set, get, true);
+  },
 
-    try {
-      await runtimeDependencies.storage.saveResourceExtension(loaded.extension, loaded.assets);
-    } catch {
-      set({ resourceExtensionImport: { status: "error", issues: [{ level: "error", code: "RESOURCE_EXTENSION_STORAGE_FAILED", text: "Resource Extension 无法写入本地存储。" }] } });
-      return;
-    }
-
-    const effectivePackage = applyEffectiveResourceCatalog(basePackage, nextCatalog);
-    const characterData = get().characterData;
-    const assetResolver = await reloadRuntimeAssets(basePackage.manifest.ID);
-    set({
-      currentPackage: effectivePackage,
-      resourceCatalog: nextCatalog,
-      installedResourceExtensions: nextExtensions,
-      packageAssetUrls: assetResolver.urls,
-      ...(characterData ? rebuildDependencyRuntimeState(characterData, effectivePackage) : {}),
-      resourceReferenceIssues: collectStaleResourceReferenceIssues(characterData, nextCatalog),
-      resourceExtensionImport: {
-        status: "success",
-        extensionId: loaded.extension.ID,
-        contributionCount: loaded.extension.resourceLibraries.length,
-        entryCount: loaded.extension.resourceLibraries.reduce((count, library) => count + library.library.entries.length, 0),
-        generatedIds: loaded.generatedIds,
-        normalizedArtifact: loaded.normalizedArtifact,
-        issues: loaded.issues,
-      },
-    });
+  cancelResourceExtensionConversion() {
+    set({ pendingResourceExtensionConversion: null, pendingResourceFormatSelection: null, resourceExtensionImport: null });
   },
 
   async confirmResourceExtensionReplacement() {
@@ -1418,53 +1566,31 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   },
 
   async importCharacterDataFromText(text) {
-    const currentPackage = get().currentPackage;
+    await importCharacterSource(text, "character.json", undefined, set, get);
+  },
 
-    if (!currentPackage) {
-      set({
-        importError: "导入失败：当前没有可用的 System Package。",
-        importNotice: null,
-      });
-      return;
+  async importCharacterDataFromFile(file) {
+    try {
+      await importCharacterSource(await file.text(), file.name, undefined, set, get);
+    } catch {
+      set({ importError: "导入失败：无法读取人物卡文件。", importNotice: null });
     }
+  },
 
-    const result = parseCharacterDataText(text, currentPackage);
+  async selectCharacterFormatAdapter(adapterId) {
+    const pending = get().pendingCharacterFormatSelection;
+    if (!pending) return;
+    await importCharacterSource(pending.text, pending.fileName, adapterId, set, get);
+  },
 
-    if (!result.ok) {
-      set({
-        importError: result.error,
-        importNotice: null,
-      });
-      return;
-    }
+  async confirmCharacterConversion() {
+    const pending = get().pendingCharacterConversion;
+    if (!pending) return;
+    await persistImportedCharacter(pending.data, pending.suggestedSaveName ?? "导入角色", `${pending.adapter.名称} 已导入为新的 Character Save。`, set, get);
+  },
 
-    set({
-      characterData: result.data,
-      activeCharacterSaveId: result.data.character.id,
-      ...emptyDerivedState(),
-      ...rebuildDependencyRuntimeState(result.data, currentPackage),
-      importError: null,
-      importNotice: "Character Data 已导入为 Character Save。",
-      resourceReferenceIssues: get().resourceCatalog ? collectStaleResourceReferenceIssues(result.data, get().resourceCatalog!) : [],
-    });
-
-    await runtimeDependencies.storage.saveCharacterSave({
-      id: result.data.character.id,
-      packageId: result.data.systemPackage.id,
-      name: "导入角色",
-      updatedAt: result.data.updatedAt,
-      data: result.data,
-    });
-    await runtimeDependencies.storage.setActiveCharacterSaveId(result.data.systemPackage.id, result.data.character.id);
-    set({
-      characterSaves: await runtimeDependencies.storage.listCharacterSaves(result.data.systemPackage.id),
-      activeCharacterSaveId: result.data.character.id,
-    });
-
-    scheduleAutosave(
-      () => get().characterData,
-      (status) => set({ storageStatus: status }),
-    );
+  cancelCharacterConversion() {
+    set({ pendingCharacterConversion: null, pendingCharacterFormatSelection: null, importNotice: "已取消外部人物卡转换；当前 Character Save 未改变。" });
   },
 
   clearImportMessage() {

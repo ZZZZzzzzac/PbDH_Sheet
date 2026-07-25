@@ -183,7 +183,7 @@ Powered by Daggerheart（PbDH）TRPG 系统有多个衍生规则变体。每个�
 - 第一版产品形态是部署在服务器上、由 Player 通过 HTTPS 在线访问的普通静态网站。
 - 第一版不提供 PWA、Web App 安装入口、Service Worker 或离线应用壳，也不承诺断网后重新打开或刷新应用。
 - System Package cache、Character Saves、Player 图片和小型 UI 状态仍使用浏览器本地存储；本地数据能力不依赖 PWA。
-- 系统包格式为声明式文件、目录包或压缩包，不由作者写任意脚本（检查脚本例外，检查脚本只能读数据）。
+- 系统包格式以声明式文件、目录包或压缩包为主。Author Script 只允许出现在两个受限 seam：Validation Script 读取数据并输出报告；Format Adapter Script 在显式外部格式导入/导出时读取隔离副本并返回待验证的转换结果。两者都不能修改 UI、存储或实时 Character Data。
 - 第一版不做低代码可视化编辑器、不做拖拽布局编辑器。
 - 第一版只加载一个当前系统包，不做多系统包管理器。
 - 作者侧数据键名使用中文，作者可见格式和代码对象都直接用中文键名。

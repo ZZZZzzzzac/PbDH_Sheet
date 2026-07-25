@@ -1,0 +1,24 @@
+[
+  {
+    "ID": "zzz-resource-json",
+    "名称": "ZZZ Format",
+    "载体": [{
+      "类型": "json",
+      "根类型": "array",
+      "文件后缀": ".json",
+      "检测": [{ "路径": [0, "类型"], "存在": true }, { "路径": [0, "名称"], "存在": true }]
+    }],
+    "导入脚本": "adapters/scripts/resource-import.js"
+  },
+  {
+    "ID": "dhsheet-dhcb",
+    "名称": "dhSheet Format",
+    "载体": [{
+      "类型": "zip",
+      "文件后缀": ".dhcb",
+      "JSON成员": [{ "路径": "manifest.json", "键": "manifest" }, { "路径": "cards.json", "键": "cards" }],
+      "检测": [{ "路径": ["manifest", "format"], "等于": "DaggerHeart Card Batch" }]
+    }],
+    "导入脚本": "adapters/scripts/resource-import.js"
+  }
+]

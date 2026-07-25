@@ -14,6 +14,12 @@ import {
   characterCreationGuideSchema,
   type CharacterCreationGuide,
 } from "./characterCreationGuide";
+import {
+  characterFormatAdapterSchema,
+  resourceFormatAdapterSchema,
+  type CharacterFormatAdapter,
+  type ResourceFormatAdapter,
+} from "./formatAdapter";
 
 export const frameworkSchemaVersion = "0.2.0";
 
@@ -503,6 +509,8 @@ const systemPackageEnvelopeSchema = z.object({
   dependencies: z.array(z.unknown()).optional(),
   validationChecks: z.array(validationCheckSchema).optional(),
   characterCreationGuide: z.unknown().optional(),
+  resourceFormatAdapters: z.array(resourceFormatAdapterSchema).optional(),
+  characterFormatAdapters: z.array(characterFormatAdapterSchema).optional(),
 });
 
 export interface SystemPackage {
@@ -517,6 +525,8 @@ export interface SystemPackage {
   dependencies?: DependencyRule[];
   validationChecks?: ValidationCheck[];
   characterCreationGuide?: CharacterCreationGuide;
+  resourceFormatAdapters?: ResourceFormatAdapter[];
+  characterFormatAdapters?: CharacterFormatAdapter[];
 }
 export type FreeTextModule = z.infer<typeof freeTextModuleSchema>;
 export type LongTextModule = z.infer<typeof longTextModuleSchema>;
@@ -540,6 +550,7 @@ export type DependencyTrigger = z.infer<typeof dependencyTriggerSchema>;
 export type DependencyCondition = z.infer<typeof dependencyConditionSchema>;
 export type DependencyAction = z.infer<typeof dependencyActionSchema>;
 export type ValidationCheck = z.infer<typeof validationCheckSchema>;
+export type { CharacterFormatAdapter, ResourceFormatAdapter };
 export type { ResourceLibrary };
 
 export type PackageIssueLevel = "fatal" | "error" | "warning" | "info" | "debug";
@@ -796,6 +807,8 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
     "validationChecks",
     issues,
   );
+  collectDuplicateIdIssues(systemPackage.resourceFormatAdapters ?? [], "Resource Format Adapter", "DUPLICATE_RESOURCE_FORMAT_ADAPTER_ID", "resourceFormatAdapters", issues);
+  collectDuplicateIdIssues(systemPackage.characterFormatAdapters ?? [], "Character Format Adapter", "DUPLICATE_CHARACTER_FORMAT_ADAPTER_ID", "characterFormatAdapters", issues);
 
   if (parsed.data.manifest.schemaVersion !== frameworkSchemaVersion) {
     issues.push({
@@ -1713,6 +1726,44 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
   }
 
   // --- Validation checks syntax ---
+  const adapterScripts = [
+    ...(systemPackage.resourceFormatAdapters ?? []).map((adapter, index) => ({
+      content: adapter.importScriptContent,
+      id: adapter.ID,
+      path: `resourceFormatAdapters.${index}.importScriptContent`,
+      pointer: ["resourceFormatAdapters", index, "importScriptContent"] as Array<string | number>,
+    })),
+    ...(systemPackage.characterFormatAdapters ?? []).flatMap((adapter, index) => [
+      {
+        content: adapter.importScriptContent,
+        id: adapter.ID,
+        path: `characterFormatAdapters.${index}.importScriptContent`,
+        pointer: ["characterFormatAdapters", index, "importScriptContent"] as Array<string | number>,
+      },
+      ...(adapter.exportScriptContent ? [{
+        content: adapter.exportScriptContent,
+        id: adapter.ID,
+        path: `characterFormatAdapters.${index}.exportScriptContent`,
+        pointer: ["characterFormatAdapters", index, "exportScriptContent"] as Array<string | number>,
+      }] : []),
+    ]),
+  ];
+  for (const script of adapterScripts) {
+    try {
+      parseJavaScript(script.content, { ecmaVersion: "latest", sourceType: "script", locations: true });
+    } catch (error) {
+      const location = getJavaScriptErrorLocation(error);
+      issues.push({
+        level: "error",
+        code: "FORMAT_ADAPTER_SCRIPT_SYNTAX_INVALID",
+        text: `Format Adapter Script JavaScript 语法错误：${script.id}${location ? `（${location.line}:${location.column}）` : ""}`,
+        path: script.path,
+        location: { pointer: script.pointer, line: location?.line, column: location?.column },
+        evidence: [{ label: "parserMessage", value: getErrorMessage(error) }],
+      });
+    }
+  }
+
   for (const [checkIndex, check] of (systemPackage.validationChecks ?? []).entries()) {
     try {
       parseJavaScript(check.scriptContent, { ecmaVersion: "latest", sourceType: "script", locations: true });
