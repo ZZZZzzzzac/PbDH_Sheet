@@ -17,6 +17,34 @@ function triState(value) {
   const items = Array.isArray(value) ? value : [];
   return countable(items.filter((item) => item === 1 || item === "1").length, items.filter((item) => item !== 2 && item !== "2").length);
 }
+function dhUpgradeSelected(upgrades, tier, optionIndex, boxIndex, doubleBox) {
+  if (!upgrades || typeof upgrades !== "object") return false;
+  const checkKey = doubleBox ? `${tier}-${optionIndex}` : `${tier}-${optionIndex}-${boxIndex}`;
+  const state = upgrades[checkKey];
+  return Boolean(state && typeof state === "object" && state[optionIndex] === true);
+}
+function dhAdvancement(upgrades, tier, includeTierSpecific) {
+  const state = {
+    "traits-1": dhUpgradeSelected(upgrades, tier, 0, 0, false),
+    "traits-2": dhUpgradeSelected(upgrades, tier, 0, 1, false),
+    "traits-3": dhUpgradeSelected(upgrades, tier, 0, 2, false),
+    "hp-1": dhUpgradeSelected(upgrades, tier, 1, 0, false),
+    "hp-2": dhUpgradeSelected(upgrades, tier, 1, 1, false),
+    "stress-1": dhUpgradeSelected(upgrades, tier, 2, 0, false),
+    "stress-2": dhUpgradeSelected(upgrades, tier, 2, 1, false),
+    experiences: dhUpgradeSelected(upgrades, tier, 3, 0, false),
+    "domain-card": dhUpgradeSelected(upgrades, tier, 4, 0, false),
+    evasion: dhUpgradeSelected(upgrades, tier, 5, 0, false),
+  };
+  if (includeTierSpecific) {
+    state.subclass = dhUpgradeSelected(upgrades, tier, 6, 0, false);
+    const proficiency = dhUpgradeSelected(upgrades, tier, 7, 0, true);
+    const multiclass = dhUpgradeSelected(upgrades, tier, 8, 0, true);
+    state["proficiency-1"] = proficiency; state["proficiency-2"] = proficiency;
+    state["multiclass-1"] = multiclass; state["multiclass-2"] = multiclass;
+  }
+  return state;
+}
 function normalized(value) {
   return typeof value === "string" || typeof value === "number" ? String(value).normalize("NFKC").trim().replace(/\s+/gu, " ") : "";
 }
@@ -147,6 +175,9 @@ function importDhSheet(document, libraries) {
   output.values["bag-gold"] = countable(checkedCount(gold.slice(9, 18)), 9);
   output.values["chest-gold"] = countable(checkedCount(gold.slice(18, 20)), null);
   output.values["companion-stress"] = countable(checkedCount(document.companionStress), document.companionStressMax);
+  output.values["advancement-tier-2"] = dhAdvancement(document.checkedUpgrades, "tier1", false);
+  output.values["advancement-tier-3"] = dhAdvancement(document.checkedUpgrades, "tier2", true);
+  output.values["advancement-tier-4"] = dhAdvancement(document.checkedUpgrades, "tier3", true);
   if (typeof document.characterImage === "string" && document.characterImage) output.images.push({ moduleId: "character-avatar", name: "dhSheet character image", dataUrl: document.characterImage });
   if (typeof document.companionImage === "string" && document.companionImage) output.images.push({ moduleId: "companion-portrait", name: "dhSheet companion image", dataUrl: document.companionImage });
   const rules = [

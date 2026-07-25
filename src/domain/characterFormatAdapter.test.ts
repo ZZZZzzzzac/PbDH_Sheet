@@ -91,6 +91,16 @@ describe("Character Format Adapter scripts", () => {
       "secondary-weapon-name": joined(document, "secondaryWeaponName", "secondaryWeaponTrait", "secondaryWeaponDamage"),
       "armor-name": joined(document, "armorName", "armorBaseScore", "armorThreshold"),
       "armor-value": String(document.armorValue),
+      "advancement-tier-2": expect.objectContaining({
+        "traits-1": true, "traits-2": false, "traits-3": false,
+        "hp-1": true, "hp-2": true, "stress-1": true, "stress-2": true,
+        experiences: true, "domain-card": false, evasion: false,
+      }),
+      "advancement-tier-3": expect.objectContaining({
+        "traits-1": true, experiences: true, subclass: false,
+        "proficiency-1": true, "proficiency-2": true,
+        "multiclass-1": true, "multiclass-2": true,
+      }),
     }));
     expect(conversions[0].data.cards.instances.some((card) => card.state === "配置")).toBe(true);
     expect(conversions[0].data.cards.instances.some((card) => card.state === "宝库")).toBe(true);
