@@ -37,6 +37,8 @@ describe("Character Format Adapter scripts", () => {
       "primary-weapon-description": sourceDocument.PrimaryWeaponTraitTextbox,
       "secondary-weapon-name": joined(sourceDocument, "SecondaryWeaponNameTextbox", "SecondaryWeaponStatTextbox", "SecondaryWeaponDamageTextbox"),
       "secondary-weapon-description": sourceDocument.SecondaryWeaponTraitTextbox,
+      "backup-weapon-1-name": joined(sourceDocument, "Backup1WeaponNameTextbox", "Backup1WeaponStatTextbox", "Backup1WeaponDamageTextbox"),
+      "backup-weapon-2-name": joined(sourceDocument, "Backup2WeaponNameTextbox", "Backup2WeaponStatTextbox", "Backup2WeaponDamageTextbox"),
       "armor-name": joined(sourceDocument, "ArmorNameTextbox", "ArmorThresholdTextbox", "ArmorScoreTextbox"),
       "armor-value": String(sourceDocument.ArmorTextbox),
       "armor-description": sourceDocument.ArmorTraitTextbox,

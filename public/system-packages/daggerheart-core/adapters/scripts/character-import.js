@@ -68,12 +68,14 @@ function importZzz(document, libraries) {
     level: "LevelTextbox", evasion: "EvasionTextbox", agility: "AgilityTextbox", strength: "StrengthTextbox", finesse: "FinesseTextbox",
     instinct: "InstinctTextbox", presence: "PresenceTextbox", knowledge: "KnowledgeTextbox", "major-threshold": "MajorTextbox", "severe-threshold": "SevereTextbox",
     "class-feature": "ClassFeatureTextbox", "primary-weapon-description": "PrimaryWeaponTraitTextbox", "secondary-weapon-description": "SecondaryWeaponTraitTextbox",
-    "backup-weapon-1-name": "Backup1WeaponNameTextbox", "backup-weapon-1-description": "Backup1WeaponTraitTextbox", "backup-weapon-2-name": "Backup2WeaponNameTextbox",
-    "backup-weapon-2-description": "Backup2WeaponTraitTextbox", "armor-value": "ArmorTextbox", "armor-description": "ArmorTraitTextbox", inventory: "ItemSlot1Textbox", "event-log": "EventLogTextbox",
+    "backup-weapon-1-description": "Backup1WeaponTraitTextbox", "backup-weapon-2-description": "Backup2WeaponTraitTextbox",
+    "armor-value": "ArmorTextbox", "armor-description": "ArmorTraitTextbox", inventory: "ItemSlot1Textbox", "event-log": "EventLogTextbox",
   };
   Object.entries(pairs).forEach(([id, source]) => put(output.values, id, document[source]));
   put(output.values, "primary-weapon-name", join([document.PrimaryWeaponNameTextbox, document.PrimaryWeaponStatTextbox, document.PrimaryWeaponDamageTextbox]));
   put(output.values, "secondary-weapon-name", join([document.SecondaryWeaponNameTextbox, document.SecondaryWeaponStatTextbox, document.SecondaryWeaponDamageTextbox]));
+  put(output.values, "backup-weapon-1-name", join([document.Backup1WeaponNameTextbox, document.Backup1WeaponStatTextbox, document.Backup1WeaponDamageTextbox]));
+  put(output.values, "backup-weapon-2-name", join([document.Backup2WeaponNameTextbox, document.Backup2WeaponStatTextbox, document.Backup2WeaponDamageTextbox]));
   put(output.values, "armor-name", join([document.ArmorNameTextbox, document.ArmorThresholdTextbox, document.ArmorScoreTextbox]));
   for (let index = 1; index <= 5; index += 1) {
     put(output.values, `experience-${index}`, document[`Experience${index}Textbox`]);
