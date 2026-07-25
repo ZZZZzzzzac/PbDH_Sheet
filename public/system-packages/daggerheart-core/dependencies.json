@@ -471,14 +471,6 @@
       },
       {
         "类型": "module",
-        "模块ID": "armor-base-major"
-      },
-      {
-        "类型": "module",
-        "模块ID": "armor-base-severe"
-      },
-      {
-        "类型": "module",
         "模块ID": "armor-value"
       },
       {
@@ -502,24 +494,8 @@
         "类型": "fillText",
         "目标模块ID": "armor-name",
         "内容": {
-          "类型": "selectedResourceField",
-          "字段": "名称"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "armor-base-major",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "重度阈值"
-        }
-      },
-      {
-        "类型": "fillText",
-        "目标模块ID": "armor-base-severe",
-        "内容": {
-          "类型": "selectedResourceField",
-          "字段": "严重阈值"
+          "类型": "selectedResourceTemplate",
+          "格式": "**{{名称}}**｜阈值 {{重度阈值}}/{{严重阈值}}｜护甲值 {{护甲值}}"
         }
       },
       {

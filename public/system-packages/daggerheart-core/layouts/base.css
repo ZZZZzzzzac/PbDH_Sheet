@@ -261,16 +261,13 @@
   gap: 0.125rem;
 }
 
-.weapon-fields {
+.weapon-fields,
+.armor-fields {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .backup-weapon-fields {
   grid-template-columns: minmax(0, 1fr) auto;
-}
-
-.armor-fields {
-  grid-template-columns: minmax(8rem, 2fr) auto repeat(2, minmax(4rem, 1fr));
 }
 
 [data-module-id$="-description"] [data-part="input"] {
