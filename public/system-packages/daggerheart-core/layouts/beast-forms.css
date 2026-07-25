@@ -105,6 +105,11 @@
   display: block;
 }
 
+.beast-form-compact,
+.beast-form-compact .beast-summary {
+  font-size: 12px;
+}
+
 .beast-feature-name {
   color: var(--dh-beast-accent);
 }
@@ -144,6 +149,11 @@
   .beast-summary {
     font-size: 11px;
     line-height: 1.05;
+  }
+
+  .beast-form-compact,
+  .beast-form-compact .beast-summary {
+    font-size: 10px;
   }
 
   .beast-summary + p:not(.beast-summary),
