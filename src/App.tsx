@@ -568,12 +568,12 @@ export default function App() {
               </button>
               <button className="menu-item" type="button" onClick={() => void beginOutput("json")} aria-label="导出 Character JSON" disabled={!characterData}>
                 <Download aria-hidden="true" size={16} />
-                <span>导出 PbDH Format</span>
+                <span>导出 PbDH</span>
               </button>
               {currentPackage?.characterFormatAdapters?.filter((adapter) => adapter.exportScriptContent).map((adapter) => (
                 <button className="menu-item" type="button" key={adapter.ID} onClick={() => void exportWithCharacterAdapter(adapter.ID)} disabled={!characterData}>
                   <Download aria-hidden="true" size={16} />
-                  <span>导出 {adapter.名称}</span>
+                  <span>导出 {adapter.名称.replace(/\s+format$/iu, "")}</span>
                 </button>
               ))}
               <button className="menu-item" type="button" onClick={() => void beginOutput("html")} aria-label="导出 HTML snapshot" disabled={!characterData}>
