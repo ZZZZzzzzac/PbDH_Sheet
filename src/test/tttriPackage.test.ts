@@ -301,6 +301,31 @@ describe("TTTRI System Package", () => {
     expect(yData.character.values["subclass-current"]).toBe(t3SubclassText);
   });
 
+  it("preserves Feishu semantic colors in newly synchronized Subclass progression text", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const subclasses = loadedResult.package.resourceLibraries.find((library) => library.ID === "subclasses")!;
+    const stage = (value: string) => subclasses.entries.find(
+      (entry) => entry.fields.主职 === "先锋" && entry.fields.名称 === "尖兵" && entry.fields.阶段 === value,
+    )!;
+
+    expect(stage("T2").fields.子职提升).toContain(":red[**希望点为0-4的盟友**]");
+    expect(stage("T3").fields.子职提升).toContain(":orange[**或花费 1 希望点**]");
+    expect(stage("T3").fields.子职提升).toContain(":red[**一至两名**]");
+    expect(stage("T4X").fields.子职提升).toContain(":green[**你可以在自身成为一次攻击的目标时使用本希望特性");
+  });
+
+  it("highlights every Community feature name in red", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const communities = loadedResult.package.resourceLibraries.find((library) => library.ID === "communities")!;
+
+    expect(communities.entries).toHaveLength(15);
+    for (const community of communities.entries) {
+      expect(community.fields.描述, community.fields.名称).toMatch(/^:red\[\*\*\*[^\]]+:\*\*\*\] /u);
+    }
+  });
+
   it("derives the ancestry experience placeholder and appends Ancestry and Community text Cards", () => {
     expect(loadedResult.ok).toBe(true);
     if (!loadedResult.ok) return;

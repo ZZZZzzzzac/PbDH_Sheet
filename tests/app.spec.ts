@@ -240,7 +240,13 @@ test("Character Creation Guide uses a bottom panel on a mobile viewport", async 
 
   await page.setViewportSize({ width: 900, height: 700 });
   await expect(page.locator(".guide-panel-mobile")).toHaveCount(0);
-  await expect(page.locator(".guide-panel-default")).toBeVisible();
+  const desktopPanel = page.locator(".guide-panel-default");
+  await expect(desktopPanel).toBeVisible();
+  const desktopBox = await desktopPanel.boundingBox();
+  expect(desktopBox).not.toBeNull();
+  expect(desktopBox!.x + desktopBox!.width / 2).toBeCloseTo(450, 0);
+  expect(desktopBox!.y + desktopBox!.height / 2).toBeCloseTo(350, 0);
+  await expect(desktopPanel.locator(".guide-actions-default")).toBeVisible();
 });
 
 test("HTML Layout Template keeps Countable variants readable and stacks dense grids on small screens", async ({ page }, testInfo) => {

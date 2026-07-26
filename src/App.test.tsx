@@ -537,7 +537,7 @@ describe("App Character Creation Guide", () => {
     expect(emphasis.closest("span")).toHaveAttribute("data-markdown-color", "red");
   });
 
-  it("keeps Guide actions out of long instruction flow and sizes the panel to content", async () => {
+  it("keeps untargeted Guide actions inside the centered panel and reachable with long instructions", async () => {
     const longPackage = createGuidePackage([
       { ID: "long", 标题: "长说明", 说明: "很长的说明。\n\n".repeat(100) },
     ]);
@@ -556,7 +556,8 @@ describe("App Character Creation Guide", () => {
     const panel = screen.getByRole("dialog", { name: "车卡指引" });
     const actions = document.querySelector<HTMLElement>(".guide-actions");
     expect(actions).not.toBeNull();
-    expect(actions).toHaveStyle({ position: "fixed" });
+    expect(panel).toContainElement(actions);
+    expect(actions).toHaveClass("guide-actions-default");
     expect(panel).toHaveStyle({ width: "fit-content" });
   });
 

@@ -123,6 +123,36 @@ export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, o
     ...(panelPosition ? { top: panelPosition.top, left: panelPosition.left } : {}),
   };
   const actionsStyle = placeActions(targetState.rect && !targetState.unavailable ? targetState.rect : null);
+  const actions = (
+    <div
+      className={`guide-actions${!step.目标 ? " guide-actions-default" : ""}`}
+      style={!step.目标 ? undefined : actionsStyle}
+      role="toolbar"
+      aria-label="车卡指引操作"
+    >
+      <button type="button" className="icon-button secondary-button" onClick={onExit} aria-label="退出车卡指引">
+        退出
+      </button>
+      <button
+        type="button"
+        className="icon-button secondary-button"
+        onClick={onPrevious}
+        disabled={session.stepIndex === 0}
+        aria-label="上一步"
+      >
+        上一步
+      </button>
+      {isLastStep ? (
+        <button type="button" className="icon-button" onClick={onFinish} data-guide-primary aria-label="完成车卡指引">
+          完成
+        </button>
+      ) : (
+        <button type="button" className="icon-button" onClick={onNext} data-guide-primary aria-label="下一步">
+          下一步
+        </button>
+      )}
+    </div>
+  );
 
   return createPortal(
     <div className="guide-spotlight-root" ref={overlayRef} data-guide-step-id={step.ID}>
@@ -132,29 +162,7 @@ export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, o
       {targetState.rect && !targetState.unavailable ? (
         <div className="guide-target-ring" style={ringStyle(targetState.rect)} aria-hidden="true" />
       ) : null}
-      {!interactionSurface ? <div className="guide-actions" style={actionsStyle} role="toolbar" aria-label="车卡指引操作">
-        <button type="button" className="icon-button secondary-button" onClick={onExit} aria-label="退出车卡指引">
-          退出
-        </button>
-        <button
-          type="button"
-          className="icon-button secondary-button"
-          onClick={onPrevious}
-          disabled={session.stepIndex === 0}
-          aria-label="上一步"
-        >
-          上一步
-        </button>
-        {isLastStep ? (
-          <button type="button" className="icon-button" onClick={onFinish} data-guide-primary aria-label="完成车卡指引">
-            完成
-          </button>
-        ) : (
-          <button type="button" className="icon-button" onClick={onNext} data-guide-primary aria-label="下一步">
-            下一步
-          </button>
-        )}
-      </div> : null}
+      {!interactionSurface && step.目标 ? actions : null}
       {!interactionSurface ? <section
         className={`guide-panel${isMobile ? " guide-panel-mobile" : ""}${!targetState.rect || targetState.unavailable ? " guide-panel-default" : ""}`}
         style={panelStyle}
@@ -170,6 +178,7 @@ export function GuideSpotlight({ guide, session, onPrevious, onNext, onFinish, o
           <RestrictedMarkdown className="guide-instructions" value={step.说明} />
           {targetState.unavailable ? <p className="guide-target-unavailable" role="status">当前目标不可见，请先完成前置步骤。</p> : null}
         </div>
+        {!step.目标 ? actions : null}
       </section> : null}
     </div>,
     document.body,

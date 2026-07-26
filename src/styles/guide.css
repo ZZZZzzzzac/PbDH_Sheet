@@ -104,6 +104,11 @@
   pointer-events: auto;
 }
 
+.guide-actions-default {
+  position: sticky;
+  bottom: 0;
+}
+
 @media (max-width: 640px) {
   .guide-panel-mobile {
     right: 8px;
