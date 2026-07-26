@@ -176,7 +176,7 @@ flowchart LR
 
 ### Questionnaire Character Creation
 
-问卷问题、计分、推荐与动画完全属于 System Package。问卷返回的不是 Character Data patch，而是现有 Picker、Library 与稳定 Entry ID 的有序选择；Runtime Store 在草稿上重放与手动 Picker 提交相同的 Dependency/Card/派生链路，Player 确认后原子替换 Character Data 并保存一次。取消、无效或过期结果不产生写入，也不要求 Author 修改既有 `dependencies.json`。
+问卷问题、计分、推荐与动画完全属于 System Package。问卷返回的不是 Character Data patch，而是现有 Picker、Library 与稳定 Entry ID 的有序选择；Runtime Store 在草稿上重放与手动 Picker 提交相同的 Dependency/Card/派生链路，Player 确认后原子替换 Character Data 并保存一次。可选 Resource Extension 尚未安装而导致 Entry 缺失时，确认界面显示缺失 ID、跳过对应选择，并允许 Player 应用其余可用项；全部缺失时不能确认。取消、其他无效结果或过期结果不产生写入，也不要求 Author 修改既有 `dependencies.json`。
 
 ## 安全边界
 

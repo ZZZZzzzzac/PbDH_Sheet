@@ -355,6 +355,13 @@ export interface PendingQuestionnaireResult {
     libraryName: string;
     entries: Array<{ id: string; name: string }>;
   }>;
+  missingResources: Array<{
+    sourceModuleId: string;
+    pickerLabel: string;
+    libraryId: string;
+    libraryName: string;
+    entryId: string;
+  }>;
   nextCharacterData: CharacterData;
 }
 
@@ -1400,6 +1407,17 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
             entries: selection.entries.map((entry) => ({ id: entry.ID, name: entry.fields.名称 || entry.ID })),
           };
         }),
+        missingResources: resolved.missingResources.map((missing) => {
+          const module = currentPackage.modules.find((candidate) => candidate.ID === missing.sourceModuleId);
+          const library = currentPackage.resourceLibraries?.find((candidate) => candidate.ID === missing.libraryId);
+          return {
+            sourceModuleId: missing.sourceModuleId,
+            pickerLabel: module?.类型 === "resourcePicker" ? module.按钮文本 : missing.sourceModuleId,
+            libraryId: missing.libraryId,
+            libraryName: library?.名称 ?? missing.libraryId,
+            entryId: missing.entryId,
+          };
+        }),
         nextCharacterData: draft,
       },
       importError: null,
@@ -1412,6 +1430,14 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     const currentPackage = get().currentPackage;
     const characterData = get().characterData;
     if (!pending || !currentPackage || !characterData) return;
+    if (pending.selections.length === 0) {
+      set({
+        pendingQuestionnaireResult: null,
+        importError: "问卷推荐的资源当前均不可用；请安装所需 Resource Extension 后重新运行问卷。",
+        importNotice: null,
+      });
+      return;
+    }
     if (pending.packageId !== currentPackage.manifest.ID
       || pending.characterId !== characterData.character.id
       || pending.baseUpdatedAt !== characterData.updatedAt) {

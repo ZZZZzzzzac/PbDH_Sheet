@@ -16,8 +16,19 @@ export interface ResolvedQuestionnaireSelection {
   entries: ResourceLibraryEntry[];
 }
 
+export interface MissingQuestionnaireResource {
+  sourceModuleId: string;
+  libraryId: string;
+  entryId: string;
+}
+
 export type QuestionnaireResultResolution =
-  | { ok: true; result: QuestionnaireResult; selections: ResolvedQuestionnaireSelection[] }
+  | {
+    ok: true;
+    result: QuestionnaireResult;
+    selections: ResolvedQuestionnaireSelection[];
+    missingResources: MissingQuestionnaireResource[];
+  }
   | { ok: false; error: string };
 
 export const questionnaireResultMaxBytes = 64 * 1024;
@@ -39,6 +50,7 @@ export function resolveQuestionnaireResult(input: unknown, systemPackage: System
   }
 
   const selections: ResolvedQuestionnaireSelection[] = [];
+  const missingResources: MissingQuestionnaireResource[] = [];
   for (const interaction of parsed.data.interactions) {
     const module = findModule(systemPackage, interaction.sourceModuleId);
     if (module?.类型 !== "resourcePicker") {
@@ -63,12 +75,17 @@ export function resolveQuestionnaireResult(input: unknown, systemPackage: System
     for (const entryId of interaction.entryIds) {
       const entry = findResourceLibraryEntry(library, entryId);
       if (!entry) {
-        return { ok: false, error: `Resource Entry 不存在：${interaction.libraryId}/${entryId}` };
+        missingResources.push({
+          sourceModuleId: module.ID,
+          libraryId: library.ID,
+          entryId,
+        });
+        continue;
       }
       entries.push(entry);
     }
-    selections.push({ sourceModuleId: module.ID, libraryId: library.ID, entries });
+    if (entries.length > 0) selections.push({ sourceModuleId: module.ID, libraryId: library.ID, entries });
   }
 
-  return { ok: true, result: parsed.data, selections };
+  return { ok: true, result: parsed.data, selections, missingResources };
 }

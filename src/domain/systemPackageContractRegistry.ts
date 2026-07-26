@@ -154,8 +154,9 @@ export const systemPackageContractEntries: readonly SystemPackageContractEntry[]
     document: "questionnaire-character-creation.md",
     semanticConstraints: [
       "仅支持 resourceSelected；sourceModuleId 必须是现有 Resource Picker，libraryId 必须是该 Picker 已链接的 Resource Library。",
-      "entryIds 必须是该库内稳定且不重复的 Resource Entry ID，并遵守 Picker 单选/多选约束。",
-      "Base 按 interactions 声明顺序在草稿上重放现有 Picker 提交流程；Player 确认后才原子写入并保存一次。",
+      "entryIds 必须是稳定且不重复的 Resource Entry ID，并遵守 Picker 单选/多选约束；Entry 可由可选 Resource Extension 提供。",
+      "当前 Effective Resource Catalog 中缺失的 Entry 会在 Base 确认界面警告并跳过；没有任何可用选择时不能确认。",
+      "Base 按 interactions 声明顺序在草稿上重放可用 Picker 选择；Player 确认后才原子写入并保存一次。",
       "问卷结果最大 64 KiB；无效、过期或取消的结果不会修改 Character Data。",
       "接入问卷不要求修改 dependencies.json；重放会自然触发 Picker 已有的 resourceSelected Dependency Logic。",
     ],

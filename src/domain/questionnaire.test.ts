@@ -35,13 +35,25 @@ describe("resolveQuestionnaireResult", () => {
   it("resolves canonical entries for an existing linked Resource Picker", () => {
     const resolved = resolveQuestionnaireResult(result(), systemPackage);
     expect(resolved.ok).toBe(true);
-    if (resolved.ok) expect(resolved.selections[0].entries).toEqual([systemPackage.resourceLibraries![0].entries[0]]);
+    if (resolved.ok) {
+      expect(resolved.selections[0].entries).toEqual([systemPackage.resourceLibraries![0].entries[0]]);
+      expect(resolved.missingResources).toEqual([]);
+    }
+  });
+
+  it("keeps a missing Resource Entry as a displayable warning", () => {
+    const resolved = resolveQuestionnaireResult(result(["class:missing"]), systemPackage);
+    expect(resolved).toEqual({
+      ok: true,
+      result: result(["class:missing"]),
+      selections: [],
+      missingResources: [{ sourceModuleId: "pick-class", libraryId: "classes", entryId: "class:missing" }],
+    });
   });
 
   it.each([
     ["missing picker", result(undefined, { sourceModuleId: "missing" }), "Resource Picker 不存在"],
     ["unlinked library", result(undefined, { libraryId: "other" }), "未链接 Resource Library"],
-    ["missing entry", result(["class:missing"]), "Resource Entry 不存在"],
     ["duplicate entry", result(["class:druid", "class:druid"]), "不能重复"],
     ["single picker cardinality", result(["class:druid", "class:bard"]), "只允许单选"],
     ["unsupported event", result(undefined, { type: "freeTextChanged" }), "问卷结果格式无效"],

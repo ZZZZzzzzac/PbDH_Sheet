@@ -45,12 +45,15 @@ describe("Daggerheart core System Package", () => {
     expect(kimiSkin?.layoutOverrides?.pages.every((page) => page.htmlContent.includes("kimi-thread-book"))).toBe(true);
   });
 
-  it("ships the class/domain questionnaire and applies only its existing class Picker result", () => {
+  it("ships the latest 30-question class/domain questionnaire and replays its class Picker result", () => {
     expect(loadedResult.ok).toBe(true);
     if (!loadedResult.ok) return;
     const systemPackage = loadedResult.package;
-    expect(systemPackage.questionnaireCharacterCreation?.htmlContent).toContain("领域/职业测验");
-    expect(systemPackage.questionnaireCharacterCreation?.htmlContent).toContain("pbdh-questionnaire-result");
+    const questionnaireHtml = systemPackage.questionnaireCharacterCreation?.htmlContent ?? "";
+    expect(questionnaireHtml).toContain("领域/职业测试");
+    expect(questionnaireHtml).toContain("pbdh-questionnaire-result");
+    expect(questionnaireHtml.match(/id:\s*\d+,\s*q:/gu)).toHaveLength(30);
+    expect(questionnaireHtml).toContain('"女巫 WITCH": "虚空:职业:女巫"');
     const resolved = resolveQuestionnaireResult({
       protocolVersion: "1",
       interactions: [{
@@ -73,6 +76,21 @@ describe("Daggerheart core System Package", () => {
     expect(applied.characterData.character.values["class-name"]).toBe("德鲁伊");
     expect(applied.derivedResult.resourcePickerDefaultQueries["pick-subclass"]?.filters).toEqual({ 主职: ["德鲁伊"] });
     expect(systemPackage.dependencies?.some((rule) => rule.触发.来源模块ID === "questionnaire")).toBe(false);
+
+    const missingVoidClass = resolveQuestionnaireResult({
+      protocolVersion: "1",
+      interactions: [{
+        type: "resourceSelected",
+        sourceModuleId: "pick-class",
+        libraryId: "classes",
+        entryIds: ["虚空:职业:女巫"],
+      }],
+    }, systemPackage);
+    expect(missingVoidClass).toEqual(expect.objectContaining({
+      ok: true,
+      selections: [],
+      missingResources: [{ sourceModuleId: "pick-class", libraryId: "classes", entryId: "虚空:职业:女巫" }],
+    }));
   });
 
   it("ships skin-KimiK3 with thread-bound HTML overrides that preserve module ownership and Guide regions", async () => {

@@ -6,6 +6,7 @@ import type { PackageDirectoryHandle } from "../loaders/packageVfs";
 import type { SystemPackage } from "../domain/systemPackage";
 import { loadResourceExtensionJson } from "../domain/resourceExtension";
 import { createCardInstance } from "../domain/cardEngine";
+import { createEmptyCharacterData } from "../domain/characterData";
 import { configureRuntimeDependencies, resetRuntimeDependencies, useRuntimeStore } from "./runtimeStore";
 
 describe("runtime store", () => {
@@ -459,6 +460,49 @@ describe("runtime store", () => {
 
     expect(useRuntimeStore.getState().currentPackage?.manifest.ID).toBe("demo-minimal");
     expect(useRuntimeStore.getState().characterData?.systemPackage.id).toBe("demo-minimal");
+  });
+
+  it("prepares missing questionnaire resources as warnings and applies available selections", () => {
+    const questionnairePackage = {
+      ...minimalSystemPackage,
+      questionnaireCharacterCreation: { ID: "questionnaire", 名称: "职业问卷", htmlContent: "<p>问卷</p>" },
+      modules: [
+        { ID: "pick-class", 类型: "resourcePicker", 按钮文本: "选择职业", 资源库: [{ ID: "classes" }] },
+        { ID: "class-name", 类型: "freeText", 标签: "职业" },
+      ],
+      dependencies: [{
+        ID: "class-name",
+        sources: [{ 类型: "resourcePicker", 模块ID: "pick-class" }],
+        targets: [{ 类型: "module", 模块ID: "class-name" }],
+        触发: { 类型: "resourceSelected", 来源模块ID: "pick-class" },
+        动作: [{ 类型: "fillText", 目标模块ID: "class-name", 内容: { 类型: "selectedResourceField", 字段: "名称" } }],
+      }],
+      resourceLibraries: [{
+        ID: "classes",
+        名称: "职业",
+        路径: "resources/classes.json",
+        fields: [{ key: "名称", label: "名称", visible: true, filterable: false, sortable: false, searchable: true }],
+        entries: [{ ID: "职业:德鲁伊", fields: { 名称: "德鲁伊" } }],
+      }],
+    } as SystemPackage;
+    const characterData = createEmptyCharacterData(questionnairePackage, "character:questionnaire");
+    useRuntimeStore.setState({ currentPackage: questionnairePackage, characterData });
+
+    useRuntimeStore.getState().prepareQuestionnaireResult("questionnaire", {
+      protocolVersion: "1",
+      interactions: [
+        { type: "resourceSelected", sourceModuleId: "pick-class", libraryId: "classes", entryIds: ["职业:德鲁伊"] },
+        { type: "resourceSelected", sourceModuleId: "pick-class", libraryId: "classes", entryIds: ["虚空:职业:女巫"] },
+      ],
+    });
+
+    const pending = useRuntimeStore.getState().pendingQuestionnaireResult;
+    expect(pending?.selections).toEqual([expect.objectContaining({ entries: [{ id: "职业:德鲁伊", name: "德鲁伊" }] })]);
+    expect(pending?.missingResources).toEqual([expect.objectContaining({ entryId: "虚空:职业:女巫" })]);
+    expect(useRuntimeStore.getState().importError).toBeNull();
+
+    useRuntimeStore.getState().confirmQuestionnaireResult();
+    expect(useRuntimeStore.getState().characterData?.character.values["class-name"]).toBe("德鲁伊");
   });
 
   it("refreshes a preset cache created by an older Base release and preserves the Character Save", async () => {

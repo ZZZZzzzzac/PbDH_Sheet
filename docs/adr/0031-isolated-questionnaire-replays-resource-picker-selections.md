@@ -20,10 +20,10 @@ Questionnaire Character Creation 作为与 Character Creation Guide 和 Sheet Mo
 - 第一版问卷是单个自包含 HTML 文件，样式与脚本内联；Questionnaire Host 负责装配该 HTML、隔离策略、生命周期、消息来源检查、版本化消息 envelope、结果大小限制和错误报告。Host 与主 Sheet Tool 通信；Author iframe 不能直接访问主 Sheet Tool。
 - 问卷答案、进度和中间结果是该标签页的 transient UI state，不进入 Character Data、Character Save、Dependency Logic、Validation Check、localStorage 或 IndexedDB。关闭问卷即丢弃未提交状态。
 - 第一版问卷结果只包含一个有序的 Resource Picker selection 列表。每项只携带目标 Resource Picker Module ID、Resource Library ID 与 Stable Resource Entry IDs；Author HTML 不能提供 Resource Entry payload、Character Data patch、Dependency Action、Card instruction 或 Runtime Store action。
-- Base 从当前 Effective Resource Catalog 重新解析 Stable Resource References，并验证目标 Module 是真实 Resource Picker、Resource Library 对该 Picker 有效、Entry 引用存在且选择数量符合单选或多选合同。无效结果整批拒绝，不静默降级或部分执行。
+- Base 从当前 Effective Resource Catalog 重新解析 Stable Resource References，并验证目标 Module 是真实 Resource Picker、Resource Library 对该 Picker 有效且选择数量符合单选或多选合同。无效 Picker、未链接 Library、无效形状或违反选择数量约束时整批拒绝。仅当 Stable Resource Entry 不存在时，Base 将其保留为确认界面的缺失资源警告并跳过该选择；其余可用选择仍可由 Player 确认执行。没有任何可用选择时禁止确认。这允许问卷推荐由可选 Resource Extension 提供的资源，同时避免静默失败。
 - 每项结果复用 Player 在对应 Resource Picker 中确认相同 Resource Entries 的完整提交语义，包括 `resourceSelected`、Dependency Logic、Derived Source Snapshot、Card creation、派生状态重建和自动保存。Questionnaire 不新增 Dependency Trigger，也不直接调用 Dependency Engine 的局部接口。
 - 多个 Picker selections 按问卷结果声明顺序执行，等价于 Player 依次操作这些 Pickers。Base 可以先在 Character Data draft 上按相同语义预演全部选择，并在 Player 确认后原子提交一次；任一选择失败时 Character Data 保持不变。
-- Base-owned 确认界面显示将提交的 Picker selections；若提供详细变化预览，内容必须由 Base 对 draft 的真实执行结果生成，不能信任 Author HTML 自报的 Character Data 变化。
+- Base-owned 确认界面显示将提交的 Picker selections，以及当前 Effective Resource Catalog 中无法解析的 Library/Stable Entry ID；若提供详细变化预览，内容必须由 Base 对 draft 的真实执行结果生成，不能信任 Author HTML 自报的 Character Data 变化。
 - Questionnaire 运行期间 Current System Package 或 Character Save 发生变化时，未提交结果失效，必须重新验证或重新运行。
 - 第一版不支持问卷直接填写 Free Text、Long Text、Checkbox、Countable、Composite Resource 或 Card，不接受 `freeTextChanged`、`checkboxChanged`、`countableChanged` 等其他 Dependency Events，也不提供通用 Character Change Proposal。需要填写的内容继续由已有 Resource Picker 与 `dependencies.json` 产生。
 - Author 为已完成的 System Package 添加问卷时，只需添加问卷入口和资源，并让结果引用已有 Picker/Library/Entry IDs；只要原手动车卡路径完整，就不需要修改 `modules.json`、Resource Libraries 或 `dependencies.json`。

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { applyEffectiveResourceCatalog, createEffectiveResourceCatalog } from "../domain/effectiveResourceCatalog";
 import { createEmptyCharacterData } from "../domain/characterData";
 import { evaluateDependencies } from "../domain/dependencyEngine";
+import { resolveQuestionnaireResult } from "../domain/questionnaire";
 import { getOtherResourceLibraries, getResourcePickerLinks } from "../domain/systemPackage";
 import { loadResourceExtensionFromJsonText } from "../loaders/resourceExtensionLoader";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
@@ -91,6 +92,21 @@ describe("The Void Resource Extension", () => {
       libraryId: "classes",
       selectedEntries: [assassin],
     }).resourcePickerDefaultQueries["pick-subclass"]).toMatchObject({ filters: { 主职: ["刺客"] } });
+
+    const questionnaireResult = resolveQuestionnaireResult({
+      protocolVersion: "1",
+      interactions: [{
+        type: "resourceSelected",
+        sourceModuleId: "pick-class",
+        libraryId: "classes",
+        entryIds: ["虚空:职业:刺客"],
+      }],
+    }, effectivePackage);
+    expect(questionnaireResult).toEqual(expect.objectContaining({
+      ok: true,
+      missingResources: [],
+      selections: [expect.objectContaining({ entries: [expect.objectContaining({ ID: "虚空:职业:刺客" })] })],
+    }));
   });
 
   it("uses Chinese display names, separate original names, and core-style Markdown", () => {
