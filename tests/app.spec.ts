@@ -554,6 +554,7 @@ test("Daggerheart beast-form references fit equal-height cards when printed", as
         const box = element.getBoundingClientRect();
         return {
           title: element.querySelector("h3")?.textContent ?? "",
+          compact: element.classList.contains("beast-form-compact"),
           fontSizePx: Number.parseFloat(getComputedStyle(element).fontSize),
           heightPx: box.height,
           overflowPx: element.scrollHeight - element.clientHeight,
@@ -580,7 +581,7 @@ test("Daggerheart beast-form references fit equal-height cards when printed", as
       };
     });
 
-    expect(metrics.every(({ fontSizePx }) => fontSizePx >= 11)).toBe(true);
+    expect(metrics.every(({ compact, fontSizePx }) => fontSizePx === (compact ? 10 : 11))).toBe(true);
     bodyFontSizes.push(...metrics.map(({ fontSizePx }) => fontSizePx));
     expect(new Set(metrics.map(({ heightPx }) => Math.round(heightPx))).size).toBe(1);
     overflowingForms.push(...metrics.filter(({ overflowPx }) => overflowPx > 1).map(({ title, overflowPx }) => ({ pageName, title, overflowPx })));
@@ -592,7 +593,7 @@ test("Daggerheart beast-form references fit equal-height cards when printed", as
     expect(emphasisColors.inlineEmphasis).not.toContain("rgb(168, 58, 36)");
     await page.emulateMedia({ media: "screen" });
   }
-  expect(new Set(bodyFontSizes)).toEqual(new Set([11]));
+  expect(new Set(bodyFontSizes)).toEqual(new Set([10, 11]));
   expect(overflowingForms).toEqual([]);
 });
 

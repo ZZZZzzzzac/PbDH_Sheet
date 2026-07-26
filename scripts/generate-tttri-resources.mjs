@@ -525,7 +525,9 @@ async function buildCommunities() {
     const firstLineIndex = beforeLines.findIndex((line) => line.trim());
     const firstLine = beforeLines[firstLineIndex];
     invariant(firstLine, `缺少社群简介：${section.name}`);
-    const description = stripDocumentNoise(beforeLines.slice(firstLineIndex + 1).join("\n")).replace(/\n{2,}/g, "\n");
+    const description = stripDocumentNoise(beforeLines.slice(firstLineIndex + 1).join("\n"))
+      .replace(/^\*\*\*([^*\n]+:)\*\*\*\s*/u, ":red[***$1***] ")
+      .replace(/\n{2,}/g, "\n");
     invariant(description, `缺少社群能力：${section.name}`);
     return {
       ID: `社群:${section.name}`,
