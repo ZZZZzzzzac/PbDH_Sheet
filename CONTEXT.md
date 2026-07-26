@@ -249,7 +249,7 @@ A Base Framework-owned read-only check for common runtime, rendering, or output 
 _Avoid_: Validation Script, System Package Validator
 
 **Declarative System Package**:
-A System Package expressed primarily through data, resources, layouts, styles, guide steps, dependencies, and validation rules. Its only Author script seams are bounded Validation Scripts and explicit Format Adapter conversion scripts; neither can modify UI or live runtime state.
+A System Package expressed primarily through data, resources, layouts, styles, guide steps, dependencies, and validation rules. Its live Sheet Tool script seams are bounded Validation Scripts and explicit Format Adapter conversion scripts; an optional Questionnaire HTML runs separately in an isolated Host and can only propose existing Resource Picker selections for Base-owned confirmation.
 _Avoid_: Script plugin
 
 ## Relationships
@@ -297,8 +297,9 @@ _Avoid_: Script plugin
 - While a **Guide Step** is active, only its visible target, the guide controls, and any framework dialog opened from that target remain interactive; dimmed content is inert, and the Player may exit with Escape.
 - Finishing a **Character Creation Guide** only closes the tour; it does not mean the character is complete or valid and does not trigger saving, validation, export, or printing.
 - **Questionnaire Character Creation** is distinct from a **Character Creation Guide**: it discovers Player preferences and recommends resources or paths, while a Character Creation Guide walks a Player through known creation tasks.
-- **Questionnaire Character Creation** should not write Character Data directly. If it later offers apply actions, those actions must reuse framework-approved Sheet Module, Dependency Engine, or Card Engine actions; the Character Creation Guide remains presentation-only.
-- **Questionnaire Character Creation** is a future plan, not part of the first-version requirement.
+- **Questionnaire Character Creation** never writes Character Data directly. It may return only ordered selections for existing Resource Pickers; Base validates them and replays the same Picker, Dependency Engine, Card Engine, derived-state, and persistence path after Player confirmation.
+- Questionnaire questions, scoring, recommendation logic, text and animation belong entirely to the System Package Author. Adding a questionnaire to an otherwise complete package does not require changing its existing Dependency Logic.
+- Questionnaire HTML runs in a Base-owned new-tab Host inside a sandboxed iframe without same-origin or network access. Invalid, cancelled, or stale results leave Character Data unchanged.
 - A **Guide Step** depends only on stable target IDs and framework-owned highlighting behavior; a **Layout Region** uses a package-wide unique `data-guide-region-id`, and the Guide never writes **Character Data** or requests behavior from the highlighted target.
 - **AI-Readable Documentation** is a first-version requirement because non-programmer Authors may rely on AI to create System Packages.
 - A **System Package Validator** should be strict about IDs, references, required structural fields, and broken links, but permissive about ordinary **Sheet Values**.

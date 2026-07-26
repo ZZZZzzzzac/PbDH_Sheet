@@ -14,6 +14,7 @@ import {
   characterCreationGuideSchema,
   type CharacterCreationGuide,
 } from "./characterCreationGuide";
+import { questionnaireDefinitionSchema, type QuestionnaireDefinition } from "./questionnaireContract";
 import {
   characterFormatAdapterSchema,
   resourceFormatAdapterSchema,
@@ -509,6 +510,7 @@ const systemPackageEnvelopeSchema = z.object({
   dependencies: z.array(z.unknown()).optional(),
   validationChecks: z.array(validationCheckSchema).optional(),
   characterCreationGuide: z.unknown().optional(),
+  questionnaireCharacterCreation: questionnaireDefinitionSchema.optional(),
   resourceFormatAdapters: z.array(resourceFormatAdapterSchema).optional(),
   characterFormatAdapters: z.array(characterFormatAdapterSchema).optional(),
 });
@@ -525,6 +527,7 @@ export interface SystemPackage {
   dependencies?: DependencyRule[];
   validationChecks?: ValidationCheck[];
   characterCreationGuide?: CharacterCreationGuide;
+  questionnaireCharacterCreation?: QuestionnaireDefinition;
   resourceFormatAdapters?: ResourceFormatAdapter[];
   characterFormatAdapters?: CharacterFormatAdapter[];
 }
@@ -563,7 +566,7 @@ export interface PackageIssueLocation {
 }
 
 export interface PackageIssueEntity {
-  kind: "manifest" | "page" | "module" | "asset" | "resourceLibrary" | "resourceEntry" | "dependency" | "validationCheck" | "guideStep";
+  kind: "manifest" | "page" | "module" | "asset" | "resourceLibrary" | "resourceEntry" | "dependency" | "validationCheck" | "guideStep" | "questionnaire";
   id?: string;
   index?: number;
 }
@@ -1906,6 +1909,7 @@ function inferDiagnosticEntities(pointer: Array<string | number>): PackageIssueE
     manifest: "manifest", pages: "page", modules: "module", assets: "asset",
     resourceLibraries: "resourceLibrary", dependencies: "dependency",
     validationChecks: "validationCheck", characterCreationGuide: "guideStep",
+    questionnaireCharacterCreation: "questionnaire",
   };
   const kind = typeof root === "string" ? definitions[root] : undefined;
   if (!kind) return [];

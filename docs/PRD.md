@@ -38,6 +38,7 @@ System Package 是可分发的规则与表现扩展，不能替换框架运行�
 - 定义资源库、卡牌、组合资源和 Resource Extensions；
 - 用有限声明式依赖响应玩家操作，并用只读检查脚本报告整张角色的问题；
 - 提供线性 Character Creation Guide，说明并高亮页面、模块或布局区域；
+- 可选地提供隔离问卷，用 Author 自定义问题与表现推荐资源，并在确认后复用现有 Resource Picker 行为；
 - 用受限 Format Adapter Script 兼容外部角色或资源格式；
 - 使用 Author Guide、Reference、完整示例和机器可读诊断完成调试。
 

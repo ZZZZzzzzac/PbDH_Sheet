@@ -60,6 +60,12 @@ export const packageValidationCheckSourceSchema = z.object({
   脚本: packageRelativePathSchema,
 });
 
+export const packageQuestionnaireSourceSchema = z.object({
+  ID: z.string().min(1),
+  名称: z.string().min(1),
+  html: packageRelativePathSchema,
+});
+
 export const systemPackageManifestSourceSchema = z.object({
   ID: z.string().min(1),
   名称: z.string().min(1),
@@ -76,6 +82,7 @@ export const systemPackageManifestSourceSchema = z.object({
   defaultSkin: z.string().min(1).optional(),
   dependencies: packageRelativePathSchema.optional(),
   characterCreationGuide: packageRelativePathSchema.optional(),
+  questionnaireCharacterCreation: packageQuestionnaireSourceSchema.optional(),
   resourceFormatAdapters: packageRelativePathSchema.optional(),
   characterFormatAdapters: packageRelativePathSchema.optional(),
   assets: z.never().optional(),
@@ -96,6 +103,7 @@ export const authorContractSchemas = {
   modules: packageModulesSourceSchema,
   dependencies: packageDependenciesSourceSchema,
   guide: packageGuideSourceSchema,
+  questionnaire: packageQuestionnaireSourceSchema,
   resourceLibraryFile: resourceLibraryFileSourceSchema,
   resourceFormatAdapters: resourceFormatAdaptersSourceSchema,
   characterFormatAdapters: characterFormatAdaptersSourceSchema,

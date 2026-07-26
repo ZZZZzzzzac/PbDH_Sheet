@@ -9,6 +9,8 @@ import { createEmptyCharacterData, updateResourceSelectionSnapshot } from "../do
 import { rebuildDerivedDependencies } from "../domain/dependencyEngine";
 import { getResourceLibraryFields } from "../domain/resourceLibrary";
 import { getResourcePickerLinks } from "../domain/systemPackage";
+import { resolveQuestionnaireResult } from "../domain/questionnaire";
+import { applyResourceSelectionToDraft } from "../domain/resourceSelection";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "daggerheart-core");
 let loadedResult: Awaited<ReturnType<typeof loadSystemPackageFromZipFile>>;
@@ -41,6 +43,36 @@ describe("Daggerheart core System Package", () => {
       "character-story",
     ]);
     expect(kimiSkin?.layoutOverrides?.pages.every((page) => page.htmlContent.includes("kimi-thread-book"))).toBe(true);
+  });
+
+  it("ships the class/domain questionnaire and applies only its existing class Picker result", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const systemPackage = loadedResult.package;
+    expect(systemPackage.questionnaireCharacterCreation?.htmlContent).toContain("领域/职业测验");
+    expect(systemPackage.questionnaireCharacterCreation?.htmlContent).toContain("pbdh-questionnaire-result");
+    const resolved = resolveQuestionnaireResult({
+      protocolVersion: "1",
+      interactions: [{
+        type: "resourceSelected",
+        sourceModuleId: "pick-class",
+        libraryId: "classes",
+        entryIds: ["职业:德鲁伊"],
+      }],
+    }, systemPackage);
+    expect(resolved.ok).toBe(true);
+    if (!resolved.ok) return;
+
+    const applied = applyResourceSelectionToDraft(
+      createEmptyCharacterData(systemPackage),
+      systemPackage,
+      resolved.selections[0].sourceModuleId,
+      resolved.selections[0].libraryId,
+      resolved.selections[0].entries,
+    );
+    expect(applied.characterData.character.values["class-name"]).toBe("德鲁伊");
+    expect(applied.derivedResult.resourcePickerDefaultQueries["pick-subclass"]?.filters).toEqual({ 主职: ["德鲁伊"] });
+    expect(systemPackage.dependencies?.some((rule) => rule.触发.来源模块ID === "questionnaire")).toBe(false);
   });
 
   it("ships skin-KimiK3 with thread-bound HTML overrides that preserve module ownership and Guide regions", async () => {

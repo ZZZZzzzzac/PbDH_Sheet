@@ -170,6 +170,7 @@ describe("runtime store", () => {
       importNotice: null,
       pendingCharacterConversion: null,
       pendingCharacterFormatSelection: null,
+      pendingQuestionnaireResult: null,
       authorPreviewActive: false,
     });
     await useRuntimeStore.getState().initialize();

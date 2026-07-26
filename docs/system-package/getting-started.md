@@ -37,11 +37,14 @@ system-package-minimal/
 - `resources/*.json` 与 manifest 中的 `resourceLibraries`
 - `dependencies.json`
 - `guides/*.json`
+- `questionnaires/*.html` 与 manifest 中的 `questionnaireCharacterCreation`
 - `checks/*.js`
 - `skins/**`
 - `adapters/**`
 
 入口字段与文件发现规则见[Package 与资产](contract/package-and-assets.md)。
+
+问卷的问题、计分和动画由 Author HTML 自己实现；它只能返回现有 Resource Picker 的稳定资源 ID，并在 Player 确认后复用既有依赖。详见[问卷式车卡](contract/questionnaire-character-creation.md)。
 
 ## 5. 预览和验证
 

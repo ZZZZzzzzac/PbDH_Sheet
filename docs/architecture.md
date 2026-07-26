@@ -16,7 +16,7 @@
 - 当前不注册 Service Worker，也不提供 PWA 安装或离线应用壳；见 [ADR-0030](adr/0030-static-web-without-pwa-or-server-api.md)。
 - 同一运行时只激活一个 System Package；可选择构建时预置包，也可导入本地 zip 或目录。
 - Character Data、System Package 缓存、额外资源与少量偏好保存在浏览器本地。
-- System Package 只能通过公开声明式合同和两个受限脚本 seam 扩展：Validation Script 与 Format Adapter Script。
+- System Package 通过公开声明式合同、两个受限 Worker 脚本 seam（Validation Script 与 Format Adapter Script），以及一个隔离的 Questionnaire HTML seam 扩展。
 - Guide、Dependency、Validation、Card 与 Storage 各自拥有独立职责，不能绕过 Character Data 和 Runtime Store 的写入路径。
 
 ## 系统上下文
@@ -91,6 +91,8 @@ Zustand Runtime Store 持有当前包、角色、有效资源目录、派生状�
 Sheet Renderer 解析已消毒的 HTML Layout Template，在 `<pb-module>` 位置挂载 Module Registry 中的框架组件。当前模块类型以 `moduleRegistry.tsx` 和 System Package schema 为可执行事实，包括文本、计数、勾选、图片、只读展示、资源选择/组合与卡牌桌。
 
 页面 CSS 和 Skin CSS 都被限制在 System Package 展示范围；App Shell 使用独立的框架配色。Resource Browser/Manager、Guide Spotlight 与导入导出对话框仍由 Base Framework 拥有。
+
+Questionnaire HTML 是独立的展示/推荐应用，不进入 Sheet Renderer。Base 在新标签页中创建受信任 Host，并把 Author HTML 放进无同源权限的 sandbox iframe；Host 只接收有序 Resource Picker 结果，主页面再次校验引用并显示 Base-owned 确认对话框。
 
 ### `src/export`: 输出
 
@@ -169,10 +171,15 @@ flowchart LR
 - Validation Script 在 Worker 中读取角色与资源副本并返回报告；不能修改 Character Data。
 - 框架自身检查与包检查在手动检查、导出和打印前汇总。
 
+### Questionnaire Character Creation
+
+问卷问题、计分、推荐与动画完全属于 System Package。问卷返回的不是 Character Data patch，而是现有 Picker、Library 与稳定 Entry ID 的有序选择；Runtime Store 在草稿上重放与手动 Picker 提交相同的 Dependency/Card/派生链路，Player 确认后原子替换 Character Data 并保存一次。取消、无效或过期结果不产生写入，也不要求 Author 修改既有 `dependencies.json`。
+
 ## 安全边界
 
 - 包内路径必须相对根目录，不能越界或引用外部 URL；
 - HTML/CSS 经白名单与 scope 处理，禁止脚本、事件属性和全局污染；
+- Questionnaire HTML 只在 `sandbox="allow-scripts"` 的不透明 origin iframe 内执行，并由 CSP 禁止网络、表单、子框架、对象和外层导航；
 - Package Scripts 在独立 Worker 中按固定接口、输入副本和超时运行；Worker 是执行隔离边界，不宣称能安全运行主动恶意代码；
 - 所有脚本结果必须再次通过 Base schema 与引用校验；
 - Character Import 不安装 Resource Extension，Resource Import 不修改 Character Data；

@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>匕首心 领域/职业测验</title>
+<style>
+  :root{--bg:#0b1020;--panel:rgba(255,255,255,0.04);--muted:rgba(255,255,255,0.75);--accent:#6366F1;}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#e6eef8;background:linear-gradient(180deg,#0b1020 0%,#0f1724 60%,#000 100%);min-height:100vh;padding:28px;}
+  .container{max-width:980px;margin:0 auto;background:var(--panel);border-radius:16px;padding:22px;box-shadow:0 10px 30px rgba(2,6,23,0.6);}
+  h1{margin:0 0 6px;font-size:28px}
+  p.lead{margin:0 0 18px;color:var(--muted)}
+  form{display:block}
+  fieldset{border:1px solid rgba(255,255,255,0.03);padding:12px;border-radius:10px;margin-bottom:12px}
+  legend{font-weight:600;margin-bottom:6px}
+  .choice{display:flex;align-items:flex-start;gap:10px;padding:8px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+  .choice input{margin-right:8px;margin-top:3px}
+  .choice.selected{border-color:rgba(99,102,241,0.9);background:rgba(99,102,241,0.04)}
+  .btn{display:inline-block;padding:10px 14px;border-radius:8px;border:0;cursor:pointer;font-weight:600}
+  .btn.primary{background:var(--accent);color:white}
+  .btn.ghost{background:#1f2937;color:#e6eef8}
+  .result{margin-top:18px;padding:14px;border-radius:10px;background:rgba(255,255,255,0.03)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px}
+  .card{padding:10px;border-radius:8px;background:rgba(255,255,255,0.02)}
+  footer{margin-top:18px;color:var(--muted);font-size:13px}
+  @media (max-width:600px){body{padding:12px}.container{padding:16px}}
+</style>
+</head>
+<body>
+  <div class="container" id="app">
+    <h1>匕首心领域/职业测验</h1>
+    <p class="lead">回答每题 A 或 B，点击“提交并计算结果”查看推荐。</p>
+
+    <form id="quizForm"></form>
+
+    <div style="margin-top:12px">
+      <button id="calcBtn" class="btn primary">提交并计算结果</button>
+      <button id="resetBtn" class="btn ghost" type="button">重置</button>
+    </div>
+
+    <div id="resultArea"></div>
+
+    <footer>提示：这是一个纯前端文件，可直接在浏览器打开并运行。</footer>
+  </div>
+
+<script>
+/* 平衡后的 Questions 数据（基于你的原始题库，做了手动领域调整以平衡分布） */
+const questions = [
+{ id:1, q:"当你遇到完全陌生的事物时，你更倾向：", a:{text:"直接尝试，看看会发生什么", domains:["奥术","利刃"]}, b:{text:"先观察、查资料或问人后再行动", domains:["典籍","骸骨"]}},
+{ id:2, q:"团队中突然出现紧张局势，你会：", a:{text:"第一时间站出来安抚或调解", domains:["辉耀","优雅","勇气","贤者"]}, b:{text:"在暗处观察谁的动机最可疑", domains:["午夜"]}},
+{ id:3, q:"你更看重：", a:{text:"自己的力量与技巧", domains:["利刃"]}, b:{text:"自己能为他人带来的影响", domains:["辉耀","勇气","优雅"]}},
+{ id:4, q:"做选择时你更依赖：", a:{text:"直觉与灵光乍现", domains:["奥术","贤者"]}, b:{text:"明确的逻辑与证据", domains:["典籍"]}},
+{ id:5, q:"你对风险的态度是：", a:{text:"高风险才能换来真正的突破", domains:["奥术","利刃"]}, b:{text:"风险要经过计算才能承担", domains:["骸骨","午夜"]}},
+{ id:6, q:"有人试图挑战你时，你通常：", a:{text:"迎头而上，不躲不避", domains:["勇气","利刃"]}, b:{text:"保持距离，等待更有利的时机", domains:["午夜"]}},
+{ id:7, q:"你与他人相处的方式更偏：", a:{text:"打开自己，用语言影响他人", domains:["优雅","辉耀"]}, b:{text:"观察他人，让行动或沉默表达自己", domains:["午夜","优雅"]}},
+{ id:8, q:"对你来说：", a:{text:"没有东西比生命更重要", domains:["贤者","辉耀","勇气"]}, b:{text:"有些东西值得付出生命", domains:["典籍","奥术"]}},
+{ id:9, q:"如果你感到不安，你会：", a:{text:"寻求可靠的人或光亮的地方", domains:["辉耀","勇气"]}, b:{text:"找到能藏身的阴影或观察点", domains:["午夜"]}},
+{ id:10, q:"你更愿意拥有哪种力量？", a:{text:"带来希望、治愈与保护", domains:["辉耀","勇气"]}, b:{text:"揭示秘密或隐藏自己", domains:["午夜"]}},
+{ id:11, q:"你喜欢的学习方式是：", a:{text:"亲自动手做", domains:["奥术","利刃","贤者"]}, b:{text:"读资料、做笔记、反复推演", domains:["典籍"]}},
+{ id:12, q:"身处自然环境时，你感到：", a:{text:"和谐、舒适，放松", domains:["贤者"]}, b:{text:"不安，需要确认安全和方位", domains:["午夜"]}},
+{ id:13, q:"当你讲话时，你更希望：", a:{text:"让人被你吸引", domains:["优雅"]}, b:{text:"让人理解你想传达的内容", domains:["典籍","优雅"]}},
+{ id:14, q:"在团队中你更像：", a:{text:"指挥者或调度者", domains:["优雅","勇气"]}, b:{text:"执行者或最后兜底者", domains:["利刃","奥术","勇气"]}},
+{ id:15, q:"你面对死亡的态度更接近：", a:{text:"它是值得守护、治愈、修复的对立面", domains:["辉耀","勇气"]}, b:{text:"它是可以被理解、操控甚至利用的力量", domains:["奥术","骸骨","辉耀"]}},
+{ id:16, q:"你在压力下更可能：", a:{text:"兴奋，感觉力量在沸腾", domains:["奥术","利刃"]}, b:{text:"冷静，迅速整理思路与战术", domains:["午夜","典籍"]}},
+{ id:17, q:"你认为力量的来源是：", a:{text:"原初、野性、天赋", domains:["奥术","贤者"]}, b:{text:"训练、知识、意志", domains:["典籍"]}},
+{ id:18, q:"当你面对困境时：", a:{text:"顺其自然，船到桥头自然直", domains:["贤者","奥术"]}, b:{text:"想尽一切办法挣扎", domains:["利刃","骸骨","勇气","午夜"]}},
+{ id:19, q:"你最讨厌哪种情况？", a:{text:"无聊、停滞、毫无变化", domains:["奥术","利刃"]}, b:{text:"混乱、无序、无法预测", domains:["典籍","午夜","辉耀"]}},
+{ id:20, q:"若必须保护某人，你会：", a:{text:"把他们挡在身后", domains:["勇气","辉耀"]}, b:{text:"在他们不知道的情况下铲除威胁", domains:["午夜","利刃"]}},
+{ id:21, q:"你更愿意相信哪种现象？", a:{text:"无法解释但真实存在的魔力涌动", domains:["奥术"]}, b:{text:"自然规律背后的结构与模式", domains:["典籍","贤者"]}},
+{ id:22, q:"当你面对一个难以战胜的对手，你会：", a:{text:"冲上去试试看自己的极限", domains:["利刃","勇气"]}, b:{text:"分析其弱点并制定反制策略", domains:["骸骨","午夜"]}},
+{ id:23, q:"你认为“真相”是什么？", a:{text:"需要被揭示的东西", domains:["午夜"]}, b:{text:"需要被剖析的东西", domains:["典籍"]}},
+{ id:24, q:"你对自然界的感受更接近：", a:{text:"万物有灵且有力", domains:["贤者"]}, b:{text:"自然是一种可研究的系统", domains:["典籍"]}},
+{ id:25, q:"在战斗中你追求：", a:{text:"强势爆发与压倒性的攻势", domains:["利刃","奥术"]}, b:{text:"稳定节奏与战术掌控", domains:["骸骨","勇气"]}},
+{ id:26, q:"你更常用的方式是：", a:{text:"用故事、表演或魅力改变局势", domains:["优雅"]}, b:{text:"用洞察力找出他人未注意的线索", domains:["午夜","利刃"]}},
+{ id:27, q:"你对“死亡”更接近以下哪种理解？", a:{text:"是生命循环的一部分，值得尊重", domains:["贤者","辉耀"]}, b:{text:"是一种可以被研究与掌控的力量", domains:["骸骨","奥术","辉耀"]}},
+{ id:28, q:"你更重视：", a:{text:"语言带来的影响", domains:["优雅"]}, b:{text:"行动本身的意义", domains:["利刃","勇气","优雅","贤者"]}},
+{ id:29, q:"如果有人受伤，你会：", a:{text:"立刻上前治疗或保护", domains:["辉耀","勇气"]}, b:{text:"确认威胁来源并优先清除隐患", domains:["午夜","利刃","勇气"]}},
+{ id:30, q:"你更喜欢哪种场景？", a:{text:"古老森林、野性力量在呼吸", domains:["贤者"]}, b:{text:"阴影迷宫、隐藏着无尽秘密", domains:["午夜"]}},
+{ id:31, q:"计划与即兴，你更偏向：", a:{text:"即兴——计划赶不上变化", domains:["奥术","利刃"]}, b:{text:"计划——做好事前准备确保万无一失", domains:["典籍","骸骨"]}},
+{ id:32, q:"你认为力量的来源是：", a:{text:"羁绊、情感和欲望", domains:["贤者","优雅"]}, b:{text:"知识、技艺、锻炼", domains:["典籍","骸骨"]}},
+{ id:33, q:"如果必须做危险的调查，你会：", a:{text:"直接进去探索", domains:["奥术","利刃"]}, b:{text:"躲在暗处观察状况", domains:["午夜"]}},
+{ id:34, q:"你的压力反应更接近：", a:{text:"靠意志与信念支撑", domains:["勇气","辉耀"]}, b:{text:"靠技术与分析冷静应对", domains:["典籍"]}},
+{ id:35, q:"你喜欢的故事主角通常是：", a:{text:"拥有魅力、机智、能改变他人的人", domains:["优雅"]}, b:{text:"拥有技巧、能扭转局面的强者", domains:["利刃","奥术"]}},
+{ id:36, q:"你与朋友相处的方式是：", a:{text:"照顾他们的状态并提供情绪支持", domains:["辉耀","勇气"]}, b:{text:"给予他们有用的建议，让他们变得更好", domains:["典籍"]}},
+{ id:37, q:"对未知，你的态度更像：", a:{text:"令人兴奋的探索机会", domains:["奥术","贤者"]}, b:{text:"必须谨慎处理的潜在威胁", domains:["午夜","骸骨"]}},
+{ id:38, q:"你处理他人秘密的方式是：", a:{text:"听过就算了", domains:["辉耀","贤者"]}, b:{text:"暗中记下来", domains:["典籍","午夜"]}},
+{ id:39, q:"如果你作为团队的领导者：", a:{text:"我希望大家能对我敞开心扉", domains:["优雅","勇气","贤者","奥术"]}, b:{text:"我希望大家都来寻求我的意见", domains:["典籍","优雅"]}},
+{ id:40, q:"你不喜欢：", a:{text:"优柔寡断、拖拖拉拉的人", domains:["午夜","骸骨","典籍","利刃","奥术"]}, b:{text:"冷血无情，利益至上的人", domains:["贤者","优雅","辉耀","勇气"]}},
+{ id:41, q:"你对“秩序与规则”的态度：", a:{text:"可被打破，只要能达成目标", domains:["奥术","利刃","午夜"]}, b:{text:"是结构世界的重要基石，不可动摇", domains:["典籍","勇气"]}},
+{ id:42, q:"你更被下列哪种景象吸引？", a:{text:"人头涌动的咖啡馆", domains:["辉耀","优雅"]}, b:{text:"寂静的图书馆角落", domains:["午夜","典籍"]}},
+{ id:43, q:"你更欣赏：", a:{text:"该出手时就出手", domains:["利刃","奥术"]}, b:{text:"不鸣则已，一鸣惊人", domains:["骸骨","午夜"]}},
+{ id:44, q:"你对自然灾害的第一反应：", a:{text:"这是天灾，我们无能为力", domains:["贤者"]}, b:{text:"从中得到经验教训，下次可以实现预警或者降低损害", domains:["典籍"]}},
+{ id:45, q:"你喜欢的朋友类型：", a:{text:"温柔、善良", domains:["辉耀","贤者"]}, b:{text:"冷静、沉稳", domains:["骸骨","典籍","午夜","贤者"]}},
+{ id:46, q:"对于别人的经历和故事：", a:{text:"我有兴趣想要了解", domains:["辉耀","利刃","勇气"]}, b:{text:"与我无关", domains:["贤者","午夜","奥术","勇气"]}},
+{ id:47, q:"你觉得最重要的品格是：", a:{text:"善良与奉献", domains:["勇气","辉耀"]}, b:{text:"洞察力与判断力", domains:["典籍","午夜","骸骨"]}},
+{ id:48, q:"你会倾向：", a:{text:"自己的成就会被欣赏与赞扬", domains:["勇气","辉耀"]}, b:{text:"创造有价值的东西，并不需要被他人知晓", domains:["典籍","骸骨"]}},
+{ id:49, q:"你更认同：", a:{text:"感情用事的人较容易犯错", domains:["典籍","午夜","骸骨"]}, b:{text:"逻辑思维会令人自以为是，因而容易犯错", domains:["奥术","贤者","优雅"]}},
+{ id:50, q:"在闲暇时间，你更倾向：", a:{text:"和朋友呆在一起", domains:["奥术","贤者","优雅","辉耀","勇气"]}, b:{text:"自己干自己的事情", domains:["骸骨","典籍","午夜"]}}
+];
+
+/* 领域说明（不变） */
+const domainDescriptions = {
+  "奥术":"倾向于依赖直觉与原初能量。你喜欢突破常规、直接尝试，追求力量的瞬间爆发与可能性。",
+  "利刃":"崇尚效率与果断。你在冲突中冷静而致命，偏爱以技巧与行动解决问题。",
+  "骸骨":"专注身体与战术。你有严密的自律、敏锐的观察力与对细节的执着。",
+  "典籍":"热爱知识与系统化思维。你通过学习与推演掌控事物的本质。",
+  "优雅":"擅长言语与魅力。你能用语言与气场影响他人，善于社交与美学表达。",
+  "午夜":"习惯于隐秘与观察。你在暗影中行动，擅长收集情报与利用信息差。",
+  "贤者":"与自然同频。你尊重生命的律动，既温柔又潜藏野性。",
+  "辉耀":"治愈与守护的象征。你富有同情心，愿意为他人承担与疗愈。",
+  "勇气":"坚定的守护者。你以责任感与无畏保护队友，是战斗中的支柱。"
+};
+
+/* 职业数据与领域匹配关系 */
+const classes = {
+  "吟游诗人 BARD": {
+    description: "吟游诗人是诸界域中最富魅力的存在。这个职业的成员深谙蛊惑之道，精于各类表演形式——无论是引吭高歌、演奏乐器、编织故事还是插科打诨。无论面对观众献艺还是与人单独交谈，诗人们总能在社交场合如鱼得水。该职业者通常在学院或行会中结盟受训，但自恋之风始终在吟游诗人群体中盛行。虽然他们最擅长凝聚人心，但性情乖戾的诗人同样能轻易让冒险队伍分崩离析。",
+    domains: ["优雅","典籍"]
+  },
+  "德鲁伊 DRUID": {
+    description: "成为一名德鲁伊不仅仅是一种职业，更是那些渴望从自然之中学习魔法并且保护自然之人的使命。那些常常默默地耕耘植物的德鲁伊们，很可能被人们低估；但那些驾驭着狂野自然之力的德鲁伊，则可能成为令人畏惧的存在。德鲁伊们倾向于在小型团体中培养他们的能力，这些团体往往因特定的理念或地域而联结，但也有一些德鲁伊选择独自行动。经过多年的研习和奉献，德鲁伊可以学会变形成野兽，并塑造自然本身。",
+    domains: ["贤者","奥术"]
+  },
+  "守护者 GUARDIAN": {
+    description: "守护者之名涵盖诸多武术职业，其本质更在于坚定不移的道德准则与磐石般的意志，而非具体战斗方式。虽然许多守护者会为了国家或事业加入军事组织，但他们更倾向于追随少数他们真正关心的人，而不是盲从大多数的意志。即便面对压倒性劣势，守护者仍会以惊人凶悍之势作战，将守护同伴视为至高使命。那些伤害守护者盟友的人将自食恶果——因为守护者必将以牙还牙，以血还血。",
+    domains: ["勇气","利刃"]
+  },
+  "游侠 RANGER": {
+    description: "游侠是技艺高超的猎手，尽管他们拥有出色的战斗能力，却鲜少投身军旅。通过对身体的锤炼与野性的深刻理解，游侠成为狡黠的战术大师，凭借机敏和耐心追捕猎物。许多游侠会与动物伙伴并肩追踪作战，彼此缔结强大的精神羁绊。通过在荒野中磨练技艺，游侠成为了追踪专家，他们既是布设陷阱困敌的专家，亦是正面强攻的好手。",
+    domains: ["贤者","骸骨"]
+  },
+  "游荡者 ROUGE": {
+    description: "无论是态度还是行为，游荡者都可算是无赖恶棍之流。他们被人熟知的身份常常是骗子和小偷，但这个职业中的顶尖高手却能大隐隐于市。他们运用敏锐的智慧和刀刃，既能通过社交操纵欺骗敌人，也能轻松地撬锁、翻窗，又或是不动声色出手攻击。这些魔法技艺大师操纵阴影和移动，为他们的节目单上增添了一系列灵验且致命的表演。游荡者经常会建立行会，以结识未来的同伙、承接任务、磨练秘密技能，向其他懂行的人证明自身的盗贼荣耀。",
+    domains: ["午夜","优雅"]
+  },
+  "神使 SERAPH": {
+    description: "神使是充满神圣使命的神圣战士和治疗者。界域中存在着众多不同的神祇，因此也有许多不同类型的神使被这些神祇所任命。他们的信条通常与他们神祇的领域或目标一致，例如保护弱者、执行复仇、守护土地或圣物，或者维护特定的信仰。有些神使会与军队或地区结盟，这让他们的统治者颇为满意，但其他圣战士则会与凡人界域的愚行作斗争。最好成为神使的盟友而不是敌人，因为对于那些违逆他们使命的人来说，他们是可怖的敌人。",
+    domains: ["辉耀", "勇气"]
+  },
+  "术士 SORCERER": {
+    description: "并非所有天生施法者都选择精进技艺，但那些潜心钻研之人终将成为强大的术士。这些施法者的天赋往往通过血脉传承，即便家族成员对其浑然不觉或刻意回避。术士的能力涵盖元素操控、幻象编织等诸多领域，许多修行者会根据各自的天赋结盟。成为强大术士的关键不在于攫取力量，而在于学会培育并驾驭与生俱来的能力。一个误入歧途或缺乏约束的术士所施展的魔法，终将成为祸乱世间的危险力量。",
+    domains: ["奥术","午夜"]
+  },
+  "战士 WARRIOR": {
+    description: "成为一名战士需要经年累月——往往耗费一生的时间——投入武器与战斗技艺的磨炼。当多数好战之人仅锤炼蛮力时，战士深谙敏捷的身手与机敏头脑的重要性，这使他们成为诸界域中最受追捧的斗士。战士常受雇于军队、佣兵团乃至王室卫队，但无法继续精进武艺的职位终将埋没他们的潜力。众所周知，战士们都有自己偏爱的武器；挡在他们和他们的锋刃之间将是一个致命的错误。",
+    domains: ["利刃", "骸骨"]
+  },
+  "法师 WIZARD": {
+    description: "无论通过学院研习还是个人修行，被称为法师之人皆需经年累月借助书籍、宝石、药剂与草药等工具来获取并锤炼浩瀚魔力。一些法师穷尽一生专精某学派的法术，而另一些人则从各种不同的学派中学习。许多法师都成为了他们社群中睿智而强大的存在，或为统治者建言献策，或治疗疾病提供药品，甚至统领战争议会。虽然这些法师都以收集魔法学识为共同目标，但与他们发生冲突最多的也往往是他们的法师同僚——关于奥术秘藏的获取、保管与分享的话题导致的激烈争论，已酿成无数血案。",
+    domains: ["辉耀","典籍"]
+  },
+  "格斗家 BRAWLER": {
+    description: "作为徒手格斗的专家，格斗家们运用令人叹为观止的武术技艺，将自己的身体打造成致命的武器。无论是在正规学校系统学习，还是通过一次次战斗逐步磨练，这一过程都极为严苛，使格斗家们的身心协调如一，达到人武合一的境界。",
+    domains: ["骸骨", "勇气"]
+  },
+  "邪术师 WARLOCK": {
+    description: "那些为了强大的力量而将自己的生命，甚至灵魂，献给异界宗主的存在，被称为邪术师。通常，这些凡人在做出如此牺牲时正处于极度绝望的境地——为了保护自己或挚爱之人，协助族群，寻求复仇，提升地位，或是追逐某种野心。",
+    domains: ["优雅"]
+  },
+  "女巫 WITCH": {
+    description: "女巫是与自然之力以及异界域实体建立联系的魔法使用者。女巫通过巫术技艺、仪式、咒语、草药、岩石、蜡烛及其他工具唤引力量，以实现自身意志与施展强大法术。",
+    domains: ["贤者"]
+  },
+  "刺客 ASSASSIN": {
+    description: "刺客是突破防御、制造痛苦与致命打击的大师。当刺客标记某人作为死亡目标时，他们会以毫不迟疑的杀意追猎目标。",
+    domains: ["午夜", "利刃"]
+  },
+  "血猎人 BLOOD HUNTER": {
+    description: "掌握鲜血秘法，探索自身血液力量中蕴藏的秘密。血猎人是技艺精湛的实践者，他们孜孜不倦地追求新的魔法，以及自身体内等待发掘的强大力量。",
+    domains: ["利刃"]
+  }
+};
+
+const coreClassIds = {
+  "吟游诗人 BARD":"职业:吟游诗人",
+  "德鲁伊 DRUID":"职业:德鲁伊",
+  "守护者 GUARDIAN":"职业:守护者",
+  "游侠 RANGER":"职业:游侠",
+  "游荡者 ROUGE":"职业:游荡者",
+  "神使 SERAPH":"职业:神使",
+  "术士 SORCERER":"职业:术士",
+  "战士 WARRIOR":"职业:战士",
+  "法师 WIZARD":"职业:法师"
+};
+
+const allDomains = Object.keys(domainDescriptions);
+
+/* 渲染问卷 */
+const form = document.getElementById('quizForm');
+const answers = {};
+
+function makeChoiceElement(q) {
+  const fs = document.createElement('fieldset');
+  const legend = document.createElement('legend');
+  legend.textContent = q.id + '. ' + q.q;
+  fs.appendChild(legend);
+
+  const container = document.createElement('div');
+
+  ['A','B'].forEach(choiceLetter => {
+    const choiceData = (choiceLetter === 'A') ? q.a : q.b;
+    const label = document.createElement('label');
+    label.className = 'choice';
+    label.tabIndex = 0;
+
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'q' + q.id;
+    input.value = choiceLetter;
+
+    input.addEventListener('change', () => {
+      answers[q.id] = choiceLetter;
+      updateSelectionStyles(fs, q.id);
+    });
+
+    label.appendChild(input);
+
+    const span = document.createElement('div');
+    span.innerHTML = '<strong>' + choiceLetter + '.</strong> ' + choiceData.text;
+    label.appendChild(span);
+
+    label.addEventListener('click', (e) => {
+      if(e.target.tagName.toLowerCase() !== 'input') {
+        input.checked = true;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    });
+
+    container.appendChild(label);
+  });
+
+  fs.appendChild(container);
+  return fs;
+}
+
+function updateSelectionStyles(fieldset, qid) {
+  const labels = fieldset.querySelectorAll('label.choice');
+  labels.forEach(label => {
+    const input = label.querySelector('input');
+    if(input && input.checked) label.classList.add('selected'); else label.classList.remove('selected');
+  });
+}
+
+/* build form */
+questions.forEach(q => {
+  const el = makeChoiceElement(q);
+  form.appendChild(el);
+});
+
+/* calculate logic */
+function calculate() {
+  const scores = {};
+  allDomains.forEach(d => scores[d] = 0);
+
+  questions.forEach(q => {
+    const choice = answers[q.id];
+    if(!choice) return;
+    const picked = (choice === 'A') ? q.a : q.b;
+    if(picked && picked.domains) {
+      picked.domains.forEach(d => { scores[d] = (scores[d] || 0) + 1; });
+    }
+  });
+
+  const ranked = Object.entries(scores).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({domain:k,score:v}));
+
+  // 计算职业匹配度
+  const classScores = {};
+  Object.entries(classes).forEach(([className, classData]) => {
+    let score = 0;
+    classData.domains.forEach(domain => {
+      score += scores[domain] || 0;
+    });
+    classScores[className] = score / classData.domains.length; // 计算平均分
+  });
+
+  // 排序职业
+  const rankedClasses = Object.entries(classScores)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, score]) => ({ name, score, data: classes[name] }));
+
+  return { scores, ranked, rankedClasses };
+}
+
+/* render result */
+const resultArea = document.getElementById('resultArea');
+function renderResult(res) {
+  resultArea.innerHTML = '';
+  if(!res) return;
+  const top = res.ranked[0];
+  const second = res.ranked[1];
+  const third = res.ranked[2];
+  const topClass = res.rankedClasses[0];
+  const secondClass = res.rankedClasses[1];
+  const thirdClass = res.rankedClasses[2];
+  const applicableClass = res.rankedClasses.find(candidate => coreClassIds[candidate.name]);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'result';
+
+  const h2 = document.createElement('h2'); h2.textContent = '测验结果'; h2.style.marginTop='0';
+  wrap.appendChild(h2);
+
+  const best = document.createElement('div');
+  best.innerHTML = '<h3>最适合你的领域：</h3><p style="font-size:20px;font-weight:700;margin:6px 0;color:var(--accent)">'+ (top ? top.domain : '—') +'</p><p style="opacity:0.9;">'+ (top ? domainDescriptions[top.domain] : '') +'</p>';
+  wrap.appendChild(best);
+
+  const others = document.createElement('div');
+  others.innerHTML = '<h3 style="margin-top:12px">你也可以试着寻求其他力量：</h3>';
+  const ul = document.createElement('ul');
+  ul.style.marginTop='8px';
+  if(second) {
+    const li = document.createElement('li');
+    li.innerHTML = '<strong>'+second.domain+'</strong> — ' + domainDescriptions[second.domain];
+    ul.appendChild(li);
+  }
+  if(third) {
+    const li2 = document.createElement('li');
+    li2.innerHTML = '<strong>'+third.domain+'</strong> — ' + domainDescriptions[third.domain];
+    ul.appendChild(li2);
+  }
+  others.appendChild(ul);
+  wrap.appendChild(others);
+
+  // 职业推荐部分
+  const classRecommendation = document.createElement('div');
+  classRecommendation.innerHTML = '<h3 style="margin-top:18px">职业推荐：</h3>';
+
+  const classGrid = document.createElement('div');
+  classGrid.className = 'grid';
+
+  if(topClass) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.border = '1px solid rgba(99,102,241,0.5)';
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <strong style="color:var(--accent)">${topClass.name}</strong>
+        <span style="opacity:0.85">匹配度高</span>
+      </div>
+      <div style="margin-top:6px;color:rgba(255,255,255,0.85)">${topClass.data.description}</div>
+    `;
+    classGrid.appendChild(card);
+  }
+
+  if(secondClass) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <strong>${secondClass.name}</strong>
+        <span style="opacity:0.85">匹配度较高</span>
+      </div>
+      <div style="margin-top:6px;color:rgba(255,255,255,0.85)">${secondClass.data.description}</div>
+    `;
+    classGrid.appendChild(card);
+  }
+
+  if(thirdClass) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <strong>${thirdClass.name}</strong>
+        <span style="opacity:0.85">匹配度良好</span>
+      </div>
+      <div style="margin-top:6px;color:rgba(255,255,255,0.85)">${thirdClass.data.description}</div>
+    `;
+    classGrid.appendChild(card);
+  }
+
+  classRecommendation.appendChild(classGrid);
+  if(applicableClass) {
+    const applyButton = document.createElement('button');
+    applyButton.className = 'btn primary';
+    applyButton.type = 'button';
+    applyButton.style.marginTop = '12px';
+    applyButton.textContent = `将“${applicableClass.name}”填入人物卡`;
+    applyButton.addEventListener('click',()=>{
+      window.parent.postMessage({
+        type:'pbdh-questionnaire-result',
+        result:{
+          protocolVersion:'1',
+          interactions:[{
+            type:'resourceSelected',
+            sourceModuleId:'pick-class',
+            libraryId:'classes',
+            entryIds:[coreClassIds[applicableClass.name]]
+          }]
+        }
+      },'*');
+    });
+    classRecommendation.appendChild(applyButton);
+  }
+  wrap.appendChild(classRecommendation);
+
+  const allTitle = document.createElement('h3'); allTitle.textContent='完整得分：'; allTitle.style.marginTop='12px';
+  wrap.appendChild(allTitle);
+
+  const grid = document.createElement('div'); grid.className='grid';
+  res.ranked.forEach(r => {
+    const card = document.createElement('div'); card.className='card';
+    card.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:baseline"><strong>'+r.domain+'</strong><span style="opacity:0.85">'+r.score+' 分</span></div><div style="margin-top:6px;color:rgba(255,255,255,0.85)">'+domainDescriptions[r.domain]+'</div>';
+    grid.appendChild(card);
+  });
+  wrap.appendChild(grid);
+
+  resultArea.appendChild(wrap);
+}
+
+/* button handlers */
+document.getElementById('calcBtn').addEventListener('click', (e)=>{
+  e.preventDefault();
+  const res = calculate();
+  renderResult(res);
+  resultArea.scrollIntoView({behavior:'smooth'});
+});
+
+document.getElementById('resetBtn').addEventListener('click', (e)=>{
+  e.preventDefault();
+  const inputs = document.querySelectorAll('input[type=radio]');
+  inputs.forEach(i=>{ i.checked = false; });
+  for(const k in answers) delete answers[k];
+  const labels = document.querySelectorAll('label.choice');
+  labels.forEach(l=>l.classList.remove('selected'));
+  resultArea.innerHTML = '';
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+document.querySelectorAll('label.choice').forEach(label=>{
+  label.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' || e.key === ' ') {
+      const input = label.querySelector('input');
+      if(input) {
+        input.checked = true;
+        input.dispatchEvent(new Event('change',{bubbles:true}));
+      }
+      e.preventDefault();
+    }
+  });
+});
+
+</script>
+</body>
+</html>

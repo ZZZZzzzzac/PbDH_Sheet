@@ -29,6 +29,34 @@ describe("loadSystemPackageFromZipFile", () => {
     }
   });
 
+  it("loads a declared Questionnaire HTML file", async () => {
+    const manifest = {
+      ...createManifest(),
+      questionnaireCharacterCreation: { ID: "class-quiz", 名称: "职业问卷", html: "questionnaires/class.html" },
+    };
+    const result = await loadSystemPackageFromZipFile(createPackageZip({ manifest, questionnaireHtml: "<button>提交</button><script>void 0</script>" }));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.package.questionnaireCharacterCreation).toEqual({
+        ID: "class-quiz",
+        名称: "职业问卷",
+        htmlContent: "<button>提交</button><script>void 0</script>",
+      });
+    }
+  });
+
+  it("reports a missing declared Questionnaire HTML file", async () => {
+    const manifest = {
+      ...createManifest(),
+      questionnaireCharacterCreation: { ID: "class-quiz", 名称: "职业问卷", html: "questionnaires/missing.html" },
+    };
+    const result = await loadSystemPackageFromZipFile(createPackageZip({ manifest }));
+
+    expect(result.ok).toBe(false);
+    expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "PACKAGE_FILE_MISSING" })]));
+  });
+
   it("loads Resource Library and Dependency JSON files from zip", async () => {
     const manifest = {
       ...createManifest(),
@@ -480,6 +508,7 @@ function createPackageZip(
     dependencies?: unknown;
     validationScripts?: Record<string, string>;
     guide?: unknown;
+    questionnaireHtml?: string;
     skinFiles?: Record<string, string>;
   } = {},
 ) {
@@ -494,6 +523,7 @@ function createPackageZip(
     ...(options.dependencies ? { "dependencies.json": JSON.stringify(options.dependencies) } : {}),
     ...(options.validationScripts ?? {}),
     ...(options.guide ? { "guides/character-creation.json": JSON.stringify(options.guide) } : {}),
+    ...(options.questionnaireHtml ? { "questionnaires/class.html": options.questionnaireHtml } : {}),
     ...(options.skinFiles ?? {}),
   });
 }

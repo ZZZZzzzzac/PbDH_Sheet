@@ -19,7 +19,6 @@ import {
   createEmptyCharacterData,
   updateCharacterValue,
   updatePlayerImage,
-  updateResourceSelectionSnapshot,
   removePlayerImage as removePlayerImageData,
   type CharacterData,
   exportCharacterData,
@@ -27,7 +26,9 @@ import {
   type PlayerImageValue,
   type SheetValue,
 } from "../domain/characterData";
-import { applyDependencyResultToCharacterData, evaluateDependencies, hasRebuildableDependencies, rebuildDerivedDependencies } from "../domain/dependencyEngine";
+import { applyDependencyResultToCharacterData, evaluateDependencies, rebuildDerivedDependencies } from "../domain/dependencyEngine";
+import { resolveQuestionnaireResult } from "../domain/questionnaire";
+import { applyResourceSelectionToDraft } from "../domain/resourceSelection";
 import type { ResourceLibraryEntry, ResourceLibraryQuery } from "../domain/resourceLibrary";
 import { composeResource, type ResourceComposerSelections } from "../domain/resourceComposer";
 import { applyEffectiveResourceCatalog, createEffectiveResourceCatalog, type EffectiveResourceCatalog } from "../domain/effectiveResourceCatalog";
@@ -44,12 +45,10 @@ import { loadAuthorPreviewDirectoryHandle, saveAuthorPreviewDirectoryHandle, sto
 import { generateId } from "../utils";
 import { convertExternalCharacterSource, parseAndDetectCharacterSource, type CharacterAdapterConversion } from "../domain/characterFormatAdapter";
 import {
-  createCardInstancesFromSelection,
   createCardInstanceFromComposite,
   dependencyRuntimeStateFromResult,
   ensureCardState,
   fileToDataUrl,
-  hasCardCreationTarget,
   loadActiveCharacterForPackage,
   warnDependencyIssues,
 } from "./runtimeHelpers";
@@ -95,6 +94,7 @@ interface RuntimeState {
   importNotice: string | null;
   pendingCharacterConversion: PendingCharacterConversion | null;
   pendingCharacterFormatSelection: PendingCharacterFormatSelection | null;
+  pendingQuestionnaireResult: PendingQuestionnaireResult | null;
   authorPreviewActive: boolean;
   initialize: () => Promise<void>;
   uploadSystemPackageFromFile: (file: Blob) => Promise<void>;
@@ -121,6 +121,9 @@ interface RuntimeState {
   updateModuleValue: (moduleId: string, value: SheetValue) => void;
   commitFreeTextChange: (moduleId: string, value: string) => void;
   commitResourceSelection: (moduleId: string, libraryId: string, entries: ResourceLibraryEntry[]) => void;
+  prepareQuestionnaireResult: (questionnaireId: string, input: unknown) => void;
+  confirmQuestionnaireResult: () => void;
+  cancelQuestionnaireResult: () => void;
   commitResourceComposition: (moduleId: string, selections: ResourceComposerSelections) => void;
   commitCheckboxChange: (moduleId: string, optionId: string, checked: boolean, checkboxState: CheckboxState) => void;
   updateCardInstancePosition: (instanceId: string, xPct: number, yPct: number) => void;
@@ -284,6 +287,7 @@ async function loadPackageIntoState(
       pendingResourceExtensionConversion: null,
       pendingResourceFormatSelection: null,
       pendingResourceExtensionRemoval: null,
+      pendingQuestionnaireResult: null,
       resourceReferenceIssues: collectStaleResourceReferenceIssues(loaded.characterData, resourceCatalog),
       packageAssetUrls: nextAssetResolver.urls,
       characterData: loaded.characterData,
@@ -334,6 +338,22 @@ export interface PendingCharacterFormatSelection {
   adapters: Array<{ ID: string; 名称: string }>;
 }
 
+export interface PendingQuestionnaireResult {
+  questionnaireId: string;
+  questionnaireName: string;
+  packageId: string;
+  characterId: string;
+  baseUpdatedAt: string;
+  selections: Array<{
+    sourceModuleId: string;
+    pickerLabel: string;
+    libraryId: string;
+    libraryName: string;
+    entries: Array<{ id: string; name: string }>;
+  }>;
+  nextCharacterData: CharacterData;
+}
+
 function resolveSkinPreference(systemPackage: SystemPackage): { skinId: string | null; fellBack: boolean } {
   const skins = systemPackage.skins ?? [];
   if (skins.length === 0) return { skinId: null, fellBack: false };
@@ -379,6 +399,7 @@ async function clearCachedPackageAndResetState(set: (partial: Partial<RuntimeSta
     pendingResourceExtensionConversion: null,
     pendingResourceFormatSelection: null,
     pendingResourceExtensionRemoval: null,
+    pendingQuestionnaireResult: null,
     resourceReferenceIssues: [],
     packageAssetUrls: {},
     characterData: null,
@@ -566,6 +587,7 @@ async function installResourceExtensionCandidate(
     ...(characterData ? rebuildDependencyRuntimeState(characterData, effectivePackage) : {}),
     resourceReferenceIssues: collectStaleResourceReferenceIssues(characterData, nextCatalog),
     pendingResourceExtensionConversion: null,
+    pendingQuestionnaireResult: null,
     resourceExtensionImport: {
       status: "success", extensionId: loaded.extension.ID,
       contributionCount: loaded.extension.resourceLibraries.length,
@@ -587,6 +609,7 @@ async function persistImportedCharacter(data: CharacterData, saveName: string, n
     importNotice: notice,
     pendingCharacterConversion: null,
     pendingCharacterFormatSelection: null,
+    pendingQuestionnaireResult: null,
     resourceReferenceIssues: get().resourceCatalog ? collectStaleResourceReferenceIssues(data, get().resourceCatalog!) : [],
   });
   await runtimeDependencies.storage.saveCharacterSave({ id: data.character.id, packageId: data.systemPackage.id, name: saveName, updatedAt: data.updatedAt, data });
@@ -672,6 +695,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   importNotice: null,
   pendingCharacterConversion: null,
   pendingCharacterFormatSelection: null,
+  pendingQuestionnaireResult: null,
   authorPreviewActive: false,
 
   // ========== Package lifecycle & boot ==========
@@ -934,6 +958,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       installedResourceExtensions: nextExtensions,
       packageAssetUrls: activePackageAssetResolver?.urls ?? {},
       pendingResourceExtensionReplacement: null,
+      pendingQuestionnaireResult: null,
       resourceReferenceIssues: collectStaleResourceReferenceIssues(characterData, nextCatalog),
       ...(characterData ? rebuildDependencyRuntimeState(characterData, effectivePackage) : {}),
       resourceExtensionImport: {
@@ -986,6 +1011,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       installedResourceExtensions: nextExtensions,
       packageAssetUrls: activePackageAssetResolver?.urls ?? {},
       pendingResourceExtensionRemoval: null,
+      pendingQuestionnaireResult: null,
       resourceExtensionImport: null,
       resourceReferenceIssues: collectStaleResourceReferenceIssues(characterData, nextCatalog),
       ...(characterData ? rebuildDependencyRuntimeState(characterData, effectivePackage) : {}),
@@ -1035,6 +1061,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       validationIssues: [],
       validationStatus: "idle",
       resourceReferenceIssues: [],
+      pendingQuestionnaireResult: null,
     });
   },
 
@@ -1075,6 +1102,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       importNotice: null,
       storageStatus: "idle",
       resourceReferenceIssues: get().resourceCatalog ? collectStaleResourceReferenceIssues(normalizedData, get().resourceCatalog!) : [],
+      pendingQuestionnaireResult: null,
     });
   },
 
@@ -1129,6 +1157,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       validationStatus: "idle",
       importError: null,
       importNotice: null,
+      pendingQuestionnaireResult: null,
     });
   },
 
@@ -1160,6 +1189,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       validationStatus: "idle",
       importError: null,
       importNotice: null,
+      pendingQuestionnaireResult: null,
     });
   },
 
@@ -1234,40 +1264,113 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
       return;
     }
 
-    const shouldPersistSelection = hasRebuildableDependencies(currentPackage, moduleId);
-    const dataWithSnapshot = shouldPersistSelection
-      ? updateResourceSelectionSnapshot(characterData, moduleId, libraryId, entries.map((entry) => entry.ID))
-      : characterData;
-    const result = evaluateDependencies(dataWithSnapshot, currentPackage, {
-        type: "resourceSelected",
-        sourceModuleId: moduleId,
-        libraryId,
-        selectedEntries: entries,
-    });
-    warnDependencyIssues(result);
-
-    let nextData = applyDependencyResultToCharacterData(dataWithSnapshot, result);
-    for (const instruction of result.cardCreationInstructions) {
-      if (instruction.libraryId) {
-        nextData = createCardInstancesFromSelection(nextData, currentPackage, instruction.moduleId, instruction.libraryId, instruction.entries);
-      }
-    }
-    const derivedResult = rebuildDerivedDependencies(nextData, currentPackage);
-    warnDependencyIssues(derivedResult);
+    const applied = applyResourceSelectionToDraft(characterData, currentPackage, moduleId, libraryId, entries);
+    warnDependencyIssues(applied.interactionResult);
+    warnDependencyIssues(applied.derivedResult);
 
     set(() => ({
-      characterData: nextData,
-      ...dependencyRuntimeStateFromResult(derivedResult),
+      characterData: applied.characterData,
+      ...dependencyRuntimeStateFromResult(applied.derivedResult),
       importError: null,
       importNotice: null,
+      pendingQuestionnaireResult: null,
     }));
 
-    if (shouldPersistSelection || Object.keys(result.dataPatches).length > 0 || hasCardCreationTarget(currentPackage, moduleId)) {
+    if (applied.shouldPersist) {
       scheduleAutosave(
         () => get().characterData,
         (status) => set({ storageStatus: status }),
       );
     }
+  },
+
+  prepareQuestionnaireResult(questionnaireId, input) {
+    const currentPackage = get().currentPackage;
+    const characterData = get().characterData;
+    const questionnaire = currentPackage?.questionnaireCharacterCreation;
+    if (!currentPackage || !characterData || !questionnaire || questionnaire.ID !== questionnaireId) {
+      set({ importError: "问卷结果不属于当前 System Package。", importNotice: null, pendingQuestionnaireResult: null });
+      return;
+    }
+    const resolved = resolveQuestionnaireResult(input, currentPackage);
+    if (!resolved.ok) {
+      set({ importError: resolved.error, importNotice: null, pendingQuestionnaireResult: null });
+      return;
+    }
+
+    let draft = characterData;
+    for (const selection of resolved.selections) {
+      const applied = applyResourceSelectionToDraft(
+        draft,
+        currentPackage,
+        selection.sourceModuleId,
+        selection.libraryId,
+        selection.entries,
+      );
+      warnDependencyIssues(applied.interactionResult);
+      warnDependencyIssues(applied.derivedResult);
+      draft = applied.characterData;
+    }
+
+    set({
+      pendingQuestionnaireResult: {
+        questionnaireId,
+        questionnaireName: questionnaire.名称,
+        packageId: currentPackage.manifest.ID,
+        characterId: characterData.character.id,
+        baseUpdatedAt: characterData.updatedAt,
+        selections: resolved.selections.map((selection) => {
+          const module = currentPackage.modules.find((candidate) => candidate.ID === selection.sourceModuleId);
+          const library = currentPackage.resourceLibraries?.find((candidate) => candidate.ID === selection.libraryId);
+          return {
+            sourceModuleId: selection.sourceModuleId,
+            pickerLabel: module?.类型 === "resourcePicker" ? module.按钮文本 : selection.sourceModuleId,
+            libraryId: selection.libraryId,
+            libraryName: library?.名称 ?? selection.libraryId,
+            entries: selection.entries.map((entry) => ({ id: entry.ID, name: entry.fields.名称 || entry.ID })),
+          };
+        }),
+        nextCharacterData: draft,
+      },
+      importError: null,
+      importNotice: null,
+    });
+  },
+
+  confirmQuestionnaireResult() {
+    const pending = get().pendingQuestionnaireResult;
+    const currentPackage = get().currentPackage;
+    const characterData = get().characterData;
+    if (!pending || !currentPackage || !characterData) return;
+    if (pending.packageId !== currentPackage.manifest.ID
+      || pending.characterId !== characterData.character.id
+      || pending.baseUpdatedAt !== characterData.updatedAt) {
+      set({
+        pendingQuestionnaireResult: null,
+        importError: "问卷结果已过期：System Package 或 Character Save 已发生变化，请重新运行问卷。",
+        importNotice: null,
+      });
+      return;
+    }
+    const derivedResult = rebuildDerivedDependencies(pending.nextCharacterData, currentPackage);
+    warnDependencyIssues(derivedResult);
+    set({
+      characterData: pending.nextCharacterData,
+      ...dependencyRuntimeStateFromResult(derivedResult),
+      pendingQuestionnaireResult: null,
+      importError: null,
+      importNotice: `${pending.questionnaireName}的 Resource Picker 选择已应用。`,
+    });
+    saveCharacterDataImmediately(
+      pending.nextCharacterData,
+      get().activeCharacterSaveId,
+      get().characterSaves,
+      (status) => set({ storageStatus: status }),
+    );
+  },
+
+  cancelQuestionnaireResult() {
+    set({ pendingQuestionnaireResult: null, importNotice: "已取消问卷结果；当前 Character Save 未改变。" });
   },
 
   commitResourceComposition(moduleId, selections) {

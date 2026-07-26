@@ -78,3 +78,20 @@
   color: var(--framework-text-muted);
   font-size: 0.86rem;
 }
+
+.questionnaire-selection-list {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding-left: 24px;
+}
+
+.questionnaire-selection-list li {
+  padding-left: 4px;
+  line-height: 1.45;
+}
+
+.questionnaire-selection-list span {
+  display: block;
+  color: var(--framework-text-muted);
+}

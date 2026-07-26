@@ -41,6 +41,7 @@ describe("System Package documentation", () => {
       "contract/modules/resource-picker.md",
       "contract/package-and-assets.md",
       "contract/pages-layout-skins.md",
+      "contract/questionnaire-character-creation.md",
       "contract/resources-cards.md",
       "getting-started.md",
     ]);

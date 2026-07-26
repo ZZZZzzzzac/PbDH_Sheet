@@ -91,6 +91,10 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
   if (guideJson && !guideJson.ok) {
     return { ok: false, issues: [guideJson.issue] };
   }
+  const questionnaire = manifest.data.questionnaireCharacterCreation
+    ? loadQuestionnaireFileFromVfs(vfs, manifest.data.questionnaireCharacterCreation)
+    : undefined;
+  if (questionnaire && !questionnaire.ok) return { ok: false, issues: [questionnaire.issue] };
   const resourceFormatAdaptersJson = manifest.data.resourceFormatAdapters
     ? readPackageJsonFile(vfs, manifest.data.resourceFormatAdapters)
     : undefined;
@@ -127,6 +131,7 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
     dependenciesJson?.value,
     validationChecks.value,
     guideJson?.value,
+    questionnaire?.value,
     resourceFormatAdapters?.value,
     characterFormatAdapters?.value,
     shell?.value,
@@ -152,6 +157,7 @@ function normalizeManifestPackage(
   dependencies?: unknown,
   validationChecks?: Array<{ ID: string; 脚本: string; scriptContent: string }>,
   characterCreationGuide?: unknown,
+  questionnaireCharacterCreation?: unknown,
   resourceFormatAdapters?: unknown,
   characterFormatAdapters?: unknown,
   shell?: unknown,
@@ -177,6 +183,7 @@ function normalizeManifestPackage(
     dependencies,
     validationChecks,
     characterCreationGuide,
+    questionnaireCharacterCreation,
     resourceFormatAdapters,
     characterFormatAdapters,
   }, sourceMap);
@@ -189,6 +196,7 @@ function buildPackageSourceMap(manifest: z.infer<typeof packageManifestSchema>, 
     modules: manifest.modules,
     ...(manifest.dependencies ? { dependencies: manifest.dependencies } : {}),
     ...(manifest.characterCreationGuide ? { characterCreationGuide: manifest.characterCreationGuide } : {}),
+    ...(manifest.questionnaireCharacterCreation ? { questionnaireCharacterCreation: manifest.questionnaireCharacterCreation.html } : {}),
     ...(manifest.resourceFormatAdapters ? { resourceFormatAdapters: manifest.resourceFormatAdapters } : {}),
     ...(manifest.characterFormatAdapters ? { characterFormatAdapters: manifest.characterFormatAdapters } : {}),
     ...(manifest.shell ? { shell: manifest.shell.html } : {}),
@@ -222,6 +230,15 @@ function loadTemplateFilesFromVfs(vfs: PackageVirtualFileSystem, reference: { ht
   const css = reference.css ? vfs.readText(reference.css) : undefined;
   if (css && !css.ok) return css;
   return { ok: true as const, value: { 类型: "htmlTemplate" as const, htmlContent: html.value, ...(css?.ok ? { cssContent: css.value } : {}) } };
+}
+
+function loadQuestionnaireFileFromVfs(
+  vfs: PackageVirtualFileSystem,
+  reference: { ID: string; 名称: string; html: string },
+) {
+  const html = vfs.readText(reference.html);
+  if (!html.ok) return html;
+  return { ok: true as const, value: { ID: reference.ID, 名称: reference.名称, htmlContent: html.value } };
 }
 
 export async function loadSystemPackageFromDirectoryFiles(files: Iterable<File>): Promise<PackageLoadResult> {

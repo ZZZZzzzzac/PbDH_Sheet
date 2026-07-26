@@ -52,6 +52,7 @@ npm run build
 5. Dependency 的来源、触发、条件和目标类型是否匹配。
 6. Guide 是否只承担展示与聚焦，不写入 Character Data。
 7. Worker 脚本是否满足消息合同且不依赖 DOM、网络或宿主全局变量。
+8. 问卷 HTML 是否只提交现有 Picker/Library/Entry ID，并在新标签页中完整走通确认与取消。
 
 ## 常见错误
 

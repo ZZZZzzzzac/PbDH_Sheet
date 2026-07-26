@@ -2,6 +2,7 @@ import type { z } from "zod";
 import { characterDataSchema } from "./characterData";
 import { resourceExtensionDocumentSchema } from "./resourceExtension";
 import { resourceLibrarySchema } from "./resourceLibrary";
+import { questionnaireDefinitionSchema, questionnaireResultSchema } from "./questionnaireContract";
 import {
   authorContractSchemas,
   packagePageSourceSchema,
@@ -120,6 +121,43 @@ export const systemPackageContractEntries: readonly SystemPackageContractEntry[]
       "无目标 Step 合法；它只显示说明面板。",
       "region 目标由 Layout 元素的 data-guide-region-id 声明；ID 必须非空并在有效 Layout 中存在。",
       "Guide 只聚焦和解释，不写 Character Data。",
+    ],
+  },
+  {
+    id: "questionnaire-source",
+    title: "Questionnaire Character Creation declaration",
+    group: "author-source",
+    schema: authorContractSchemas.questionnaire,
+    summary: "manifest 内的问卷身份、显示名称与自包含 HTML 路径。",
+    document: "questionnaire-character-creation.md",
+    semanticConstraints: [
+      "每个 System Package 至多声明一个问卷；HTML 在 Base-owned 新标签页的 sandbox iframe 中运行。",
+      "问卷问题、计分、推荐和视觉表现完全由 Author HTML/CSS/JS 负责。",
+      "问卷不读取 Character Data，也不能直接调用 Runtime Store、Storage 或 Dependency Engine。",
+    ],
+  },
+  {
+    id: "questionnaire-runtime",
+    title: "Loaded Questionnaire runtime shape",
+    group: "runtime",
+    schema: questionnaireDefinitionSchema,
+    summary: "Loader 装配 HTML 内容后的问卷定义。",
+    document: "questionnaire-character-creation.md",
+    semanticConstraints: ["Author 不直接编写 htmlContent；它由 manifest 声明的安全包内路径装配。"],
+  },
+  {
+    id: "questionnaire-result",
+    title: "Questionnaire result",
+    group: "runtime",
+    schema: questionnaireResultSchema,
+    summary: "问卷返回的有序 Resource Picker 选择列表。",
+    document: "questionnaire-character-creation.md",
+    semanticConstraints: [
+      "仅支持 resourceSelected；sourceModuleId 必须是现有 Resource Picker，libraryId 必须是该 Picker 已链接的 Resource Library。",
+      "entryIds 必须是该库内稳定且不重复的 Resource Entry ID，并遵守 Picker 单选/多选约束。",
+      "Base 按 interactions 声明顺序在草稿上重放现有 Picker 提交流程；Player 确认后才原子写入并保存一次。",
+      "问卷结果最大 64 KiB；无效、过期或取消的结果不会修改 Character Data。",
+      "接入问卷不要求修改 dependencies.json；重放会自然触发 Picker 已有的 resourceSelected Dependency Logic。",
     ],
   },
   {

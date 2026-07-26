@@ -7,6 +7,8 @@ import { applyDependencyResultToCharacterData, evaluateDependencies, rebuildDeri
 import { resolveCardPresentation } from "../domain/cardPresentation";
 import { runValidationChecksInProcess } from "../domain/validationScript";
 import { getHtmlTemplateModuleReferences } from "../domain/systemPackage";
+import { resolveQuestionnaireResult } from "../domain/questionnaire";
+import { applyResourceSelectionToDraft } from "../domain/resourceSelection";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 import { createCardInstancesFromSelection } from "../store/runtimeHelpers";
 
@@ -299,6 +301,45 @@ describe("TTTRI System Package", () => {
     expect(yData.character.values["class-hope-feature"]).toBe(selectedClass.fields.希望特性);
     expect(yData.character.values["class-feature"]).toBe(t4y.fields.职业特性);
     expect(yData.character.values["subclass-current"]).toBe(t3SubclassText);
+  });
+
+  it("ships the subclass questionnaire and replays the existing T1 Picker dependency path", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const systemPackage = loadedResult.package;
+    expect(systemPackage.questionnaireCharacterCreation?.htmlContent).toContain("pbdh-questionnaire-result");
+    expect(systemPackage.questionnaireCharacterCreation?.htmlContent).toContain("sourceModuleId:'pick-class'");
+    const resolved = resolveQuestionnaireResult({
+      protocolVersion: "1",
+      interactions: [
+        {
+          type: "resourceSelected",
+          sourceModuleId: "pick-class",
+          libraryId: "classes",
+          entryIds: ["职业:辅助"],
+        },
+        {
+          type: "resourceSelected",
+          sourceModuleId: "pick-subclass-t1",
+          libraryId: "subclasses",
+          entryIds: ["子职:辅助:医师:T1"],
+        },
+      ],
+    }, systemPackage);
+    expect(resolved.ok).toBe(true);
+    if (!resolved.ok) return;
+
+    let draft = createEmptyCharacterData(systemPackage);
+    let derived = applyResourceSelectionToDraft(draft, systemPackage, resolved.selections[0].sourceModuleId, resolved.selections[0].libraryId, resolved.selections[0].entries);
+    draft = derived.characterData;
+    derived = applyResourceSelectionToDraft(draft, systemPackage, resolved.selections[1].sourceModuleId, resolved.selections[1].libraryId, resolved.selections[1].entries);
+    expect(derived.characterData.character.values).toMatchObject({
+      "class-name": "辅助",
+      "subclass-name": "医师",
+      "subclass-stage": "预备",
+    });
+    expect(derived.derivedResult.resourcePickerDefaultQueries["pick-subclass-t1"]?.filters).toEqual({ 主职: ["辅助"] });
+    expect(systemPackage.dependencies?.some((rule) => rule.触发.来源模块ID === "questionnaire")).toBe(false);
   });
 
   it("preserves Feishu semantic colors in newly synchronized Subclass progression text", () => {

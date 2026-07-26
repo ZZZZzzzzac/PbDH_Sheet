@@ -1,4 +1,4 @@
-import { Archive, Copy, Download, Eye, FileText, Library, Map, Plus, Printer, ShieldCheck, Trash2, Type, Upload, X } from "lucide-react";
+import { Archive, Copy, Download, Eye, FileText, Library, Map, Plus, Printer, ShieldCheck, Sparkles, Trash2, Type, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type InputHTMLAttributes } from "react";
 import { exportCharacterData } from "./domain/characterData";
 import { exportExternalCharacterData } from "./domain/characterFormatAdapter";
@@ -28,6 +28,8 @@ import { GuideSpotlight } from "./rendering/GuideSpotlight";
 import { ResourceManager } from "./rendering/ResourceManager";
 import { CharacterImportDialogs } from "./rendering/CharacterImportDialogs";
 import { CharacterExportDialog, type PendingCharacterExport } from "./rendering/CharacterExportDialog";
+import { QuestionnaireResultDialog } from "./rendering/QuestionnaireResultDialog";
+import { openQuestionnaireHost, type QuestionnaireHostSession } from "./rendering/questionnaireHost";
 import { useRuntimeStore } from "./store/runtimeStore";
 import presetSystemPackages from "virtual:preset-system-packages";
 
@@ -139,6 +141,7 @@ export default function App() {
   const packageDirectoryInputRef = useRef<HTMLInputElement>(null);
   const guideButtonRef = useRef<HTMLButtonElement>(null);
   const resourceManagerButtonRef = useRef<HTMLButtonElement>(null);
+  const questionnaireSessionRef = useRef<QuestionnaireHostSession | null>(null);
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
   const [pendingOutput, setPendingOutput] = useState<OutputKind | null>(null);
   const [printMode, setPrintMode] = useState(false);
@@ -168,6 +171,7 @@ export default function App() {
   const validationStatus = useRuntimeStore((state) => state.validationStatus);
   const importError = useRuntimeStore((state) => state.importError);
   const importNotice = useRuntimeStore((state) => state.importNotice);
+  const pendingQuestionnaireResult = useRuntimeStore((state) => state.pendingQuestionnaireResult);
   const initialize = useRuntimeStore((state) => state.initialize);
   const createCharacterSave = useRuntimeStore((state) => state.createCharacterSave);
   const switchCharacterSave = useRuntimeStore((state) => state.switchCharacterSave);
@@ -180,6 +184,9 @@ export default function App() {
   const selectCharacterFormatAdapter = useRuntimeStore((state) => state.selectCharacterFormatAdapter);
   const confirmCharacterConversion = useRuntimeStore((state) => state.confirmCharacterConversion);
   const cancelCharacterConversion = useRuntimeStore((state) => state.cancelCharacterConversion);
+  const prepareQuestionnaireResult = useRuntimeStore((state) => state.prepareQuestionnaireResult);
+  const confirmQuestionnaireResult = useRuntimeStore((state) => state.confirmQuestionnaireResult);
+  const cancelQuestionnaireResult = useRuntimeStore((state) => state.cancelQuestionnaireResult);
   const uploadSystemPackageFromFile = useRuntimeStore((state) => state.uploadSystemPackageFromFile);
   const uploadSystemPackageFromDirectory = useRuntimeStore((state) => state.uploadSystemPackageFromDirectory);
   const switchToPresetSystemPackage = useRuntimeStore((state) => state.switchToPresetSystemPackage);
@@ -212,7 +219,27 @@ export default function App() {
 
   useEffect(() => {
     setGuideSession(null);
+    questionnaireSessionRef.current?.close();
+    questionnaireSessionRef.current = null;
   }, [currentPackage?.manifest.ID, currentPackage?.manifest.版本]);
+
+  useEffect(() => () => questionnaireSessionRef.current?.close(), []);
+
+  const startQuestionnaire = () => {
+    const questionnaire = currentPackage?.questionnaireCharacterCreation;
+    if (!questionnaire || !characterData) return;
+    questionnaireSessionRef.current?.close();
+    const opened = openQuestionnaireHost(questionnaire, (result) => {
+      questionnaireSessionRef.current = null;
+      prepareQuestionnaireResult(questionnaire.ID, result);
+    });
+    if (!opened.ok) {
+      useRuntimeStore.setState({ importError: opened.error, importNotice: null });
+      return;
+    }
+    questionnaireSessionRef.current = opened.session;
+    useRuntimeStore.setState({ importError: null, importNotice: null });
+  };
 
   const performOutput = async (kind: OutputKind, printableContentPrepared = false) => {
     if (!characterData) {
@@ -483,6 +510,18 @@ export default function App() {
                 >
                   <Map aria-hidden="true" size={16} />
                   <span>车卡指引</span>
+                </button>
+              ) : null}
+              {currentPackage?.questionnaireCharacterCreation ? (
+                <button
+                  className="menu-item"
+                  type="button"
+                  onClick={startQuestionnaire}
+                  disabled={!characterData}
+                  aria-label={`打开问卷：${currentPackage.questionnaireCharacterCreation.名称}`}
+                >
+                  <Sparkles aria-hidden="true" size={16} />
+                  <span>{currentPackage.questionnaireCharacterCreation.名称}</span>
                 </button>
               ) : null}
             </div>
@@ -770,6 +809,11 @@ export default function App() {
           downloadText(`${JSON.stringify(pendingExternalExport.conversion.document, null, 2)}\n`, pendingExternalExport.fileName, "application/json");
           setPendingExternalExport(null);
         }}
+      />
+      <QuestionnaireResultDialog
+        pending={pendingQuestionnaireResult}
+        onConfirm={confirmQuestionnaireResult}
+        onCancel={cancelQuestionnaireResult}
       />
     </div>
   );

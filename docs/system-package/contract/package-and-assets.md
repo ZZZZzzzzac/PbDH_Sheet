@@ -126,6 +126,10 @@ Package、Page、Module、Resource Library、Resource Entry、Dependency、Check
 | defaultSkin | 否 | string | 最短 1 |
 | dependencies | 否 | string | 最短 1 |
 | characterCreationGuide | 否 | string | 最短 1 |
+| questionnaireCharacterCreation | 否 | object | — |
+| questionnaireCharacterCreation.ID | 是 | string | 最短 1 |
+| questionnaireCharacterCreation.名称 | 是 | string | 最短 1 |
+| questionnaireCharacterCreation.html | 是 | string | 最短 1 |
 | resourceFormatAdapters | 否 | string | 最短 1 |
 | characterFormatAdapters | 否 | string | 最短 1 |
 | assets | 否 | unknown | — |

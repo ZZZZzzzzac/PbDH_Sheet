@@ -43,6 +43,11 @@
   "modules": "modules.json",
   "dependencies": "dependencies.json",
   "characterCreationGuide": "guides/character-creation.json",
+  "questionnaireCharacterCreation": {
+    "ID": "daggerheart-class-domain-recommendation",
+    "名称": "职业与领域推荐问卷",
+    "html": "questionnaires/class-domain-recommendation.html"
+  },
   "resourceFormatAdapters": "adapters/resource-formats.json",
   "characterFormatAdapters": "adapters/character-formats.json",
   "validationChecks": [
