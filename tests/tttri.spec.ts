@@ -136,6 +136,23 @@ test("TTTRI Terra Portal pages stay inside A4 and print without blank sheets", a
   expect(printedPageCount, "TTTRI should emit exactly its three declared print surfaces").toBe(3);
 });
 
+test("TTTRI questionnaire uses Source Han Serif Bold for question titles and options", async ({ page }) => {
+  await page.goto("/pbdh/system-packages/tttri/questionnaires/subclass-recommendation.html");
+  await page.getByText("轻触屏幕开始").click();
+  await expect(page.locator(".q-title")).toBeVisible({ timeout: 10_000 });
+
+  const typography = await page.locator(".q-title, .option-text, .option-desc").evaluateAll((elements) =>
+    elements.map((element) => {
+      const style = getComputedStyle(element);
+      return { fontFamily: style.fontFamily, fontWeight: style.fontWeight };
+    }),
+  );
+
+  expect(typography.length).toBeGreaterThan(2);
+  expect(typography.every(({ fontFamily }) => fontFamily.startsWith('"TTTRI Source Han Serif"'))).toBe(true);
+  expect(typography.every(({ fontWeight }) => fontWeight === "700")).toBe(true);
+});
+
 async function measurePage(pageBox: import("@playwright/test").Locator) {
   return pageBox.evaluate((element) => {
     const surface = element as HTMLElement;
