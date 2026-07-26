@@ -5,10 +5,11 @@
 - [ ] 卡牌桌面生成卡牌时重叠
 - [ ] character data中文化
 - [ ] 文档优化
+- [ ] guide居中
 
 # daggerheart-core
 - [ ] 兼职优化
-- [ ] 兼容zzz和rrr格式
+- [x] 兼容zzz和rrr格式
 
 # TTTRI
 - [ ] 社群/种族卡图
