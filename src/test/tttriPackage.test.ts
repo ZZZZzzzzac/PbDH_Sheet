@@ -31,6 +31,17 @@ describe("TTTRI System Package", () => {
     expect(loadedResult.package.resourceLibraries).toHaveLength(7);
   });
 
+  it("does not ship abbreviated Subclass rules", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+
+    const subclasses = loadedResult.package.resourceLibraries.find((library) => library.ID === "subclasses")!;
+    for (const entry of subclasses.entries) {
+      expect(entry.fields.子职提升, `${entry.ID} 子职提升`).not.toMatch(/…|\.{3}/);
+      expect(entry.fields.子职特性, `${entry.ID} 子职特性`).not.toMatch(/…|\.{3}/);
+    }
+  });
+
   it.each([
     {
       id: "rhodes-island",
