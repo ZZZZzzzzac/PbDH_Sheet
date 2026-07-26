@@ -45,6 +45,7 @@ ADR 编号递增且永不复用或重排。旧 ADR 不重写成新方案；勘�
 | [0029](0029-format-adapter-script-runner.md) | Format Adapter Script Runner | Accepted |
 | [0030](0030-static-web-without-pwa-or-server-api.md) | Static Web Without PWA or Server API | Accepted；supersedes ADR-0001 |
 | [0031](0031-isolated-questionnaire-replays-resource-picker-selections.md) | Isolated Questionnaire Replays Resource Picker Selections | Accepted |
+| [0032](0032-release-versioned-preset-package-cache.md) | Release-versioned Preset System Package Cache | Accepted |
 
 ## 新 ADR 模板
 

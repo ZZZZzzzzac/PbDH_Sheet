@@ -5,6 +5,7 @@ const preset: PresetSystemPackage = {
   id: "preset-test",
   name: "预制测试包",
   version: "1.0.0",
+  releaseVersion: "2.0.1",
   directory: "preset test",
   files: ["manifest.json", "pages.json", "modules.json", "layouts/main.html", "assets/cards/hidden.webp"],
   loadingPresentation: { 标语: "正在铺开测试卷轴", 强调色: "#7c3aed" },
@@ -20,7 +21,7 @@ const packageFiles: Record<string, string> = {
 describe("preset System Package loader", () => {
   it("fetches catalog files and runs the shared VFS package pipeline", async () => {
     const fetchFile = vi.fn(async (url: string | URL | Request) => {
-      const path = decodeURIComponent(String(url).split("/preset%20test/")[1]);
+      const path = decodeURIComponent(String(url).split("/preset%20test/")[1].split("?")[0]);
       return new Response(packageFiles[path], { status: packageFiles[path] === undefined ? 404 : 200 });
     });
 
@@ -29,13 +30,13 @@ describe("preset System Package loader", () => {
     expect(result.ok, JSON.stringify(result.issues)).toBe(true);
     if (!result.ok) return;
     expect(result.package.manifest).toMatchObject({ ID: preset.id, 名称: preset.name, 版本: preset.version });
-    expect(fetchFile).toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/manifest.json");
-    expect(fetchFile).not.toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/assets/cards/hidden.webp");
+    expect(fetchFile).toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/manifest.json?v=2.0.1");
+    expect(fetchFile).not.toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/assets/cards/hidden.webp?v=2.0.1");
     expect(result.packageAssets).toEqual(expect.arrayContaining([
       expect.objectContaining({
         路径: "assets/cards/hidden.webp",
         类型: "image/webp",
-        staticUrl: "/pbdh/system-packages/preset%20test/assets/cards/hidden.webp",
+        staticUrl: "/pbdh/system-packages/preset%20test/assets/cards/hidden.webp?v=2.0.1",
       }),
     ]));
   });
@@ -43,7 +44,7 @@ describe("preset System Package loader", () => {
   it("reports monotonic metadata progress without counting lazy images", async () => {
     const progress: Array<{ completed: number; total: number }> = [];
     const fetchFile = vi.fn(async (url: string | URL | Request) => {
-      const path = decodeURIComponent(String(url).split("/preset%20test/")[1]);
+      const path = decodeURIComponent(String(url).split("/preset%20test/")[1].split("?")[0]);
       return new Response(packageFiles[path], { status: packageFiles[path] === undefined ? 404 : 200 });
     });
 

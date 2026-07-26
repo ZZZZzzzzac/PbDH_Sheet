@@ -38,6 +38,7 @@ function presetSystemPackagesPlugin(): Plugin {
             id: manifest.ID,
             name: manifest.名称,
             version: manifest.版本,
+            releaseVersion: packageJson.version,
             directory: entry.name,
             ...(manifest.加载展示 ? { loadingPresentation: manifest.加载展示 } : {}),
             files: walkPresetFiles(root).map((file) => relative(root, file).replaceAll("\\", "/")),

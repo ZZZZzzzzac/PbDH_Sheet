@@ -1,135 +1,12 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { StorageService } from "../storage/storageService";
 import { minimalSystemPackage } from "../test/fixtures";
+import { createMemoryStorage } from "../test/memoryStorage";
 import type { PackageDirectoryHandle } from "../loaders/packageVfs";
 import type { SystemPackage } from "../domain/systemPackage";
 import { loadResourceExtensionJson } from "../domain/resourceExtension";
 import { createCardInstance } from "../domain/cardEngine";
 import { configureRuntimeDependencies, resetRuntimeDependencies, useRuntimeStore } from "./runtimeStore";
-
-function createMemoryStorage(cachedPackage: unknown = null): StorageService & {
-  getCachedPackage: () => unknown;
-} {
-  let savedData: Awaited<ReturnType<StorageService["loadCurrentCharacterData"]>> = null;
-  const characterSaves = new Map<string, { id: string; packageId: string; name: string; updatedAt: string; data: NonNullable<typeof savedData> }>();
-  const activeSaveIds = new Map<string, string>();
-  const skinPreferences = new Map<string, string>();
-  let frameworkColorSchemePreference: "follow-skin" | "light" | "dark" = "follow-skin";
-  let savedPackage = cachedPackage;
-  let savedPackageAssets: Awaited<ReturnType<StorageService["loadCurrentPackageAssets"]>> = [];
-  const playerImages = new Map<string, Awaited<ReturnType<StorageService["loadPlayerImageBlob"]>>>();
-  const resourceExtensions = new Map<string, Awaited<ReturnType<StorageService["listResourceExtensions"]>>[number]>();
-  const resourceExtensionAssets = new Map<string, Awaited<ReturnType<StorageService["loadResourceExtensionAssets"]>>>();
-
-  return {
-    async loadCurrentSystemPackage() {
-      return savedPackage as typeof minimalSystemPackage | null;
-    },
-    async saveCurrentSystemPackage(systemPackage, packageAssets = []) {
-      savedPackage = systemPackage;
-      savedPackageAssets = packageAssets;
-    },
-    async clearCurrentSystemPackage() {
-      savedPackage = null;
-      savedPackageAssets = [];
-    },
-    async loadCurrentPackageAssets(packageId) {
-      const packageIdFromCache =
-        typeof savedPackage === "object" && savedPackage !== null && "manifest" in savedPackage
-          ? (savedPackage as typeof minimalSystemPackage).manifest.ID
-          : undefined;
-      return packageIdFromCache === packageId ? savedPackageAssets : [];
-    },
-    async loadCurrentCharacterData(packageId) {
-      const activeId = activeSaveIds.get(packageId);
-      return (activeId ? characterSaves.get(activeId)?.data : savedData?.systemPackage.id === packageId ? savedData : null) ?? null;
-    },
-    async saveCurrentCharacterData(data) {
-      savedData = data;
-      const activeId = activeSaveIds.get(data.systemPackage.id) ?? data.character.id;
-      characterSaves.set(activeId, {
-        id: activeId,
-        packageId: data.systemPackage.id,
-        name: "未命名角色",
-        updatedAt: data.updatedAt,
-        data: { ...data, character: { ...data.character, id: activeId } },
-      });
-      activeSaveIds.set(data.systemPackage.id, activeId);
-    },
-    async listCharacterSaves(packageId) {
-      return [...characterSaves.values()]
-        .filter((save) => save.packageId === packageId)
-        .map(({ data: _data, ...summary }) => summary);
-    },
-    async loadCharacterSave(packageId, saveId) {
-      const save = characterSaves.get(saveId);
-      return save?.packageId === packageId ? save.data : null;
-    },
-    async saveCharacterSave(record) {
-      characterSaves.set(record.id, record);
-      savedData = record.data;
-    },
-    async renameCharacterSave(packageId, saveId, name) {
-      const save = characterSaves.get(saveId);
-      if (save?.packageId === packageId) {
-        characterSaves.set(saveId, { ...save, name });
-      }
-    },
-    async deleteCharacterSave(packageId, saveId) {
-      const save = characterSaves.get(saveId);
-      if (save?.packageId === packageId) {
-        characterSaves.delete(saveId);
-      }
-    },
-    async loadActiveCharacterSaveId(packageId) {
-      return activeSaveIds.get(packageId) ?? null;
-    },
-    async setActiveCharacterSaveId(packageId, saveId) {
-      activeSaveIds.set(packageId, saveId);
-    },
-    loadSystemPackageSkinPreference(packageId) {
-      return skinPreferences.get(packageId) ?? null;
-    },
-    setSystemPackageSkinPreference(packageId, skinId) {
-      skinPreferences.set(packageId, skinId);
-    },
-    loadFrameworkColorSchemePreference() {
-      return frameworkColorSchemePreference;
-    },
-    setFrameworkColorSchemePreference(preference) {
-      frameworkColorSchemePreference = preference;
-    },
-    async savePlayerImageBlob(image) {
-      playerImages.set(image.id, image);
-    },
-    async loadPlayerImageBlob(imageId) {
-      return playerImages.get(imageId) ?? null;
-    },
-    async deletePlayerImageBlob(imageId) {
-      playerImages.delete(imageId);
-    },
-    async listResourceExtensions(targetSystemPackageId) {
-      return [...resourceExtensions.values()].filter((extension) => extension.目标系统包ID === targetSystemPackageId);
-    },
-    async loadResourceExtensionAssets(targetSystemPackageId) {
-      return [...resourceExtensionAssets.entries()].filter(([key]) => key.startsWith(`${targetSystemPackageId}:`)).flatMap(([, assets]) => assets);
-    },
-    async saveResourceExtension(extension, assets = []) {
-      const key = `${extension.目标系统包ID}:${extension.ID}`;
-      resourceExtensions.set(key, extension);
-      resourceExtensionAssets.set(key, assets);
-    },
-    async deleteResourceExtension(targetSystemPackageId, extensionId) {
-      const key = `${targetSystemPackageId}:${extensionId}`;
-      resourceExtensions.delete(key);
-      resourceExtensionAssets.delete(key);
-    },
-    getCachedPackage() {
-      return savedPackage;
-    },
-  };
-}
 
 describe("runtime store", () => {
   let memoryStorage: ReturnType<typeof createMemoryStorage>;
@@ -456,6 +333,7 @@ describe("runtime store", () => {
       id: "unavailable",
       name: "不可用预制包",
       version: "1",
+      releaseVersion: "2.0.1",
       directory: "unavailable",
       files: ["manifest.json"],
     });
@@ -483,6 +361,7 @@ describe("runtime store", () => {
       id: "themed-preset",
       name: "主题预制包",
       version: "1",
+      releaseVersion: "2.0.1",
       directory: "themed-preset",
       files: ["manifest.json", "pages.json", "modules.json", "layouts/main.html", "assets/card.webp"],
       loadingPresentation: { 标语: "罗德岛正在接驳", 强调色: "#63bfd1" },
@@ -580,6 +459,106 @@ describe("runtime store", () => {
 
     expect(useRuntimeStore.getState().currentPackage?.manifest.ID).toBe("demo-minimal");
     expect(useRuntimeStore.getState().characterData?.systemPackage.id).toBe("demo-minimal");
+  });
+
+  it("refreshes a preset cache created by an older Base release and preserves the Character Save", async () => {
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    const characterId = useRuntimeStore.getState().characterData?.character.id;
+    const preset = {
+      id: minimalSystemPackage.manifest.ID,
+      name: minimalSystemPackage.manifest.名称,
+      version: "0.2.0",
+      releaseVersion: "2.0.1",
+      directory: "demo-minimal",
+      files: ["manifest.json", "modules.json", "assets/card.webp"],
+    };
+    const refreshedPackage: SystemPackage = {
+      ...minimalSystemPackage,
+      manifest: { ...minimalSystemPackage.manifest, 版本: preset.version },
+    };
+    await memoryStorage.saveCurrentSystemPackage(
+      minimalSystemPackage,
+      [{ 路径: "assets/card.webp", 类型: "image/webp", staticUrl: "/pbdh/system-packages/demo-minimal/assets/card.webp?v=2.0.0" }],
+      { source: "preset", presetId: preset.id, releaseVersion: "2.0.0" },
+    );
+    const loadPreset = vi.fn(async () => ({ ok: true as const, package: refreshedPackage, issues: [], packageAssets: [] }));
+    configureRuntimeDependencies({ storage: memoryStorage, loadPresetSystemPackage: loadPreset });
+    useRuntimeStore.setState({ currentPackage: null, characterData: null, bootStatus: "idle" });
+
+    await useRuntimeStore.getState().initialize([preset]);
+
+    expect(loadPreset).toHaveBeenCalledOnce();
+    expect(useRuntimeStore.getState().currentPackage?.manifest.版本).toBe("0.2.0");
+    expect(useRuntimeStore.getState().characterData?.character.id).toBe(characterId);
+    expect(memoryStorage.getCacheMetadata()).toEqual({ source: "preset", presetId: preset.id, releaseVersion: "2.0.1" });
+  });
+
+  it("migrates a legacy shipped preset cache by recognizing its static asset URLs", async () => {
+    const legacyStorage = createMemoryStorage(minimalSystemPackage, {
+      packageAssets: [{ 路径: "assets/card.webp", 类型: "image/webp", staticUrl: "/pbdh/system-packages/demo-minimal/assets/card.webp" }],
+    });
+    const preset = {
+      id: minimalSystemPackage.manifest.ID,
+      name: minimalSystemPackage.manifest.名称,
+      version: minimalSystemPackage.manifest.版本,
+      releaseVersion: "2.0.1",
+      directory: "demo-minimal",
+      files: ["manifest.json", "assets/card.webp"],
+    };
+    const loadPreset = vi.fn(async () => ({ ok: true as const, package: minimalSystemPackage, issues: [], packageAssets: [] }));
+    configureRuntimeDependencies({ storage: legacyStorage, loadPresetSystemPackage: loadPreset });
+
+    await useRuntimeStore.getState().initialize([preset]);
+
+    expect(loadPreset).toHaveBeenCalledOnce();
+    expect(legacyStorage.getCacheMetadata()).toEqual({ source: "preset", presetId: preset.id, releaseVersion: "2.0.1" });
+  });
+
+  it("does not replace an imported package or a current-release preset cache", async () => {
+    const preset = {
+      id: minimalSystemPackage.manifest.ID,
+      name: minimalSystemPackage.manifest.名称,
+      version: minimalSystemPackage.manifest.版本,
+      releaseVersion: "2.0.1",
+      directory: "demo-minimal",
+      files: ["manifest.json"],
+    };
+    const loadPreset = vi.fn(async () => ({ ok: true as const, package: minimalSystemPackage, issues: [] }));
+
+    for (const cacheMetadata of [
+      { source: "imported" as const },
+      { source: "preset" as const, presetId: preset.id, releaseVersion: preset.releaseVersion },
+    ]) {
+      const protectedStorage = createMemoryStorage(minimalSystemPackage, { cacheMetadata });
+      configureRuntimeDependencies({ storage: protectedStorage, loadPresetSystemPackage: loadPreset });
+      await useRuntimeStore.getState().initialize([preset]);
+    }
+
+    expect(loadPreset).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the cached preset with a warning when its refresh fails", async () => {
+    const preset = {
+      id: minimalSystemPackage.manifest.ID,
+      name: minimalSystemPackage.manifest.名称,
+      version: minimalSystemPackage.manifest.版本,
+      releaseVersion: "2.0.1",
+      directory: "demo-minimal",
+      files: ["manifest.json"],
+    };
+    const staleStorage = createMemoryStorage(minimalSystemPackage, {
+      cacheMetadata: { source: "preset", presetId: preset.id, releaseVersion: "2.0.0" },
+    });
+    configureRuntimeDependencies({
+      storage: staleStorage,
+      loadPresetSystemPackage: async () => ({ ok: false, issues: [{ level: "fatal", code: "PRESET_PACKAGE_FETCH_FAILED", text: "offline" }] }),
+    });
+
+    await useRuntimeStore.getState().initialize([preset]);
+
+    expect(useRuntimeStore.getState().currentPackage?.manifest.ID).toBe(preset.id);
+    expect(useRuntimeStore.getState().bootStatus).toBe("ready");
+    expect(useRuntimeStore.getState().packageIssues).toContainEqual(expect.objectContaining({ level: "warning", code: "PRESET_CACHE_REFRESH_FAILED" }));
   });
 
   it("installs a multi-Library JSON Extension atomically without rewriting the cached System Package", async () => {

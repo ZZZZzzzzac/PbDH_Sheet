@@ -7,6 +7,7 @@ export interface PresetSystemPackage {
   id: string;
   name: string;
   version: string;
+  releaseVersion: string;
   directory: string;
   files: string[];
   loadingPresentation?: NonNullable<SystemPackage["manifest"]["加载展示"]>;
@@ -51,7 +52,7 @@ export async function loadPresetSystemPackage(
       if (index >= metadataPaths.length) return;
       const pathResult = { ok: true as const, path: metadataPaths[index] };
       try {
-        const response = await fetchFile(presetFileUrl(baseUrl, preset.directory, pathResult.path));
+        const response = await fetchFile(presetFileUrl(baseUrl, preset.directory, pathResult.path, preset.releaseVersion));
         if (!response.ok) {
           failure = presetFetchIssue(preset, pathResult.path, `HTTP ${response.status}`);
           return;
@@ -84,7 +85,7 @@ export async function loadPresetSystemPackage(
     packageAssets: imagePaths.map((path) => ({
       路径: path,
       类型: inferMimeType(path),
-      staticUrl: presetFileUrl(baseUrl, preset.directory, path),
+      staticUrl: presetFileUrl(baseUrl, preset.directory, path, preset.releaseVersion),
     })),
   };
 }
@@ -93,10 +94,10 @@ function isPresetImagePath(path: string): boolean {
   return path.startsWith("assets/") && /\.(?:png|jpe?g|webp|gif|avif|svg)$/iu.test(path);
 }
 
-function presetFileUrl(baseUrl: string, directory: string, path: string): string {
+function presetFileUrl(baseUrl: string, directory: string, path: string, releaseVersion: string): string {
   const root = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
   const encodedPath = [directory, ...path.split("/")].map(encodeURIComponent).join("/");
-  return `${root}system-packages/${encodedPath}`;
+  return `${root}system-packages/${encodedPath}?v=${encodeURIComponent(releaseVersion)}`;
 }
 
 function presetFetchIssue(preset: PresetSystemPackage, path: string, reason: string): PackageIssue {

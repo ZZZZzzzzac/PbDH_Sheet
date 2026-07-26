@@ -18,6 +18,9 @@ function createEmptyStorage(): StorageService {
     async loadCurrentSystemPackage() {
       return null;
     },
+    async loadCurrentSystemPackageCacheMetadata() {
+      return null;
+    },
     async saveCurrentSystemPackage() {},
     async clearCurrentSystemPackage() {},
     async loadCurrentPackageAssets() {

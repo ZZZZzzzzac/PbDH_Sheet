@@ -19,7 +19,12 @@ interface SystemPackageRecord {
   packageId: string;
   data?: SystemPackage;
   packageAssets?: RuntimePackageAsset[];
+  cacheMetadata?: SystemPackageCacheMetadata;
 }
+
+export type SystemPackageCacheMetadata =
+  | { source: "preset"; presetId: string; releaseVersion: string }
+  | { source: "imported" | "author-preview" };
 
 interface AuthorPreviewHandleRecord { id: string; handle: PackageDirectoryHandle }
 
@@ -44,7 +49,8 @@ export interface CharacterSaveRecord extends CharacterSaveSummary {
 
 export interface StorageService {
   loadCurrentSystemPackage(): Promise<SystemPackage | null>;
-  saveCurrentSystemPackage(systemPackage: SystemPackage, packageAssets?: RuntimePackageAsset[]): Promise<void>;
+  loadCurrentSystemPackageCacheMetadata(): Promise<SystemPackageCacheMetadata | null>;
+  saveCurrentSystemPackage(systemPackage: SystemPackage, packageAssets?: RuntimePackageAsset[], cacheMetadata?: SystemPackageCacheMetadata): Promise<void>;
   clearCurrentSystemPackage(): Promise<void>;
   loadCurrentPackageAssets(packageId: string): Promise<RuntimePackageAsset[]>;
   loadCurrentCharacterData(packageId: string): Promise<CharacterData | null>;
@@ -120,12 +126,22 @@ export const storageService: StorageService = {
     return record?.data ?? null;
   },
 
-  async saveCurrentSystemPackage(systemPackage: SystemPackage, packageAssets: RuntimePackageAsset[] = []): Promise<void> {
+  async loadCurrentSystemPackageCacheMetadata(): Promise<SystemPackageCacheMetadata | null> {
+    const record = await db.systemPackages.get(currentSystemPackageKey);
+    return record?.cacheMetadata ?? null;
+  },
+
+  async saveCurrentSystemPackage(
+    systemPackage: SystemPackage,
+    packageAssets: RuntimePackageAsset[] = [],
+    cacheMetadata: SystemPackageCacheMetadata = { source: "imported" },
+  ): Promise<void> {
     await db.systemPackages.put({
       id: currentSystemPackageKey,
       packageId: systemPackage.manifest.ID,
       data: systemPackage,
       packageAssets,
+      cacheMetadata,
     });
   },
 

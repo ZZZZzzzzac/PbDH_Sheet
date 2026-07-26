@@ -36,6 +36,40 @@ test("switches between built-in System Packages without upload", async ({ page }
   await expect(page.locator('[data-system-package-id="heart-of-hopefind"]')).toBeVisible();
 });
 
+test("refreshes a stale built-in System Package cache after a Base release update", async ({ page }) => {
+  await page.goto("/");
+  const questionnaireButton = page.getByRole("button", { name: /打开问卷/ });
+  await expect(questionnaireButton).toBeVisible();
+
+  await page.evaluate(async () => {
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("pbdh-sheet");
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    const transaction = database.transaction("systemPackages", "readwrite");
+    const store = transaction.objectStore("systemPackages");
+    const record = await new Promise<Record<string, unknown>>((resolve, reject) => {
+      const request = store.get("current-system-package");
+      request.onsuccess = () => resolve(request.result as Record<string, unknown>);
+      request.onerror = () => reject(request.error);
+    });
+    delete (record.data as Record<string, unknown>).questionnaireCharacterCreation;
+    record.cacheMetadata = { source: "preset", presetId: "daggerheart-core", releaseVersion: "1.9.0" };
+    store.put(record);
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+    database.close();
+  });
+
+  await page.reload();
+
+  await expect(questionnaireButton).toBeVisible();
+  await expect(page.getByText("已更新预制 System Package：Daggerheart 核心人物卡")).toBeVisible();
+});
+
 test("Daggerheart Resource Picker fills the adjacent Free Text height and centers its icon-label content", async ({ page }) => {
   await page.goto("/");
   await expectDefaultDaggerheart(page);

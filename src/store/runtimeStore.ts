@@ -96,7 +96,7 @@ interface RuntimeState {
   pendingCharacterFormatSelection: PendingCharacterFormatSelection | null;
   pendingQuestionnaireResult: PendingQuestionnaireResult | null;
   authorPreviewActive: boolean;
-  initialize: () => Promise<void>;
+  initialize: (presets?: PresetSystemPackage[]) => Promise<void>;
   uploadSystemPackageFromFile: (file: Blob) => Promise<void>;
   uploadSystemPackageFromDirectory: (files: Iterable<File>) => Promise<void>;
   switchToPresetSystemPackage: (preset: PresetSystemPackage) => Promise<void>;
@@ -202,7 +202,11 @@ async function loadPreviewPackage(handle: PackageDirectoryHandle, set: (partial:
   }
   let storageStatus: StorageStatus = "idle";
   try {
-    await runtimeDependencies.storage.saveCurrentSystemPackage(validation.package, validation.packageAssets ?? []);
+    await runtimeDependencies.storage.saveCurrentSystemPackage(
+      validation.package,
+      validation.packageAssets ?? [],
+      { source: "author-preview" },
+    );
   } catch (error) {
     console.error("saveCurrentSystemPackage failed", error);
     storageStatus = "error";
@@ -668,6 +672,16 @@ async function importCharacterSource(text: string, fileName: string, selectedAda
   await persistImportedCharacter(conversion.data, conversion.suggestedSaveName ?? "导入角色", `${adapter.名称} 已导入为新的 Character Save。`, set, get);
 }
 
+function isLegacyPresetCache(preset: PresetSystemPackage, packageAssets: RuntimePackageAsset[]): boolean {
+  if (packageAssets.length === 0) return false;
+  const presetPath = `/system-packages/${encodeURIComponent(preset.directory)}/`;
+  return packageAssets.every((asset) => typeof asset.staticUrl === "string" && asset.staticUrl.includes(presetPath));
+}
+
+function presetCacheMetadata(preset: PresetSystemPackage) {
+  return { source: "preset" as const, presetId: preset.id, releaseVersion: preset.releaseVersion };
+}
+
 export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   basePackage: null,
   currentPackage: null,
@@ -700,7 +714,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
 
   // ========== Package lifecycle & boot ==========
 
-  async initialize() {
+  async initialize(presets = []) {
     set({ bootStatus: "loading", packageLoadProgress: null, packageLoadingPresentation: null, packageIssues: [], importError: null, importNotice: null, frameworkColorSchemePreference: loadFrameworkColorSchemePreference() });
 
     try {
@@ -751,7 +765,51 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
         return;
       }
 
-      await loadPackageIntoState(cachedValidation.package, [], set);
+      const cachedAssets = await runtimeDependencies.storage.loadCurrentPackageAssets(cachedValidation.package.manifest.ID);
+      const cacheMetadata = await runtimeDependencies.storage.loadCurrentSystemPackageCacheMetadata();
+      const matchingPreset = presets.find((preset) => preset.id === cachedValidation.package.manifest.ID);
+      const presetIsStale = matchingPreset && (
+        (cacheMetadata?.source === "preset"
+          && cacheMetadata.presetId === matchingPreset.id
+          && cacheMetadata.releaseVersion !== matchingPreset.releaseVersion)
+        || (cacheMetadata === null && isLegacyPresetCache(matchingPreset, cachedAssets))
+      );
+      let fallbackIssues: PackageIssue[] = [];
+
+      if (matchingPreset && presetIsStale) {
+        set({
+          packageLoadProgress: { completed: 0, total: matchingPreset.files.filter((path) => !path.startsWith("assets/")).length },
+          packageLoadingPresentation: matchingPreset.loadingPresentation ?? null,
+        });
+        const refreshed = await runtimeDependencies.loadPresetSystemPackage(
+          matchingPreset,
+          (packageLoadProgress) => set({ packageLoadProgress }),
+        );
+        if (refreshed.ok) {
+          const loaded = await loadPackageIntoState(refreshed.package, refreshed.issues, set, "idle", refreshed.packageAssets ?? []);
+          if (!loaded) return;
+          try {
+            await runtimeDependencies.storage.saveCurrentSystemPackage(
+              refreshed.package,
+              refreshed.packageAssets ?? [],
+              presetCacheMetadata(matchingPreset),
+            );
+            set({ storageStatus: "saved", importNotice: `已更新预制 System Package：${matchingPreset.name}` });
+          } catch (error) {
+            console.error("saveCurrentSystemPackage (preset refresh) failed", error);
+            set({ storageStatus: "error", importNotice: "预制 System Package 已更新，但浏览器无法缓存最新版本。" });
+          }
+          return;
+        }
+        fallbackIssues = refreshed.issues.map((issue) => ({
+          ...issue,
+          level: "warning" as const,
+          code: "PRESET_CACHE_REFRESH_FAILED",
+          text: `无法刷新预制 System Package，已继续使用本地缓存：${issue.text}`,
+        }));
+      }
+
+      await loadPackageIntoState(cachedValidation.package, fallbackIssues, set, "idle", cachedAssets);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       activePackageAssetResolver?.revokeAll();
@@ -795,7 +853,11 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
 
     let packageCacheStatus: StorageStatus = "idle";
     try {
-      await runtimeDependencies.storage.saveCurrentSystemPackage(validation.package, validation.packageAssets ?? []);
+      await runtimeDependencies.storage.saveCurrentSystemPackage(
+        validation.package,
+        validation.packageAssets ?? [],
+        { source: "imported" },
+      );
     } catch (error) {
       console.error("saveCurrentSystemPackage (extension) failed", error);
       packageCacheStatus = "error";
@@ -813,7 +875,11 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     }
     let packageCacheStatus: StorageStatus = "idle";
     try {
-      await runtimeDependencies.storage.saveCurrentSystemPackage(validation.package, validation.packageAssets ?? []);
+      await runtimeDependencies.storage.saveCurrentSystemPackage(
+        validation.package,
+        validation.packageAssets ?? [],
+        { source: "imported" },
+      );
     } catch (error) {
       console.error("saveCurrentSystemPackage (upload) failed", error);
       packageCacheStatus = "error";
@@ -844,7 +910,11 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
     const loaded = await loadPackageIntoState(validation.package, validation.issues, set, "idle", validation.packageAssets ?? []);
     if (!loaded) return;
     try {
-      await runtimeDependencies.storage.saveCurrentSystemPackage(validation.package, validation.packageAssets ?? []);
+      await runtimeDependencies.storage.saveCurrentSystemPackage(
+        validation.package,
+        validation.packageAssets ?? [],
+        presetCacheMetadata(preset),
+      );
       set({ storageStatus: "saved" });
     } catch (error) {
       console.error("saveCurrentSystemPackage (preset) failed", error);

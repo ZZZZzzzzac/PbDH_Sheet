@@ -209,7 +209,7 @@ export default function App() {
   const tidyCardTable = useRuntimeStore((state) => state.tidyCardTable);
 
   useEffect(() => {
-    void initialize().then(async () => {
+    void initialize(presetSystemPackages).then(async () => {
       const state = useRuntimeStore.getState();
       if (!state.currentPackage && state.bootStatus === "ready" && defaultPresetSystemPackage) {
         await state.switchToPresetSystemPackage(defaultPresetSystemPackage);

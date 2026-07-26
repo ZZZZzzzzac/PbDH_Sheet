@@ -80,6 +80,7 @@ Zustand Runtime Store 持有当前包、角色、有效资源目录、派生状�
 ### `src/storage`: 浏览器持久化
 
 - IndexedDB 保存 System Package 缓存、Character Saves、Resource Extensions 及相关元数据；
+- System Package 缓存记录预制、本地导入或 Author Preview 来源；预制缓存同时记录创建它的 Base Framework 发布版本；
 - localStorage 只保存小型偏好或当前选择标识；
 - Player 图片以 data URL 集中嵌入 Character Data 的 `playerImages`，Sheet Value 只保存引用；
 - System Package assets 保持包内稳定引用，不复制进 Character Data。
@@ -127,6 +128,8 @@ flowchart LR
 ```
 
 包切换会重新建立资源、资产 URL 和派生状态；渲染组件不自行读取文件。
+
+启动恢复当前包时，Runtime Store 只会自动刷新来源为构建预置且 Base Framework 发布版本已变化的缓存。预制包文件请求携带发布版本作为 cache-busting 参数；本地导入与 Author Preview 包不会被发布升级覆盖。刷新失败时继续使用已校验的旧缓存并报告 warning。该过程保留 Character Saves、Resource Extensions 与偏好。
 
 ### 编辑与自动保存
 
