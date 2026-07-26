@@ -2,7 +2,7 @@ import { z } from "zod";
 import { generateId } from "../utils";
 import { normalizeResourceLibraries, type ResourceLibrary } from "./resourceLibrary";
 
-const resourceExtensionDocumentSchema = z.object({
+export const resourceExtensionDocumentSchema = z.object({
   ID: z.string().min(1).optional(),
   名称: z.string().min(1),
   版本: z.string().min(1),
@@ -10,7 +10,7 @@ const resourceExtensionDocumentSchema = z.object({
   resourceLibraries: z.array(z.object({
     ID: z.string().min(1).optional(),
     名称: z.string().min(1),
-    entries: z.array(z.unknown()),
+    entries: z.array(z.record(z.string(), z.unknown())),
   })).min(1),
 });
 

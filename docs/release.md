@@ -10,7 +10,7 @@
 - `Y`：任一正式内置 System Package 大改；递增后 `Z` 归零。
 - `Z`：兼容功能、修复、样式、文档、正式 System Package 小改，以及 demo 改动。
 
-正式内置 System Package 指 `public/system-packages/` 下除 `demo`、`demo-minimal` 外实际交付给 Player 的包。改动是否为“大改”由发布者判断，CI 不自动推断。
+正式内置 System Package 指 `public/system-packages/` 下实际交付给 Player 的包。最小模板位于 `templates/`，测试包位于 `tests/fixtures/`，都不参与发布。改动是否为“大改”由发布者判断，CI 不自动推断。
 
 对应命令：
 

@@ -2,6 +2,7 @@ import type { CharacterData } from "./characterData";
 import type { ResourceLibrary } from "./resourceLibrary";
 import type { ValidationCheck } from "./systemPackage";
 import { cloneAndFreeze, executePackageScriptInContext } from "./packageScript";
+import { validationScriptOutputSchema, type ValidationScriptInput } from "./packageScriptContract";
 
 export type ValidationIssueLevel = "error" | "warning" | "info";
 
@@ -24,29 +25,19 @@ export interface ValidationInput {
   checks: ValidationCheck[];
 }
 
-export interface ScriptInput {
-  characterData: CharacterData;
-  resourceLibraries: ResourceLibrary[];
-  cardState: CharacterData["cards"];
-  packageMetadata: ValidationInput["packageMetadata"];
-}
+export type ScriptInput = ValidationScriptInput;
 
 export type RawCheckResult =
   | { ok: true; value: unknown }
   | { ok: false; error: string };
-
-type ScriptIssueInput = Partial<Omit<ValidationIssue, "source">>;
-
-const validIssueLevels = new Set<ValidationIssueLevel>(["error", "warning", "info"]);
 
 export function executeScriptInContext(scriptContent: string, input: ScriptInput): Promise<unknown> {
   return executePackageScriptInContext(scriptContent, input, "Validation Script");
 }
 
 export function normalizeScriptIssues(source: string, rawIssues: unknown): ValidationIssue[] {
-  const issueInputs = Array.isArray(rawIssues) ? rawIssues : isRecord(rawIssues) && Array.isArray(rawIssues.issues) ? rawIssues.issues : undefined;
-
-  if (!issueInputs) {
+  const parsed = validationScriptOutputSchema.safeParse(rawIssues);
+  if (!parsed.success) {
     return [
       {
         level: "error",
@@ -57,30 +48,8 @@ export function normalizeScriptIssues(source: string, rawIssues: unknown): Valid
     ];
   }
 
-  const normalizedIssues: ValidationIssue[] = [];
-
-  issueInputs.forEach((issueInput, index) => {
-    if (!isRecord(issueInput)) {
-      normalizedIssues.push(invalidIssue(source, index));
-      return;
-    }
-
-    const candidate = issueInput as ScriptIssueInput;
-    if (!validIssueLevels.has(candidate.level as ValidationIssueLevel) || typeof candidate.text !== "string" || !candidate.text.trim()) {
-      normalizedIssues.push(invalidIssue(source, index));
-      return;
-    }
-
-    normalizedIssues.push({
-      level: candidate.level as ValidationIssueLevel,
-      text: candidate.text,
-      ...(typeof candidate.path === "string" ? { path: candidate.path } : {}),
-      ...(typeof candidate.code === "string" ? { code: candidate.code } : {}),
-      source,
-    });
-  });
-
-  return normalizedIssues;
+  const issueInputs = Array.isArray(parsed.data) ? parsed.data : parsed.data.issues;
+  return issueInputs.map((issue) => ({ ...issue, source }));
 }
 
 export function invalidIssue(source: string, index: number): ValidationIssue {
@@ -90,10 +59,6 @@ export function invalidIssue(source: string, index: number): ValidationIssue {
     text: `Validation Script 返回了无效 issue：${index}`,
     source,
   };
-}
-
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }
 
 /**

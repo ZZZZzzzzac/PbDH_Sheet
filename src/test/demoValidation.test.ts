@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { characterDataSchemaVersion, type CharacterData } from "../domain/characterData";
 import { normalizeResourceLibraries } from "../domain/resourceLibrary";
 import { runValidationChecksInProcess } from "../domain/validationScript";
-import classes from "../../docs/system-package/examples/demo/resources/classes.json";
-import subclasses from "../../docs/system-package/examples/demo/resources/subclasses.json";
-import demoCards from "../../docs/system-package/examples/demo/resources/demo_cards.json";
-import validationScript from "../../docs/system-package/examples/demo/checks/demo-rules.js?raw";
+import classes from "../../tests/fixtures/system-packages/kitchen-sink/resources/classes.json";
+import subclasses from "../../tests/fixtures/system-packages/kitchen-sink/resources/subclasses.json";
+import demoCards from "../../tests/fixtures/system-packages/kitchen-sink/resources/demo_cards.json";
+import validationScript from "../../tests/fixtures/system-packages/kitchen-sink/checks/demo-rules.js?raw";
 
 const resourceLibraries = normalizeResourceLibraries([
   { ID: "classes", 名称: "职业", 路径: "resources/classes.json", entries: classes },

@@ -8,7 +8,7 @@ import type { SystemPackage } from "./systemPackage";
 import { convertExternalResourceSource, detectResourceFormatAdapter } from "./resourceFormatAdapter";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "daggerheart-core");
-const migrationRoot = join(process.cwd(), "docs", "migration", "save");
+const fixtureRoot = join(process.cwd(), "tests", "fixtures", "format-adapters", "daggerheart-core");
 let daggerheartPackage: SystemPackage;
 
 describe("Resource Format Adapter scripts", () => {
@@ -20,7 +20,7 @@ describe("Resource Format Adapter scripts", () => {
   });
 
   it("converts the real 159-entry ZZZ fixture through the native extension contract", async () => {
-    const bytes = readFileSync(join(migrationRoot, "与龙同行战役框架卡牌包_zzz.json"));
+    const bytes = readFileSync(join(fixtureRoot, "与龙同行战役框架卡牌包_zzz.json"));
     const loaded = await loadResourceExtensionFromFile(new File([bytes], "与龙同行战役框架卡牌包_zzz.json", { type: "application/json" }), daggerheartPackage);
     expect(loaded.ok, loaded.ok ? undefined : JSON.stringify(loaded.issues, null, 2)).toBe(true);
     if (!loaded.ok) return;
@@ -84,7 +84,7 @@ describe("Resource Format Adapter scripts", () => {
   });
 
   it("converts the real DHCB fixture as text-only resources without retaining card images", async () => {
-    const bytes = readFileSync(join(migrationRoot, "与龙同行战役框架卡牌包.dhcb"));
+    const bytes = readFileSync(join(fixtureRoot, "与龙同行战役框架卡牌包.dhcb"));
     const loaded = await loadResourceExtensionFromFile(new File([bytes], "与龙同行战役框架卡牌包.dhcb", { type: "application/zip" }), daggerheartPackage);
     expect(loaded.ok, loaded.ok ? undefined : JSON.stringify(loaded.issues, null, 2)).toBe(true);
     if (!loaded.ok) return;

@@ -2,25 +2,18 @@ import { createEmptyCharacterData, createCharacterId, type CharacterData, type P
 import type { CardInstance } from "./cardEngine";
 import { carrierMatches, stableAdapterId, type CharacterFormatAdapter, type FormatCarrier, type FormatDiagnostic } from "./formatAdapter";
 import { executePackageScriptInWorker } from "./packageScriptRunner";
+import {
+  characterAdapterExportOutputSchema,
+  characterAdapterImportOutputSchema,
+  type CharacterAdapterExportOutput,
+  type CharacterAdapterImportOutput,
+} from "./packageScriptContract";
 import type { SystemPackage } from "./systemPackage";
 
 export interface ExternalCharacterSource { document: unknown; fileName: string; carrier: FormatCarrier }
 export interface CharacterConversionReport { convertedFields: number; skippedFields: number; matchedCards: number; skippedCards: number; convertedImages: number; skippedImages: number; diagnostics: FormatDiagnostic[] }
 export interface CharacterAdapterConversion { adapter: CharacterFormatAdapter; data: CharacterData; suggestedSaveName?: string; report: CharacterConversionReport }
 export interface CharacterAdapterExport { adapter: CharacterFormatAdapter; document: Record<string, unknown>; report: { exportedFields: number; skippedFields: number; exportedCards: number; skippedCards: number; exportedImages: number; skippedImages: number; diagnostics: FormatDiagnostic[] } }
-
-interface ImportCard { tableModuleId: string; state: string; libraryId: string; entryId: string }
-interface ImportImage { moduleId: string; name?: string; dataUrl: string }
-interface CharacterImportResult {
-  values: Record<string, unknown>;
-  cards?: ImportCard[];
-  images?: ImportImage[];
-  suggestedSaveName?: string;
-  skippedFields?: number;
-  skippedCards?: number;
-  skippedImages?: number;
-  diagnostics?: FormatDiagnostic[];
-}
 
 export async function exportExternalCharacterData(data: CharacterData, adapter: CharacterFormatAdapter, systemPackage: SystemPackage): Promise<CharacterAdapterExport | { error: FormatDiagnostic }> {
   if (!adapter.exportScriptContent) return { error: { level: "error", code: "CHARACTER_ADAPTER_EXPORT_UNSUPPORTED", text: `${adapter.名称} 不支持导出。` } };
@@ -30,16 +23,17 @@ export async function exportExternalCharacterData(data: CharacterData, adapter: 
   } catch (error) {
     return { error: scriptError("CHARACTER_ADAPTER_EXPORT_SCRIPT_ERROR", adapter, error) };
   }
-  if (!isRecord(raw) || !isRecord(raw.document)) return { error: invalidOutput(adapter, "导出脚本必须返回 document 对象。") };
-  const diagnostics = normalizeDiagnostics(raw.diagnostics);
-  if (!diagnostics) return { error: invalidOutput(adapter, "diagnostics 格式无效。") };
+  const parsed = characterAdapterExportOutputSchema.safeParse(raw);
+  if (!parsed.success) return { error: invalidOutput(adapter, parsed.error.issues[0]?.message ?? "导出结果无效。") };
+  const result: CharacterAdapterExportOutput = parsed.data;
+  const diagnostics = result.diagnostics ?? [];
   return {
     adapter,
-    document: raw.document,
+    document: result.document,
     report: {
-      exportedFields: nonNegativeInt(raw.exportedFields), skippedFields: nonNegativeInt(raw.skippedFields),
-      exportedCards: nonNegativeInt(raw.exportedCards), skippedCards: nonNegativeInt(raw.skippedCards),
-      exportedImages: nonNegativeInt(raw.exportedImages), skippedImages: nonNegativeInt(raw.skippedImages), diagnostics,
+      exportedFields: nonNegativeInt(result.exportedFields), skippedFields: nonNegativeInt(result.skippedFields),
+      exportedCards: nonNegativeInt(result.exportedCards), skippedCards: nonNegativeInt(result.skippedCards),
+      exportedImages: nonNegativeInt(result.exportedImages), skippedImages: nonNegativeInt(result.skippedImages), diagnostics,
     },
   };
 }
@@ -87,10 +81,10 @@ export async function convertExternalCharacterSource(source: ExternalCharacterSo
   } catch (error) {
     return { error: scriptError("CHARACTER_ADAPTER_IMPORT_SCRIPT_ERROR", adapter, error) };
   }
-  if (!isRecord(raw) || !isRecord(raw.values)) return { error: invalidOutput(adapter, "导入脚本必须返回 values 对象。") };
-  const result = raw as unknown as CharacterImportResult;
-  const diagnostics = normalizeDiagnostics(result.diagnostics);
-  if (!diagnostics || !optionalArray(result.cards) || !optionalArray(result.images)) return { error: invalidOutput(adapter, "cards、images 或 diagnostics 格式无效。") };
+  const parsed = characterAdapterImportOutputSchema.safeParse(raw);
+  if (!parsed.success) return { error: invalidOutput(adapter, parsed.error.issues[0]?.message ?? "导入结果无效。") };
+  const result: CharacterAdapterImportOutput = parsed.data;
+  const diagnostics = result.diagnostics ?? [];
 
   const data = createEmptyCharacterData(systemPackage, createCharacterId());
   const modules = new Map(systemPackage.modules.map((module) => [module.ID, module]));
@@ -109,7 +103,7 @@ export async function convertExternalCharacterSource(source: ExternalCharacterSo
   let convertedImages = 0;
   let skippedImages = nonNegativeInt(result.skippedImages);
   for (const [index, image] of (result.images ?? []).entries()) {
-    if (!isRecord(image) || typeof image.moduleId !== "string" || (image.name !== undefined && typeof image.name !== "string") || typeof image.dataUrl !== "string" || modules.get(image.moduleId)?.类型 !== "imageField") {
+    if (modules.get(image.moduleId)?.类型 !== "imageField") {
       return { error: invalidOutput(adapter, `images.${index} 无效。`) };
     }
     if (!isImageDataUrl(image.dataUrl)) {
@@ -128,7 +122,7 @@ export async function convertExternalCharacterSource(source: ExternalCharacterSo
   const seen = new Map<string, string>();
   let skippedCards = nonNegativeInt(result.skippedCards);
   for (const [index, card] of (result.cards ?? []).entries()) {
-    if (!isImportCard(card) || modules.get(card.tableModuleId)?.类型 !== "cardTable") return { error: invalidOutput(adapter, `cards.${index} 无效。`) };
+    if (modules.get(card.tableModuleId)?.类型 !== "cardTable") return { error: invalidOutput(adapter, `cards.${index} 无效。`) };
     const entry = systemPackage.resourceLibraries?.find((library) => library.ID === card.libraryId)?.entries.find((item) => item.ID === card.entryId);
     if (!entry) return { error: invalidOutput(adapter, `cards.${index} 引用了不存在的 Resource Entry ${card.libraryId}/${card.entryId}。`) };
     const key = `${card.tableModuleId}\u001f${card.libraryId}\u001f${card.entryId}`;
@@ -162,7 +156,6 @@ export function extractEmbeddedJson(text: string, startMarker: string, endMarker
 function scriptError(code: string, adapter: CharacterFormatAdapter, error: unknown): FormatDiagnostic { return { level: "error", code, text: `${adapter.名称} 执行失败：${error instanceof Error ? error.message : String(error)}` }; }
 function invalidOutput(adapter: CharacterFormatAdapter, detail: string): FormatDiagnostic { return { level: "error", code: "CHARACTER_ADAPTER_SCRIPT_OUTPUT_INVALID", text: `${adapter.名称} 输出无效：${detail}` }; }
 function nonNegativeInt(value: unknown): number { return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : 0; }
-function optionalArray(value: unknown): boolean { return value === undefined || Array.isArray(value); }
 function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
 function isSheetValue(value: unknown): value is SheetValue { return typeof value === "string" || (isRecord(value) && ((typeof value.current === "number" && (typeof value.max === "number" || value.max === null)) || (value.kind === "player-image" && typeof value.imageId === "string") || Object.values(value).every((item) => typeof item === "boolean"))); }
 function valueMatchesModule(value: SheetValue, module: SystemPackage["modules"][number]): boolean {
@@ -180,7 +173,5 @@ function valueMatchesModule(value: SheetValue, module: SystemPackage["modules"][
   }
   return false;
 }
-function isImportCard(value: unknown): value is ImportCard { return isRecord(value) && typeof value.tableModuleId === "string" && typeof value.state === "string" && typeof value.libraryId === "string" && typeof value.entryId === "string"; }
 function isImageDataUrl(value: string): boolean { return /^data:image\/(?:png|jpe?g|webp|gif|avif);base64,[a-z0-9+/=\s]+$/iu.test(value); }
-function normalizeDiagnostics(value: unknown): FormatDiagnostic[] | undefined { if (value === undefined) return []; if (!Array.isArray(value)) return undefined; const result: FormatDiagnostic[] = []; for (const item of value) { if (!isRecord(item) || (item.level !== "error" && item.level !== "warning") || typeof item.code !== "string" || typeof item.text !== "string" || (item.path !== undefined && typeof item.path !== "string")) return undefined; result.push({ level: item.level, code: item.code, text: item.text, ...(typeof item.path === "string" ? { path: item.path } : {}) }); } return result; }
 function looksLikeHtml(text: string): boolean { return /<!doctype\s+html|<html\b/iu.test(text); }

@@ -3,6 +3,8 @@
 状态：Accepted  
 日期：2026-07-07
 
+修订：[ADR-0028](0028-embedded-player-images-in-character-data.md) 为 Player Image 增加了新的结构化值与顶层图片集合；当前联合类型以源码 schema 为准。
+
 ## 背景
 
 PRD 和 CONTEXT 把 Sheet Value 定义为“默认字符串，如同线下纸笔每个格子里写的是字符”，基础框架不理解“等级”“费用”“伤害”的游戏语义。第一版 Character Data 的 `values` 曾因此被定为 `Record<string, string>`，所有模块状态都 stringify 成字符串存储。

@@ -3,6 +3,8 @@
 状态：Accepted
 日期：2026-07-15
 
+修订：本文末尾的 2026-07-15 追加决定引入最小 Derived Source Snapshot，只恢复纯派生结果；“不通用重放有副作用事件”的核心决定不变。
+
 ## 背景
 
 Resource Picker 的 `resourceSelected` 是临时事件，Character Data 默认只保存 Dependency Engine 最终写入的 Sheet Values，不保存选择来源。依赖产生的默认筛选、可见性和只读展示属于内存派生状态，因此刷新页面或切换 Character Save 后会被清空；例如选择职业后产生的领域卡默认筛选不会自动恢复。

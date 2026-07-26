@@ -1,53 +1,47 @@
-# System Package 文档中心
+# System Package 文档
 
-System Package 是 Author 提供给 Base Framework 的资料包。它以页面、Sheet Modules、Resource Libraries、Dependency Logic、Character Creation Guide、样式与 Assets 等声明式数据为主，并提供受限的 Validation Script 与 Format Adapter Script seam；它不是通用插件，不能修改框架 UI、存储或实时 Character Data。
+这里是 PbDH System Package Interface 的唯一文档入口。作者、AI 与程序员使用同一套合同，不再维护角色专属副本。
 
-当前包格式版本：`0.2.0`。实现、Accepted ADR 与本目录共同描述当前契约。
+当前框架合同版本：`schemaVersion: 0.2.0`。每个主题文件前半解释功能、语义和边界，分隔线后是由运行时 Zod Schema 与约束注册表生成的字段、格式和例子；作者、AI 与程序员都只读这一份主题文档。CI 会阻止生成区块落后于实现。
 
-## 按读者选择路线
+## 文档格式
 
-### 非程序员 Author
+```text
+# 主题
 
-从 [快速开始](author-guide/01-quick-start.md) 开始，依次阅读：
+功能、语义、边界和作者建议（手写）
 
-1. [文件结构](author-guide/02-file-structure.md)
-2. [Pages 与布局](author-guide/03-pages-and-layout.md)
-3. [Sheet Modules](author-guide/04-sheet-modules.md)
-4. [Resource Libraries](author-guide/05-resource-libraries.md)
-5. [Dependency Logic](author-guide/06-dependency-logic.md)
-6. [Cards](author-guide/07-cards.md)
-7. [Character Creation Guide](author-guide/08-character-creation-guide.md)
-8. [Validation Checks](author-guide/09-validation-checks.md)
-9. [Author Preview](author-guide/10-author-preview.md)
-10. [调试](author-guide/11-debugging.md)
-11. [制作 Resource Extension](author-guide/12-resource-extensions.md)
-12. [制作 System Package Skin](author-guide/13-system-package-skins.md)
+---
 
-### 程序员与 AI
+精确字段、枚举、默认值、格式、语义约束和例子（自动生成）
+```
 
-从 [Package 管线](reference/package-pipeline.md) 和 [manifest 参考](reference/manifest.md) 开始，再按需要查询 [Reference 索引](reference/README.md)。生成包前阅读 [AI checklist](reference/ai-checklist.md)。
+Package Script 的 `.d.ts` 作为相关主题的类型附件，由生成区块直接链接；它不是另一套给 AI 的文档。字段表本身由 Zod Schema 在内存中生成，不另行提交一批 JSON Schema 文件。
 
-## 示例
+## 从哪里开始
 
-- `docs/system-package/examples/demo-minimal`：最小可运行包。
-- `docs/system-package/examples/demo`：九种 Sheet Modules、Pages、Shell、Resources、Dependencies、Cards、Guide、Checks 的完整组合；覆盖矩阵见包内 `README.md`。
-- `public/system-packages/`：随应用发布的预制 System Packages；工具栏会在构建时自动发现并列出这里的每个包，Player 无需上传即可切换。
-- `tests/fixtures/system-packages/errors`：故意损坏的测试包源目录和预期错误码，不随生产构建发布。
-- `public/resource-extensions/the-void-20260710.json`：向一个 System Package 贡献多个 Libraries 的完整 Resource Extension。
-- [最小包讲解](examples/minimal-package.md)
-- [完整包讲解](examples/complete-package.md)
-- [常见错误](examples/common-errors.md)
-- [AI 协作提示词模板](examples/ai-prompt-template.md)
-- [Skin starter](examples/skin-starter.md)
+- 第一次制作：复制 [`templates/system-package-minimal/`](../../templates/system-package-minimal/)，然后阅读[快速开始](getting-started.md)。
+- 持续制作、预览与排错：阅读[制作工作流](authoring-workflow.md)。
+- 修改、生成或诊断包：先阅读下方相关合同，再运行 Author Preview 与 Validator。
+- 查完整实现：看 [`public/system-packages/`](../../public/system-packages/) 中实际随产品发布的包。
+- 查广覆盖测试数据：看 [`tests/fixtures/system-packages/kitchen-sink/`](../../tests/fixtures/system-packages/kitchen-sink/)；它不是推荐起点。
 
-## 当前与废弃接口
+## 合同目录
 
-当前布局是 HTML Layout Template，使用 `<pb-module>`；Flow Layout 已废弃。资源选择入口是 `resourcePicker`，不是 `selectionText`。Guide 是线性聚光灯说明，不执行规则动作。System Package Validator 只检查框架结构契约；游戏规则由 Validation Checks 报告。
+| 主题 | 权威文档 |
+| --- | --- |
+| 包入口、加载管线、文件与资产 | [Package 与资产](contract/package-and-assets.md) |
+| Pages、HTML Layout、Shell、打印与 Skins | [页面、布局与皮肤](contract/pages-layout-skins.md) |
+| 九类 Sheet Module 与 Character Data | [模块与角色数据](contract/modules-character-data.md) |
+| Resource Libraries、Cards、Composer 与扩展资源 | [资源与卡牌](contract/resources-cards.md) |
+| 触发、条件与动作 | [依赖逻辑](contract/dependencies.md) |
+| Guide、Validation Script 与诊断 | [引导与验证](contract/guides-validation.md) |
+| Resource/Character Format Adapter | [扩展与适配器](contract/extensions-adapters.md) |
 
-## System Package 测试边界
+## 三种可执行材料的边界
 
-具体 System Package 是 Author Data。包级自动测试只负责发现 Loader、schema、引用、路径、安全规则或 Validator 能实际报告的错误；不得固定 Author 可随时调整的内容，例如文案、模块/字段数量、默认值、placeholder、页面区域顺序、尺寸、`行数`、CSS 数值或具体布局选择。
+- `templates/system-package-minimal/`：可复制的最小骨架，只展示必需文件与最小布局。
+- `public/system-packages/`：真实发布实现，可学习组合方式，但不是接口定义。
+- `tests/fixtures/system-packages/`：测试覆盖数据，可能刻意复杂或无效，不应直接作为新包起点。
 
-具体包保留“通过正常 package pipeline 加载且无 fatal/error”的冒烟测试。Dependency Engine、Card、Validation、Renderer 等框架行为使用通用 fixtures 测试，不借某个具体 System Package 规定 Author 应该怎么写。
-
-架构依据：[System Package Contract](../adr/0002-system-package-contract.md)、[Validator](../adr/0003-system-package-validator.md)、[Dependency Engine](../adr/0004-dependency-engine-boundary.md)、[HTML Layout](../adr/0014-html-layout-template-primary-layout.md)、[Guide](../adr/0015-character-creation-guide-as-spotlight-tour.md)。
+不要使用已移除的 `selectionText`、Flow Layout 或旧 Author/AI 专属文档。主题文件的手写部分与自动生成部分共同构成合同。

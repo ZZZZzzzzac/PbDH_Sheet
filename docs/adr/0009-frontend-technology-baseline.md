@@ -3,6 +3,8 @@
 状态：Accepted
 日期：2026-07-06
 
+修订：本文的 React、TypeScript、Vite、Zustand 与 Dexie 技术基线继续有效；“离线优先/PWA”前提由 [ADR-0030](0030-static-web-without-pwa-or-server-api.md) 替代。
+
 ## 背景
 
 PbDH Sheet Framework 是复杂的前端离线优先应用。它需要根据 System Package 动态渲染 Sheet Modules，管理 IndexedDB、Web Worker、PWA、zip 导入、导出打印和大量跨模块状态。项目目标是可维护、可扩展，并适合 AI 辅助实现。

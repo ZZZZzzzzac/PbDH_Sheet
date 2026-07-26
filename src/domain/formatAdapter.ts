@@ -9,7 +9,7 @@ export const safeRelativeFilePathSchema = z.string().min(1).refine(
   { message: "必须是安全的包内相对路径。" },
 );
 
-const detectionRuleSchema = z.object({
+export const formatDetectionRuleSchema = z.object({
   路径: safePathSchema,
   存在: z.boolean().optional(),
   等于: z.union([z.string(), z.number(), z.boolean(), z.null()]).optional(),
@@ -19,7 +19,7 @@ export const jsonCarrierSchema = z.object({
   类型: z.literal("json"),
   根类型: z.enum(["object", "array"]).optional(),
   文件后缀: z.string().min(1).optional(),
-  检测: z.array(detectionRuleSchema).min(1),
+  检测: z.array(formatDetectionRuleSchema).min(1),
 });
 
 export const embeddedJsonCarrierSchema = z.object({
@@ -28,31 +28,41 @@ export const embeddedJsonCarrierSchema = z.object({
   开始标记: z.string().min(1),
   结束标记: z.string().min(1),
   结束标记包含字符数: z.number().int().min(0).optional(),
-  检测: z.array(detectionRuleSchema).min(1),
+  检测: z.array(formatDetectionRuleSchema).min(1),
 });
 
 export const zipCarrierSchema = z.object({
   类型: z.literal("zip"),
   文件后缀: z.string().min(1).optional(),
   JSON成员: z.array(z.object({ 路径: safeRelativeFilePathSchema, 键: z.string().min(1) })).min(1),
-  检测: z.array(detectionRuleSchema).min(1),
+  检测: z.array(formatDetectionRuleSchema).min(1),
 });
 
 export const formatCarrierSchema = z.discriminatedUnion("类型", [jsonCarrierSchema, embeddedJsonCarrierSchema, zipCarrierSchema]);
 export type FormatCarrier = z.infer<typeof formatCarrierSchema>;
 
-const adapterBaseSchema = z.object({
+export const adapterBaseSourceSchema = z.object({
   ID: z.string().min(1),
   名称: z.string().min(1),
   载体: z.array(formatCarrierSchema).min(1),
   导入脚本: safeRelativeFilePathSchema,
+});
+
+export const resourceFormatAdapterSourceSchema = adapterBaseSourceSchema;
+
+export const characterFormatAdapterSourceSchema = adapterBaseSourceSchema.extend({
+  导出脚本: safeRelativeFilePathSchema.optional(),
+  导出文件后缀: z.literal(".json").default(".json"),
+});
+
+const adapterRuntimeBaseSchema = adapterBaseSourceSchema.extend({
   importScriptContent: z.string().min(1),
 });
 
-export const resourceFormatAdapterSchema = adapterBaseSchema;
+export const resourceFormatAdapterSchema = adapterRuntimeBaseSchema;
 export type ResourceFormatAdapter = z.infer<typeof resourceFormatAdapterSchema>;
 
-export const characterFormatAdapterSchema = adapterBaseSchema.extend({
+export const characterFormatAdapterSchema = adapterRuntimeBaseSchema.extend({
   导出脚本: safeRelativeFilePathSchema.optional(),
   exportScriptContent: z.string().min(1).optional(),
   导出文件后缀: z.literal(".json").default(".json"),
@@ -63,12 +73,13 @@ export const characterFormatAdapterSchema = adapterBaseSchema.extend({
 });
 export type CharacterFormatAdapter = z.infer<typeof characterFormatAdapterSchema>;
 
-export interface FormatDiagnostic {
-  level: "error" | "warning";
-  code: string;
-  text: string;
-  path?: string;
-}
+export const formatDiagnosticSchema = z.object({
+  level: z.enum(["error", "warning"]),
+  code: z.string(),
+  text: z.string(),
+  path: z.string().optional(),
+});
+export type FormatDiagnostic = z.infer<typeof formatDiagnosticSchema>;
 
 export interface ParsedFormatSource {
   document: unknown;

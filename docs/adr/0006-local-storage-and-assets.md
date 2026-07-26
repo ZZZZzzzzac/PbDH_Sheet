@@ -1,7 +1,9 @@
 # ADR-0006: Local Storage And Assets
 
-状态：Superseded by ADR-0028
+状态：Accepted
 日期：2026-07-06
+
+修订：玩家图片分离存储条款由 [ADR-0028](0028-embedded-player-images-in-character-data.md) 替代；PWA 应用壳条款由 [ADR-0030](0030-static-web-without-pwa-or-server-api.md) 替代。其余本地存储与 System Package asset 分层决策继续有效。
 
 ## 背景
 

@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { resourceLibraryReferenceSchema, type ResourceLibraryReference } from "../domain/resourceLibrary";
+import type { ResourceLibraryReference } from "../domain/resourceLibrary";
 import { validateSystemPackage, type PackageSourceMap, type PackageValidationResult } from "../domain/systemPackage";
+import { packagePagesSourceSchema, systemPackageManifestSourceSchema } from "../domain/systemPackageAuthorSchema";
 import type { RuntimePackageAsset } from "./assetResolver";
 import { createVirtualFileSystemFromDirectoryFiles, createVirtualFileSystemFromDirectoryHandle, createVirtualFileSystemFromZipFile, type PackageDirectoryHandle, type PackageVirtualFileSystem } from "./packageVfs";
 import { inferMimeType, isPlainObject } from "../utils";
@@ -10,59 +11,8 @@ export type LoadedPackageAsset = RuntimePackageAsset;
 
 export type PackageLoadResult = PackageValidationResult & { packageAssets?: LoadedPackageAsset[] };
 
-const packageManifestSchema = z.object({
-  ID: z.string().min(1),
-  名称: z.string().min(1),
-  版本: z.string().min(1),
-  schemaVersion: z.string().min(1),
-  加载展示: z.object({
-    标语: z.string().trim().min(1).max(80),
-    强调色: z.string().regex(/^#[0-9a-f]{6}$/i),
-  }).optional(),
-  pages: z.string().min(1),
-  modules: z.string().min(1),
-  shell: z.object({ html: z.string().min(1), css: z.string().min(1).optional() }).optional(),
-  skins: z.array(z.object({
-    ID: z.string().min(1),
-    名称: z.string().min(1),
-    css: z.string().min(1),
-    推荐框架配色: z.enum(["light", "dark"]),
-    layoutOverrides: z.object({
-      shell: z.object({ html: z.string().min(1) }).optional(),
-      pages: z.array(z.object({ ID: z.string().min(1), html: z.string().min(1) })).min(1).optional(),
-    }).optional(),
-  })).min(1).optional(),
-  defaultSkin: z.string().min(1).optional(),
-  dependencies: z.string().min(1).optional(),
-  characterCreationGuide: z.string().min(1).optional(),
-  resourceFormatAdapters: z.string().min(1).optional(),
-  characterFormatAdapters: z.string().min(1).optional(),
-  assets: z.never().optional(),
-  resourceLibraries: z.array(resourceLibraryReferenceSchema).optional(),
-  validationChecks: z
-    .array(
-      z.object({
-        ID: z.string().min(1),
-        脚本: z.string().min(1),
-      }),
-    )
-    .optional(),
-});
-
-const pageLayoutReferenceSchema = z.array(
-  z
-    .object({
-      ID: z.string().optional(),
-      layout: z
-        .object({
-          类型: z.literal("htmlTemplate"),
-          html: z.string().min(1),
-          css: z.string().min(1).optional(),
-        })
-        .optional(),
-    })
-    .passthrough(),
-);
+const packageManifestSchema = systemPackageManifestSourceSchema;
+const pageLayoutReferenceSchema = packagePagesSourceSchema;
 
 export async function loadSystemPackageFromZipFile(file: Blob): Promise<PackageLoadResult> {
   const vfsResult = await createVirtualFileSystemFromZipFile(file);
@@ -104,7 +54,7 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
       ok: false,
       issues: manifest.error.issues.map((issue) => ({
         level: "fatal",
-        code: "MANIFEST_SHAPE_INVALID",
+        code: issue.message === "必须是安全的包内相对路径。" ? "PACKAGE_PATH_UNSAFE" : "MANIFEST_SHAPE_INVALID",
         text: issue.message,
         path: [packageManifestPath, ...issue.path].join("."),
       })),

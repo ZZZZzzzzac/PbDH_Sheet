@@ -1,6 +1,6 @@
 # daggerheart-core Skin contract
 
-Start with [System Package Skin Author Guide](../../../docs/system-package/author-guide/13-system-package-skins.md) and [Skin Reference](../../../docs/system-package/reference/skins.md).
+Start with the canonical [Pages, Layout and Skins contract](../../../docs/system-package/contract/pages-layout-skins.md).
 
 ## Package-specific boundaries
 

@@ -44,14 +44,14 @@ export interface CharacterData {
   updatedAt: string;
 }
 
-const sheetValueSchema = z.union([
+export const sheetValueSchema = z.union([
   z.string(),
   z.record(z.string(), z.boolean()),
   z.object({ current: z.number(), max: z.number().nullable() }),
   z.object({ kind: z.literal("player-image"), imageId: z.string().min(1) }),
 ]);
 
-const characterDataSchema = z.object({
+export const characterDataSchema = z.object({
   kind: z.literal("pbdh-character-data"),
   schemaVersion: z.literal(characterDataSchemaVersion),
   systemPackage: z.object({

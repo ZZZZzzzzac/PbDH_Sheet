@@ -7,7 +7,7 @@ import type { SystemPackage } from "./systemPackage";
 import { convertExternalCharacterSource, exportExternalCharacterData, parseAndDetectCharacterSource } from "./characterFormatAdapter";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "daggerheart-core");
-const migrationRoot = join(process.cwd(), "docs", "migration", "save");
+const fixtureRoot = join(process.cwd(), "tests", "fixtures", "format-adapters", "daggerheart-core");
 let daggerheartPackage: SystemPackage;
 
 describe("Character Format Adapter scripts", () => {
@@ -19,7 +19,7 @@ describe("Character Format Adapter scripts", () => {
   });
 
   it("imports the real ZZZ fixture, tri-state resources, equipment, cards, and diagnostics", async () => {
-    const text = readFileSync(join(migrationRoot, "啄页_匕首之心人物卡_zzz.json"), "utf8");
+    const text = readFileSync(join(fixtureRoot, "啄页_匕首之心人物卡_zzz.json"), "utf8");
     const sourceDocument = JSON.parse(text) as Record<string, unknown>;
     const detection = parseAndDetectCharacterSource(text, "啄页_匕首之心人物卡_zzz.json", daggerheartPackage.characterFormatAdapters ?? []);
     expect(detection.status).toBe("match");
@@ -55,7 +55,7 @@ describe("Character Format Adapter scripts", () => {
   });
 
   it("treats ZZZ advancement state 2 as unselected and tri-state slot 2 as unavailable", async () => {
-    const document = JSON.parse(readFileSync(join(migrationRoot, "啄页_匕首之心人物卡_zzz.json"), "utf8")) as Record<string, unknown>;
+    const document = JSON.parse(readFileSync(join(fixtureRoot, "啄页_匕首之心人物卡_zzz.json"), "utf8")) as Record<string, unknown>;
     document.LevelupT3_F1 = "2";
     document.LevelupT3_H1 = "1";
     document.LevelupT3_I1 = "1";
@@ -68,8 +68,8 @@ describe("Character Format Adapter scripts", () => {
   });
 
   it("imports dhSheet profession features, inventory, motivation, and composed equipment from JSON and HTML", async () => {
-    const jsonText = readFileSync(join(migrationRoot, "布罗克-战士-仙灵-龟人-荒野之民-LV1.json"), "utf8");
-    const htmlText = readFileSync(join(migrationRoot, "布罗克-战士-仙灵-龟人-荒野之民-LV1.html"), "utf8");
+    const jsonText = readFileSync(join(fixtureRoot, "布罗克-战士-仙灵-龟人-荒野之民-LV1.json"), "utf8");
+    const htmlText = readFileSync(join(fixtureRoot, "布罗克-战士-仙灵-龟人-荒野之民-LV1.html"), "utf8");
     const document = JSON.parse(jsonText) as Record<string, unknown>;
     const profession = (document.cards as Array<Record<string, unknown>>).find((card) => card.type === "profession" && card.id === document.profession);
     expect(profession).toBeTruthy();
@@ -107,7 +107,7 @@ describe("Character Format Adapter scripts", () => {
   });
 
   it("exports a dhSheet-compatible document that can be imported again", async () => {
-    const text = readFileSync(join(migrationRoot, "布罗克-战士-仙灵-龟人-荒野之民-LV1.json"), "utf8");
+    const text = readFileSync(join(fixtureRoot, "布罗克-战士-仙灵-龟人-荒野之民-LV1.json"), "utf8");
     const sourceDocument = JSON.parse(text) as Record<string, unknown>;
     const detection = parseAndDetectCharacterSource(text, "布罗克.json", daggerheartPackage.characterFormatAdapters ?? []);
     if (detection.status !== "match") throw new Error("fixture not detected");

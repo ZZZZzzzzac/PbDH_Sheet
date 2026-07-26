@@ -2,7 +2,7 @@
 
 ## Skin task default scope
 
-When the task is to create or beautify a Skin, read `SKINNING.md` and `docs/system-package/reference/skins.md` first.
+When the task is to create or beautify a Skin, read `SKINNING.md` and `docs/system-package/contract/pages-layout-skins.md` first.
 
 Allowed writes by default:
 

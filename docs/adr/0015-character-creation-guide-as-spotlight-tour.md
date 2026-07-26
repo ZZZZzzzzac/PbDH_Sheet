@@ -3,6 +3,8 @@
 状态：Accepted
 日期：2026-07-10
 
+修订：[ADR-0021](0021-guide-layout-region-target.md) 增加 Layout Region target；[ADR-0022](0022-guide-long-form-instructions-and-cross-page-targets.md) 增加 Restricted Markdown 长说明与跨页目标。
+
 ## 背景
 
 ADR-0013 将 Character Creation Guide 设计成可维护完成条件并请求资源选择、自动填充、卡牌操作和最终检查的流程编排器。这与 Dependency Engine、Card Engine、Validation Runner 和 Sheet Module action 的职责重叠，也使 Guide Runner 逐渐接近第二套规则与交互系统。

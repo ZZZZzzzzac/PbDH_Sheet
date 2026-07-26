@@ -23,12 +23,12 @@ import {
 
 export const frameworkSchemaVersion = "0.2.0";
 
-const loadingPresentationSchema = z.object({
+export const loadingPresentationSchema = z.object({
   标语: z.string().trim().min(1).max(80),
   强调色: z.string().regex(/^#[0-9a-f]{6}$/i, "加载强调色必须是六位十六进制颜色，例如 #63bfd1。"),
 });
 
-const manifestSchema = z.object({
+export const systemPackageRuntimeManifestSchema = z.object({
   ID: z.string().min(1),
   名称: z.string().min(1),
   版本: z.string().min(1),
@@ -38,14 +38,14 @@ const manifestSchema = z.object({
 
 const sheetModuleBaseSchema = z.object({
   ID: z.string().min(1),
-  默认隐藏: z.boolean().optional(),
+  默认隐藏: z.boolean().optional().meta({ default: false }),
 });
 
-const freeTextModuleSchema = sheetModuleBaseSchema.extend({
+export const freeTextModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("freeText"),
   标签: z.string(),
-  默认值: z.string().optional(),
-  隐藏标签: z.boolean().optional(),
+  默认值: z.string().optional().meta({ default: "" }),
+  隐藏标签: z.boolean().optional().meta({ default: false }),
   占位文本: z.string().optional(),
   选项: z.array(z.string().refine((value) => value.trim().length > 0, {
     message: "Free Text 下拉选项不能为空白字符串。",
@@ -62,16 +62,16 @@ const freeTextModuleSchema = sheetModuleBaseSchema.extend({
   }
 });
 
-const longTextModuleSchema = sheetModuleBaseSchema.extend({
+export const longTextModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("longText"),
   标签: z.string(),
-  默认值: z.string().optional(),
-  行数: z.number().int().min(2).max(20).optional(),
-  隐藏标签: z.boolean().optional(),
+  默认值: z.string().optional().meta({ default: "" }),
+  行数: z.number().int().min(2).max(20).optional().meta({ default: 4 }),
+  隐藏标签: z.boolean().optional().meta({ default: false }),
   占位文本: z.string().optional(),
 });
 
-const checkboxResourceModuleSchema = sheetModuleBaseSchema.extend({
+export const checkboxResourceModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("checkboxResource"),
   标签: z.string().min(1),
   选项: z
@@ -79,7 +79,7 @@ const checkboxResourceModuleSchema = sheetModuleBaseSchema.extend({
       z.object({
         ID: z.string().min(1),
         标签: z.string().min(1),
-        默认选中: z.boolean().optional(),
+        默认选中: z.boolean().optional().meta({ default: false }),
         分组: z.string().min(1).optional(),
       }),
     )
@@ -100,20 +100,20 @@ const imageMarkerDescriptorSchema = z.object({
   }),
 });
 
-const markerDescriptorSchema = z.discriminatedUnion("类型", [
+export const markerDescriptorSchema = z.discriminatedUnion("类型", [
   textMarkerDescriptorSchema,
   imageMarkerDescriptorSchema,
 ]);
 
-const countableResourceModuleSchema = sheetModuleBaseSchema.extend({
+export const countableResourceModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("countableResource"),
   标签: z.string().min(1),
-  最小值: z.number().int().optional(),
+  最小值: z.number().int().optional().meta({ default: 0 }),
   最大值: z.number().int().optional(),
   默认值: z.number().int().optional(),
-  步长: z.number().int().positive().optional(),
-  最大值可改: z.boolean().optional(),
-  显示方式: z.enum(["数值", "标记"]).optional(),
+  步长: z.number().int().positive().optional().meta({ default: 1 }),
+  最大值可改: z.boolean().optional().meta({ default: false }),
+  显示方式: z.enum(["数值", "标记"]).optional().meta({ default: "数值" }),
   当前值标记: markerDescriptorSchema.optional(),
   剩余值标记: markerDescriptorSchema.optional(),
   标记尺寸: z.number().min(5).max(96).optional(),
@@ -153,7 +153,7 @@ function markerDescriptorsEqual(
       : false;
 }
 
-const readOnlyDisplayModuleSchema = sheetModuleBaseSchema.extend({
+export const readOnlyDisplayModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("readOnlyDisplay"),
   标签: z.string().min(1),
   内容: z.string().min(1).optional(),
@@ -161,13 +161,13 @@ const readOnlyDisplayModuleSchema = sheetModuleBaseSchema.extend({
   替代文本: z.string().optional(),
 });
 
-const imageFieldModuleSchema = sheetModuleBaseSchema.extend({
+export const imageFieldModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("imageField"),
   标签: z.string().min(1),
   替代文本: z.string().optional(),
 });
 
-const cardPresentationSchema = z.object({
+export const cardPresentationSchema = z.object({
   名称模板: z.string().min(1).optional(),
   描述模板: z.string().min(1).optional(),
   标签字段: z.array(z.string().min(1)).refine((fields) => new Set(fields).size === fields.length, {
@@ -175,13 +175,13 @@ const cardPresentationSchema = z.object({
   }).optional(),
 });
 
-const cardTableResourceSourceSchema = z.discriminatedUnion("类型", [
+export const cardTableResourceSourceSchema = z.discriminatedUnion("类型", [
   z.object({ 类型: z.literal("resourceLibrary"), ID: z.string().min(1), 卡牌展示: cardPresentationSchema.optional() }),
   z.object({ 类型: z.literal("resourceComposer"), ID: z.string().min(1), 卡牌展示: cardPresentationSchema.optional() }),
   z.object({ 类型: z.literal("otherResourceLibraries"), ID: z.literal("其他"), 卡牌展示: cardPresentationSchema.optional() }),
 ]);
 
-const cardTableModuleSchema = sheetModuleBaseSchema.extend({
+export const cardTableModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("cardTable"),
   标签: z.string().min(1),
   资源来源: z.array(cardTableResourceSourceSchema).min(1).refine((sources) => new Set(sources.map((source) => `${source.类型}:${source.ID}`)).size === sources.length, {
@@ -197,24 +197,24 @@ const cardTableModuleSchema = sheetModuleBaseSchema.extend({
       徽标: z.string().refine((value) => value.trim().length > 0, { message: "Card state 徽标不能为空白字符串。" }),
     }),
   ).optional(),
-  显示方式: z.enum(["image", "text"]).optional(),
+  显示方式: z.enum(["image", "text"]).optional().meta({ default: "image" }),
   卡图字段: z.string().min(1).optional(),
   卡背字段: z.string().min(1).optional(),
   显示方式字段: z.string().min(1).optional(),
   背面卡牌ID字段: z.string().min(1).optional(),
 });
 
-const resourcePickerQuerySchema = z.object({
+export const resourcePickerQuerySchema = z.object({
   filters: z.record(z.string(), z.array(z.string())).optional(),
   sort: z
     .object({
       field: z.string().min(1),
-      direction: z.enum(["asc", "desc"]).optional(),
+      direction: z.enum(["asc", "desc"]).optional().meta({ default: "asc" }),
     })
     .optional(),
 });
 
-const resourcePickerModuleSchema = sheetModuleBaseSchema.extend({
+export const resourcePickerModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("resourcePicker"),
   按钮文本: z.string().min(1),
   资源库: z.union([
@@ -225,7 +225,7 @@ const resourcePickerModuleSchema = sheetModuleBaseSchema.extend({
     })).min(1).refine((links) => new Set(links.map((link) => link.ID)).size === links.length, { message: "Resource Picker 的 Resource Library 链接不能重复。" }),
     z.literal("其他"),
   ]),
-  多选: z.boolean().optional(),
+  多选: z.boolean().optional().meta({ default: false }),
   创建卡牌: z
     .object({
       卡牌桌面模块ID: z.string().min(1),
@@ -234,7 +234,7 @@ const resourcePickerModuleSchema = sheetModuleBaseSchema.extend({
     .optional(),
 });
 
-const resourceComposerModuleSchema = sheetModuleBaseSchema.extend({
+export const resourceComposerModuleSchema = sheetModuleBaseSchema.extend({
   类型: z.literal("resourceComposer"),
   按钮文本: z.string().min(1),
   来源槽位: z.array(z.object({
@@ -257,7 +257,7 @@ const resourceComposerModuleSchema = sheetModuleBaseSchema.extend({
   创建卡牌: z.object({ 卡牌桌面模块ID: z.string().min(1), 默认状态: z.string().min(1).optional() }).optional(),
 });
 
-const dependencySourceSchema = z.discriminatedUnion("类型", [
+export const dependencySourceSchema = z.discriminatedUnion("类型", [
   z.object({
     类型: z.literal("resourcePicker"),
     模块ID: z.string().min(1),
@@ -280,7 +280,7 @@ const dependencySourceSchema = z.discriminatedUnion("类型", [
   }),
 ]);
 
-const dependencyTargetSchema = z.discriminatedUnion("类型", [
+export const dependencyTargetSchema = z.discriminatedUnion("类型", [
   z.object({
     类型: z.literal("module"),
     模块ID: z.string().min(1),
@@ -291,7 +291,7 @@ const dependencyTargetSchema = z.discriminatedUnion("类型", [
   }),
 ]);
 
-const dependencyTriggerSchema = z.discriminatedUnion("类型", [
+export const dependencyTriggerSchema = z.discriminatedUnion("类型", [
   z.object({
     类型: z.literal("resourceSelected"),
     来源模块ID: z.string().min(1),
@@ -310,7 +310,7 @@ const dependencyTriggerSchema = z.discriminatedUnion("类型", [
   }),
 ]);
 
-const dependencyConditionSchema = z.discriminatedUnion("类型", [
+export const dependencyConditionSchema = z.discriminatedUnion("类型", [
   z.object({
     类型: z.literal("always"),
   }),
@@ -339,7 +339,7 @@ const dependencyConditionSchema = z.discriminatedUnion("类型", [
   }),
 ]);
 
-const fillTextContentSchema = z.union([
+export const fillTextContentSchema = z.union([
   z.string(),
   z.object({
     类型: z.literal("selectedResourceField"),
@@ -361,7 +361,7 @@ const integerCalculationOperandSchema = z.union([
   z.object({ 类型: z.literal("resourceSelectionCount"), 模块ID: z.string().min(1) }),
 ]);
 
-const integerCalculationSchema = z.object({
+export const integerCalculationSchema = z.object({
   类型: z.literal("integerCalculation"),
   初始值: z.number().int(),
   运算: z.array(z.object({
@@ -384,7 +384,7 @@ const fillCountableContentSchema = z.union([
   integerCalculationSchema,
 ]);
 
-const fillCountableActionSchema = z.object({
+export const fillCountableActionSchema = z.object({
   类型: z.literal("fillCountable"),
   目标模块ID: z.string().min(1),
   当前值: fillCountableContentSchema.optional(),
@@ -393,12 +393,12 @@ const fillCountableActionSchema = z.object({
   message: "fillCountable 至少需要 当前值 或 最大值。",
 });
 
-const dependencyActionSchema = z.discriminatedUnion("类型", [
+export const dependencyActionSchema = z.discriminatedUnion("类型", [
   z.object({
     类型: z.literal("fillText"),
     目标模块ID: z.string().min(1),
     内容: fillTextContentSchema,
-    写入方式: z.enum(["替换", "追加"]).optional(),
+    写入方式: z.enum(["替换", "追加"]).optional().meta({ default: "替换" }),
     追加分隔符: z.string().optional(),
   }),
   z.object({
@@ -434,16 +434,16 @@ const dependencyActionSchema = z.discriminatedUnion("类型", [
   }),
 ]);
 
-const dependencyRuleSchema = z.object({
+export const dependencyRuleSchema = z.object({
   ID: z.string().min(1),
   sources: z.array(dependencySourceSchema).min(1),
   targets: z.array(dependencyTargetSchema).min(1),
   触发: dependencyTriggerSchema,
-  条件: dependencyConditionSchema.optional(),
+  条件: dependencyConditionSchema.optional().describe("省略时等同 always。"),
   动作: z.array(dependencyActionSchema).min(1),
 });
 
-const sheetModuleSchema = z.discriminatedUnion("类型", [
+export const sheetModuleSchema = z.discriminatedUnion("类型", [
   freeTextModuleSchema,
   longTextModuleSchema,
   checkboxResourceModuleSchema,
@@ -459,7 +459,7 @@ const supportedModuleTypes: Set<string> = new Set(
   sheetModuleSchema.options.map((option) => option.shape["类型"].value),
 );
 
-const htmlTemplateLayoutSchema = z.object({
+export const htmlTemplateLayoutSchema = z.object({
   类型: z.literal("htmlTemplate"),
   htmlContent: z.string().min(1),
   cssContent: z.string().optional(),
@@ -470,7 +470,7 @@ const skinLayoutOverridesSchema = z.object({
   pages: z.array(z.object({ ID: z.string().min(1), htmlContent: z.string().min(1) })).min(1).optional(),
 });
 
-const systemPackageSkinSchema = z.object({
+export const systemPackageSkinSchema = z.object({
   ID: z.string().min(1),
   名称: z.string().min(1),
   cssContent: z.string().min(1),
@@ -478,11 +478,11 @@ const systemPackageSkinSchema = z.object({
   layoutOverrides: skinLayoutOverridesSchema.optional(),
 });
 
-const pageSchema = z.object({
+export const packagePageSchema = z.object({
   ID: z.string().min(1),
   名称: z.string().min(1),
-  默认隐藏: z.boolean().optional(),
-  打印: z.boolean().optional(),
+  默认隐藏: z.boolean().optional().meta({ default: false }),
+  打印: z.boolean().optional().describe("省略时跟随该 Page 的运行时可见性。"),
   layout: htmlTemplateLayoutSchema,
 });
 
@@ -491,18 +491,18 @@ const assetSchema = z.object({
   类型: z.string().optional(),
 });
 
-const validationCheckSchema = z.object({
+export const validationCheckSchema = z.object({
   ID: z.string().min(1),
   脚本: z.string().min(1),
   scriptContent: z.string().min(1),
 });
 
 const systemPackageEnvelopeSchema = z.object({
-  manifest: manifestSchema,
+  manifest: systemPackageRuntimeManifestSchema,
   shell: htmlTemplateLayoutSchema.optional(),
   skins: z.array(systemPackageSkinSchema).min(1).optional(),
   defaultSkin: z.string().min(1).optional(),
-  pages: z.array(pageSchema).min(1),
+  pages: z.array(packagePageSchema).min(1),
   modules: z.array(z.unknown()).min(1),
   assets: z.array(assetSchema).optional(),
   resourceLibraries: z.array(resourceLibraryPackageInputSchema).optional(),
@@ -514,7 +514,7 @@ const systemPackageEnvelopeSchema = z.object({
 });
 
 export interface SystemPackage {
-  manifest: z.infer<typeof manifestSchema>;
+  manifest: z.infer<typeof systemPackageRuntimeManifestSchema>;
   shell?: HtmlTemplateLayout;
   skins?: SystemPackageSkin[];
   defaultSkin?: string;
@@ -542,7 +542,7 @@ export type SheetModule = z.infer<typeof sheetModuleSchema>;
 export type PackageAsset = z.infer<typeof assetSchema>;
 export type HtmlTemplateLayout = z.infer<typeof htmlTemplateLayoutSchema>;
 export type SystemPackageSkin = z.infer<typeof systemPackageSkinSchema>;
-export type PackagePage = z.infer<typeof pageSchema>;
+export type PackagePage = z.infer<typeof packagePageSchema>;
 export type DependencyRule = z.infer<typeof dependencyRuleSchema>;
 export type DependencySource = z.infer<typeof dependencySourceSchema>;
 export type DependencyTarget = z.infer<typeof dependencyTargetSchema>;
@@ -2112,9 +2112,9 @@ export function getHtmlTemplateGuideRegionIds(html: string): string[] {
   return [...matches].map((match) => match[1] ?? match[2] ?? match[3]);
 }
 
-const forbiddenHtmlTags = new Set(["button", "form", "input", "script", "select", "textarea"]);
-const allowedGlobalHtmlAttributes = new Set(["aria-label", "class", "title"]);
-const allowedHtmlAttributesByTag = new Map([
+export const forbiddenHtmlTags = new Set(["button", "form", "input", "script", "select", "textarea"]);
+export const allowedGlobalHtmlAttributes = new Set(["aria-label", "class", "title"]);
+export const allowedHtmlAttributesByTag = new Map([
   ["img", new Set(["alt", "src"])],
   ["pb-module", new Set(["id"])],
   ["pb-page-outlet", new Set()],

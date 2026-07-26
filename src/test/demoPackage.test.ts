@@ -4,7 +4,7 @@ import { zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 
-const demoRoot = join(process.cwd(), "docs", "system-package", "examples", "demo");
+const demoRoot = join(process.cwd(), "tests", "fixtures", "system-packages", "kitchen-sink");
 const moduleTypes = [
   "freeText",
   "longText",
@@ -17,7 +17,7 @@ const moduleTypes = [
   "cardTable",
 ] as const;
 
-describe("canonical demo System Package", () => {
+describe("kitchen-sink System Package fixture", () => {
   it("loads through the normal package pipeline without blocking issues", async () => {
     const result = await loadSystemPackageFromZipFile(new Blob([zipSync(readDirectory(demoRoot))]));
 

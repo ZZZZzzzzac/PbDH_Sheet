@@ -1,6 +1,6 @@
 # ADR-0001: Static PWA Without Server API
 
-状态：Accepted
+状态：Superseded by [ADR-0030](0030-static-web-without-pwa-or-server-api.md)
 日期：2026-07-06
 
 ## 背景

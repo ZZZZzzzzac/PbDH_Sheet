@@ -3,14 +3,11 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const packagesRoot = join(process.cwd(), "public", "system-packages");
-const examplesRoot = join(process.cwd(), "docs", "system-package", "examples");
+const templateRoot = join(process.cwd(), "templates", "system-package-minimal");
+const fixtureRoot = join(process.cwd(), "tests", "fixtures", "system-packages", "kitchen-sink");
 
 function packageCss(packageId: string, relativePath: string): string {
   return readFileSync(join(packagesRoot, packageId, relativePath), "utf8");
-}
-
-function examplePackageCss(packageId: string, relativePath: string): string {
-  return readFileSync(join(examplesRoot, packageId, relativePath), "utf8");
 }
 
 function expectA4PreviewScope(css: string): void {
@@ -33,8 +30,8 @@ describe("built-in System Package print layout contract", () => {
   });
 
   it("keeps Demo and Demo Minimal content insets package-owned", () => {
-    const demo = examplePackageCss("demo", "layouts/demo.css");
-    const minimal = examplePackageCss("demo-minimal", "layouts/main.css");
+    const demo = readFileSync(join(fixtureRoot, "layouts/demo.css"), "utf8");
+    const minimal = readFileSync(join(templateRoot, "layouts/main.css"), "utf8");
 
     expectA4PreviewScope(demo);
     expect(demo).toMatch(/\.demo-page\s*\{[^}]*padding:\s*5mm 4mm/s);

@@ -3,6 +3,8 @@
 状态：Accepted
 日期：2026-07-06
 
+修订：ADR-0019 移除了 manifest 中显式 `assets` 路径合同；当前精确合同以 System Package Reference 为准。
+
 ## 背景
 
 System Package 是 Author 和 Base Framework 之间的外部契约。它不是任意资源文件集合，而是声明 Sheet Tool 应如何使用 Base Framework 模块、资源、布局、样式、依赖和检查脚本。

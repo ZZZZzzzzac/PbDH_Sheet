@@ -1,10 +1,12 @@
 import { cloneAndFreeze, executePackageScriptInContext } from "./packageScript";
 
+export const packageScriptTimeoutMs = 3000;
+
 export function executePackageScriptInWorker(
   scriptContent: string,
   input: unknown,
   scriptLabel: string,
-  timeoutMs = 3000,
+  timeoutMs = packageScriptTimeoutMs,
 ): Promise<unknown> {
   // Vitest's jsdom environment has no Worker implementation. Production
   // builds never take this branch; it only keeps script contracts unit-testable.

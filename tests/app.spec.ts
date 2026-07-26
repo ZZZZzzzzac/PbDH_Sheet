@@ -72,7 +72,7 @@ test("Daggerheart imports a dhSheet character through the isolated Format Adapte
   await openExportMenu(page);
   await page.getByRole("button", { name: "导入 Character JSON" }).click();
   const fileChooser = await fileChooserPromise;
-  await fileChooser.setFiles(path.join(process.cwd(), "docs", "migration", "save", "布罗克-战士-仙灵-龟人-荒野之民-LV1.json"));
+  await fileChooser.setFiles(path.join(process.cwd(), "tests", "fixtures", "format-adapters", "daggerheart-core", "布罗克-战士-仙灵-龟人-荒野之民-LV1.json"));
 
   const confirmation = page.getByRole("alertdialog", { name: "确认有损人物卡转换" });
   await expect(confirmation).toContainText("dhSheet Format");
@@ -1090,9 +1090,12 @@ function completeDemoPackagePath(testInfo: TestInfo) {
 }
 
 function createExamplePackageArchive(testInfo: TestInfo, packageName: string) {
+  const packageRoot = packageName === "demo-minimal"
+    ? path.join(process.cwd(), "templates", "system-package-minimal")
+    : path.join(process.cwd(), "tests", "fixtures", "system-packages", "kitchen-sink");
   return createPackageArchive(
     testInfo,
-    path.join(process.cwd(), "docs", "system-package", "examples", packageName),
+    packageRoot,
     `${packageName}.zip`,
   );
 }

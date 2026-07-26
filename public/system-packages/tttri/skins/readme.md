@@ -1,7 +1,7 @@
 请创作一个tttri系统包适用的皮肤
 美术UI风格参考: https://ak.2heng.xin/ (游戏内UI)  https://ak.hypergryph.com/#index (官网) https://ak.hypergryph.com/archive/dynamicCompile
 
-系统包皮肤制作参考 docs/system-package/reference/skins.md docs/system-package/author-guide/13-system-package-skins.md
+系统包皮肤制作参考 `docs/system-package/contract/pages-layout-skins.md`。
 
 可以参考的UI设计skill: /design-taste-frontend /redesign-existing-projects /image-to-code (注意这些skill部分内容是面向通用网页设计的, 不适合我们这个TRPG人物卡)
 
