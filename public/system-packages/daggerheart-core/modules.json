@@ -383,38 +383,44 @@
   },
   {
     "ID": "background-question-1",
-    "类型": "freeText",
+    "类型": "longText",
     "标签": "背景问题一",
+    "行数": 2,
     "隐藏标签": true
   },
   {
     "ID": "background-question-2",
-    "类型": "freeText",
+    "类型": "longText",
     "标签": "背景问题二",
+    "行数": 2,
     "隐藏标签": true
   },
   {
     "ID": "background-question-3",
-    "类型": "freeText",
+    "类型": "longText",
     "标签": "背景问题三",
+    "行数": 2,
     "隐藏标签": true
   },
   {
     "ID": "connection-question-1",
-    "类型": "freeText",
+    "类型": "longText",
     "标签": "关系问题一",
+    "行数": 2,
     "隐藏标签": true
   },
   {
     "ID": "connection-question-2",
-    "类型": "freeText",
+    "类型": "longText",
     "标签": "关系问题二",
+    "行数": 2,
     "隐藏标签": true
   },
   {
     "ID": "connection-question-3",
-    "类型": "freeText",
+    "类型": "longText",
     "标签": "关系问题三",
+    "行数": 2,
     "隐藏标签": true
   },
   {

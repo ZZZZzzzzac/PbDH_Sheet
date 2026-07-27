@@ -105,19 +105,20 @@ fieldset.container {
 }
 
 [data-markdown-editor="true"] {
+  display: flex;
   min-width: 0;
 }
 
 [data-module-type="freeText"] > [data-markdown-editor="true"] {
   align-self: stretch;
-  min-height: 0;
+  min-height: calc(1lh + 10px);
 }
 
 [data-module-type="freeText"] > [data-markdown-editor="true"] > [data-part="input"],
 [data-module-type="freeText"] > [data-part="input"] {
   align-self: stretch;
   height: 100%;
-  min-height: 0;
+  min-height: calc(1lh + 10px);
   text-align: center;
 }
 

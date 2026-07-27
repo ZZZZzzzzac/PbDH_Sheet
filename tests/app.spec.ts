@@ -695,6 +695,89 @@ test("Daggerheart story Long Text previews auto-fit without growing their frames
   }
 });
 
+test("Free Text and Long Text keep the same height while switching between editing and Markdown preview", async ({ page }) => {
+  await page.goto("/");
+  await expectDefaultDaggerheart(page);
+
+  const assertStableHeight = async (moduleId: string, value: string) => {
+    const module = page.locator(`[data-module-id="${moduleId}"]`);
+    const editor = module.getByRole("textbox");
+    const editingHeightBefore = (await module.boundingBox())!.height;
+
+    await editor.fill(value);
+    await editor.evaluate((element) => element.blur());
+    const preview = module.locator('[data-markdown-preview="true"]');
+    await expect(preview).toBeVisible();
+    const previewHeight = (await module.boundingBox())!.height;
+
+    await preview.click();
+    await expect(editor).toBeVisible();
+    const editingHeightAfter = (await module.boundingBox())!.height;
+
+    expect(previewHeight).toBeCloseTo(editingHeightBefore, 1);
+    expect(editingHeightAfter).toBeCloseTo(editingHeightBefore, 1);
+  };
+
+  await assertStableHeight("character-name", "阿青");
+  await page.getByRole("button", { name: "背景与关系", exact: true }).click();
+  await assertStableHeight("event-log", "没有换行的事件记录");
+});
+
+test("TTTRI level Free Text retains its full-sized presentation", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "系统包", exact: true }).click();
+  await page.getByRole("combobox", { name: "预制系统包" }).selectOption("tttri");
+  await expect(page.locator('[data-system-package-id="tttri"]')).toBeVisible();
+
+  const geometry = await page.locator(".level-field").evaluate((field) => {
+    const module = field.querySelector<HTMLElement>('[data-module-id="level"]')!;
+    const preview = module.querySelector<HTMLElement>('[data-markdown-preview="true"]')!;
+    return {
+      fieldHeight: field.getBoundingClientRect().height,
+      moduleHeight: module.getBoundingClientRect().height,
+      previewHeight: preview.getBoundingClientRect().height,
+    };
+  });
+  expect(geometry.moduleHeight).toBeGreaterThanOrEqual(geometry.fieldHeight - 8);
+  expect(geometry.previewHeight).toBeGreaterThan(30);
+});
+
+test("Daggerheart and TTTRI advancement options and footers align across tiers", async ({ page }) => {
+  for (const packageId of ["daggerheart-core", "tttri"]) {
+    await page.goto("/");
+    await page.getByRole("button", { name: "系统包", exact: true }).click();
+    await page.getByRole("combobox", { name: "预制系统包" }).selectOption(packageId);
+    await expect(page.locator(`[data-system-package-id="${packageId}"]`)).toBeVisible();
+    await page.getByRole("button", { name: "系统包", exact: true }).click();
+    await page.getByRole("button", { name: "背景与关系", exact: true }).click();
+
+    const tiers = await page.locator(".advancement-grid > article").evaluateAll((articles) => articles.map((article) => {
+      const rows = [...article.querySelectorAll<HTMLElement>('[data-part="option"], [data-part="option-group"]')];
+      const footer = article.querySelector<HTMLElement>('[data-module-id$="-footer"]')!;
+      const directPart = (row: HTMLElement, part: string) => [...row.children].find((child) => child.getAttribute("data-part") === part) as HTMLElement;
+      return {
+        labelLefts: rows.map((row) => directPart(row, "option-label").getBoundingClientRect().left),
+        controlRights: rows.map((row) => (directPart(row, "input") ?? directPart(row, "group-inputs")).getBoundingClientRect().right),
+        controlLabelGaps: rows.map((row) => {
+          const label = directPart(row, "option-label");
+          const control = directPart(row, "input") ?? directPart(row, "group-inputs");
+          return label.getBoundingClientRect().left - control.getBoundingClientRect().right;
+        }),
+        footerTop: footer.getBoundingClientRect().top,
+      };
+    }));
+
+    expect(tiers).toHaveLength(3);
+    for (const tier of tiers) {
+      expect(Math.max(...tier.labelLefts) - Math.min(...tier.labelLefts)).toBeLessThanOrEqual(1);
+      expect(Math.max(...tier.controlRights) - Math.min(...tier.controlRights)).toBeLessThanOrEqual(1);
+      expect(Math.min(...tier.controlLabelGaps)).toBeGreaterThanOrEqual(5);
+    }
+    const footerTops = tiers.map((tier) => tier.footerTop);
+    expect(Math.max(...footerTops) - Math.min(...footerTops)).toBeLessThanOrEqual(1);
+  }
+});
+
 test("Daggerheart Countable Resources print as fixed hollow-square slots", async ({ page }) => {
   await page.goto("/");
   await expectDefaultDaggerheart(page);
