@@ -1,40 +1,28 @@
-import { Ellipsis, Layers, X } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type PointerEvent } from "react";
+import { Layers } from "lucide-react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import {
   clampCardTablePosition,
   createCardTableLayout,
   defaultCardWidthPx,
-  maxCardIndicators,
   maxCardWidthPx,
   minCardWidthPx,
-  readCardIndicators,
   type CardInstance,
   type CardTableLayout,
 } from "../domain/cardEngine";
-import { resolveCardPresentation, type CardPresentation } from "../domain/cardPresentation";
-import { resolveResourceDefinition } from "../domain/resourceDefinition";
-import { findResourceEntryProvenance } from "../domain/effectiveResourceCatalog";
-import { resourceAssetUrlKey } from "../loaders/assetResolver";
-import { type ResourceLibraryEntry } from "../domain/resourceLibrary";
-import { findCardTableResourceLibrarySource, findResourceLibrary, type CardTableModule as CardTableModuleConfig, type SystemPackage } from "../domain/systemPackage";
+import { type CardTableModule as CardTableModuleConfig, type SystemPackage } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
-import { RestrictedMarkdown } from "./RestrictedMarkdown";
-import { useCardDescriptionFit } from "./cardDescriptionFit";
-import { usePointerActions } from "./usePointerActions";
+import { CardContextMenu, CardDetailOverlay } from "./cardTable/CardActionSurfaces";
+import { CardView, type CardDragState } from "./cardTable/CardView";
+import {
+  findCardPresentation,
+  hasReverseCardDefinition,
+  resolveVisibleCardDefinition,
+} from "./cardTable/cardDefinition";
 
 interface CardTableModuleProps {
   module: CardTableModuleConfig;
   systemPackage: SystemPackage;
-}
-
-interface DragState {
-  instanceId: string;
-  pointerId: number;
-  offsetXPct: number;
-  offsetYPct: number;
-  pendingXPct: number;
-  pendingYPct: number;
 }
 
 interface CardMenuState {
@@ -46,7 +34,7 @@ interface CardMenuState {
 export function CardTableModule({ module, systemPackage }: CardTableModuleProps) {
   const tableRef = useRef<HTMLDivElement>(null);
   const longPressTimerRef = useRef<number | null>(null);
-  const [dragState, setDragState] = useState<DragState | null>(null);
+  const [dragState, setDragState] = useState<CardDragState | null>(null);
   const [cardMenu, setCardMenu] = useState<CardMenuState | null>(null);
   const [detailInstanceId, setDetailInstanceId] = useState<string | null>(null);
   const characterData = useRuntimeStore((state) => state.characterData);
@@ -65,12 +53,16 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
     preferredCardWidthPx: cardWidthPx,
     minSurfaceHeightPx: surfaceViewportHeightPx,
   });
+  const menuInstance = cardMenu
+    ? visibleInstances.find((instance) => instance.instanceId === cardMenu.instanceId)
+    : undefined;
+  const detailInstance = detailInstanceId
+    ? visibleInstances.find((instance) => instance.instanceId === detailInstanceId)
+    : undefined;
 
   useLayoutEffect(() => {
     const table = tableRef.current;
-    if (!table) {
-      return;
-    }
+    if (!table) return;
 
     const updateSurfaceSize = () => {
       const rect = table.getBoundingClientRect();
@@ -79,18 +71,14 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
     };
 
     updateSurfaceSize();
-
+    window.addEventListener("resize", updateSurfaceSize);
     if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", updateSurfaceSize);
       return () => window.removeEventListener("resize", updateSurfaceSize);
     }
 
-    window.addEventListener("resize", updateSurfaceSize);
     const observer = new ResizeObserver(updateSurfaceSize);
     observer.observe(table);
-    if (table.parentElement) {
-      observer.observe(table.parentElement);
-    }
+    if (table.parentElement) observer.observe(table.parentElement);
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", updateSurfaceSize);
@@ -98,18 +86,18 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
   }, []);
 
   const clearLongPressTimer = () => {
-    if (longPressTimerRef.current === null) {
-      return;
-    }
-
+    if (longPressTimerRef.current === null) return;
     window.clearTimeout(longPressTimerRef.current);
     longPressTimerRef.current = null;
   };
 
+  const closeCardMenu = () => {
+    clearLongPressTimer();
+    setCardMenu(null);
+  };
+
   const beginDrag = (event: PointerEvent<HTMLElement>, instance: CardInstance) => {
-    if (!tableRef.current || event.button !== 0) {
-      return;
-    }
+    if (!tableRef.current || event.button !== 0) return;
 
     const point = pointerToPct(event, tableRef.current);
     bringCardInstanceToFront(instance.instanceId);
@@ -119,11 +107,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
       longPressTimerRef.current = window.setTimeout(() => {
         longPressTimerRef.current = null;
         setDragState(null);
-        setCardMenu({
-          instanceId: instance.instanceId,
-          x: event.clientX,
-          y: event.clientY,
-        });
+        setCardMenu({ instanceId: instance.instanceId, x: event.clientX, y: event.clientY });
       }, 500);
     }
     setDragState({
@@ -137,51 +121,32 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
   };
 
   const continueDrag = (event: PointerEvent<HTMLElement>) => {
-    if (!dragState || dragState.pointerId !== event.pointerId || !tableRef.current) {
-      return;
-    }
+    if (!dragState || dragState.pointerId !== event.pointerId || !tableRef.current) return;
 
     const point = pointerToPct(event, tableRef.current);
     const nextXPct = point.xPct - dragState.offsetXPct;
     const nextYPct = point.yPct - dragState.offsetYPct;
-    const moved =
-      Math.abs(nextXPct - dragState.pendingXPct) > 0.8 ||
-      Math.abs(nextYPct - dragState.pendingYPct) > 0.8;
-    if (moved) {
+    if (Math.abs(nextXPct - dragState.pendingXPct) > 0.8 || Math.abs(nextYPct - dragState.pendingYPct) > 0.8) {
       clearLongPressTimer();
     }
     const nextPosition = clampCardTablePosition(tableLayout, nextXPct, nextYPct);
-    setDragState({
-      ...dragState,
-      pendingXPct: nextPosition.xPct,
-      pendingYPct: nextPosition.yPct,
-    });
+    setDragState({ ...dragState, pendingXPct: nextPosition.xPct, pendingYPct: nextPosition.yPct });
   };
 
   const endDrag = (event: PointerEvent<HTMLElement>) => {
-    if (dragState?.pointerId === event.pointerId) {
-      clearLongPressTimer();
-      if (dragState.pendingXPct !== getDraggingInstanceX(visibleInstances, dragState.instanceId) ||
-          dragState.pendingYPct !== getDraggingInstanceY(visibleInstances, dragState.instanceId)) {
-        updateCardInstancePosition(dragState.instanceId, dragState.pendingXPct, dragState.pendingYPct);
-      }
-      setDragState(null);
+    if (dragState?.pointerId !== event.pointerId) return;
+    clearLongPressTimer();
+    if (dragState.pendingXPct !== getInstanceX(visibleInstances, dragState.instanceId)
+        || dragState.pendingYPct !== getInstanceY(visibleInstances, dragState.instanceId)) {
+      updateCardInstancePosition(dragState.instanceId, dragState.pendingXPct, dragState.pendingYPct);
     }
+    setDragState(null);
   };
 
   const openCardMenu = (event: MouseEvent<HTMLElement>, instance: CardInstance) => {
     event.preventDefault();
     bringCardInstanceToFront(instance.instanceId);
-    setCardMenu({
-      instanceId: instance.instanceId,
-      x: event.clientX,
-      y: event.clientY,
-    });
-  };
-
-  const closeCardMenu = () => {
-    clearLongPressTimer();
-    setCardMenu(null);
+    setCardMenu({ instanceId: instance.instanceId, x: event.clientX, y: event.clientY });
   };
 
   return (
@@ -230,8 +195,8 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
         ))}
         {cardMenu ? createPortal(
           <CardContextMenu
-            instance={visibleInstances.find((instance) => instance.instanceId === cardMenu.instanceId)}
-            canFlip={hasReverseCardDefinition(systemPackage, characterData, module, visibleInstances.find((instance) => instance.instanceId === cardMenu.instanceId))}
+            instance={menuInstance}
+            canFlip={hasReverseCardDefinition(systemPackage, characterData, module, menuInstance)}
             stateOptions={module.状态选项 ?? []}
             x={cardMenu.x}
             y={cardMenu.y}
@@ -243,425 +208,15 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
       </div>
       {detailInstanceId ? (
         <CardDetailOverlay
-          instance={visibleInstances.find((instance) => instance.instanceId === detailInstanceId)}
-          definition={resolveVisibleCardDefinition(systemPackage, characterData, module, visibleInstances.find((instance) => instance.instanceId === detailInstanceId))}
+          instance={detailInstance}
+          definition={resolveVisibleCardDefinition(systemPackage, characterData, module, detailInstance)}
           module={module}
-          presentation={findCardPresentation(systemPackage, module, visibleInstances.find((instance) => instance.instanceId === detailInstanceId))}
+          presentation={findCardPresentation(systemPackage, module, detailInstance)}
           onClose={() => setDetailInstanceId(null)}
         />
       ) : null}
     </section>
   );
-}
-
-const cardDefaults = {
-  卡图字段: "卡图",
-  卡背字段: "卡背",
-  背面卡牌ID字段: "背面卡牌ID",
-  显示方式字段: "卡牌显示方式",
-} as const;
-
-function cardField(module: CardTableModuleConfig, key: keyof typeof cardDefaults): string {
-  return module[key] ?? cardDefaults[key];
-}
-
-function CardView({
-  instance,
-  dragState,
-  definition,
-  module: moduleConfig,
-  presentation,
-  onPointerDown,
-  onPointerMove,
-  onPointerUp,
-  onContextMenu,
-}: {
-  instance: CardInstance;
-  dragState: DragState | null;
-  definition?: ResourceLibraryEntry;
-  module: CardTableModuleConfig;
-  presentation?: CardPresentation;
-  onPointerDown: (event: PointerEvent<HTMLElement>, instance: CardInstance) => void;
-  onPointerMove: (event: PointerEvent<HTMLElement>) => void;
-  onPointerUp: (event: PointerEvent<HTMLElement>) => void;
-  onContextMenu: (event: MouseEvent<HTMLElement>, instance: CardInstance) => void;
-}) {
-  const deleteCardInstance = useRuntimeStore((state) => state.deleteCardInstance);
-  const resolvedPresentation = resolvePresentation(definition, moduleConfig, presentation);
-  const name = resolvedPresentation.name || definitionReferenceId(instance);
-  const isDragging = dragState?.instanceId === instance.instanceId;
-  const positionXPct = isDragging ? dragState.pendingXPct : instance.xPct;
-  const positionYPct = isDragging ? dragState.pendingYPct : instance.yPct;
-  const stateAppearance = moduleConfig.状态外观?.[instance.state];
-  const stateBadgeId = stateAppearance ? `card-state-${instance.instanceId}` : undefined;
-
-  return (
-    <article
-      className={`play-card${stateAppearance ? " has-card-state-appearance" : ""}`}
-      data-card-instance-id={instance.instanceId}
-      data-card-state={instance.state}
-      style={{
-        left: `${positionXPct}%`,
-        top: `${positionYPct}%`,
-        zIndex: instance.zIndex,
-        transform: `rotate(${instance.rotation}deg) scale(${instance.scale})`,
-        "--card-control-counter-rotation": `${-instance.rotation}deg`,
-        "--play-card-state-color": stateAppearance?.描边颜色,
-      } as CSSProperties}
-      onPointerDown={(event) => onPointerDown(event, instance)}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
-      onContextMenu={(event) => onContextMenu(event, instance)}
-      aria-label={name}
-      aria-describedby={stateBadgeId}
-    >
-      <button
-        className="play-card-delete"
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          deleteCardInstance(instance.instanceId);
-        }}
-        onPointerDown={(event) => event.stopPropagation()}
-        aria-label={`删除 ${name}`}
-      >
-        <X aria-hidden="true" size={14} />
-      </button>
-      <CardIndicatorColumn instance={instance} />
-      <CardFace definition={definition} definitionRef={instance.definitionRef} module={moduleConfig} presentation={presentation} fallbackName={name} />
-      {stateAppearance ? <CardStateBadge id={stateBadgeId} label={stateAppearance.徽标} /> : null}
-    </article>
-  );
-}
-
-function CardContextMenu({
-  instance,
-  canFlip,
-  stateOptions,
-  x,
-  y,
-  onClose,
-  onViewDetail,
-}: {
-  instance?: CardInstance;
-  canFlip: boolean;
-  stateOptions: string[];
-  x: number;
-  y: number;
-  onClose: () => void;
-  onViewDetail: (instanceId: string) => void;
-}) {
-  const updateCardInstanceState = useRuntimeStore((state) => state.updateCardInstanceState);
-  const flipCardInstance = useRuntimeStore((state) => state.flipCardInstance);
-  const rotateCardInstance = useRuntimeStore((state) => state.rotateCardInstance);
-  const setCardInstanceUpright = useRuntimeStore((state) => state.setCardInstanceUpright);
-  const addCardIndicator = useRuntimeStore((state) => state.addCardIndicator);
-  const deleteCardInstance = useRuntimeStore((state) => state.deleteCardInstance);
-
-  if (!instance) {
-    return null;
-  }
-
-  const nextState = nextCardState(stateOptions, instance.state);
-
-  return (
-    <div className="card-context-menu" data-guide-interaction-surface="true" data-output-exclude="true" style={{ left: x, top: y }} role="menu" onPointerDown={(event) => event.stopPropagation()}>
-      <button type="button" role="menuitem" onClick={() => onViewDetail(instance.instanceId)}>查看详情</button>
-      {canFlip ? (
-        <button type="button" role="menuitem" onClick={() => { flipCardInstance(instance.instanceId); onClose(); }}>
-          翻至{instance.face === "front" ? "背面" : "正面"}
-        </button>
-      ) : null}
-      <button type="button" role="menuitem" onClick={() => { rotateCardInstance(instance.instanceId, 1); onClose(); }}>顺时针旋转 90°</button>
-      {instance.rotation !== 0 ? (
-        <button type="button" role="menuitem" onClick={() => { setCardInstanceUpright(instance.instanceId); onClose(); }}>恢复竖置</button>
-      ) : null}
-      <button
-        type="button"
-        role="menuitem"
-        disabled={readCardIndicators(instance).length >= maxCardIndicators}
-        onClick={() => { addCardIndicator(instance.instanceId); onClose(); }}
-      >
-        {readCardIndicators(instance).length >= maxCardIndicators ? "指示物已满（10）" : "添加指示物"}
-      </button>
-      {nextState !== instance.state ? (
-        <button
-          type="button"
-          role="menuitem"
-          onClick={() => {
-            updateCardInstanceState(instance.instanceId, nextState);
-            onClose();
-          }}
-        >
-          标记为{nextState}
-        </button>
-      ) : null}
-      <button
-        className="danger"
-        type="button"
-        role="menuitem"
-        onClick={() => {
-          deleteCardInstance(instance.instanceId);
-          onClose();
-        }}
-      >
-        删除
-      </button>
-    </div>
-  );
-}
-
-function resolveFrontCardDefinition(systemPackage: SystemPackage, characterData: ReturnType<typeof useRuntimeStore.getState>["characterData"], instance: CardInstance | undefined): ResourceLibraryEntry | undefined {
-  if (!instance) {
-    return undefined;
-  }
-  return resolveResourceDefinition(systemPackage, characterData, instance.definitionRef);
-}
-
-function CardFace({
-  definition,
-  definitionRef,
-  module: moduleConfig,
-  presentation,
-  fallbackName,
-  autoFitDescription = true,
-}: {
-  definition?: ResourceLibraryEntry;
-  definitionRef?: CardInstance["definitionRef"];
-  module: CardTableModuleConfig;
-  presentation?: CardPresentation;
-  fallbackName: string;
-  autoFitDescription?: boolean;
-}) {
-  const [imageFailed, setImageFailed] = useState(false);
-  const resourceCatalog = useRuntimeStore((state) => state.resourceCatalog);
-  const artField = cardField(moduleConfig, "卡图字段");
-  const cardArtRef = definition?.fields[artField] ?? "";
-  const libraryId = definitionRef?.type === "resourceLibrary" ? definitionRef.libraryId : undefined;
-  const provenance = findResourceEntryProvenance(resourceCatalog, libraryId, definition?.ID);
-  const cardArtUrlKey = resourceAssetUrlKey(provenance?.type, provenance?.id, cardArtRef);
-  const cardArtUrl = useRuntimeStore((state) => cardArtRef ? state.packageAssetUrls[cardArtUrlKey] : undefined);
-  const showImage = resolveCardDisplayMode(definition, moduleConfig) === "image" && cardArtUrl && !imageFailed;
-  useEffect(() => setImageFailed(false), [cardArtRef, cardArtUrl]);
-  return showImage ? <img className="play-card-image" src={cardArtUrl} alt={fallbackName} draggable={false} onError={() => setImageFailed(true)} /> : <TextCard definition={definition} module={moduleConfig} presentation={presentation} fallbackName={fallbackName} autoFitDescription={autoFitDescription} />;
-}
-
-function CardDetailOverlay({ instance, definition, module, presentation, onClose }: { instance?: CardInstance; definition?: ResourceLibraryEntry; module: CardTableModuleConfig; presentation?: CardPresentation; onClose: () => void }) {
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
-  if (!instance) return null;
-  const name = resolvePresentation(definition, module, presentation).name || definitionReferenceId(instance);
-  const stateAppearance = module.状态外观?.[instance.state];
-  return (
-    <div className="card-detail-backdrop" data-guide-interaction-surface="true" data-output-exclude="true" onClick={onClose}>
-      <section className="card-detail-dialog" role="dialog" aria-modal="true" aria-label={`${name}详情`} onClick={(event) => event.stopPropagation()}>
-        <button className="card-detail-close" type="button" onClick={onClose} aria-label="关闭卡牌详情"><X aria-hidden="true" size={20} /></button>
-        <div
-          className={`card-detail-face${stateAppearance ? " has-card-state-appearance" : ""}`}
-          data-card-state={instance.state}
-          style={{ "--play-card-state-color": stateAppearance?.描边颜色 } as CSSProperties}
-        >
-          <CardFace definition={definition} definitionRef={instance.definitionRef} module={module} presentation={presentation} fallbackName={name} autoFitDescription={false} />
-          {stateAppearance ? <CardStateBadge label={stateAppearance.徽标} /> : null}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function CardStateBadge({ id, label }: { id?: string; label: string }) {
-  return <span id={id} className="play-card-state-badge">{label}</span>;
-}
-
-function TextCard({
-  definition,
-  module: moduleConfig,
-  presentation,
-  fallbackName,
-  autoFitDescription,
-}: {
-  definition?: ResourceLibraryEntry;
-  module: CardTableModuleConfig;
-  presentation?: CardPresentation;
-  fallbackName: string;
-  autoFitDescription: boolean;
-}) {
-  const resolvedPresentation = resolvePresentation(definition, moduleConfig, presentation);
-
-  return (
-    <div className="play-card-text">
-      <header>
-        <RestrictedMarkdown className="play-card-name" value={resolvedPresentation.name || fallbackName} />
-        {resolvedPresentation.tags.length > 0 ? (
-          <div className="play-card-tags" aria-label="卡牌标签">
-            {resolvedPresentation.tags.map((tag, index) => (
-              <RestrictedMarkdown className="play-card-tag" value={tag} key={`${tag}:${index}`} />
-            ))}
-          </div>
-        ) : null}
-      </header>
-      <CardDescription value={resolvedPresentation.description} autoFit={autoFitDescription} />
-    </div>
-  );
-}
-
-function resolveVisibleCardDefinition(
-  systemPackage: SystemPackage,
-  characterData: ReturnType<typeof useRuntimeStore.getState>["characterData"],
-  module: CardTableModuleConfig,
-  instance: CardInstance | undefined,
-): ResourceLibraryEntry | undefined {
-  const front = resolveFrontCardDefinition(systemPackage, characterData, instance);
-  if (!front || !instance || instance.face === "front") {
-    return front;
-  }
-  const backArt = front.fields[cardField(module, "卡背字段")]?.trim();
-  if (backArt) {
-    return { ...front, fields: { ...front.fields, [cardField(module, "卡图字段")]: backArt } };
-  }
-  const reverseId = front.fields[cardField(module, "背面卡牌ID字段")]?.trim();
-  const libraryId = instance.definitionRef.type === "resourceLibrary" ? instance.definitionRef.libraryId : undefined;
-  if (!libraryId) return front;
-  return reverseId
-    ? findResourceLibrary(systemPackage, libraryId)?.entries.find((entry) => entry.ID === reverseId) ?? front
-    : front;
-}
-
-function hasReverseCardDefinition(systemPackage: SystemPackage, characterData: ReturnType<typeof useRuntimeStore.getState>["characterData"], module: CardTableModuleConfig, instance: CardInstance | undefined): boolean {
-  const front = resolveFrontCardDefinition(systemPackage, characterData, instance);
-  const backArt = front?.fields[cardField(module, "卡背字段")]?.trim();
-  if (backArt) return true;
-  const reverseId = front?.fields[cardField(module, "背面卡牌ID字段")]?.trim();
-  const libraryId = instance?.definitionRef.type === "resourceLibrary" ? instance.definitionRef.libraryId : undefined;
-  if (!libraryId) return false;
-  return Boolean(reverseId && reverseId !== front?.ID
-    && findResourceLibrary(systemPackage, libraryId)?.entries.some((entry) => entry.ID === reverseId));
-}
-
-const cardIndicatorColorNames = ["青色", "红色", "金色", "绿色", "蓝色", "紫色", "粉色", "灰色", "橙色", "湖蓝色"] as const;
-
-function CardIndicatorColumn({ instance }: { instance: CardInstance }) {
-  const transitionCardIndicator = useRuntimeStore((state) => state.transitionCardIndicator);
-  const indicators = readCardIndicators(instance);
-
-  return (
-    <div className="card-indicator-column" data-part="indicator-column">
-      {indicators.map((indicator) => (
-        <CardIndicatorBadge
-          key={indicator.indicatorId}
-          colorIndex={indicator.colorIndex}
-          colorName={cardIndicatorColorNames[indicator.colorIndex] ?? `颜色 ${indicator.colorIndex + 1}`}
-          count={indicator.value}
-          onIncrement={() => transitionCardIndicator(instance.instanceId, indicator.indicatorId, "increment")}
-          onDecrement={() => transitionCardIndicator(instance.instanceId, indicator.indicatorId, "decrement")}
-        />
-      ))}
-    </div>
-  );
-}
-
-function CardIndicatorBadge({
-  colorIndex,
-  colorName,
-  count,
-  onIncrement,
-  onDecrement,
-}: {
-  colorIndex: number;
-  colorName: string;
-  count: number;
-  onIncrement: () => void;
-  onDecrement: () => void;
-}) {
-  const pointerActions = usePointerActions(onIncrement, onDecrement, true);
-  const onKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === "+" || event.key === "ArrowUp") {
-      event.preventDefault();
-      onIncrement();
-    } else if (event.key === "-" || event.key === "ArrowDown") {
-      event.preventDefault();
-      onDecrement();
-    }
-  };
-
-  return (
-    <button
-      className="card-indicator-badge"
-      data-part="indicator"
-      data-color-index={colorIndex}
-      type="button"
-      title={`${colorName}指示物：${count}；左键增加，右键减少`}
-      aria-label={`${colorName}指示物：${count}；左键增加，右键减少${count === 0 ? "，再次减少会移除" : ""}`}
-      onClick={(event) => { event.stopPropagation(); pointerActions.onClick(event); }}
-      onContextMenu={(event) => { event.stopPropagation(); pointerActions.onContextMenu?.(event); }}
-      onPointerDown={(event) => { event.stopPropagation(); pointerActions.onPointerDown?.(event); }}
-      onPointerMove={pointerActions.onPointerMove}
-      onPointerUp={pointerActions.onPointerUp}
-      onPointerCancel={pointerActions.onPointerCancel}
-      onPointerLeave={pointerActions.onPointerLeave}
-      onKeyDown={onKeyDown}
-    >
-      <span className="card-indicator-count" aria-hidden="true">{count}</span>
-    </button>
-  );
-}
-
-function CardDescription({ value, autoFit }: { value: string; autoFit: boolean }) {
-  const descriptionRef = useRef<HTMLDivElement>(null);
-  const overflowing = useCardDescriptionFit(descriptionRef, value, autoFit);
-  return (
-    <>
-      <RestrictedMarkdown className="play-card-description" value={value} elementRef={descriptionRef} />
-      {autoFit && overflowing ? (
-        <span
-          className="play-card-description-overflow"
-          role="img"
-          aria-label="卡牌描述未完全显示；查看卡牌详情可阅读完整内容"
-          title="卡牌描述未完全显示；查看卡牌详情可阅读完整内容"
-        >
-          <Ellipsis aria-hidden="true" size={16} />
-        </span>
-      ) : null}
-    </>
-  );
-}
-
-function resolveCardDisplayMode(definition: ResourceLibraryEntry | undefined, moduleConfig: CardTableModuleConfig): "image" | "text" {
-  const displayModeField = cardField(moduleConfig, "显示方式字段");
-  const entryMode = definition?.fields[displayModeField];
-  if (entryMode === "image" || entryMode === "text") {
-    return entryMode;
-  }
-  return moduleConfig.显示方式 ?? "image";
-}
-
-function resolvePresentation(
-  definition: ResourceLibraryEntry | undefined,
-  moduleConfig: CardTableModuleConfig,
-  presentation?: CardPresentation,
-) {
-  const artField = cardField(moduleConfig, "卡图字段");
-  const backArtField = cardField(moduleConfig, "卡背字段");
-  const displayModeField = cardField(moduleConfig, "显示方式字段");
-  const reverseIdField = cardField(moduleConfig, "背面卡牌ID字段");
-  return resolveCardPresentation(definition, presentation, [artField, backArtField, displayModeField, reverseIdField]);
-}
-
-function findCardPresentation(systemPackage: SystemPackage, module: CardTableModuleConfig, instance: CardInstance | undefined): CardPresentation | undefined {
-  if (!instance) return undefined;
-  if (instance.definitionRef.type === "resourceLibrary") {
-    return findCardTableResourceLibrarySource(systemPackage, module, instance.definitionRef.libraryId)?.卡牌展示;
-  }
-  const sourceId = instance.definitionRef.compositeResourceId.replace(/^composite:/, "");
-  return module.资源来源.find((source) => source.类型 === "resourceComposer" && source.ID === sourceId)?.卡牌展示;
-}
-
-function definitionReferenceId(instance: CardInstance): string {
-  return instance.definitionRef.type === "resourceLibrary" ? instance.definitionRef.entryId : instance.definitionRef.compositeResourceId;
 }
 
 function cardTableSurfaceStyle(layout: CardTableLayout): CSSProperties {
@@ -684,19 +239,10 @@ function pointerToPct(event: PointerEvent, element: HTMLElement): { xPct: number
   };
 }
 
-function getDraggingInstanceX(instances: CardInstance[], instanceId: string): number {
+function getInstanceX(instances: CardInstance[], instanceId: string): number {
   return instances.find((instance) => instance.instanceId === instanceId)?.xPct ?? 0;
 }
 
-function getDraggingInstanceY(instances: CardInstance[], instanceId: string): number {
+function getInstanceY(instances: CardInstance[], instanceId: string): number {
   return instances.find((instance) => instance.instanceId === instanceId)?.yPct ?? 0;
-}
-
-function nextCardState(stateOptions: string[], currentState: string): string {
-  if (stateOptions.length === 0) {
-    return currentState;
-  }
-
-  const currentIndex = stateOptions.indexOf(currentState);
-  return stateOptions[(currentIndex + 1) % stateOptions.length] ?? stateOptions[0];
 }

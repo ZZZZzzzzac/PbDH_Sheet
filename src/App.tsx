@@ -1,139 +1,27 @@
-import { Archive, Copy, Download, Eye, FileText, Library, Map, Plus, Printer, ShieldCheck, Sparkles, Trash2, Type, Upload, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type InputHTMLAttributes } from "react";
-import { exportCharacterData } from "./domain/characterData";
-import { exportExternalCharacterData } from "./domain/characterFormatAdapter";
-import { createCardTableLayout } from "./domain/cardEngine";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import {
   nextGuideStep,
   previousGuideStep,
   startGuideSession,
-  type GuideStep,
   type GuideSession,
 } from "./domain/characterCreationGuide";
-import {
-  getHtmlTemplateGuideRegionIds,
-  getHtmlTemplateModuleReferences,
-  type PackageIssue,
-  type SystemPackage,
-} from "./domain/systemPackage";
 import type { PackageDirectoryHandle } from "./loaders/packageVfs";
-import type { ValidationIssue } from "./domain/validationRunner";
-import { buildReadonlyHtmlSnapshot, waitForVisibleImages } from "./export/output";
-import { collectFrameworkValidationIssues } from "./rendering/frameworkChecks";
-
 import { SheetRenderer } from "./rendering/SheetRenderer";
-import { printablePages } from "./rendering/pagePresentation";
-import { waitForTextFits } from "./rendering/textFit";
 import { GuideSpotlight } from "./rendering/GuideSpotlight";
 import { ResourceManager } from "./rendering/ResourceManager";
 import { CharacterImportDialogs } from "./rendering/CharacterImportDialogs";
-import { CharacterExportDialog, type PendingCharacterExport } from "./rendering/CharacterExportDialog";
+import { CharacterExportDialog } from "./rendering/CharacterExportDialog";
 import { QuestionnaireResultDialog } from "./rendering/QuestionnaireResultDialog";
 import { openQuestionnaireHost, type QuestionnaireHostSession } from "./rendering/questionnaireHost";
+import { AppTopBar } from "./rendering/app/AppTopBar";
+import { PackageIssuePanel, ValidationIssueDialog } from "./rendering/app/AppDiagnostics";
+import { PackageLoadingSurface } from "./rendering/app/PackageLoadingSurface";
+import { resolveGuideTargetPageId } from "./rendering/app/guideTarget";
+import { useSheetOutput } from "./rendering/app/useSheetOutput";
 import { useRuntimeStore } from "./store/runtimeStore";
 import presetSystemPackages from "virtual:preset-system-packages";
 
-type OutputKind = "json" | "html" | "print";
 const defaultPresetSystemPackage = presetSystemPackages.find((preset) => preset.id === "daggerheart-core");
-
-function downloadText(text: string, fileName: string, type: string) {
-  const blob = new Blob([text], { type });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
-}
-
-function sanitizeFileName(name: string): string {
-  const trimmed = name.trim();
-  const safe = trimmed.replace(/[<>:"/\\|?*]/g, "_");
-  return safe || "character";
-}
-
-function nextFrame() {
-  return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-}
-
-function PackageIssuePanel({ issues }: { issues: PackageIssue[] }) {
-  const blocking = issues.some((issue) => issue.level === "fatal" || issue.level === "error");
-  return (
-    <section className="error-panel" role={blocking ? "alert" : "status"} aria-label={blocking ? "System Package error" : "System Package warnings"}>
-      <h2>{blocking ? "System Package 错误" : "System Package 警告"}</h2>
-      <ul>
-        {issues.map((issue) => (
-          <li key={`${issue.code}-${issue.path ?? issue.text}`}>
-            <strong>{issue.code}</strong>
-            {issue.location?.file ? ` ${issue.location.file}` : ""}
-            {issue.path ? ` ${issue.path}: ` : " "}
-            {issue.text}
-            {(issue.entities?.length || issue.evidence?.length) ? (
-              <details>
-                <summary>诊断上下文</summary>
-                <pre>{JSON.stringify({ location: issue.location, entities: issue.entities, evidence: issue.evidence }, null, 2)}</pre>
-              </details>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function ValidationIssueDialog({
-  issues,
-  open,
-  onClose,
-  onContinue,
-}: {
-  issues: ValidationIssue[];
-  open: boolean;
-  onClose: () => void;
-  onContinue?: () => void;
-}) {
-  if (!open) {
-    return null;
-  }
-
-  return (
-    <div className="validation-dialog-backdrop" data-output-exclude="true">
-      <section className="validation-dialog" role="dialog" aria-modal="true" aria-label="Validation Report">
-        <header className="validation-dialog-header">
-          <h2>检查报告</h2>
-          <div className="dialog-actions">
-            {onContinue ? (
-              <button className="icon-button" type="button" onClick={onContinue} aria-label="继续输出">
-                <span>继续</span>
-              </button>
-            ) : null}
-            <button className="icon-button secondary-button" type="button" onClick={onClose} aria-label={onContinue ? "取消输出" : "关闭检查报告"}>
-              <span>{onContinue ? "取消" : "关闭"}</span>
-            </button>
-          </div>
-        </header>
-        <div className="validation-dialog-body">
-          {issues.length === 0 ? (
-            <p className="validation-empty">未发现问题。</p>
-          ) : (
-            <ul>
-              {issues.map((issue, index) => (
-                <li className={`validation-issue validation-${issue.level}`} key={`${issue.source}-${issue.code ?? issue.text}-${index}`}>
-                  <strong>{issue.level}</strong>
-                  {issue.code ? ` ${issue.code}` : ""} {issue.path ? `${issue.path}: ` : ""}
-                  {issue.text}
-                  <span className="validation-source">{issue.source}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
-    </div>
-  );
-}
 
 export default function App() {
   const characterFileInputRef = useRef<HTMLInputElement>(null);
@@ -142,12 +30,8 @@ export default function App() {
   const guideButtonRef = useRef<HTMLButtonElement>(null);
   const resourceManagerButtonRef = useRef<HTMLButtonElement>(null);
   const questionnaireSessionRef = useRef<QuestionnaireHostSession | null>(null);
-  const [validationDialogOpen, setValidationDialogOpen] = useState(false);
-  const [pendingOutput, setPendingOutput] = useState<OutputKind | null>(null);
-  const [printMode, setPrintMode] = useState(false);
   const [guideSession, setGuideSession] = useState<GuideSession | null>(null);
   const [resourceManagerOpen, setResourceManagerOpen] = useState(false);
-  const [pendingExternalExport, setPendingExternalExport] = useState<PendingCharacterExport | null>(null);
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
   const selectedSkinId = useRuntimeStore((state) => state.selectedSkinId);
   const frameworkColorSchemePreference = useRuntimeStore((state) => state.frameworkColorSchemePreference);
@@ -207,6 +91,27 @@ export default function App() {
   const runValidationChecks = useRuntimeStore((state) => state.runValidationChecks);
   const runPreOutputValidation = useRuntimeStore((state) => state.runPreOutputValidation);
   const tidyCardTable = useRuntimeStore((state) => state.tidyCardTable);
+  const activeCharacterSaveName = characterSaves.find((save) => save.id === activeCharacterSaveId)?.name ?? "无角色存档";
+  const {
+    printMode,
+    validationDialogOpen,
+    pendingExternalExport,
+    beginOutput,
+    exportWithCharacterAdapter,
+    handleValidation,
+    closeValidationDialog,
+    continuePendingOutput,
+    cancelExternalExport,
+    confirmExternalExport,
+  } = useSheetOutput({
+    currentPackage,
+    characterData,
+    activeCharacterSaveName,
+    cardTableCardWidths,
+    tidyCardTable,
+    runValidationChecks,
+    runPreOutputValidation,
+  });
 
   useEffect(() => {
     void initialize(presetSystemPackages).then(async () => {
@@ -239,134 +144,6 @@ export default function App() {
     }
     questionnaireSessionRef.current = opened.session;
     useRuntimeStore.setState({ importError: null, importNotice: null });
-  };
-
-  const performOutput = async (kind: OutputKind, printableContentPrepared = false) => {
-    if (!characterData) {
-      return;
-    }
-
-    const baseName = sanitizeFileName(activeCharacterSaveName);
-
-    if (kind === "json") {
-      downloadText(exportCharacterData(characterData), `${baseName}.json`, "application/json");
-      return;
-    }
-
-    if (kind === "html") {
-      if (!printableContentPrepared && !(await preparePrintableContent())) return;
-      try {
-        const printableRoot = document.querySelector(".sheet-tool");
-        await waitForVisibleImages(printableRoot ?? document);
-        downloadText(await buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined, activeCharacterSaveName), `${baseName}.html`, "text/html");
-      } finally {
-        setPrintMode(false);
-      }
-      return;
-    }
-
-    if (!printableContentPrepared && !(await preparePrintableContent())) return;
-    const printableRoot = document.querySelector(".sheet-tool");
-    if (!printableRoot) {
-      setPrintMode(false);
-      return;
-    }
-
-    try {
-      await waitForVisibleImages(printableRoot);
-      window.print();
-    } finally {
-      setPrintMode(false);
-    }
-  };
-
-  const exportWithCharacterAdapter = async (adapterId: string) => {
-    if (!characterData || !currentPackage) return;
-    const adapter = currentPackage.characterFormatAdapters?.find((candidate) => candidate.ID === adapterId);
-    if (!adapter?.exportScriptContent) return;
-    const result = await exportExternalCharacterData(characterData, adapter, currentPackage);
-    if ("error" in result) {
-      useRuntimeStore.setState({ importError: result.error.text });
-      return;
-    }
-    const { report } = result;
-    const lossy = report.skippedFields + report.skippedCards + report.skippedImages > 0;
-    const fileName = `${sanitizeFileName(activeCharacterSaveName)}.${adapter.ID}.json`;
-    if (lossy) {
-      setPendingExternalExport({ conversion: result, fileName });
-      return;
-    }
-    downloadText(`${JSON.stringify(result.document, null, 2)}\n`, fileName, "application/json");
-  };
-
-  const beginOutput = async (kind: OutputKind) => {
-    let frameworkIssues: ValidationIssue[] = [];
-    let printableContentPrepared = false;
-    if (kind !== "json") {
-      printableContentPrepared = await preparePrintableContent();
-      if (!printableContentPrepared) return;
-      frameworkIssues = collectFrameworkValidationIssues(document.querySelector(".sheet-tool") ?? document);
-    }
-    const scriptIssues = await runPreOutputValidation();
-    const issues = [...frameworkIssues, ...scriptIssues];
-    useRuntimeStore.setState({ validationIssues: issues });
-    if (issues.length > 0) {
-      setPendingOutput(kind);
-      setValidationDialogOpen(true);
-      return;
-    }
-
-    await performOutput(kind, printableContentPrepared);
-  };
-
-  const preparePrintableContent = async (tidyCardsForOutput = true) => {
-    if (!currentPackage) {
-      return false;
-    }
-    const packageSnapshot = currentPackage;
-    if (printablePages(packageSnapshot.pages, useRuntimeStore.getState().pageVisibility).length === 0) {
-      useRuntimeStore.setState({ importNotice: "当前没有可打印页面。" });
-      return false;
-    }
-
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-    setPrintMode(true);
-    await nextFrame();
-    await nextFrame();
-
-    if (tidyCardsForOutput) {
-      for (const module of packageSnapshot.modules) {
-        if (module.类型 !== "cardTable") continue;
-        const cardCount = characterData?.cards.instances.filter((instance) => instance.tableModuleId === module.ID).length ?? 0;
-        tidyCardTable(
-          module.ID,
-          createCardTableLayout({
-            surfaceWidthPx: readCardTableSurfaceWidth(module.ID),
-            cardCount,
-            preferredCardWidthPx: cardTableCardWidths[module.ID],
-          }),
-        );
-      }
-    }
-    await nextFrame();
-    const root = document.querySelector(".sheet-tool") ?? document;
-    await waitForTextFits(root);
-    return true;
-  };
-
-  const handleValidation = async () => {
-    let frameworkIssues: ValidationIssue[] = [];
-    if (await preparePrintableContent(false)) {
-      frameworkIssues = collectFrameworkValidationIssues(document.querySelector(".sheet-tool") ?? document);
-      setPrintMode(false);
-    }
-    await runValidationChecks();
-    useRuntimeStore.setState({
-      validationIssues: [...frameworkIssues, ...useRuntimeStore.getState().validationIssues],
-    });
-    setValidationDialogOpen(true);
   };
 
   const handleImportFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -454,7 +231,6 @@ export default function App() {
     window.requestAnimationFrame(() => resourceManagerButtonRef.current?.focus());
   }, []);
 
-  const activeCharacterSaveName = characterSaves.find((save) => save.id === activeCharacterSaveId)?.name ?? "无角色存档";
   const systemPackageLabel = currentPackage ? `${currentPackage.manifest.名称} · v${currentPackage.manifest.版本}` : bootStatus === "loading" ? "系统包加载中" : "未加载系统包";
   const selectedSkin = currentPackage?.skins?.find((skin) => skin.ID === selectedSkinId)
     ?? currentPackage?.skins?.find((skin) => skin.ID === currentPackage.defaultSkin);
@@ -470,251 +246,46 @@ export default function App() {
       {bootStatus === "loading" ? (
         <PackageLoadingSurface progress={packageLoadProgress} presentation={packageLoadingPresentation} />
       ) : null}
-      <header className="top-bar">
-        <div className="brand-block">
-          <span className="brand-mark">PbDH</span>
-          <div>
-            <p className="eyebrow">Base Framework</p>
-            <h1>Sheet Tool</h1>
-          </div>
-        </div>
-
-        <nav className="top-menu-bar" aria-label="Sheet Tool actions">
-          <div className="top-menu">
-            <button className="menu-trigger" type="button" aria-haspopup="true">
-              <Map aria-hidden="true" size={17} />
-              <span className="menu-trigger-text">玩家功能</span>
-            </button>
-            <div className="menu-panel" role="menu">
-              <button ref={resourceManagerButtonRef} className="menu-item" type="button" onClick={() => setResourceManagerOpen(true)} disabled={!currentPackage || !resourceCatalog}>
-                <Library aria-hidden="true" size={16} />
-                <span>资源管理器</span>
-              </button>
-              <button
-                className="menu-item"
-                type="button"
-                onClick={handleValidation}
-                aria-label="运行 Validation Checks"
-                disabled={!characterData || validationStatus === "running"}
-              >
-                <ShieldCheck aria-hidden="true" size={16} />
-                <span>{validationStatus === "running" ? "检查中" : "车卡检查"}</span>
-              </button>
-              {currentPackage?.characterCreationGuide ? (
-                <button
-                  ref={guideButtonRef}
-                  className="menu-item"
-                  type="button"
-                  onClick={() => setGuideSession(startGuideSession())}
-                  aria-label="启动车卡指引"
-                >
-                  <Map aria-hidden="true" size={16} />
-                  <span>车卡指引</span>
-                </button>
-              ) : null}
-              {currentPackage?.questionnaireCharacterCreation ? (
-                <button
-                  className="menu-item"
-                  type="button"
-                  onClick={startQuestionnaire}
-                  disabled={!characterData}
-                  aria-label={`打开问卷：${currentPackage.questionnaireCharacterCreation.名称}`}
-                >
-                  <Sparkles aria-hidden="true" size={16} />
-                  <span>{currentPackage.questionnaireCharacterCreation.名称}</span>
-                </button>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="top-menu">
-            <button className="menu-trigger" type="button" aria-haspopup="true" disabled={!currentPackage || !characterData}>
-              <span className="menu-trigger-text">玩家存档</span>
-            </button>
-            <div className="menu-panel" role="menu">
-              <div className="menu-field menu-field-compact" title={activeCharacterSaveName}>当前存档：{activeCharacterSaveName}</div>
-              <label className="menu-field menu-field-compact">
-                <select
-                  className="menu-select"
-                  aria-label="选择 Character Save"
-                  value={activeCharacterSaveId ?? ""}
-                  onChange={(event) => void switchCharacterSave(event.target.value)}
-                  disabled={characterSaves.length === 0}
-                >
-                  {characterSaves.map((save) => (
-                    <option value={save.id} key={save.id}>
-                      {save.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button className="menu-item" type="button" onClick={() => void handleCreateSave()} aria-label="新建 Character Save" disabled={!currentPackage}>
-                <Plus aria-hidden="true" size={16} />
-                <span>新建</span>
-              </button>
-              <button
-                className="menu-item"
-                type="button"
-                onClick={() => void handleRenameSave()}
-                aria-label="重命名 Character Save"
-                disabled={!activeCharacterSaveId}
-              >
-                <Type aria-hidden="true" size={16} />
-                <span>重命名</span>
-              </button>
-              <button
-                className="menu-item"
-                type="button"
-                onClick={() => void handleDuplicateSave()}
-                aria-label="复制 Character Save"
-                disabled={!activeCharacterSaveId}
-              >
-                <Copy aria-hidden="true" size={16} />
-                <span>复制</span>
-              </button>
-              <button
-                className="menu-item danger"
-                type="button"
-                onClick={() => void handleDeleteSave()}
-                aria-label="删除 Character Save"
-                disabled={!activeCharacterSaveId}
-              >
-                <Trash2 aria-hidden="true" size={16} />
-                <span>删除</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="top-menu">
-            <button className="menu-trigger" type="button" aria-haspopup="true" disabled={!characterData}>
-              <Download aria-hidden="true" size={17} />
-              <span className="menu-trigger-text">导入导出</span>
-            </button>
-            <div className="menu-panel" role="menu">
-              <button className="menu-item" type="button" onClick={() => void beginOutput("print")} aria-label="打开浏览器打印 PDF" disabled={!characterData}>
-                <Printer aria-hidden="true" size={16} />
-                <span>打印 PDF</span>
-              </button>
-              <button
-                className="menu-item"
-                type="button"
-                onClick={() => characterFileInputRef.current?.click()}
-                aria-label="导入 Character JSON"
-                disabled={!currentPackage}
-              >
-                <Upload aria-hidden="true" size={16} />
-                <span>导入</span>
-              </button>
-              <button className="menu-item" type="button" onClick={() => void beginOutput("json")} aria-label="导出 Character JSON" disabled={!characterData}>
-                <Download aria-hidden="true" size={16} />
-                <span>导出 PbDH</span>
-              </button>
-              {currentPackage?.characterFormatAdapters?.filter((adapter) => adapter.exportScriptContent).map((adapter) => (
-                <button className="menu-item" type="button" key={adapter.ID} onClick={() => void exportWithCharacterAdapter(adapter.ID)} disabled={!characterData}>
-                  <Download aria-hidden="true" size={16} />
-                  <span>导出 {adapter.名称.replace(/\s+format$/iu, "")}</span>
-                </button>
-              ))}
-              <button className="menu-item" type="button" onClick={() => void beginOutput("html")} aria-label="导出 HTML snapshot" disabled={!characterData}>
-                <FileText aria-hidden="true" size={16} />
-                <span>导出 HTML</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="top-menu">
-            <button className="menu-trigger" type="button" aria-haspopup="true">
-              <Archive aria-hidden="true" size={17} />
-              <span className="menu-trigger-text">系统包</span>
-            </button>
-            <div className="menu-panel menu-panel-right" role="menu">
-              <div className="menu-field menu-field-compact" title={systemPackageLabel}>{systemPackageLabel}</div>
-              <label className="menu-field">
-                <span>预制系统包</span>
-                <select
-                  className="menu-select"
-                  aria-label="预制系统包"
-                  value={presetSystemPackages.some((preset) => preset.id === currentPackage?.manifest.ID)
-                    ? currentPackage?.manifest.ID
-                    : currentPackage ? "" : defaultPresetSystemPackage?.id ?? ""}
-                  onChange={(event) => void handlePresetSystemPackage(event)}
-                  disabled={bootStatus === "loading"}
-                >
-                  {presetSystemPackages.map((preset) => (
-                    <option value={preset.id} key={preset.id}>{preset.name} · v{preset.version}</option>
-                  ))}
-                </select>
-              </label>
-              {currentPackage?.skins && currentPackage.skins.length > 1 ? (
-                <label className="menu-field">
-                  <span>人物卡皮肤</span>
-                  <select className="menu-select" value={selectedSkinId ?? currentPackage.defaultSkin ?? ""} onChange={(event) => selectSystemPackageSkin(event.target.value)}>
-                    {currentPackage.skins.map((skin) => <option value={skin.ID} key={skin.ID}>{skin.名称}</option>)}
-                  </select>
-                </label>
-              ) : null}
-              <label className="menu-field">
-                <span>框架配色</span>
-                <select className="menu-select" value={frameworkColorSchemePreference} onChange={(event) => setFrameworkColorSchemePreference(event.target.value as "follow-skin" | "light" | "dark")}>
-                  <option value="follow-skin">跟随人物卡皮肤</option>
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                </select>
-              </label>
-              <button
-                className="menu-item"
-                type="button"
-                onClick={() => packageFileInputRef.current?.click()}
-                aria-label="上传 System Package zip"
-                disabled={bootStatus === "loading"}
-              >
-                <Upload aria-hidden="true" size={16} />
-                <span>上传系统包(zip)</span>
-              </button>
-              <button className="menu-item" type="button" onClick={() => packageDirectoryInputRef.current?.click()} disabled={bootStatus === "loading"}>
-                <Upload aria-hidden="true" size={16} />
-                <span>上传系统包(文件夹)</span>
-              </button>
-              {authorPreviewActive ? (
-                <>
-                  <button className="menu-item" type="button" onClick={() => void handleEnterAuthorPreview()}>
-                    <Eye aria-hidden="true" size={16} /><span>重新选择预览目录</span>
-                  </button>
-                  <button className="menu-item" type="button" onClick={exitAuthorPreview}>
-                    <X aria-hidden="true" size={16} /><span>退出预览</span>
-                  </button>
-                </>
-              ) : (
-                <button className="menu-item" type="button" onClick={() => void handleEnterAuthorPreview()}>
-                  <Eye aria-hidden="true" size={16} /><span>系统包预览</span>
-                </button>
-              )}
-            </div>
-          </div>
-          <input
-            ref={characterFileInputRef}
-            className="visually-hidden"
-            type="file"
-            accept="application/json,text/html,.json,.html,.htm"
-            onChange={handleImportFile}
-          />
-          <input
-            ref={packageFileInputRef}
-            className="visually-hidden"
-            type="file"
-            accept=".zip,application/zip,application/x-zip-compressed"
-            onChange={handlePackageFile}
-          />
-          <input
-            ref={packageDirectoryInputRef}
-            className="visually-hidden"
-            type="file"
-            multiple
-            {...({ webkitdirectory: "" } as InputHTMLAttributes<HTMLInputElement>)}
-            onChange={handlePackageDirectory}
-          />
-        </nav>
-      </header>
+      <AppTopBar
+        characterFileInputRef={characterFileInputRef}
+        packageFileInputRef={packageFileInputRef}
+        packageDirectoryInputRef={packageDirectoryInputRef}
+        guideButtonRef={guideButtonRef}
+        resourceManagerButtonRef={resourceManagerButtonRef}
+        currentPackage={currentPackage}
+        characterDataAvailable={Boolean(characterData)}
+        resourceCatalogAvailable={Boolean(resourceCatalog)}
+        characterSaves={characterSaves}
+        activeCharacterSaveId={activeCharacterSaveId}
+        activeCharacterSaveName={activeCharacterSaveName}
+        selectedSkinId={selectedSkinId}
+        frameworkColorSchemePreference={frameworkColorSchemePreference}
+        bootStatus={bootStatus}
+        validationStatus={validationStatus}
+        authorPreviewActive={authorPreviewActive}
+        systemPackageLabel={systemPackageLabel}
+        presetSystemPackages={presetSystemPackages}
+        defaultPresetSystemPackageId={defaultPresetSystemPackage?.id ?? null}
+        onOpenResourceManager={() => setResourceManagerOpen(true)}
+        onValidation={() => void handleValidation()}
+        onStartGuide={() => setGuideSession(startGuideSession())}
+        onStartQuestionnaire={startQuestionnaire}
+        onSwitchCharacterSave={(saveId) => void switchCharacterSave(saveId)}
+        onCreateSave={() => void handleCreateSave()}
+        onRenameSave={() => void handleRenameSave()}
+        onDuplicateSave={() => void handleDuplicateSave()}
+        onDeleteSave={() => void handleDeleteSave()}
+        onBeginOutput={(kind) => void beginOutput(kind)}
+        onExportWithCharacterAdapter={(adapterId) => void exportWithCharacterAdapter(adapterId)}
+        onPresetSystemPackage={(event) => void handlePresetSystemPackage(event)}
+        onSelectSkin={selectSystemPackageSkin}
+        onSetFrameworkColorScheme={setFrameworkColorSchemePreference}
+        onEnterAuthorPreview={() => void handleEnterAuthorPreview()}
+        onExitAuthorPreview={exitAuthorPreview}
+        onImportFile={(event) => void handleImportFile(event)}
+        onPackageFile={(event) => void handlePackageFile(event)}
+        onPackageDirectory={(event) => void handlePackageDirectory(event)}
+      />
 
       {authorPreviewActive ? <div className="message message-info" role="status">预览中 · 刷新页面可重新读取开发目录</div> : null}
 
@@ -734,21 +305,8 @@ export default function App() {
       <ValidationIssueDialog
         issues={validationIssues}
         open={validationDialogOpen}
-        onClose={() => {
-          if (pendingOutput) setPrintMode(false);
-          setPendingOutput(null);
-          setValidationDialogOpen(false);
-        }}
-        onContinue={
-          pendingOutput
-              ? () => {
-                const output = pendingOutput;
-                setPendingOutput(null);
-                setValidationDialogOpen(false);
-                void performOutput(output, output !== "json");
-              }
-            : undefined
-        }
+        onClose={closeValidationDialog}
+        onContinue={continuePendingOutput}
       />
       {currentPackage ? (
         <SheetRenderer
@@ -803,12 +361,8 @@ export default function App() {
       />
       <CharacterExportDialog
         pending={pendingExternalExport}
-        onCancel={() => setPendingExternalExport(null)}
-        onConfirm={() => {
-          if (!pendingExternalExport) return;
-          downloadText(`${JSON.stringify(pendingExternalExport.conversion.document, null, 2)}\n`, pendingExternalExport.fileName, "application/json");
-          setPendingExternalExport(null);
-        }}
+        onCancel={cancelExternalExport}
+        onConfirm={confirmExternalExport}
       />
       <QuestionnaireResultDialog
         pending={pendingQuestionnaireResult}
@@ -817,51 +371,4 @@ export default function App() {
       />
     </div>
   );
-}
-
-function PackageLoadingSurface({
-  progress,
-  presentation,
-}: {
-  progress: { completed: number; total: number } | null;
-  presentation: NonNullable<SystemPackage["manifest"]["加载展示"]> | null;
-}) {
-  const accentColor = presentation?.强调色 ?? "#7c3aed";
-  const message = presentation?.标语 ?? "正在装配人物卡世界……";
-  const completed = progress ? Math.min(progress.completed, progress.total) : 0;
-  const percent = progress && progress.total > 0 ? Math.round((completed / progress.total) * 100) : null;
-  const style = { "--package-loading-accent": accentColor } as CSSProperties;
-
-  return (
-    <section className="package-loading-surface" role="status" aria-live="polite" aria-label="System Package 加载中" style={style}>
-      <div className="package-loading-panel">
-        <span className="package-loading-mark" aria-hidden="true">PbDH</span>
-        <p className="package-loading-message">{message}</p>
-        <progress
-          className="package-loading-progress"
-          {...(progress && progress.total > 0 ? { max: progress.total, value: completed } : {})}
-        />
-        <p className="package-loading-detail">
-          {percent === null ? "正在读取 System Package" : `正在读取 System Package · ${percent}%`}
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function resolveGuideTargetPageId(systemPackage: SystemPackage, step: GuideStep | undefined): string | null {
-  const target = step?.目标;
-  if (!target) return null;
-  if (target.类型 === "page") return target.页面ID;
-
-  const references = target.类型 === "module" ? getHtmlTemplateModuleReferences : getHtmlTemplateGuideRegionIds;
-  const targetId = target.类型 === "module" ? target.模块ID : target.区域ID;
-  if (systemPackage.shell && references(systemPackage.shell.htmlContent).includes(targetId)) return null;
-  return systemPackage.pages.find((page) => references(page.layout.htmlContent).includes(targetId))?.ID ?? null;
-}
-
-function readCardTableSurfaceWidth(moduleId: string): number {
-  const moduleElement = [...document.querySelectorAll<HTMLElement>(".card-table-module")].find((element) => element.dataset.moduleId === moduleId);
-  const surface = moduleElement?.querySelector<HTMLElement>(".card-table-surface");
-  return surface?.clientWidth ?? 800;
 }

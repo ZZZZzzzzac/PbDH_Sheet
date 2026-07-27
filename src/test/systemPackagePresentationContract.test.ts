@@ -28,18 +28,21 @@ describe("System Package presentation contract", () => {
 
   it("keeps every promised data-part hook present in its module renderer", () => {
     const rendererByModule = {
-      freeText: "FreeTextModule.tsx",
-      longText: "LongTextModule.tsx",
-      checkboxResource: "CheckboxResourceModule.tsx",
-      countableResource: "CountableResourceModule.tsx",
-      readOnlyDisplay: "ReadOnlyDisplayModule.tsx",
-      imageField: "ImageFieldModule.tsx",
-      resourcePicker: "ResourcePickerModule.tsx",
-      resourceComposer: "ResourceComposerModule.tsx",
-      cardTable: "CardTableModule.tsx",
-    } satisfies Record<keyof typeof stableModuleDataParts, string>;
+      freeText: ["FreeTextModule.tsx"],
+      longText: ["LongTextModule.tsx"],
+      checkboxResource: ["CheckboxResourceModule.tsx"],
+      countableResource: ["CountableResourceModule.tsx"],
+      readOnlyDisplay: ["ReadOnlyDisplayModule.tsx"],
+      imageField: ["ImageFieldModule.tsx"],
+      resourcePicker: ["ResourcePickerModule.tsx"],
+      resourceComposer: ["ResourceComposerModule.tsx"],
+      cardTable: ["CardTableModule.tsx", "cardTable"],
+    } satisfies Record<keyof typeof stableModuleDataParts, string[]>;
     const missing = Object.entries(stableModuleDataParts).flatMap(([moduleType, parts]) => {
-      const source = readFileSync(join(repoRoot, "src", "rendering", rendererByModule[moduleType as keyof typeof rendererByModule]), "utf8");
+      const source = rendererByModule[moduleType as keyof typeof rendererByModule].map((rendererPath) => {
+        const path = join(repoRoot, "src", "rendering", rendererPath);
+        return statSync(path).isDirectory() ? readSources(path, new Set([".ts", ".tsx"])) : readFileSync(path, "utf8");
+      }).join("\n");
       return parts.filter((part) => !source.includes(`data-part=\"${part}\"`)).map((part) => `${moduleType}:${part}`);
     });
     expect(missing).toEqual([]);
