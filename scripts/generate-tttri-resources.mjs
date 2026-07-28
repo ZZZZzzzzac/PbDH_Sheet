@@ -628,7 +628,7 @@ async function buildCatalogs() {
   const ancestries = await buildAncestries();
   const communities = await buildCommunities();
   const { cards: domainCards, assetCopies } = await buildDomainCards();
-  const armor = JSON.parse(await readText(path.join(repoRoot, "public", "system-packages", "daggerheart-core", "resources", "armor.json")));
+  const armor = JSON.parse(await readText(path.join(resourcesRoot, "armor.json")));
   const loot = JSON.parse(await readText(path.join(repoRoot, "public", "system-packages", "daggerheart-core", "resources", "loot.json")));
   return {
     resources: {

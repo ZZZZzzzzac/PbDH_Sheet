@@ -458,13 +458,46 @@ describe("TTTRI System Package", () => {
     expect(selectionResult.cardCreationInstructions).toEqual([expect.objectContaining({ cardTableModuleId: "character-card-table", entries: [offDefaultCard] })]);
   });
 
-  it("fills provisional Armor/Loot and records TTTRI advancement choices", () => {
+  it("ships TTTRI Armor and initial inventory, then records advancement choices", () => {
     expect(loadedResult.ok).toBe(true);
     if (!loadedResult.ok) return;
     const systemPackage = loadedResult.package;
     const armor = systemPackage.resourceLibraries.find((library) => library.ID === "armor")!.entries[0]!;
     const loot = systemPackage.resourceLibraries.find((library) => library.ID === "loot")!.entries[0]!;
     let data = createEmptyCharacterData(systemPackage);
+
+    const armorLibrary = systemPackage.resourceLibraries.find((library) => library.ID === "armor")!;
+    expect(armorLibrary.entries).toHaveLength(34);
+    expect(armorLibrary.entries[0]).toMatchObject({
+      ID: "护甲:基础轻型制式装备",
+      fields: {
+        名称: "基础轻型制式装备",
+        重度阈值: "5",
+        严重阈值: "11",
+        护甲值: "3",
+        描述: "灵活：闪避值+1",
+        位阶: "1",
+      },
+    });
+    expect(armorLibrary.entries.at(-1)).toMatchObject({
+      ID: "护甲:身负重任套装",
+      fields: {
+        名称: "身负重任套装",
+        重度阈值: "18",
+        严重阈值: "48",
+        护甲值: "8",
+        描述: "困难：所有角色属性以及闪避值-1",
+        位阶: "4",
+      },
+    });
+    expect(data.character.values.inventory).toBe([
+      "一根照明棒",
+      "一捆工业弹力绳",
+      "作战食品包",
+      "[二选一] 小型治疗药剂（回复1d4生命点）或小型理智药剂（清除1d4点压力点）",
+      "罗德岛干员通行证",
+    ].join("\n"));
+    expect(data.character.values["handful-gold"]).toEqual({ current: 1, max: 9 });
 
     const armorResult = evaluateDependencies(data, systemPackage, {
       type: "resourceSelected", sourceModuleId: "pick-armor", libraryId: "armor", selectedEntries: [armor],

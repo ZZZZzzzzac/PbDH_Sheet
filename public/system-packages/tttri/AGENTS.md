@@ -26,9 +26,10 @@ Resource review is complete. Implement the functional System Package in Issue or
 - `resources/ancestries.json`: 35 individual Ancestries.
 - `resources/communities.json`: 15 Communities.
 - `resources/domain-cards.json`: 231 Domain Cards.
-- `resources/armor.json`: provisional copy from `daggerheart-core`.
+- `resources/armor.json`: TTTRI-owned armor catalog synchronized directly from the approved Feishu armor tables; do not replace it with `daggerheart-core` armor.
 - `resources/loot.json`: provisional copy from `daggerheart-core`.
 - No Weapons Resource Library; weapon prototypes belong to Subclass entries.
+- `inventory` defaults to the approved Feishu operator starting supplies; the equivalent one-handful currency remains represented by the `handful-gold` Countable Resource.
 
 ## Transformation boundary
 
