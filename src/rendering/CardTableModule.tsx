@@ -42,6 +42,8 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
   const updateCardInstancePosition = useRuntimeStore((state) => state.updateCardInstancePosition);
   const bringCardInstanceToFront = useRuntimeStore((state) => state.bringCardInstanceToFront);
   const tidyCardTable = useRuntimeStore((state) => state.tidyCardTable);
+  const pendingPlacementIds = useRuntimeStore((state) => state.pendingCardTablePlacements[module.ID]);
+  const placePendingCardInstances = useRuntimeStore((state) => state.placePendingCardInstances);
   const cardWidthPx = useRuntimeStore((state) => state.cardTableCardWidths[module.ID] ?? defaultCardWidthPx);
   const setCardTableCardWidth = useRuntimeStore((state) => state.setCardTableCardWidth);
   const visibleInstances = instances.filter((instance) => instance.tableModuleId === module.ID).sort(compareCards);
@@ -84,6 +86,23 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
       window.removeEventListener("resize", updateSurfaceSize);
     };
   }, []);
+
+  useLayoutEffect(() => {
+    if (!pendingPlacementIds?.length || surfaceWidthPx <= 0) return;
+    placePendingCardInstances(module.ID, tableLayout);
+  }, [
+    cardWidthPx,
+    module.ID,
+    pendingPlacementIds,
+    placePendingCardInstances,
+    surfaceViewportHeightPx,
+    surfaceWidthPx,
+    tableLayout.columns,
+    tableLayout.insetXPct,
+    tableLayout.insetYPct,
+    tableLayout.stepXPct,
+    tableLayout.stepYPct,
+  ]);
 
   const clearLongPressTimer = () => {
     if (longPressTimerRef.current === null) return;

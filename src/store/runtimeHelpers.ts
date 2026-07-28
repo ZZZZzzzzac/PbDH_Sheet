@@ -132,6 +132,25 @@ export function createCardInstancesFromSelection(
   );
 }
 
+export function queueNewCardInstancePlacements(
+  pending: Record<string, string[]>,
+  previousData: CharacterData,
+  nextData: CharacterData,
+): Record<string, string[]> {
+  const previousIds = new Set(previousData.cards.instances.map((instance) => instance.instanceId));
+  const additions = nextData.cards.instances.filter((instance) => !previousIds.has(instance.instanceId));
+  if (additions.length === 0) return pending;
+
+  const nextPending = { ...pending };
+  for (const instance of additions) {
+    nextPending[instance.tableModuleId] = [
+      ...(nextPending[instance.tableModuleId] ?? []),
+      instance.instanceId,
+    ];
+  }
+  return nextPending;
+}
+
 export function hasCardCreationTarget(systemPackage: SystemPackage, moduleId: string): boolean {
   const sourceModule = systemPackage.modules.find((module) => module.ID === moduleId);
   return (sourceModule?.类型 === "resourcePicker" || sourceModule?.类型 === "resourceComposer") && Boolean(sourceModule.创建卡牌);

@@ -4,6 +4,7 @@ import {
   clampCardWidth,
   deleteCardInstance,
   flipCardInstance,
+  placeCardInstancesInNextTidySlots,
   rotateCardInstance,
   setCardInstanceUpright,
   tidyCardTable,
@@ -20,6 +21,7 @@ import { scheduleAutosave } from "../workflows/autosave";
 export function createCardSlice(environment: RuntimeEnvironment): RuntimeSlice<CardSlice> {
   return (set, get) => ({
     cardTableCardWidths: {},
+    pendingCardTablePlacements: {},
 
     updateCardInstancePosition(instanceId, xPct, yPct) {
       updateCardAndAutosave(environment, get, set, (data) =>
@@ -64,6 +66,25 @@ export function createCardSlice(environment: RuntimeEnvironment): RuntimeSlice<C
     tidyCardTable(tableModuleId, layout) {
       updateCardAndAutosave(environment, get, set, (data) =>
         tidyCardTable(data, tableModuleId, layout));
+    },
+
+    placePendingCardInstances(tableModuleId, layout) {
+      const state = get();
+      const instanceIds = state.pendingCardTablePlacements[tableModuleId];
+      if (!instanceIds?.length) return;
+      const nextPending = { ...state.pendingCardTablePlacements };
+      delete nextPending[tableModuleId];
+      if (!state.characterData) {
+        set({ pendingCardTablePlacements: nextPending });
+        return;
+      }
+      set({
+        characterData: placeCardInstancesInNextTidySlots(state.characterData, tableModuleId, instanceIds, layout),
+        pendingCardTablePlacements: nextPending,
+        importError: null,
+        importNotice: null,
+      });
+      scheduleAutosave(environment, () => get().characterData, (storageStatus) => set({ storageStatus }));
     },
 
     setCardTableCardWidth(tableModuleId, widthPx) {

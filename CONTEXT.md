@@ -358,6 +358,7 @@ _Avoid_: Script plugin
 - A **Card Instance** may reference a **Composite Resource** so the generated card survives saving, export, import, and reload without modifying Author-owned **Resource Libraries**.
 - A Card Instance backed by a **Resource Extension** keeps a Resource Definition reference rather than copying the complete Resource Output; replacing an Extension updates same-ID definitions, while removed Entry IDs leave explicit stale references and diagnostics.
 - A **Card** is a core PbDH concept and may represent many kinds of resources, not only Daggerheart domain cards.
+- A newly created **Card Instance** uses the next position it would receive in the Card Table's current tidy layout, without changing any existing Card Instance position, layer, rotation, or other state.
 - PbDH Cards are ability/resource references, not a card-game rules engine.
 - Player-side Cards are grouped into **Configured Cards**, **Vault Cards**, and **Library Cards**.
 - Card movement rules should be checked by **Validation Checks**, not hard-coded into the Card system.

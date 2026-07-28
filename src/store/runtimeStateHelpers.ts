@@ -15,6 +15,7 @@ export function emptyDerivedState() {
     pageVisibility: {} as Record<string, boolean>,
     resourcePickerDefaultQueries: {} as Record<string, ResourceLibraryQuery>,
     cardTableCardWidths: {} as Record<string, number>,
+    pendingCardTablePlacements: {} as Record<string, string[]>,
     validationIssues: [] as ValidationIssue[],
     validationStatus: "idle" as const,
   };

@@ -49,6 +49,7 @@ describe("runtime store", () => {
       pendingCharacterConversion: null,
       pendingCharacterFormatSelection: null,
       pendingQuestionnaireResult: null,
+      pendingCardTablePlacements: {},
       authorPreviewActive: false,
     });
     await useRuntimeStore.getState().initialize();
@@ -272,6 +273,8 @@ describe("runtime store", () => {
         state: "vault",
       }),
     ]);
+    const createdIds = useRuntimeStore.getState().characterData?.cards.instances.map((instance) => instance.instanceId);
+    expect(useRuntimeStore.getState().pendingCardTablePlacements["domain-card-table"]).toEqual(createdIds);
 
     await waitFor(() => {
       expect(useRuntimeStore.getState().storageStatus).toBe("saved");

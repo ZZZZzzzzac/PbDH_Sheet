@@ -282,6 +282,31 @@ export function tidyCardTable(data: CharacterData, tableModuleId: string, layout
   );
 }
 
+export function placeCardInstancesInNextTidySlots(
+  data: CharacterData,
+  tableModuleId: string,
+  instanceIds: string[],
+  layout: CardTableLayout,
+): CharacterData {
+  const targetIds = new Set(instanceIds);
+  let tableIndex = 0;
+
+  return updateCardInstances(
+    data,
+    data.cards.instances.map((instance) => {
+      if (instance.tableModuleId !== tableModuleId) return instance;
+      const instanceIndex = tableIndex;
+      tableIndex += 1;
+      if (!targetIds.has(instance.instanceId)) return instance;
+      return {
+        ...instance,
+        xPct: layout.insetXPct + (instanceIndex % layout.columns) * layout.stepXPct,
+        yPct: layout.insetYPct + Math.floor(instanceIndex / layout.columns) * layout.stepYPct,
+      };
+    }),
+  );
+}
+
 export function deleteCardInstance(data: CharacterData, instanceId: string): CharacterData {
   return updateCardInstances(
     data,

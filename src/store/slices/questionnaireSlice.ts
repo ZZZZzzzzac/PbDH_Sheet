@@ -1,7 +1,7 @@
 import { rebuildDerivedDependencies } from "../../domain/dependencyEngine";
 import { resolveQuestionnaireResult } from "../../domain/questionnaire";
 import { applyResourceSelectionToDraft } from "../../domain/resourceSelection";
-import { dependencyRuntimeStateFromResult, warnDependencyIssues } from "../runtimeHelpers";
+import { dependencyRuntimeStateFromResult, queueNewCardInstancePlacements, warnDependencyIssues } from "../runtimeHelpers";
 import type { RuntimeEnvironment } from "../runtimeEnvironment";
 import type { QuestionnaireSlice, RuntimeSlice } from "../runtimeTypes";
 import { saveCharacterDataImmediately } from "../workflows/autosave";
@@ -114,6 +114,11 @@ export function createQuestionnaireSlice(
       warnDependencyIssues(derivedResult);
       set({
         characterData: pending.nextCharacterData,
+        pendingCardTablePlacements: queueNewCardInstancePlacements(
+          get().pendingCardTablePlacements,
+          characterData,
+          pending.nextCharacterData,
+        ),
         ...dependencyRuntimeStateFromResult(derivedResult),
         pendingQuestionnaireResult: null,
         importError: null,

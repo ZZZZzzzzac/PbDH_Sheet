@@ -183,6 +183,7 @@ export interface QuestionnaireSlice {
 
 export interface CardSlice {
   cardTableCardWidths: Record<string, number>;
+  pendingCardTablePlacements: Record<string, string[]>;
   updateCardInstancePosition: (instanceId: string, xPct: number, yPct: number) => void;
   bringCardInstanceToFront: (instanceId: string) => void;
   updateCardInstanceState: (instanceId: string, cardState: string) => void;
@@ -192,6 +193,7 @@ export interface CardSlice {
   addCardIndicator: (instanceId: string) => void;
   transitionCardIndicator: (instanceId: string, indicatorId: string, direction: "increment" | "decrement") => void;
   tidyCardTable: (tableModuleId: string, layout: CardTableLayout) => void;
+  placePendingCardInstances: (tableModuleId: string, layout: CardTableLayout) => void;
   setCardTableCardWidth: (tableModuleId: string, widthPx: number) => void;
   deleteCardInstance: (instanceId: string) => void;
 }

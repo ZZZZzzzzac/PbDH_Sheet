@@ -8,6 +8,7 @@ import {
   createCardTableLayout,
   deleteCardInstance,
   flipCardInstance,
+  placeCardInstancesInNextTidySlots,
   readCardIndicators,
   rotateCardInstance,
   setCardInstanceUpright,
@@ -163,6 +164,42 @@ describe("cardEngine", () => {
     expect(instances[1].xPct - instances[0].xPct).toBeGreaterThan(cardWidthPct);
     expect(instances[2].yPct - instances[0].yPct).toBeGreaterThan(cardHeightPct);
     expect(layout.surfaceHeightPx).toBeGreaterThan(520);
+  });
+
+  it("places only newly created cards into their next tidy slots", () => {
+    const created = Array.from({ length: 4 }).reduce(
+      (nextData, _item, index) => createCardInstance(nextData, {
+        instanceId: `instance-${index}`,
+        tableModuleId: "domain-card-table",
+        libraryId: "domain-cards",
+        definitionId: `domain-card:${index}`,
+      }),
+      createEmptyCharacterData(minimalSystemPackage),
+    );
+    const withExistingState = rotateCardInstance(
+      updateCardInstancePosition(created, "instance-0", 61, 37),
+      "instance-1",
+      1,
+    );
+    const existingBefore = withExistingState.cards.instances.slice(0, 2);
+    const layout = createCardTableLayout({ surfaceWidthPx: 568, cardCount: 4 });
+
+    const placed = placeCardInstancesInNextTidySlots(
+      withExistingState,
+      "domain-card-table",
+      ["instance-2", "instance-3"],
+      layout,
+    );
+
+    expect(placed.cards.instances.slice(0, 2)).toEqual(existingBefore);
+    expect(placed.cards.instances[2]).toEqual(expect.objectContaining({
+      xPct: layout.insetXPct,
+      yPct: layout.insetYPct + layout.stepYPct,
+    }));
+    expect(placed.cards.instances[3]).toEqual(expect.objectContaining({
+      xPct: layout.insetXPct + layout.stepXPct,
+      yPct: layout.insetYPct + layout.stepYPct,
+    }));
   });
 
   it("clamps dragged cards so the full card stays inside the table", () => {

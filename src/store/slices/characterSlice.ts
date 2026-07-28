@@ -15,6 +15,7 @@ import {
   dependencyRuntimeStateFromResult,
   ensureCardState,
   fileToDataUrl,
+  queueNewCardInstancePlacements,
   warnDependencyIssues,
 } from "../runtimeHelpers";
 import type { RuntimeEnvironment } from "../runtimeEnvironment";
@@ -250,6 +251,11 @@ export function createCharacterSlice(environment: RuntimeEnvironment): RuntimeSl
       warnDependencyIssues(applied.derivedResult);
       set({
         characterData: applied.characterData,
+        pendingCardTablePlacements: queueNewCardInstancePlacements(
+          get().pendingCardTablePlacements,
+          characterData,
+          applied.characterData,
+        ),
         ...dependencyRuntimeStateFromResult(applied.derivedResult),
         importError: null,
         importNotice: null,
@@ -286,6 +292,11 @@ export function createCharacterSlice(environment: RuntimeEnvironment): RuntimeSl
       warnDependencyIssues(derivedResult);
       set({
         characterData: nextData,
+        pendingCardTablePlacements: queueNewCardInstancePlacements(
+          get().pendingCardTablePlacements,
+          characterData,
+          nextData,
+        ),
         ...dependencyRuntimeStateFromResult(derivedResult),
         importError: null,
         importNotice: null,

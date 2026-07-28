@@ -1,6 +1,6 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createCardInstance } from "../domain/cardEngine";
+import { createCardInstance, createCardTableLayout, rotateCardInstance, updateCardInstancePosition } from "../domain/cardEngine";
 import { applyEffectiveResourceCatalog, createEffectiveResourceCatalog } from "../domain/effectiveResourceCatalog";
 import { loadResourceExtensionJson } from "../domain/resourceExtension";
 import { resourceAssetUrlKey } from "../loaders/assetResolver";
@@ -498,6 +498,51 @@ describe("Card rendering", () => {
 
     expect(useRuntimeStore.getState().cardTableCardWidths["domain-card-table"]).toBe(300);
     expect(result.container.querySelector(".card-table-surface")).toHaveStyle({ "--play-card-width": "300px" });
+  });
+
+  it("places pending new cards into the next measured tidy slots without changing existing cards", async () => {
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains("card-table-surface") ? 568 : 0;
+    });
+    const systemPackage = createCardTablePackage();
+    const created = Array.from({ length: 4 }).reduce(
+      (data, _item, index) => createCardInstance(data, {
+        instanceId: `card-instance-${index}`,
+        tableModuleId: "domain-card-table",
+        libraryId: "domain-cards",
+        definitionId: "domain-card:recall-test",
+      }),
+      createEmptyCharacterData(systemPackage),
+    );
+    const characterData = rotateCardInstance(
+      updateCardInstancePosition(created, "card-instance-0", 61, 37),
+      "card-instance-1",
+      1,
+    );
+    const existingBefore = characterData.cards.instances.slice(0, 2);
+    useRuntimeStore.setState({
+      currentPackage: systemPackage,
+      characterData,
+      pendingCardTablePlacements: {
+        "domain-card-table": ["card-instance-2", "card-instance-3"],
+      },
+    });
+
+    const result = render(<SheetRenderer systemPackage={systemPackage} />);
+
+    await waitFor(() => expect(useRuntimeStore.getState().pendingCardTablePlacements["domain-card-table"]).toBeUndefined());
+    const placed = useRuntimeStore.getState().characterData?.cards.instances ?? [];
+    const surfaceHeightPx = Number.parseFloat(result.container.querySelector<HTMLElement>(".card-table-surface")?.style.height ?? "0");
+    const layout = createCardTableLayout({ surfaceWidthPx: 568, cardCount: 4, minSurfaceHeightPx: surfaceHeightPx });
+    expect(placed.slice(0, 2)).toEqual(existingBefore);
+    expect(placed[2]).toEqual(expect.objectContaining({
+      xPct: layout.insetXPct,
+      yPct: layout.insetYPct + layout.stepYPct,
+    }));
+    expect(placed[3]).toEqual(expect.objectContaining({
+      xPct: layout.insetXPct + layout.stepXPct,
+      yPct: layout.insetYPct + layout.stepYPct,
+    }));
   });
 
   it("expands the Card Table surface to the height allocated by its container", () => {
