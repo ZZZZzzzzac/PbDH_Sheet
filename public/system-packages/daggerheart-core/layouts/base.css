@@ -422,19 +422,25 @@
   padding: 0.15rem 0.25rem;
 }
 
-.advancement-grid [data-module-type="checkboxResource"] [data-part="option"] {
+.advancement-grid [data-module-type="checkboxResource"] :is([data-part="option"], [data-part="option-group"]) {
   display: grid;
   grid-template-columns: 2.5rem minmax(0, 1fr);
   align-items: start;
   min-height: 1.25rem;
-  gap: 0.15rem;
+  gap: 0.35rem;
   font-size: 0.75rem;
   line-height: 1.2;
 }
 
 .advancement-grid [data-part="group-inputs"] {
   width: 2.5rem;
+  justify-self: end;
+  justify-content: flex-end;
   gap: 0.05rem;
+}
+
+.advancement-grid [data-part="option"] > [data-part="input"] {
+  justify-self: end;
 }
 
 .advancement-grid [data-part="option-label"] {
@@ -448,6 +454,19 @@
   width: 0.75rem;
   height: 0.75rem;
   margin: 0;
+}
+
+.advancement-grid > article > :is(
+  [data-module-slot-id="advancement-tier-2"],
+  [data-module-slot-id="advancement-tier-3"],
+  [data-module-slot-id="advancement-tier-4"]
+) {
+  flex: 1 1 auto;
+}
+
+.advancement-grid > article > [data-module-slot-id$="-footer"] {
+  margin-top: auto;
+  min-height: 3.6rem;
 }
 
 @media print {

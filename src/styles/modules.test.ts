@@ -8,6 +8,10 @@ describe("Sheet Module sizing", () => {
     expect(modulesCss).toMatch(/\[data-module-type="longText"\]\s+\[data-part="input"\]\s*\{[^}]*height:\s*var\(--long-text-height[^}]*overflow:\s*auto/s);
   });
 
+  it("removes inline-control baseline space when text modules switch between editor and preview", () => {
+    expect(modulesCss).toMatch(/\[data-markdown-editor="true"\]\s*\{[^}]*display:\s*flex[^}]*min-width:\s*0/s);
+  });
+
   it("keeps Countable Resource text and image markers in equal square cells", () => {
     expect(countableResourceCss).toMatch(/\.marker-group\s*\{[^}]*font-size:\s*var\(--countable-marker-size,\s*inherit\)/s);
     expect(countableResourceCss).toMatch(/\.marker-cell\s*\{[^}]*flex:\s*0 0 1em[^}]*width:\s*1em[^}]*height:\s*1em/s);
@@ -21,8 +25,8 @@ describe("Sheet Module sizing", () => {
   });
 
   it("stretches Free Text editors and inputs to the Module content area", () => {
-    expect(modulesCss).toMatch(/\[data-module-type="freeText"\]\s*>\s*\[data-markdown-editor="true"\]\s*\{[^}]*align-self:\s*stretch[^}]*min-height:\s*0/s);
-    expect(modulesCss).toMatch(/\[data-module-type="freeText"\]\s*>\s*\[data-markdown-editor="true"\]\s*>\s*\[data-part="input"\][^\{]*\{[^}]*align-self:\s*stretch[^}]*height:\s*100%[^}]*min-height:\s*0[^}]*text-align:\s*center/s);
+    expect(modulesCss).toMatch(/\[data-module-type="freeText"\]\s*>\s*\[data-markdown-editor="true"\]\s*\{[^}]*align-self:\s*stretch[^}]*min-height:\s*calc\(1lh \+ 10px\)/s);
+    expect(modulesCss).toMatch(/\[data-module-type="freeText"\]\s*>\s*\[data-markdown-editor="true"\]\s*>\s*\[data-part="input"\][^\{]*\{[^}]*align-self:\s*stretch[^}]*height:\s*100%[^}]*min-height:\s*calc\(1lh \+ 10px\)[^}]*text-align:\s*center/s);
   });
 
   it("centers Free Text values in both editing and preview states", () => {
