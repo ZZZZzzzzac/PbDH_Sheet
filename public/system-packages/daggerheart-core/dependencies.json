@@ -216,6 +216,75 @@
     ]
   },
   {
+    "ID": "append-selected-class-item",
+    "sources": [
+      {
+        "类型": "resourcePicker",
+        "模块ID": "pick-class"
+      }
+    ],
+    "targets": [
+      {
+        "类型": "module",
+        "模块ID": "inventory"
+      }
+    ],
+    "触发": {
+      "类型": "resourceSelected",
+      "来源模块ID": "pick-class"
+    },
+    "条件": {
+      "类型": "selectedResourceFieldNotEquals",
+      "字段": "职业物品",
+      "值": ""
+    },
+    "动作": [
+      {
+        "类型": "fillText",
+        "目标模块ID": "inventory",
+        "写入方式": "追加",
+        "追加分隔符": "\n",
+        "内容": {
+          "类型": "selectedResourceField",
+          "字段": "职业物品"
+        }
+      }
+    ]
+  },
+  {
+    "ID": "append-fallback-class-item",
+    "sources": [
+      {
+        "类型": "resourcePicker",
+        "模块ID": "pick-class"
+      }
+    ],
+    "targets": [
+      {
+        "类型": "module",
+        "模块ID": "inventory"
+      }
+    ],
+    "触发": {
+      "类型": "resourceSelected",
+      "来源模块ID": "pick-class"
+    },
+    "条件": {
+      "类型": "selectedResourceFieldEquals",
+      "字段": "职业物品",
+      "值": ""
+    },
+    "动作": [
+      {
+        "类型": "fillText",
+        "目标模块ID": "inventory",
+        "写入方式": "追加",
+        "追加分隔符": "\n",
+        "内容": "职业物品"
+      }
+    ]
+  },
+  {
     "ID": "fill-subclass",
     "sources": [
       {

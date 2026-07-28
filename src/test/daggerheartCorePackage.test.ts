@@ -281,6 +281,36 @@ describe("Daggerheart core System Package", () => {
     }
   });
 
+  it("seeds standard inventory and appends the selected class item", async () => {
+    const result = await loadDaggerheartPackage();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    const initialData = createEmptyCharacterData(result.package);
+    const expectedInventory = [
+      "火把（用于照亮黑暗房间）",
+      "50英尺长的绳索（用于攀爬墙壁或沿悬崖速降）",
+      "基本补给品（帐篷、睡袋、火绒盒、口粮等）",
+      "一瓶小型治疗药剂（恢复 1d4 生命点）或一瓶小型精力药剂（清除 1d4 压力点）",
+    ].join("\n");
+    expect(initialData.character.values.inventory).toBe(expectedInventory);
+    expect(initialData.character.values["handful-gold"]).toEqual({ current: 1, max: 9 });
+    expect(expectedInventory).not.toContain("金币");
+
+    const classes = result.package.resourceLibraries?.find((library) => library.ID === "classes");
+    const bard = classes?.entries.find((entry) => entry.fields.名称 === "吟游诗人");
+    expect(bard).toBeTruthy();
+    if (!bard) return;
+    const withClassItem = applyResourceSelectionToDraft(initialData, result.package, "pick-class", "classes", [bard]);
+    expect(withClassItem.characterData.character.values.inventory).toBe(`${expectedInventory}\n${bard.fields.职业物品}`);
+
+    const withoutClassItem = applyResourceSelectionToDraft(initialData, result.package, "pick-class", "classes", [{
+      ID: "职业:测试",
+      fields: { 名称: "测试职业" },
+    }]);
+    expect(withoutClassItem.characterData.character.values.inventory).toBe(`${expectedInventory}\n职业物品`);
+  });
+
   it("hides authoring-only class and domain-card fields from their Pickers", async () => {
     const result = await loadDaggerheartPackage();
     expect(result.ok).toBe(true);
