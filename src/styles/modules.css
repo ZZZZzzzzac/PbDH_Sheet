@@ -151,6 +151,11 @@ fieldset.container {
   margin-bottom: 0;
 }
 
+.markdown-preview ul,
+.markdown-preview ol {
+  padding-inline-start: 1.25em;
+}
+
 .markdown-preview:focus-visible {
   outline: 3px solid var(--framework-focus);
   outline-offset: 2px;

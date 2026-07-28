@@ -35,6 +35,10 @@ describe("Sheet Module sizing", () => {
     expect(modulesCss).not.toMatch(/\[data-module-type="freeText"\]\s*>\s*\[data-markdown-preview="true"\]\s*\{[^}]*display:/s);
   });
 
+  it("keeps Markdown list markers close to the preview's left edge", () => {
+    expect(modulesCss).toMatch(/\.markdown-preview ul,\s*\.markdown-preview ol\s*\{[^}]*padding-inline-start:\s*1\.25em/s);
+  });
+
   it("keeps Card Markdown lists in normal block flow", () => {
     expect(cardTableCss).not.toMatch(/\.play-card-description\s*\{[^}]*display:\s*-webkit-box/s);
     expect(cardTableCss).toMatch(/\.play-card-description\s*\{[^}]*white-space:\s*normal/s);
