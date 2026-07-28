@@ -58,6 +58,10 @@
 }
 
 @media print {
+  .witching-hour-sheet .sheet-column {
+    gap: 0;
+  }
+
   .witching-hour-sheet .picker-field {
     grid-template-columns: minmax(0, 1fr);
   }

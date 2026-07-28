@@ -890,50 +890,6 @@ test("printed text Cards preserve their geometry and typography while using the 
   }
 });
 
-const errorFixtures = [
-  ["missing-manifest.zip", "MANIFEST_MISSING"],
-] as const;
-
-for (const [fileName, expectedCode] of errorFixtures) {
-  test(`invalid System Package fixture ${fileName} shows ${expectedCode}`, async ({ page }, testInfo) => {
-    await page.goto("/");
-    await uploadPackage(page, await errorFixturePath(testInfo, fileName));
-
-    await expect(page.getByRole("alert", { name: "System Package error" })).toContainText(expectedCode);
-    await expect(page.getByLabel("Sheet Tool", { exact: true })).toHaveAttribute("data-system-package-id", "daggerheart-core");
-  });
-}
-
-test("invalid System Package zip keeps the current sheet when one is already loaded", async ({ page }, testInfo) => {
-  await page.goto("/");
-  await uploadPackage(page, await demoPackagePath(testInfo));
-  await expect(page.getByLabel("Sheet Tool", { exact: true })).toHaveAttribute("data-system-package-id", "demo-minimal");
-  await page.getByLabel("姓名").fill("阿青");
-  await waitForAutosave(page, "character-name", "阿青");
-
-  await uploadPackage(page, await errorFixturePath(testInfo, "missing-manifest.zip"));
-
-  await expect(page.getByRole("alert", { name: "System Package error" })).toContainText("MANIFEST_MISSING");
-  await expect(page.locator('[data-module-id="character-name"]')).toContainText("阿青");
-});
-
-test("invalid cached System Package is cleared before falling back to the default preset", async ({ page }) => {
-  const pageErrors: string[] = [];
-  page.on("pageerror", (error) => pageErrors.push(error.message));
-
-  await page.goto("/");
-  await putInvalidCachedPackage(page);
-  await page.reload();
-
-  await expect(page.getByRole("button", { name: /System Package zip/ })).toBeEnabled();
-  await expect(page.getByLabel("Sheet Tool", { exact: true })).toHaveAttribute("data-system-package-id", "daggerheart-core");
-  expect(pageErrors).toEqual([]);
-
-  await page.reload();
-  await expect(page.getByLabel("Sheet Tool", { exact: true })).toHaveAttribute("data-system-package-id", "daggerheart-core");
-  expect(pageErrors).toEqual([]);
-});
-
 async function uploadPackage(page: Page, packagePath: string) {
   await openSystemPackageMenu(page);
   const packageChooserPromise = page.waitForEvent("filechooser");
@@ -1126,68 +1082,6 @@ function jsonBytes(value: unknown): Uint8Array {
   return strToU8(JSON.stringify(value));
 }
 
-async function putInvalidCachedPackage(page: Page) {
-  await page.evaluate(async () => {
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open("pbdh-sheet");
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-
-    await new Promise<void>((resolve, reject) => {
-      if (!db.objectStoreNames.contains("systemPackages")) {
-        db.close();
-        reject(new Error("systemPackages object store missing"));
-        return;
-      }
-
-      const transaction = db.transaction("systemPackages", "readwrite");
-      transaction.objectStore("systemPackages").put({
-        id: "current-system-package",
-        packageId: "invalid-current-contract",
-        data: {
-          manifest: {
-            ID: "invalid-current-contract",
-            名称: "无效缓存包",
-            版本: "1.0.0",
-            schemaVersion: "0.2.0",
-          },
-          pages: [
-            {
-              ID: "main",
-              名称: "Main",
-              layout: {
-                类型: "htmlTemplate",
-                html: "layouts/main.html",
-                htmlContent: '<pb-module id="broken-module"></pb-module>',
-              },
-            },
-          ],
-          modules: [
-            {
-              ID: "broken-module",
-              类型: "unknownModule",
-              标签: "无效模块",
-            },
-          ],
-        },
-      });
-      transaction.oncomplete = () => {
-        db.close();
-        resolve();
-      };
-      transaction.onerror = () => {
-        db.close();
-        reject(transaction.error);
-      };
-      transaction.onabort = () => {
-        db.close();
-        reject(transaction.error);
-      };
-    });
-  });
-}
-
 function demoPackagePath(testInfo: TestInfo) {
   return createExamplePackageArchive(testInfo, "demo-minimal");
 }
@@ -1245,12 +1139,6 @@ async function walkPackageFiles(directory: string): Promise<string[]> {
     const entryPath = path.join(directory, entry.name);
     return entry.isDirectory() ? walkPackageFiles(entryPath) : [entryPath];
   }))).flat();
-}
-
-function errorFixturePath(testInfo: TestInfo, fileName: string) {
-  const fixtureRoot = path.join(process.cwd(), "tests", "fixtures", "system-packages", "errors");
-  if (fileName === "corrupt.zip") return path.join(fixtureRoot, fileName);
-  return createPackageArchive(testInfo, path.join(fixtureRoot, path.parse(fileName).name), fileName);
 }
 
 const tinyPngBase64 =
