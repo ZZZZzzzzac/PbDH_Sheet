@@ -491,11 +491,11 @@ describe("TTTRI System Package", () => {
       },
     });
     expect(data.character.values.inventory).toBe([
-      "一根照明棒",
-      "一捆工业弹力绳",
-      "作战食品包",
-      "[二选一] 小型治疗药剂（回复1d4生命点）或小型理智药剂（清除1d4点压力点）",
-      "罗德岛干员通行证",
+      "- 一根照明棒",
+      "- 一捆工业弹力绳",
+      "- 作战食品包",
+      "- [二选一] 小型治疗药剂（回复1d4生命点）或小型理智药剂（清除1d4点压力点）",
+      "- 罗德岛干员通行证",
     ].join("\n"));
     expect(data.character.values["handful-gold"]).toEqual({ current: 1, max: 9 });
 
@@ -518,8 +518,7 @@ describe("TTTRI System Package", () => {
       type: "resourceSelected", sourceModuleId: "pick-inventory-item", libraryId: "loot", selectedEntries: [loot],
     });
     data = applyDependencyResultToCharacterData(data, lootResult);
-    expect(data.character.values.inventory).toContain(loot.fields.名称);
-    expect(data.character.values.inventory).toContain(loot.fields.描述);
+    expect(data.character.values.inventory).toContain(`- **${loot.fields.名称}**: ${loot.fields.描述}`);
 
     const t2 = systemPackage.modules.find((module) => module.ID === "advancement-tier-2");
     const t3 = systemPackage.modules.find((module) => module.ID === "advancement-tier-3");

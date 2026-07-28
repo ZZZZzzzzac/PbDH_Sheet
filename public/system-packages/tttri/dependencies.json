@@ -25,7 +25,7 @@
     "targets": [{ "类型": "module", "模块ID": "inventory" }],
     "触发": { "类型": "resourceSelected", "来源模块ID": "pick-inventory-item" },
     "条件": { "类型": "always" },
-    "动作": [{ "类型": "fillText", "目标模块ID": "inventory", "写入方式": "追加", "追加分隔符": "\n\n", "内容": { "类型": "selectedResourceTemplate", "格式": "**{{名称}}**\n{{描述}}", "分隔符": "\n\n" } }]
+    "动作": [{ "类型": "fillText", "目标模块ID": "inventory", "写入方式": "追加", "追加分隔符": "\n", "内容": { "类型": "selectedResourceTemplate", "格式": "- **{{名称}}**: {{描述}}", "分隔符": "\n" } }]
   },
   {
     "ID": "filter-domain-cards-on-primary",
