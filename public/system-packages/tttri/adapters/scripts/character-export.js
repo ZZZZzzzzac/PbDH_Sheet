@@ -104,7 +104,7 @@ function exportUpgrades(values, diagnostics) {
   if (t2.subclass || t2["multiclass-1"] || t2["multiclass-2"]) {
     diagnostics.push({
       level: "warning", code: "TTTRI_DHSHEET_ADVANCEMENT_NOT_EQUIVALENT",
-      text: "TTTRI T2 的升级干员/兼职在 dhSheet T1 没有等价选项，导出时未猜测映射。",
+      text: "TTTRI T2 的提升武器原型/技艺交流在 dhSheet T1 没有等价选项，导出时未猜测映射。",
     });
   }
   return upgrades;

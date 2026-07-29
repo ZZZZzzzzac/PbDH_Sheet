@@ -123,8 +123,9 @@ describe("TTTRI dhSheet Character Format Adapter", () => {
       "traits-1": true, "hp-1": true, subclass: false, "multiclass-1": false,
     }));
     expect(conversion.data.character.values["advancement-tier-3"]).toEqual(expect.objectContaining({
-      subclass: true, "proficiency-1": true, "proficiency-2": true, "multiclass-1": true, "multiclass-2": true,
+      subclass: true, "proficiency-1": true, "proficiency-2": true, "multiclass-1": true,
     }));
+    expect(conversion.data.character.values["advancement-tier-3"]).not.toHaveProperty("multiclass-2");
     expect(conversion.data.character.values["advancement-tier-4"]).toEqual(expect.objectContaining({
       "subclass-elite": true,
     }));

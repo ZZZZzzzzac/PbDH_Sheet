@@ -52,7 +52,6 @@ function advancement(upgrades, sourceTier, targetTier) {
   if (targetTier === 2) {
     result.subclass = false;
     result["multiclass-1"] = false;
-    result["multiclass-2"] = false;
   } else {
     const subclass = upgradeSelected(upgrades, sourceTier, 6, 0, false);
     result[targetTier === 4 ? "subclass-elite" : "subclass"] = subclass;
@@ -61,7 +60,6 @@ function advancement(upgrades, sourceTier, targetTier) {
     result["proficiency-1"] = proficiency;
     result["proficiency-2"] = proficiency;
     result["multiclass-1"] = multiclass;
-    result["multiclass-2"] = multiclass;
   }
   return result;
 }

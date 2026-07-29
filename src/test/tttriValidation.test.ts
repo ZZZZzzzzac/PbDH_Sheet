@@ -84,11 +84,11 @@ describe("TTTRI character consistency validation", () => {
     ]));
   });
 
-  it("allows one half-level arbitrary Domain Card for a paired multiclass advancement", async () => {
+  it("allows one half-level out-of-domain Card for a single-slot multiclass advancement", async () => {
     const normalDomains = [domainEntry("奥术", 1, 0), domainEntry("奥术", 1, 1), domainEntry("奥术", 2, 0)];
     const multiclassValues = {
       level: "2",
-      "advancement-tier-2": { "multiclass-1": true, "multiclass-2": true },
+      "advancement-tier-2": { "multiclass-1": true },
     };
     const validCards = characterCardsWithDomains([...normalDomains, domainEntry("工业", 1, 0)]);
     const valid = await validate(multiclassValues, validCards);

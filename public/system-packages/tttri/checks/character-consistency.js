@@ -52,7 +52,7 @@ function createContext(characterData, resourceLibraries) {
     communityEntry,
     armorEntry,
     advancementStates,
-    multiclassCount: advancementStates.filter((state) => pairSelected(state, "multiclass")).length,
+    multiclassCount: advancementStates.filter((state) => multiclassSelected(state)).length,
   };
 }
 
@@ -110,15 +110,15 @@ function checkSubclassProgression(issues, context) {
   const isElite = ELITE_STAGES.includes(stage);
 
   if (selected(t2, "subclass") && !["正式", "资深", ...ELITE_STAGES].includes(stage)) {
-    warn(issues, "T2_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "已在 T2 勾选升级干员，但当前干员仍是预备等级。");
+    warn(issues, "T2_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "已在 T2 勾选提升武器原型，但当前干员仍是预备等级。");
   }
   if (selected(t3, "subclass") && !["资深", ...ELITE_STAGES].includes(stage)) {
-    warn(issues, "T3_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "已在 T3 勾选升级干员，但当前干员尚未达到资深等级。");
+    warn(issues, "T3_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "已在 T3 勾选提升武器原型，但当前干员尚未达到资深等级。");
   }
   if (selected(t4, "subclass-elite") && !isElite) {
-    warn(issues, "T4_ELITE_SUBCLASS_MISSING", "character.values.subclass-stage", "已在 T4 勾选升级干员，应选择精英X或精英Y的干员。");
+    warn(issues, "T4_ELITE_SUBCLASS_MISSING", "character.values.subclass-stage", "已在 T4 勾选提升武器原型，应选择精英X或精英Y的干员。");
   } else if (!selected(t4, "subclass-elite") && isElite) {
-    warn(issues, "ELITE_SUBCLASS_BEFORE_T4", "character.values.subclass-stage", "尚未在 T4 选择升级干员，不应提前选择精英X或精英Y。");
+    warn(issues, "ELITE_SUBCLASS_BEFORE_T4", "character.values.subclass-stage", "尚未在 T4 选择提升武器原型，不应提前选择精英X或精英Y。");
   }
 }
 
@@ -496,8 +496,8 @@ function selected(state, id) {
   return state[id] === true;
 }
 
-function pairSelected(state, prefix) {
-  return selected(state, `${prefix}-1`) && selected(state, `${prefix}-2`);
+function multiclassSelected(state) {
+  return selected(state, "multiclass-1") || selected(state, "multiclass-2");
 }
 
 function countSelectedPrefix(state, prefix) {

@@ -531,14 +531,17 @@ describe("TTTRI System Package", () => {
     expect(t3.选项.some((option) => option.ID === "subclass")).toBe(true);
     expect(t4.选项.some((option) => option.ID === "subclass")).toBe(false);
     expect(t4.选项.some((option) => option.ID === "subclass-elite")).toBe(true);
-    expect(t2.选项.find((option) => option.ID === "subclass")?.标签).toBe("升级干员");
-    expect(t3.选项.find((option) => option.ID === "subclass")?.标签).toBe("升级干员");
-    expect(t4.选项.find((option) => option.ID === "subclass-elite")?.标签).toBe("升级干员");
-    for (const tier of [t2, t3, t4]) {
-      const multiclassOptions = tier.选项.filter((option) => option.分组 === "multiclass");
-      expect(multiclassOptions).toHaveLength(2);
-      expect(multiclassOptions.every((option) => option.标签 === "兼职：选择一张等级不高于角色等级一半的任意领域卡")).toBe(true);
+    expect(t2.选项.find((option) => option.ID === "subclass")?.标签).toBe("提升武器原型：将你的武器原型等级提升一级");
+    expect(t3.选项.find((option) => option.ID === "subclass")?.标签).toBe("提升武器原型：将你的武器原型等级提升一级");
+    expect(t4.选项.find((option) => option.ID === "subclass-elite")?.标签).toBe("提升武器原型：将你的武器原型等级提升一级");
+    for (const [tier, multiclassCap] of [[t2, 2], [t3, 4], [t4, 5]] as const) {
+      const multiclassOptions = tier.选项.filter((option) => option.ID.startsWith("multiclass-"));
+      expect(multiclassOptions).toHaveLength(1);
+      expect(multiclassOptions[0]?.标签).toBe(`技艺交流：从你不具有的领域中选择一张等级小于或等于你干员等级一半的领域卡（最高为${multiclassCap}级）`);
+      expect(tier.选项.filter((option) => option.分组 === "proficiency")).toHaveLength(tier === t2 ? 0 : 2);
     }
+    const baseCss = systemPackage.pages.find((page) => page.ID === "character-story")?.layout.cssContent ?? "";
+    expect(baseCss).toMatch(/\[data-option-group="proficiency"\] \[data-part="group-inputs"\]\s*\{[^}]*width:\s*fit-content[^}]*border:\s*2px solid currentColor/s);
     expect(systemPackage.modules.some((module) => ["pick-subclass-t2", "pick-subclass-t3", "pick-class-module", "class-module-name"].includes(module.ID))).toBe(false);
     expect(systemPackage.resourceLibraries.some((library) => library.ID === "class-modules")).toBe(false);
     expect(systemPackage.characterCreationGuide?.步骤.length).toBeGreaterThan(0);
