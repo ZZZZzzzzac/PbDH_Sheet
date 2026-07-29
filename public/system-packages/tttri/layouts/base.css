@@ -358,8 +358,8 @@
 }
 
 .advancement-grid [data-module-type="checkboxResource"] [data-part="options"] {
-  gap: 0.3rem;
-  padding: 0.15rem 0.25rem;
+  gap: 0.05rem;
+  padding: 0.05rem 0.25rem;
 }
 
 .advancement-grid [data-module-type="checkboxResource"] :is([data-part="option"], [data-part="option-group"]) {

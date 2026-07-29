@@ -136,7 +136,7 @@
       { "ID": "evasion", "标签": "机动训练：闪避值+1" }
     ]
   },
-  { "ID": "advancement-tier-2-footer", "类型": "readOnlyDisplay", "标签": "T2 完成升级", "内容": "更新等级与伤害阈值。若选择提升武器原型，使用人物卡上的干员选择器选择对应的新等级。" },
+  { "ID": "advancement-tier-2-footer", "类型": "readOnlyDisplay", "标签": "T2 完成升级", "内容": "若选择提升武器原型，使用人物卡上的干员选择器选择对应的新等级。" },
   { "ID": "advancement-tier-3-reward", "类型": "readOnlyDisplay", "标签": "T3 阶段奖励", "内容": "到达 5 级时，获得一项额外的 +2 经历，清除角色属性标记，并且熟练值 +1。从本列表或之前列表的未标记槽位中选择两个；" },
   {
     "ID": "advancement-tier-3", "类型": "checkboxResource", "标签": "T3 升级记录", "选项": [
@@ -156,7 +156,7 @@
       { "ID": "proficiency-2", "标签": "实战模拟：熟练值+1", "分组": "proficiency" }
     ]
   },
-  { "ID": "advancement-tier-3-footer", "类型": "readOnlyDisplay", "标签": "T3 完成升级", "内容": "更新等级与伤害阈值。若选择提升武器原型，使用人物卡上的干员选择器选择对应的新等级。" },
+  { "ID": "advancement-tier-3-footer", "类型": "readOnlyDisplay", "标签": "T3 完成升级", "内容": "若选择提升武器原型，使用人物卡上的干员选择器选择对应的新等级。" },
   { "ID": "advancement-tier-4-reward", "类型": "readOnlyDisplay", "标签": "T4 阶段奖励", "内容": "到达 8 级时，获得一项额外的 +2 经历，清除角色属性标记，并且熟练值 +1。从本列表或之前列表的未标记槽位中选择两个；" },
   {
     "ID": "advancement-tier-4", "类型": "checkboxResource", "标签": "T4 升级记录", "选项": [
