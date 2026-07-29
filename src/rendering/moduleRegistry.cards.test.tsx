@@ -71,7 +71,7 @@ describe("Card rendering", () => {
     expect(result.container.querySelector(".play-card-description")).toHaveTextContent("描述应该独立显示。");
   });
 
-  it("renders Restricted Markdown in Card names, descriptions, inferred tags, and Card Detail", () => {
+  it("renders Restricted Markdown in Card names, descriptions, inferred tags, and Card Detail", async () => {
     const systemPackage = createCardTablePackage();
     const definition = systemPackage.resourceLibraries[0].entries[0];
     definition.fields.名称 = "**回想测试**";
@@ -87,7 +87,7 @@ describe("Card rendering", () => {
 
     const result = render(<SheetRenderer systemPackage={systemPackage} />);
     const card = screen.getByRole("article", { name: "**回想测试**" });
-    expect(within(card).getByText("回想测试").tagName).toBe("STRONG");
+    expect((await within(card).findByText("回想测试")).tagName).toBe("STRONG");
     expect(within(card).getByText("贤者")).toHaveAttribute("data-markdown-color", "purple");
     expect(within(card).getByText("描述").tagName).toBe("EM");
     expect(card.querySelectorAll(".play-card-description li")).toHaveLength(2);
@@ -98,11 +98,11 @@ describe("Card rendering", () => {
     expect(result.container.querySelector(".card-table-surface")?.contains(contextMenu)).toBe(false);
     fireEvent.click(screen.getByRole("menuitem", { name: "查看详情" }));
     const dialog = screen.getByRole("dialog", { name: "**回想测试**详情" });
-    expect(within(dialog).getByText("回想测试").tagName).toBe("STRONG");
+    expect((await within(dialog).findByText("回想测试")).tagName).toBe("STRONG");
     expect(result.container.querySelector(".card-context-menu strong")).toBeNull();
   });
 
-  it("uses the same Restricted Markdown output after Card artwork fails", () => {
+  it("uses the same Restricted Markdown output after Card artwork fails", async () => {
     const systemPackage = createCardTablePackage();
     const definition = systemPackage.resourceLibraries[0].entries[0];
     definition.fields.名称 = "**故障回退**";
@@ -122,7 +122,7 @@ describe("Card rendering", () => {
     render(<SheetRenderer systemPackage={systemPackage} />);
     fireEvent.error(screen.getByRole("img", { name: "**故障回退**" }));
 
-    expect(screen.getByText("故障回退").tagName).toBe("STRONG");
+    expect((await screen.findByText("故障回退")).tagName).toBe("STRONG");
   });
 
   it("resolves Card artwork from the owning Resource Extension namespace", () => {

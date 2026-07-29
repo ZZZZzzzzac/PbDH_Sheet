@@ -129,7 +129,9 @@ flowchart LR
 
 包切换会重新建立资源、资产 URL 和派生状态；渲染组件不自行读取文件。
 
-启动恢复当前包时，Runtime Store 只会自动刷新来源为构建预置且 Base Framework 发布版本已变化的缓存。预制包文件请求携带发布版本作为 cache-busting 参数；本地导入与 Author Preview 包不会被发布升级覆盖。刷新失败时继续使用已校验的旧缓存并报告 warning。该过程保留 Character Saves、Resource Extensions 与偏好。
+构建只把预制包的轻量目录和每个包的清单 URL 放入入口 JS；具体文件清单输出为各包独立的 `.pbdh-files.json`，选中或恢复该包时才请求。预制包文件与清单请求都携带发布版本作为 cache-busting 参数。
+
+启动恢复当前包时，Runtime Store 只会自动刷新来源为构建预置且 Base Framework 发布版本已变化的缓存。本地导入与 Author Preview 包不会被发布升级覆盖。刷新失败时继续使用已校验的旧缓存并报告 warning。该过程保留 Character Saves、Resource Extensions 与偏好。缓存恢复只运行不依赖完整 Validator 的轻量一致性检查；导入或重新加载包时再异步加载完整 Validator。
 
 ### 编辑与自动保存
 
@@ -190,7 +192,9 @@ flowchart LR
 
 ## 构建、部署与验证
 
-Vite/TypeScript 产出静态文件。GitHub Release workflow 负责版本校验、测试、构建与不可变发布产物；Deploy workflow 只提升已有 Release。生产服务器通过原子切换激活不可变 release，细节见 [release.md](release.md)。
+Vite/TypeScript 产出静态文件。完整 System Package Validator、Restricted Markdown 解析器及非首屏对话框/输出能力按需加载。构建后的入口、首屏 module preload 与 gzip 总量受 `scripts/check-bundle-budget.mjs` 检查，且首屏 JS 不得内嵌卡图文件清单。
+
+GitHub Release workflow 负责版本校验、测试、构建与不可变发布产物；Deploy workflow 只提升已有 Release。生产服务器通过原子切换激活不可变 release，细节见 [release.md](release.md)。
 
 架构变更至少应同步：
 

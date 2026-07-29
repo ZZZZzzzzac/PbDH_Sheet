@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { ResourceLibraryReference } from "../domain/resourceLibrary";
-import { validateSystemPackage, type PackageSourceMap, type PackageValidationResult } from "../domain/systemPackage";
+import type { PackageSourceMap, PackageValidationResult } from "../domain/systemPackage";
 import { packagePagesSourceSchema, systemPackageManifestSourceSchema } from "../domain/systemPackageAuthorSchema";
 import type { RuntimePackageAsset } from "./assetResolver";
 import { createVirtualFileSystemFromDirectoryFiles, createVirtualFileSystemFromDirectoryHandle, createVirtualFileSystemFromZipFile, type PackageDirectoryHandle, type PackageVirtualFileSystem } from "./packageVfs";
@@ -23,7 +23,7 @@ export async function loadSystemPackageFromZipFile(file: Blob): Promise<PackageL
   return loadSystemPackageFromVfs(vfsResult.vfs);
 }
 
-export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): PackageLoadResult {
+export async function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Promise<PackageLoadResult> {
   const manifestText = vfs.readText(packageManifestPath);
   if (!manifestText.ok) {
     if (manifestText.issue.code === "PACKAGE_FILE_MISSING") {
@@ -123,7 +123,7 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
   }
 
   const packageAssets = resolvePackageAssets(vfs);
-  const normalized = normalizeManifestPackage(
+  const normalized = await normalizeManifestPackage(
     manifest.data,
     pagesWithLayouts.value,
     modulesJson.value,
@@ -149,7 +149,7 @@ export function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): Package
   };
 }
 
-function normalizeManifestPackage(
+async function normalizeManifestPackage(
   manifest: z.infer<typeof packageManifestSchema>,
   pages: unknown,
   modules: unknown,
@@ -164,7 +164,8 @@ function normalizeManifestPackage(
   skins?: Array<{ ID: string; 名称: string; cssContent: string; 推荐框架配色: "light" | "dark" }>,
   packageAssets: RuntimePackageAsset[] = [],
   sourceMap: PackageSourceMap = {},
-): PackageValidationResult {
+): Promise<PackageValidationResult> {
+  const { validateSystemPackage } = await import("../domain/systemPackage/validator");
   return validateSystemPackage({
     manifest: {
       ID: manifest.ID,

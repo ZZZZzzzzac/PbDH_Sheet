@@ -15,41 +15,100 @@ interface PresetManifest {
   加载展示?: { 标语: string; 强调色: string };
 }
 
+interface PresetBuildRecord {
+  catalog: {
+    id: string;
+    name: string;
+    version: string;
+    releaseVersion: string;
+    directory: string;
+    inventoryPath: string;
+    fileCount: number;
+    metadataFileCount: number;
+    loadingPresentation?: PresetManifest["加载展示"];
+  };
+  files: string[];
+  inventoryJson: string;
+}
+
+const presetInventoryFileName = ".pbdh-files.json";
+
 function presetSystemPackagesPlugin(): Plugin {
   const publicId = "virtual:preset-system-packages";
   const resolvedId = `\0${publicId}`;
+  const packages = readPresetBuildRecords();
+  let resolvedBase = "/";
 
   return {
     name: "pbdh-preset-system-packages",
+    configResolved(config) {
+      resolvedBase = config.base;
+    },
+    configureServer(server) {
+      const inventories = new Map(packages.map((item) => [
+        `${resolvedBase}system-packages/${encodeURIComponent(item.catalog.directory)}/${presetInventoryFileName}`,
+        item.inventoryJson,
+      ]));
+      server.middlewares.use((request, response, next) => {
+        if (!request.url) return next();
+        const pathname = new URL(request.url, "http://localhost").pathname;
+        const inventory = inventories.get(pathname);
+        if (inventory === undefined) return next();
+        response.statusCode = 200;
+        response.setHeader("Content-Type", "application/json; charset=utf-8");
+        response.setHeader("Cache-Control", "no-cache");
+        response.end(inventory);
+      });
+    },
     resolveId(id) {
       return id === publicId ? resolvedId : undefined;
     },
     load(id) {
       if (id !== resolvedId) return undefined;
-      const catalog = readdirSync(presetPackagesRoot, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory())
-        .map((entry) => {
-          const root = join(fileURLToPath(presetPackagesRoot), entry.name);
-          const manifest = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8")) as PresetManifest;
-          if (!manifest.ID || !manifest.名称 || !manifest.版本) {
-            throw new Error(`预制 System Package ${entry.name} 的 manifest 缺少 ID、名称或版本。`);
-          }
-          return {
-            id: manifest.ID,
-            name: manifest.名称,
-            version: manifest.版本,
-            releaseVersion: packageJson.version,
-            directory: entry.name,
-            ...(manifest.加载展示 ? { loadingPresentation: manifest.加载展示 } : {}),
-            files: walkPresetFiles(root).map((file) => relative(root, file).replaceAll("\\", "/")),
-          };
-        })
-        .sort((left, right) => left.name.localeCompare(right.name, "zh-CN"));
+      const catalog = packages.map((item) => item.catalog);
       const duplicateIds = catalog.filter((item, index) => catalog.findIndex((candidate) => candidate.id === item.id) !== index);
       if (duplicateIds.length > 0) throw new Error(`预制 System Package ID 重复：${duplicateIds.map((item) => item.id).join(", ")}`);
       return `export default ${JSON.stringify(catalog)};`;
     },
+    generateBundle() {
+      for (const item of packages) {
+        this.emitFile({
+          type: "asset",
+          fileName: `system-packages/${item.catalog.directory}/${presetInventoryFileName}`,
+          source: item.inventoryJson,
+        });
+      }
+    },
   };
+}
+
+function readPresetBuildRecords(): PresetBuildRecord[] {
+  return readdirSync(presetPackagesRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => {
+      const root = join(fileURLToPath(presetPackagesRoot), entry.name);
+      const manifest = JSON.parse(readFileSync(join(root, "manifest.json"), "utf8")) as PresetManifest;
+      if (!manifest.ID || !manifest.名称 || !manifest.版本) {
+        throw new Error(`预制 System Package ${entry.name} 的 manifest 缺少 ID、名称或版本。`);
+      }
+      const files = walkPresetFiles(root).map((file) => relative(root, file).replaceAll("\\", "/"));
+      return {
+        catalog: {
+          id: manifest.ID,
+          name: manifest.名称,
+          version: manifest.版本,
+          releaseVersion: packageJson.version,
+          directory: entry.name,
+          inventoryPath: presetInventoryFileName,
+          fileCount: files.length,
+          metadataFileCount: files.filter((file) => !file.startsWith("assets/")).length,
+          ...(manifest.加载展示 ? { loadingPresentation: manifest.加载展示 } : {}),
+        },
+        files,
+        inventoryJson: `${JSON.stringify({ schemaVersion: 1, files })}\n`,
+      };
+    })
+    .sort((left, right) => left.catalog.name.localeCompare(right.catalog.name, "zh-CN"));
 }
 
 function walkPresetFiles(directory: string): string[] {

@@ -9,7 +9,9 @@ export interface PresetSystemPackage {
   version: string;
   releaseVersion: string;
   directory: string;
-  files: string[];
+  inventoryPath: string;
+  fileCount: number;
+  metadataFileCount: number;
   loadingPresentation?: NonNullable<SystemPackage["manifest"]["加载展示"]>;
 }
 
@@ -24,14 +26,17 @@ export async function loadPresetSystemPackage(
   fetchFile: typeof fetch = fetch,
   onProgress?: (progress: PresetLoadProgress) => void,
 ): Promise<PackageLoadResult> {
-  if (preset.files.length > packageArchiveLimits.maxFiles) {
+  if (preset.fileCount > packageArchiveLimits.maxFiles) {
     return failedPreset("PACKAGE_ARCHIVE_FILE_COUNT_LIMIT", `预制 System Package ${preset.name} 的文件数量超过限制。`);
   }
+
+  const inventory = await loadPresetInventory(preset, baseUrl, fetchFile);
+  if (!inventory.ok) return inventory.result;
 
   const files = new Map<string, Uint8Array>();
   const imagePaths: string[] = [];
   const metadataPaths: string[] = [];
-  for (const file of preset.files) {
+  for (const file of inventory.files) {
     const pathResult = normalizePackagePath(file);
     if (!pathResult.ok) return { ok: false, issues: [pathResult.issue] };
     if (isPresetImagePath(pathResult.path)) {
@@ -78,7 +83,7 @@ export async function loadPresetSystemPackage(
   });
   await Promise.all(workers);
   if (failure) return { ok: false, issues: [failure] };
-  const result = loadSystemPackageFromVfs(createVirtualFileSystem(files));
+  const result = await loadSystemPackageFromVfs(createVirtualFileSystem(files));
   if (!result.ok) return result;
   return {
     ...result,
@@ -88,6 +93,40 @@ export async function loadPresetSystemPackage(
       staticUrl: presetFileUrl(baseUrl, preset.directory, path, preset.releaseVersion),
     })),
   };
+}
+
+async function loadPresetInventory(
+  preset: PresetSystemPackage,
+  baseUrl: string,
+  fetchFile: typeof fetch,
+): Promise<{ ok: true; files: string[] } | { ok: false; result: PackageLoadResult }> {
+  try {
+    const response = await fetchFile(presetFileUrl(baseUrl, preset.directory, preset.inventoryPath, preset.releaseVersion));
+    if (!response.ok) {
+      return { ok: false, result: { ok: false, issues: [presetFetchIssue(preset, preset.inventoryPath, `HTTP ${response.status}`)] } };
+    }
+    const parsed: unknown = JSON.parse(await response.text());
+    if (!isPresetInventory(parsed)) {
+      return { ok: false, result: failedPreset("PRESET_PACKAGE_INVENTORY_INVALID", `预制 System Package ${preset.name} 的文件清单格式无效。`) };
+    }
+    if (parsed.files.length !== preset.fileCount) {
+      return { ok: false, result: failedPreset("PRESET_PACKAGE_INVENTORY_MISMATCH", `预制 System Package ${preset.name} 的文件清单数量与目录不一致。`) };
+    }
+    return { ok: true, files: parsed.files };
+  } catch (error) {
+    return {
+      ok: false,
+      result: { ok: false, issues: [presetFetchIssue(preset, preset.inventoryPath, error instanceof Error ? error.message : String(error))] },
+    };
+  }
+}
+
+function isPresetInventory(value: unknown): value is { schemaVersion: 1; files: string[] } {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as { schemaVersion?: unknown; files?: unknown };
+  return candidate.schemaVersion === 1
+    && Array.isArray(candidate.files)
+    && candidate.files.every((file) => typeof file === "string");
 }
 
 function isPresetImagePath(path: string): boolean {

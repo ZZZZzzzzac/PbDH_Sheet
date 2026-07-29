@@ -136,7 +136,7 @@ describe("Simple Sheet Module rendering", () => {
     expect(values?.portrait).toBeUndefined();
   });
 
-  it("switches Free Text and Long Text between raw editing and rendered Markdown", () => {
+  it("switches Free Text and Long Text between raw editing and rendered Markdown", async () => {
     renderModuleDemo();
     const nameInput = screen.getByLabelText("姓名");
 
@@ -144,7 +144,7 @@ describe("Simple Sheet Module rendering", () => {
     fireEvent.change(nameInput, { target: { value: "**勇者**" } });
     expect(nameInput).toHaveValue("**勇者**");
     fireEvent.blur(nameInput);
-    expect(screen.getByText("勇者").tagName).toBe("STRONG");
+    expect((await screen.findByText("勇者")).tagName).toBe("STRONG");
     expect(screen.getByRole("button", { name: "姓名" })).toHaveAttribute("data-part", "input");
     expect(screen.queryByDisplayValue("**勇者**")).not.toBeInTheDocument();
 
@@ -158,6 +158,7 @@ describe("Simple Sheet Module rendering", () => {
     fireEvent.change(backgroundInput, { target: { value: "- 第一项\n- 第二项" } });
     fireEvent.blur(backgroundInput);
     const backgroundModule = screen.getByRole("button", { name: "背景" });
+    await within(backgroundModule).findByText("第一项");
     expect(backgroundModule.querySelectorAll("li")).toHaveLength(2);
     expect(useRuntimeStore.getState().characterData?.character.values.background).toBe("- 第一项\n- 第二项");
   });

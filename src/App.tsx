@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import {
   nextGuideStep,
   previousGuideStep,
@@ -8,11 +8,7 @@ import {
 import type { PackageDirectoryHandle } from "./loaders/packageVfs";
 import { SheetRenderer } from "./rendering/SheetRenderer";
 import { GuideSpotlight } from "./rendering/GuideSpotlight";
-import { ResourceManager } from "./rendering/ResourceManager";
-import { CharacterImportDialogs } from "./rendering/CharacterImportDialogs";
-import { CharacterExportDialog } from "./rendering/CharacterExportDialog";
-import { QuestionnaireResultDialog } from "./rendering/QuestionnaireResultDialog";
-import { openQuestionnaireHost, type QuestionnaireHostSession } from "./rendering/questionnaireHost";
+import type { QuestionnaireHostSession } from "./rendering/questionnaireHost";
 import { AppTopBar } from "./rendering/app/AppTopBar";
 import { PackageIssuePanel, ValidationIssueDialog } from "./rendering/app/AppDiagnostics";
 import { PackageLoadingSurface } from "./rendering/app/PackageLoadingSurface";
@@ -22,6 +18,10 @@ import { useRuntimeStore } from "./store/runtimeStore";
 import presetSystemPackages from "virtual:preset-system-packages";
 
 const defaultPresetSystemPackage = presetSystemPackages.find((preset) => preset.id === "daggerheart-core");
+const ResourceManager = lazy(() => import("./rendering/ResourceManager").then((module) => ({ default: module.ResourceManager })));
+const CharacterImportDialogs = lazy(() => import("./rendering/CharacterImportDialogs").then((module) => ({ default: module.CharacterImportDialogs })));
+const CharacterExportDialog = lazy(() => import("./rendering/CharacterExportDialog").then((module) => ({ default: module.CharacterExportDialog })));
+const QuestionnaireResultDialog = lazy(() => import("./rendering/QuestionnaireResultDialog").then((module) => ({ default: module.QuestionnaireResultDialog })));
 
 export default function App() {
   const characterFileInputRef = useRef<HTMLInputElement>(null);
@@ -130,10 +130,11 @@ export default function App() {
 
   useEffect(() => () => questionnaireSessionRef.current?.close(), []);
 
-  const startQuestionnaire = () => {
+  const startQuestionnaire = async () => {
     const questionnaire = currentPackage?.questionnaireCharacterCreation;
     if (!questionnaire || !characterData) return;
     questionnaireSessionRef.current?.close();
+    const { openQuestionnaireHost } = await import("./rendering/questionnaireHost");
     const opened = openQuestionnaireHost(questionnaire, (result) => {
       questionnaireSessionRef.current = null;
       prepareQuestionnaireResult(questionnaire.ID, result);
@@ -269,7 +270,7 @@ export default function App() {
         onOpenResourceManager={() => setResourceManagerOpen(true)}
         onValidation={() => void handleValidation()}
         onStartGuide={() => setGuideSession(startGuideSession())}
-        onStartQuestionnaire={startQuestionnaire}
+        onStartQuestionnaire={() => void startQuestionnaire()}
         onSwitchCharacterSave={(saveId) => void switchCharacterSave(saveId)}
         onCreateSave={() => void handleCreateSave()}
         onRenameSave={() => void handleRenameSave()}
@@ -330,45 +331,59 @@ export default function App() {
         />
       ) : null}
       {resourceManagerOpen && resourceCatalog && currentPackage ? (
-        <ResourceManager
-          catalog={resourceCatalog}
-          systemPackage={currentPackage}
-          assetUrls={packageAssetUrls}
-          importState={resourceExtensionImport}
-          pendingReplacement={pendingResourceExtensionReplacement}
-          pendingConversion={pendingResourceExtensionConversion}
-          pendingSelection={pendingResourceFormatSelection}
-          pendingRemoval={pendingResourceExtensionRemoval}
-          referenceIssues={resourceReferenceIssues}
-          onUpload={uploadResourceExtensionFromFile}
-          onConfirmReplacement={confirmResourceExtensionReplacement}
-          onCancelReplacement={cancelResourceExtensionReplacement}
-          onSelectFormat={selectResourceFormatAdapter}
-          onConfirmConversion={confirmResourceExtensionConversion}
-          onCancelConversion={cancelResourceExtensionConversion}
-          onRequestRemoval={requestResourceExtensionRemoval}
-          onConfirmRemoval={confirmResourceExtensionRemoval}
-          onCancelRemoval={cancelResourceExtensionRemoval}
-          onClose={closeResourceManager}
-        />
+        <Suspense fallback={null}>
+          <ResourceManager
+            catalog={resourceCatalog}
+            systemPackage={currentPackage}
+            assetUrls={packageAssetUrls}
+            importState={resourceExtensionImport}
+            pendingReplacement={pendingResourceExtensionReplacement}
+            pendingConversion={pendingResourceExtensionConversion}
+            pendingSelection={pendingResourceFormatSelection}
+            pendingRemoval={pendingResourceExtensionRemoval}
+            referenceIssues={resourceReferenceIssues}
+            onUpload={uploadResourceExtensionFromFile}
+            onConfirmReplacement={confirmResourceExtensionReplacement}
+            onCancelReplacement={cancelResourceExtensionReplacement}
+            onSelectFormat={selectResourceFormatAdapter}
+            onConfirmConversion={confirmResourceExtensionConversion}
+            onCancelConversion={cancelResourceExtensionConversion}
+            onRequestRemoval={requestResourceExtensionRemoval}
+            onConfirmRemoval={confirmResourceExtensionRemoval}
+            onCancelRemoval={cancelResourceExtensionRemoval}
+            onClose={closeResourceManager}
+          />
+        </Suspense>
       ) : null}
-      <CharacterImportDialogs
-        pendingConversion={pendingCharacterConversion}
-        pendingSelection={pendingCharacterFormatSelection}
-        onSelect={selectCharacterFormatAdapter}
-        onConfirm={confirmCharacterConversion}
-        onCancel={cancelCharacterConversion}
-      />
-      <CharacterExportDialog
-        pending={pendingExternalExport}
-        onCancel={cancelExternalExport}
-        onConfirm={confirmExternalExport}
-      />
-      <QuestionnaireResultDialog
-        pending={pendingQuestionnaireResult}
-        onConfirm={confirmQuestionnaireResult}
-        onCancel={cancelQuestionnaireResult}
-      />
+      {pendingCharacterConversion || pendingCharacterFormatSelection ? (
+        <Suspense fallback={null}>
+          <CharacterImportDialogs
+            pendingConversion={pendingCharacterConversion}
+            pendingSelection={pendingCharacterFormatSelection}
+            onSelect={selectCharacterFormatAdapter}
+            onConfirm={confirmCharacterConversion}
+            onCancel={cancelCharacterConversion}
+          />
+        </Suspense>
+      ) : null}
+      {pendingExternalExport ? (
+        <Suspense fallback={null}>
+          <CharacterExportDialog
+            pending={pendingExternalExport}
+            onCancel={cancelExternalExport}
+            onConfirm={confirmExternalExport}
+          />
+        </Suspense>
+      ) : null}
+      {pendingQuestionnaireResult ? (
+        <Suspense fallback={null}>
+          <QuestionnaireResultDialog
+            pending={pendingQuestionnaireResult}
+            onConfirm={confirmQuestionnaireResult}
+            onCancel={cancelQuestionnaireResult}
+          />
+        </Suspense>
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,4 @@
 import { exportCharacterData, type CharacterData } from "../../domain/characterData";
-import { convertExternalCharacterSource, parseAndDetectCharacterSource } from "../../domain/characterFormatAdapter";
-import { parseCharacterDataText } from "../../export/output";
 import { emptyDerivedState, collectStaleResourceReferenceIssues, rebuildDependencyRuntimeState } from "../runtimeStateHelpers";
 import type { RuntimeEnvironment } from "../runtimeEnvironment";
 import type { RuntimeGet, RuntimeSet } from "../runtimeTypes";
@@ -59,6 +57,10 @@ export async function importCharacterSource(
     set({ importError: "导入失败：当前没有可用的 System Package。", importNotice: null });
     return;
   }
+  const [{ parseCharacterDataText }, { convertExternalCharacterSource, parseAndDetectCharacterSource }] = await Promise.all([
+    import("../../export/output"),
+    import("../../domain/characterFormatAdapter"),
+  ]);
   const native = parseCharacterDataText(text, currentPackage);
   if (native.ok) {
     await persistImportedCharacter(

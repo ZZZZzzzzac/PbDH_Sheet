@@ -9,7 +9,7 @@ if (!inputPath) {
   process.exitCode = 2;
 } else {
   try {
-    const report = validateSystemPackagePath(inputPath);
+    const report = await validateSystemPackagePath(inputPath);
     process.stdout.write(json ? `${JSON.stringify(report, null, 2)}\n` : formatSystemPackageValidationReport(report));
     process.exitCode = systemPackageValidationExitCode(report);
   } catch (error) {

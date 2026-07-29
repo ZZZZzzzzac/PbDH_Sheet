@@ -10,7 +10,7 @@ export interface SystemPackageValidationReport {
   issues: PackageLoadResult["issues"];
 }
 
-export function validateSystemPackagePath(inputPath: string): SystemPackageValidationReport {
+export async function validateSystemPackagePath(inputPath: string): Promise<SystemPackageValidationReport> {
   const absolutePath = resolve(inputPath);
   const stat = statSync(absolutePath);
   let result: PackageLoadResult;
@@ -20,13 +20,13 @@ export function validateSystemPackagePath(inputPath: string): SystemPackageValid
       relative(absolutePath, file).replaceAll("\\", "/"),
       new Uint8Array(readFileSync(file)),
     ]));
-    result = loadSystemPackageFromVfs(createVirtualFileSystem(files));
+    result = await loadSystemPackageFromVfs(createVirtualFileSystem(files));
   } else {
     if (extname(absolutePath).toLocaleLowerCase() !== ".zip") {
       throw new Error("System Package 文件必须是 .zip；也可以传入目录。 ");
     }
     const vfs = createVirtualFileSystemFromZipBytes(new Uint8Array(readFileSync(absolutePath)));
-    result = vfs.ok ? loadSystemPackageFromVfs(vfs.vfs) : { ok: false, issues: vfs.issues };
+    result = vfs.ok ? await loadSystemPackageFromVfs(vfs.vfs) : { ok: false, issues: vfs.issues };
   }
 
   return {

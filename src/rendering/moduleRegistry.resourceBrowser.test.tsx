@@ -49,7 +49,7 @@ describe("Resource Browser rendering", () => {
     expect(screen.getByText("隐藏页面已显示")).toBeVisible();
   });
 
-  it("renders Restricted Markdown in Resource Library table values", () => {
+  it("renders Restricted Markdown in Resource Library table values", async () => {
     const systemPackage = createResourcePickerPackage();
     systemPackage.resourceLibraries[0].entries[0].fields.名称 = "**烈焰**";
     systemPackage.resourceLibraries[0].entries[0].fields.领域 = ":red[利刃]";
@@ -57,7 +57,7 @@ describe("Resource Browser rendering", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
 
-    expect(screen.getByText("烈焰").tagName).toBe("STRONG");
+    expect((await screen.findByText("烈焰")).tagName).toBe("STRONG");
     expect(screen.getByText("利刃")).toHaveAttribute("data-markdown-color", "red");
   });
 

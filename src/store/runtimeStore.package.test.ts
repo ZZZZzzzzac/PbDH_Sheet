@@ -86,7 +86,9 @@ describe("runtime store", () => {
       version: "1",
       releaseVersion: "2.0.1",
       directory: "unavailable",
-      files: ["manifest.json"],
+      inventoryPath: ".pbdh-files.json",
+      fileCount: 1,
+      metadataFileCount: 1,
     });
 
     expect(useRuntimeStore.getState().currentPackage).toBe(previousPackage);
@@ -114,7 +116,9 @@ describe("runtime store", () => {
       version: "1",
       releaseVersion: "2.0.1",
       directory: "themed-preset",
-      files: ["manifest.json", "pages.json", "modules.json", "layouts/main.html", "assets/card.webp"],
+      inventoryPath: ".pbdh-files.json",
+      fileCount: 5,
+      metadataFileCount: 4,
       loadingPresentation: { 标语: "罗德岛正在接驳", 强调色: "#63bfd1" },
     });
     await Promise.resolve();
@@ -264,7 +268,9 @@ describe("runtime store", () => {
       version: "0.2.0",
       releaseVersion: "2.0.1",
       directory: "demo-minimal",
-      files: ["manifest.json", "modules.json", "assets/card.webp"],
+      inventoryPath: ".pbdh-files.json",
+      fileCount: 3,
+      metadataFileCount: 2,
     };
     const refreshedPackage: SystemPackage = {
       ...minimalSystemPackage,
@@ -297,7 +303,9 @@ describe("runtime store", () => {
       version: minimalSystemPackage.manifest.版本,
       releaseVersion: "2.0.1",
       directory: "demo-minimal",
-      files: ["manifest.json", "assets/card.webp"],
+      inventoryPath: ".pbdh-files.json",
+      fileCount: 2,
+      metadataFileCount: 1,
     };
     const loadPreset = vi.fn(async () => ({ ok: true as const, package: minimalSystemPackage, issues: [], packageAssets: [] }));
     configureRuntimeDependencies({ storage: legacyStorage, loadPresetSystemPackage: loadPreset });
@@ -315,7 +323,9 @@ describe("runtime store", () => {
       version: minimalSystemPackage.manifest.版本,
       releaseVersion: "2.0.1",
       directory: "demo-minimal",
-      files: ["manifest.json"],
+      inventoryPath: ".pbdh-files.json",
+      fileCount: 1,
+      metadataFileCount: 1,
     };
     const loadPreset = vi.fn(async () => ({ ok: true as const, package: minimalSystemPackage, issues: [] }));
 
@@ -338,7 +348,9 @@ describe("runtime store", () => {
       version: minimalSystemPackage.manifest.版本,
       releaseVersion: "2.0.1",
       directory: "demo-minimal",
-      files: ["manifest.json"],
+      inventoryPath: ".pbdh-files.json",
+      fileCount: 1,
+      metadataFileCount: 1,
     };
     const staleStorage = createMemoryStorage(minimalSystemPackage, {
       cacheMetadata: { source: "preset", presetId: preset.id, releaseVersion: "2.0.0" },

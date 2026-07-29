@@ -7,11 +7,17 @@ const preset: PresetSystemPackage = {
   version: "1.0.0",
   releaseVersion: "2.0.1",
   directory: "preset test",
-  files: ["manifest.json", "pages.json", "modules.json", "layouts/main.html", "assets/cards/hidden.webp"],
+  inventoryPath: ".pbdh-files.json",
+  fileCount: 5,
+  metadataFileCount: 4,
   loadingPresentation: { 标语: "正在铺开测试卷轴", 强调色: "#7c3aed" },
 };
 
 const packageFiles: Record<string, string> = {
+  ".pbdh-files.json": JSON.stringify({
+    schemaVersion: 1,
+    files: ["manifest.json", "pages.json", "modules.json", "layouts/main.html", "assets/cards/hidden.webp"],
+  }),
   "manifest.json": JSON.stringify({ ID: preset.id, 名称: preset.name, 版本: preset.version, schemaVersion: "0.2.0", pages: "pages.json", modules: "modules.json" }),
   "pages.json": JSON.stringify([{ ID: "main", 名称: "首页", layout: { 类型: "htmlTemplate", html: "layouts/main.html" } }]),
   "modules.json": JSON.stringify([{ ID: "intro", 类型: "readOnlyDisplay", 标签: "简介", 内容: "Preset" }]),
@@ -30,6 +36,7 @@ describe("preset System Package loader", () => {
     expect(result.ok, JSON.stringify(result.issues)).toBe(true);
     if (!result.ok) return;
     expect(result.package.manifest).toMatchObject({ ID: preset.id, 名称: preset.name, 版本: preset.version });
+    expect(fetchFile).toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/.pbdh-files.json?v=2.0.1");
     expect(fetchFile).toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/manifest.json?v=2.0.1");
     expect(fetchFile).not.toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/assets/cards/hidden.webp?v=2.0.1");
     expect(result.packageAssets).toEqual(expect.arrayContaining([
@@ -61,5 +68,25 @@ describe("preset System Package loader", () => {
 
     expect(result.ok).toBe(false);
     expect(result.issues[0]).toMatchObject({ code: "PRESET_PACKAGE_FETCH_FAILED", level: "fatal" });
+  });
+
+  it("rejects an invalid preset inventory before fetching package files", async () => {
+    const fetchFile = vi.fn(async () => new Response(JSON.stringify({ files: ["manifest.json"] })));
+
+    const result = await loadPresetSystemPackage(preset, "/", fetchFile as typeof fetch);
+
+    expect(result.ok).toBe(false);
+    expect(result.issues[0]).toMatchObject({ code: "PRESET_PACKAGE_INVENTORY_INVALID", level: "fatal" });
+    expect(fetchFile).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an inventory whose file count differs from the build catalog", async () => {
+    const fetchFile = vi.fn(async () => new Response(JSON.stringify({ schemaVersion: 1, files: ["manifest.json"] })));
+
+    const result = await loadPresetSystemPackage(preset, "/", fetchFile as typeof fetch);
+
+    expect(result.ok).toBe(false);
+    expect(result.issues[0]).toMatchObject({ code: "PRESET_PACKAGE_INVENTORY_MISMATCH", level: "fatal" });
+    expect(fetchFile).toHaveBeenCalledTimes(1);
   });
 });

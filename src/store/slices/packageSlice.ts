@@ -1,4 +1,5 @@
-import { validateCachedSystemPackage, type PackageIssue } from "../../domain/systemPackage";
+import type { PackageIssue } from "../../domain/systemPackage";
+import { validateCachedSystemPackage } from "../../domain/systemPackage/cachedPackageValidation";
 import type { RuntimePackageAsset } from "../../loaders/assetResolver";
 import type { PackageLoadResult } from "../../loaders/systemPackageLoader";
 import type { PresetSystemPackage } from "../../loaders/presetSystemPackageLoader";
@@ -363,7 +364,7 @@ function handleInitializeFailure(environment: RuntimeEnvironment, error: unknown
 }
 
 function initialPresetProgress(preset: PresetSystemPackage) {
-  return { completed: 0, total: preset.files.filter((path) => !path.startsWith("assets/")).length };
+  return { completed: 0, total: preset.metadataFileCount };
 }
 
 function presetCacheMetadata(preset: PresetSystemPackage) {

@@ -14,8 +14,8 @@ const minimalRoot = join(repoRoot, "templates", "system-package-minimal");
 const invalidRoot = join(repoRoot, "tests", "fixtures", "system-packages", "errors", "missing-manifest");
 
 describe("System Package validator CLI library", () => {
-  it("validates a directory through the production VFS, Loader and Validator", () => {
-    const report = validateSystemPackagePath(minimalRoot);
+  it("validates a directory through the production VFS, Loader and Validator", async () => {
+    const report = await validateSystemPackagePath(minimalRoot);
     expect(report.ok).toBe(true);
     expect(report.package?.id).toBe("demo-minimal");
     expect(report.issues).toEqual([]);
@@ -23,20 +23,20 @@ describe("System Package validator CLI library", () => {
     expect(formatSystemPackageValidationReport(report)).toContain("PASS");
   });
 
-  it("returns blocking diagnostics and a failing exit code", () => {
-    const report = validateSystemPackagePath(invalidRoot);
+  it("returns blocking diagnostics and a failing exit code", async () => {
+    const report = await validateSystemPackagePath(invalidRoot);
     expect(report.ok).toBe(false);
     expect(report.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "MANIFEST_MISSING" })]));
     expect(systemPackageValidationExitCode(report)).toBe(1);
   });
 
-  it("validates zip input", () => {
+  it("validates zip input", async () => {
     const files = Object.fromEntries(walkFiles(minimalRoot).map((file) => [relative(minimalRoot, file).replaceAll("\\", "/"), readFileSync(file)]));
     const temporaryDirectory = mkdtempSync(join(tmpdir(), "pbdh-validator-"));
     const zipPath = join(temporaryDirectory, "minimal.zip");
     try {
       writeFileSync(zipPath, zipSync(files));
-      const report = validateSystemPackagePath(zipPath);
+      const report = await validateSystemPackagePath(zipPath);
       expect(report.ok).toBe(true);
       expect(report.package?.id).toBe("demo-minimal");
     } finally {

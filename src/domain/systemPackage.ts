@@ -1,5 +1,5 @@
 export * from "./systemPackage/contract";
-export { validateCachedSystemPackage, validateSystemPackage } from "./systemPackage/validator";
+export { validateCachedSystemPackage } from "./systemPackage/cachedPackageValidation";
 export {
   allowedGlobalHtmlAttributes,
   allowedHtmlAttributesByTag,

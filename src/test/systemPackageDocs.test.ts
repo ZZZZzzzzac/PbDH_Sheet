@@ -117,12 +117,12 @@ describe("System Package documentation", () => {
   it.each([
     ["minimal template", join(repoRoot, "templates", "system-package-minimal"), "demo-minimal"],
     ["kitchen-sink fixture", join(repoRoot, "tests", "fixtures", "system-packages", "kitchen-sink"), "demo"],
-  ])("loads and validates the %s through the real package pipeline", (_name, packageRoot, expectedId) => {
+  ])("loads and validates the %s through the real package pipeline", async (_name, packageRoot, expectedId) => {
     const files = new Map(walk(packageRoot).map((file) => [
       relative(packageRoot, file).replaceAll("\\", "/"),
       new Uint8Array(readFileSync(file)),
     ]));
-    const result = loadSystemPackageFromVfs(createVirtualFileSystem(files));
+    const result = await loadSystemPackageFromVfs(createVirtualFileSystem(files));
 
     expect(result.issues).toEqual([]);
     expect(result.ok).toBe(true);

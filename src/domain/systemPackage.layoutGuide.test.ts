@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures";
-import { findAsset, findModule, findResourceLibrary, getHtmlTemplateModuleReferences, validateCachedSystemPackage, validateSystemPackage } from "./systemPackage";
+import { findAsset, findModule, findResourceLibrary, getHtmlTemplateModuleReferences, validateCachedSystemPackage } from "./systemPackage";
+import { validateSystemPackage } from "./systemPackage/validator";
 
 describe("validateSystemPackage Layout and Guide", () => {
   it("accepts a Sheet Shell with one Page Outlet and persistent module references", () => {

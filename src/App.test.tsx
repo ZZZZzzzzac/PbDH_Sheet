@@ -821,7 +821,7 @@ describe("App Resource Manager", () => {
 
     const managerButton = screen.getByRole("button", { name: "资源管理器" });
     await user.click(managerButton);
-    expect(screen.getByRole("dialog", { name: "Resource Manager" })).toBeVisible();
+    expect(await screen.findByRole("dialog", { name: "Resource Manager" })).toBeVisible();
     expect(screen.getByText("0 个有效资源库")).toBeVisible();
     expect(screen.getByRole("button", { name: "关闭资源管理器" })).toHaveFocus();
     await user.keyboard("{Escape}");

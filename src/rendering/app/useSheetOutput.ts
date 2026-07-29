@@ -1,11 +1,8 @@
 import { useState } from "react";
 import { exportCharacterData, type CharacterData } from "../../domain/characterData";
-import { exportExternalCharacterData } from "../../domain/characterFormatAdapter";
 import { createCardTableLayout, type CardTableLayout } from "../../domain/cardEngine";
 import type { SystemPackage } from "../../domain/systemPackage";
 import type { ValidationIssue } from "../../domain/validationRunner";
-import { buildReadonlyHtmlSnapshot, waitForVisibleImages } from "../../export/output";
-import { collectFrameworkValidationIssues } from "../frameworkChecks";
 import { printablePages } from "../pagePresentation";
 import { waitForTextFits } from "../textFit";
 import type { PendingCharacterExport } from "../CharacterExportDialog";
@@ -106,6 +103,7 @@ export function useSheetOutput({
     if (!printableContentPrepared && !(await preparePrintableContent())) return;
     const printableRoot = document.querySelector(".sheet-tool");
     if (kind === "html") {
+      const { buildReadonlyHtmlSnapshot, waitForVisibleImages } = await import("../../export/output");
       try {
         await waitForVisibleImages(printableRoot ?? document);
         downloadText(await buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined, activeCharacterSaveName), `${baseName}.html`, "text/html");
@@ -120,6 +118,7 @@ export function useSheetOutput({
       return;
     }
     try {
+      const { waitForVisibleImages } = await import("../../export/output");
       await waitForVisibleImages(printableRoot);
       window.print();
     } finally {
@@ -133,6 +132,7 @@ export function useSheetOutput({
     if (kind !== "json") {
       printableContentPrepared = await preparePrintableContent();
       if (!printableContentPrepared) return;
+      const { collectFrameworkValidationIssues } = await import("../frameworkChecks");
       frameworkIssues = collectFrameworkValidationIssues(document.querySelector(".sheet-tool") ?? document);
     }
     const issues = [...frameworkIssues, ...(await runPreOutputValidation())];
@@ -149,6 +149,7 @@ export function useSheetOutput({
     if (!characterData || !currentPackage) return;
     const adapter = currentPackage.characterFormatAdapters?.find((candidate) => candidate.ID === adapterId);
     if (!adapter?.exportScriptContent) return;
+    const { exportExternalCharacterData } = await import("../../domain/characterFormatAdapter");
     const result = await exportExternalCharacterData(characterData, adapter, currentPackage);
     if ("error" in result) {
       useRuntimeStore.setState({ importError: result.error.text });
@@ -166,6 +167,7 @@ export function useSheetOutput({
   const handleValidation = async () => {
     let frameworkIssues: ValidationIssue[] = [];
     if (await preparePrintableContent(false)) {
+      const { collectFrameworkValidationIssues } = await import("../frameworkChecks");
       frameworkIssues = collectFrameworkValidationIssues(document.querySelector(".sheet-tool") ?? document);
       setPrintMode(false);
     }
