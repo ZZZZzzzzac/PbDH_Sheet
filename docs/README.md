@@ -4,6 +4,7 @@
 
 | 需要了解 | 唯一主要来源 | 不应包含 |
 |---|---|---|
+| 玩家操作与使用技巧 | [`player-guide.md`](player-guide.md) | 内部实现、System Package 制作方法 |
 | 领域词汇和稳定关系 | [`CONTEXT.md`](../CONTEXT.md) | 当前源码结构、JSON 字段清单 |
 | 产品问题、能力范围、非目标 | [`PRD.md`](PRD.md) | 技术栈、模块枚举、实现计划 |
 | 当前运行时架构和数据流 | [`architecture.md`](architecture.md) | 决策讨论、精确包 schema |

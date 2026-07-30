@@ -531,9 +531,10 @@ describe("TTTRI System Package", () => {
     expect(t3.选项.some((option) => option.ID === "subclass")).toBe(true);
     expect(t4.选项.some((option) => option.ID === "subclass")).toBe(false);
     expect(t4.选项.some((option) => option.ID === "subclass-elite")).toBe(true);
-    expect(t2.选项.find((option) => option.ID === "subclass")?.标签).toBe("提升武器原型：将你的武器原型等级提升一级");
-    expect(t3.选项.find((option) => option.ID === "subclass")?.标签).toBe("提升武器原型：将你的武器原型等级提升一级");
-    expect(t4.选项.find((option) => option.ID === "subclass-elite")?.标签).toBe("提升武器原型：将你的武器原型等级提升一级");
+    const weaponArchetypeText = "提升武器原型: 使用人物卡上的干员选择器选择对应的新等级 (预备->正式->资深->精英)";
+    expect(t2.选项.find((option) => option.ID === "subclass")?.标签).toBe(weaponArchetypeText);
+    expect(t3.选项.find((option) => option.ID === "subclass")?.标签).toBe(weaponArchetypeText);
+    expect(t4.选项.find((option) => option.ID === "subclass-elite")?.标签).toBe(weaponArchetypeText);
     for (const [tier, multiclassCap] of [[t2, 2], [t3, 4], [t4, 5]] as const) {
       const multiclassOptions = tier.选项.filter((option) => option.ID.startsWith("multiclass-"));
       expect(multiclassOptions).toHaveLength(1);

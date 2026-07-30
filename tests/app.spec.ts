@@ -742,7 +742,7 @@ test("TTTRI level Free Text retains its full-sized presentation", async ({ page 
   expect(geometry.previewHeight).toBeGreaterThan(30);
 });
 
-test("Daggerheart and TTTRI advancement options and footers align across tiers", async ({ page }) => {
+test("Daggerheart and TTTRI advancement option controls align across tiers", async ({ page }) => {
   for (const packageId of ["daggerheart-core", "tttri"]) {
     await page.goto("/");
     await page.getByRole("button", { name: "系统包", exact: true }).click();
@@ -753,17 +753,22 @@ test("Daggerheart and TTTRI advancement options and footers align across tiers",
 
     const tiers = await page.locator(".advancement-grid > article").evaluateAll((articles) => articles.map((article) => {
       const rows = [...article.querySelectorAll<HTMLElement>('[data-part="option"], [data-part="option-group"]')];
-      const footer = article.querySelector<HTMLElement>('[data-module-id$="-footer"]')!;
+      const footer = article.querySelector<HTMLElement>('[data-module-id$="-footer"]');
       const directPart = (row: HTMLElement, part: string) => [...row.children].find((child) => child.getAttribute("data-part") === part) as HTMLElement;
       return {
         labelLefts: rows.map((row) => directPart(row, "option-label").getBoundingClientRect().left),
+        labelVerticalGaps: rows.slice(0, -1).map((row, index) => {
+          const label = directPart(row, "option-label").getBoundingClientRect();
+          const nextLabel = directPart(rows[index + 1], "option-label").getBoundingClientRect();
+          return nextLabel.top - label.bottom;
+        }),
         controlRights: rows.map((row) => (directPart(row, "input") ?? directPart(row, "group-inputs")).getBoundingClientRect().right),
         controlLabelGaps: rows.map((row) => {
           const label = directPart(row, "option-label");
           const control = directPart(row, "input") ?? directPart(row, "group-inputs");
           return label.getBoundingClientRect().left - control.getBoundingClientRect().right;
         }),
-        footerTop: footer.getBoundingClientRect().top,
+        footerTop: footer?.getBoundingClientRect().top ?? null,
       };
     }));
 
@@ -772,9 +777,15 @@ test("Daggerheart and TTTRI advancement options and footers align across tiers",
       expect(Math.max(...tier.labelLefts) - Math.min(...tier.labelLefts)).toBeLessThanOrEqual(1);
       expect(Math.max(...tier.controlRights) - Math.min(...tier.controlRights)).toBeLessThanOrEqual(1);
       expect(Math.min(...tier.controlLabelGaps)).toBeGreaterThanOrEqual(5);
+      if (packageId === "tttri") expect(Math.min(...tier.labelVerticalGaps)).toBeGreaterThanOrEqual(7.5);
     }
     const footerTops = tiers.map((tier) => tier.footerTop);
-    expect(Math.max(...footerTops) - Math.min(...footerTops)).toBeLessThanOrEqual(1);
+    if (packageId === "daggerheart-core") {
+      expect(footerTops.every((top) => top !== null)).toBe(true);
+      expect(Math.max(...footerTops as number[]) - Math.min(...footerTops as number[])).toBeLessThanOrEqual(1);
+    } else {
+      expect(footerTops).toEqual([null, null, null]);
+    }
   }
 });
 

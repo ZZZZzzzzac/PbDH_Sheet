@@ -2,6 +2,7 @@
 
 ## 项目文档
 
+- [玩家车卡器教程与技巧](docs/player-guide.md)
 - [文档地图](docs/README.md)
 - [产品需求](docs/PRD.md)
 - [当前架构](docs/architecture.md)
