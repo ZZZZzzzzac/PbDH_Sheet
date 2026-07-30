@@ -1,5 +1,9 @@
 ## Agent skills
 
+Project-local reusable workflows live under `.agents/skills/<skill-name>/`.
+
+- Use `/create-countable-icons` when designing, integrating, or auditing paired marked/unmarked icons for System Package `countableResource` modules.
+
 ### Issue tracker
 
 Issues and PRDs are tracked in GitHub Issues for `ZZZZzzzzac/PbDH_Sheet`. See `docs/agents/issue-tracker.md`.

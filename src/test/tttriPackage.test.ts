@@ -159,16 +159,24 @@ describe("TTTRI System Package", () => {
     expect(loadedResult.package.modules).not.toContainEqual(expect.objectContaining({ ID: "currency" }));
   });
 
-  it("uses uniform filled and empty square markers for core resources", () => {
+  it("uses paired tactical image markers for core resources", () => {
     expect(loadedResult.ok).toBe(true);
     if (!loadedResult.ok) return;
 
-    for (const id of ["hp", "stress", "armor-slots", "hope"]) {
+    const markerNames = {
+      hp: "health",
+      stress: "stress",
+      "armor-slots": "armor",
+      hope: "hope",
+      proficiency: "proficiency",
+    } as const;
+
+    for (const [id, assetName] of Object.entries(markerNames)) {
       expect(loadedResult.package.modules.find((module) => module.ID === id)).toMatchObject({
         类型: "countableResource",
-        标记尺寸: 20,
-        当前值标记: { 类型: "文字", 内容: "■" },
-        剩余值标记: { 类型: "文字", 内容: "□" },
+        标记尺寸: 26,
+        当前值标记: { 类型: "图片", 资源路径: `assets/icons/resource-${assetName}-marked.svg` },
+        剩余值标记: { 类型: "图片", 资源路径: `assets/icons/resource-${assetName}-unmarked.svg` },
       });
     }
   });

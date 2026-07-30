@@ -11,7 +11,7 @@
   "skins": [
     {
       "ID": "rhodes-island",
-      "名称": "罗德岛",
+      "名称": "终末地",
       "css": "skins/rhodes-island/skin.css",
       "推荐框架配色": "light",
       "layoutOverrides": {
@@ -24,7 +24,7 @@
     },
     {
       "ID": "terra-portal",
-      "名称": "泰拉门户",
+      "名称": "罗德岛",
       "css": "skins/terra-portal/skin.css",
       "推荐框架配色": "dark",
       "layoutOverrides": {

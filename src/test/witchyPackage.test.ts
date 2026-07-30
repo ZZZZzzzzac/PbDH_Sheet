@@ -37,12 +37,17 @@ describe("Witchy System Package", () => {
     expect(result.package.modules.find((module) => module.ID === "pick-archetype")).not.toHaveProperty("创建卡牌");
     expect(result.package.modules.find((module) => module.ID === "magic-points")).toMatchObject({
       类型: "countableResource", 默认值: 6, 最大值: 6, 最大值可改: false,
+      显示方式: "标记",
+      标记尺寸: 26,
+      当前值标记: { 类型: "图片", 资源路径: "assets/icons/resource-magic-marked.svg" },
+      剩余值标记: { 类型: "图片", 资源路径: "assets/icons/resource-magic-unmarked.svg" },
     });
     expect(result.package.modules.find((module) => module.ID === "erosion")).toMatchObject({
       类型: "countableResource", 默认值: 0, 最大值: 6,
       显示方式: "标记",
-      当前值标记: { 类型: "文字", 内容: "🌑" },
-      剩余值标记: { 类型: "文字", 内容: "🌕" },
+      标记尺寸: 26,
+      当前值标记: { 类型: "图片", 资源路径: "assets/icons/resource-erosion-marked.svg" },
+      剩余值标记: { 类型: "图片", 资源路径: "assets/icons/resource-erosion-unmarked.svg" },
     });
     expect(result.package.dependencies).toEqual(expect.arrayContaining([
       expect.objectContaining({

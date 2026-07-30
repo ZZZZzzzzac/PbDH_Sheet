@@ -69,15 +69,26 @@ describe("Heart of Hopefind System Package", () => {
       标签: "噪音",
       选项: [{ ID: "active", 标签: "噪音" }],
     });
-    const countables = result.package.modules.filter((module) => ["hope-points", "wounds", "life", "stress"].includes(module.ID));
-    expect(countables).toHaveLength(4);
-    const markerPairs = countables.map((module) => {
-      expect(module.类型).toBe("countableResource");
-      if (module.类型 !== "countableResource") return "";
-      expect(module.当前值标记).not.toEqual(module.剩余值标记);
-      return JSON.stringify([module.当前值标记, module.剩余值标记]);
-    });
-    expect(new Set(markerPairs).size).toBe(4);
+    const markers = {
+      "hope-points": { assetName: "hope", size: 26 },
+      wounds: { assetName: "wounds", size: 26 },
+      life: { assetName: "life", size: 26 },
+      stress: { assetName: "stress", size: 26 },
+      "core-hurt-phase-opening": { assetName: "core-hurt-progress", size: 20 },
+      "core-hurt-phase-development": { assetName: "core-hurt-progress", size: 20 },
+      "core-hurt-phase-turn": { assetName: "core-hurt-progress", size: 20 },
+      "core-hurt-phase-conclusion": { assetName: "core-hurt-progress", size: 20 },
+    } as const;
+
+    for (const [id, { assetName, size }] of Object.entries(markers)) {
+      expect(result.package.modules.find((module) => module.ID === id)).toMatchObject({
+        类型: "countableResource",
+        标记尺寸: size,
+        当前值标记: { 类型: "图片", 资源路径: `assets/icons/resource-${assetName}-marked.svg` },
+        剩余值标记: { 类型: "图片", 资源路径: `assets/icons/resource-${assetName}-unmarked.svg` },
+      });
+    }
+    expect(new Set(Object.values(markers).map(({ assetName }) => assetName)).size).toBe(5);
   });
 
   it("uses Free Text dropdowns for both dice and derives the Fear Die from Noise", async () => {

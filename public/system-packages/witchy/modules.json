@@ -11,8 +11,9 @@
     "步长": 1,
     "最大值可改": false,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "✦" },
-    "剩余值标记": { "类型": "文字", "内容": "◇" }
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-magic-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-magic-unmarked.svg" }
   },
   {
     "ID": "erosion",
@@ -23,8 +24,9 @@
     "默认值": 0,
     "步长": 1,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "🌑" },
-    "剩余值标记": { "类型": "文字", "内容": "🌕" }
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-erosion-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-erosion-unmarked.svg" }
   },
   { "ID": "essence-assiah", "类型": "freeText", "标签": "物质界 Assiah", "默认值": "0" },
   { "ID": "essence-yetzirah", "类型": "freeText", "标签": "精神界 Yetzirah", "默认值": "0" },

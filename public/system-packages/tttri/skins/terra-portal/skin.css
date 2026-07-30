@@ -690,7 +690,27 @@
   color: var(--tp-text);
 }
 
-/* ========== 输出 / 打印：保留结构，纸面改白 ========== */
+/* ========== 输出 / 打印：保留结构，整体切换为浅色纸面 ========== */
+
+.print-mode :scope {
+  color-scheme: light;
+  --tp-black: #ffffff;
+  --tp-ink: #ffffff;
+  --tp-panel: #f4f7f7;
+  --tp-panel-2: #e9eeee;
+  --tp-panel-soft: #dde5e6;
+  --tp-module-surface: #f7f9f9;
+  --tp-line: #7b898d;
+  --tp-line-soft: #aab4b7;
+  --tp-line-strong: #39484c;
+  --tp-text: #20292c;
+  --tp-text-soft: #3f4b4f;
+  --tp-muted: #5e696d;
+  --tp-muted-deep: #768084;
+  --tp-cyan: #3f7480;
+  --tp-cyan-deep: #315f69;
+  --tp-cyan-hover: #c9e2e6;
+}
 
 .print-mode :scope .tttri-workspace {
   background: #ffffff;
@@ -712,6 +732,12 @@
 .print-mode :scope [data-module-type="cardTable"] [data-part="surface"]::before,
 .print-mode :scope [data-module-type="cardTable"] [data-part="surface"]::after {
   display: none;
+}
+
+.print-mode :scope :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
+  border: 1px solid var(--tp-line-strong);
+  background: #dcebed;
+  color: var(--tp-text);
 }
 
 .print-mode :scope :is(
@@ -759,6 +785,26 @@
 }
 
 @media print {
+  :scope {
+    color-scheme: light;
+    --tp-black: #ffffff;
+    --tp-ink: #ffffff;
+    --tp-panel: #f4f7f7;
+    --tp-panel-2: #e9eeee;
+    --tp-panel-soft: #dde5e6;
+    --tp-module-surface: #f7f9f9;
+    --tp-line: #7b898d;
+    --tp-line-soft: #aab4b7;
+    --tp-line-strong: #39484c;
+    --tp-text: #20292c;
+    --tp-text-soft: #3f4b4f;
+    --tp-muted: #5e696d;
+    --tp-muted-deep: #768084;
+    --tp-cyan: #3f7480;
+    --tp-cyan-deep: #315f69;
+    --tp-cyan-hover: #c9e2e6;
+  }
+
   .tttri-workspace {
     background: #ffffff;
   }
@@ -783,6 +829,12 @@
   [data-module-type="cardTable"] [data-part="surface"]::before,
   [data-module-type="cardTable"] [data-part="surface"]::after {
     display: none;
+  }
+
+  :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
+    border: 1px solid var(--tp-line-strong);
+    background: #dcebed;
+    color: var(--tp-text);
   }
 
   :is(

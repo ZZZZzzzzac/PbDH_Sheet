@@ -233,7 +233,7 @@
 /* 等级格:白面大数字,与头版形成档案编号感。 */
 .identity-panel .level-field [data-part="label"] {
   border-bottom-color: rgba(207, 205, 191, 0.45);
-  color: #cfcdbf;
+  color: var(--ak-muted);
 }
 
 .identity-panel .level-field [data-part="input"] {
@@ -327,6 +327,14 @@
   letter-spacing: 0.06em;
 }
 
+:is(
+  [data-module-type="countableResource"],
+  [data-module-type="freeText"],
+  [data-module-type="longText"]
+) > [data-part="label"] {
+  color: var(--ak-muted);
+}
+
 [data-module-type] :is([data-part="input"], [data-part="maximum-input"]) {
   border-color: var(--ak-line);
   background: #ffffff;
@@ -350,39 +358,38 @@
   color: var(--ak-ink);
 }
 
-/* 选择器按钮(亮面区):墨块纸字。 */
+/* 选择器按钮（亮面区）：浅纸面、深色图标。 */
 :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"] {
   border: 1px solid var(--ak-ink);
-  background: linear-gradient(160deg, var(--ak-ink-2), var(--ak-ink));
-  color: var(--ak-paper);
+  background: var(--ak-surface-muted);
+  color: var(--ak-ink);
   box-shadow: none;
 }
 
 :is([data-module-type="resourcePicker"], [data-module-type="resourceComposer"]) [data-part="button"]:hover:not(:disabled) {
-  background: linear-gradient(160deg, #3a3a34, var(--ak-ink-2));
-  color: var(--ak-yellow);
+  background: var(--ak-yellow);
+  color: var(--ak-ink);
 }
 
-/* 计数资源:墨签 + 墨按钮。 */
+/* 计数资源：浅色标签与按钮，保持纸面主题。 */
 [data-module-type="countableResource"] [data-part="label"] {
-  background: var(--ak-ink);
-  color: var(--ak-paper);
+  background: var(--ak-surface-muted);
+  color: var(--ak-muted);
   font-family: var(--ak-font-display);
-  font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.2em;
 }
 
 [data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]) {
   border: 1px solid var(--ak-ink);
-  background: var(--ak-ink-2);
-  color: var(--ak-paper);
+  background: var(--ak-surface-muted);
+  color: var(--ak-ink);
   box-shadow: none;
 }
 
 [data-module-type="countableResource"] :is([data-part="decrement-button"], [data-part="increment-button"]):hover:not(:disabled) {
-  background: var(--ak-ink);
-  color: var(--ak-yellow);
+  background: var(--ak-yellow);
+  color: var(--ak-ink);
 }
 
 /* 经历清单:发丝分隔线。 */
@@ -401,7 +408,7 @@
   text-align: center;
 }
 
-/* 金币区标签块沿用墨签,输入居中。 */
+/* 金币区标签块沿用浅色标签，输入居中。 */
 .currency-row [data-module-type="countableResource"] [data-part="label"] {
   border-left-color: var(--ak-line-strong);
 }
@@ -603,6 +610,50 @@
     linear-gradient(155deg, #2b2b27, #232320 55%, #1f1f1c);
 }
 
+/* 桌面纹章：保留终末地底纹，叠加领域 SVG 自带的入场与循环动画。 */
+[data-module-type="cardTable"] [data-part="surface"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("assets/icons/domain-miracle.svg");
+  background-repeat: no-repeat;
+  background-position: center 45%;
+  background-size: min(38vmin, 320px);
+}
+
+:scope[data-value-primary-domain="远见"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-foresight.svg");
+}
+:scope[data-value-primary-domain="攻坚"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-assault.svg");
+}
+:scope[data-value-primary-domain="坚阵"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-bulwark.svg");
+}
+:scope[data-value-primary-domain="秘行"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-stealth.svg");
+}
+:scope[data-value-primary-domain="精准"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-precision.svg");
+}
+:scope[data-value-primary-domain="支柱"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-pillar.svg");
+}
+:scope[data-value-primary-domain="奥术"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-arcane.svg");
+}
+:scope[data-value-primary-domain="工业"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-industrial.svg");
+}
+:scope[data-value-primary-domain="心界"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-mindsphere.svg");
+}
+:scope[data-value-primary-domain="迅攻"] [data-module-type="cardTable"] [data-part="surface"]::after {
+  background-image: url("assets/icons/domain-blitz.svg");
+}
+
 [data-module-type="cardTable"] :is([data-part="tidy-button"], [data-part="size-control"]) {
   border: 1px solid var(--ak-ink);
   background: var(--ak-surface);
@@ -633,6 +684,10 @@
   background: #ffffff;
 }
 
+.print-mode :scope [data-module-type="cardTable"] [data-part="surface"]::after {
+  display: none;
+}
+
 @media print {
   .tttri-workspace {
     background: #ffffff;
@@ -648,6 +703,10 @@
 
   [data-module-type="cardTable"] [data-part="surface"] {
     background: #ffffff;
+  }
+
+  [data-module-type="cardTable"] [data-part="surface"]::after {
+    display: none;
   }
 }
 

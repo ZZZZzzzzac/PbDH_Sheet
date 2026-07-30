@@ -1,0 +1,4 @@
+interface:
+  display_name: "Countable 资源图标"
+  short_description: "为 System Package 设计、接入并验证成对计数资源图标"
+  default_prompt: "使用 $create-countable-icons 为目标 System Package 的 Countable Resource 设计、接入并验证成对状态图标。"

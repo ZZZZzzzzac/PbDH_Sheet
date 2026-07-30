@@ -45,6 +45,31 @@ describe("Daggerheart core System Package", () => {
     expect(kimiSkin?.layoutOverrides?.pages.every((page) => page.htmlContent.includes("kimi-thread-book"))).toBe(true);
   });
 
+  it("uses traditional fantasy image markers for the five core resources", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+
+    const markers = {
+      hp: { assetName: "health", size: 26 },
+      stress: { assetName: "stress", size: 26 },
+      "companion-stress": { assetName: "stress", size: 17 },
+      "armor-slots": { assetName: "armor", size: 26 },
+      hope: { assetName: "hope", size: 26 },
+      proficiency: { assetName: "proficiency", size: 26 },
+    } as const;
+
+    for (const [id, { assetName, size }] of Object.entries(markers)) {
+      expect(loadedResult.package.modules.find((module) => module.ID === id)).toMatchObject({
+        类型: "countableResource",
+        显示方式: "标记",
+        标记尺寸: size,
+        当前值标记: { 类型: "图片", 资源路径: `assets/icons/resource-${assetName}-marked.svg` },
+        剩余值标记: { 类型: "图片", 资源路径: `assets/icons/resource-${assetName}-unmarked.svg` },
+      });
+    }
+    expect(new Set(Object.values(markers).map(({ assetName }) => assetName)).size).toBe(5);
+  });
+
   it("ships the latest 30-question class/domain questionnaire and replays its class Picker result", () => {
     expect(loadedResult.ok).toBe(true);
     if (!loadedResult.ok) return;
@@ -394,7 +419,7 @@ describe("Daggerheart core System Package", () => {
       }
     }
     expect(frontPaths.size).toBe(270);
-    expect([...assetPaths].filter((path) => !path.startsWith("assets/skins/"))).toHaveLength(280);
+    expect([...assetPaths].filter((path) => !path.startsWith("assets/skins/"))).toHaveLength(290);
     expect(assetPaths).toContain("assets/skins/skin-KimiK3/ink-wash-mountains.svg");
   });
 

@@ -85,8 +85,9 @@
     "步长": 1,
     "最大值可改": true,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "🩸" },
-    "剩余值标记": { "类型": "文字", "内容": "❤️" }
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-health-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-health-unmarked.svg" }
   },
   {
     "ID": "stress",
@@ -98,8 +99,9 @@
     "步长": 1,
     "最大值可改": true,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "😰" },
-    "剩余值标记": { "类型": "文字", "内容": "😌" }
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-unmarked.svg" }
   },
   {
     "ID": "hope",
@@ -111,8 +113,9 @@
     "步长": 1,
     "最大值可改": true,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "✨" },
-    "剩余值标记": { "类型": "文字", "内容": "🌑" }
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-hope-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-hope-unmarked.svg" }
   },
   {
     "ID": "armor-slots",
@@ -124,8 +127,9 @@
     "步长": 1,
     "最大值可改": true,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "💥" },
-    "剩余值标记": { "类型": "文字", "内容": "🛡️" }
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-armor-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-armor-unmarked.svg" }
   },
   {
     "ID": "proficiency",
@@ -136,8 +140,9 @@
     "默认值": 1,
     "步长": 1,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "⚔️" },
-    "剩余值标记": { "类型": "文字", "内容": "▫️" }
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-proficiency-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-proficiency-unmarked.svg" }
   },
   {
     "ID": "handful-gold",
@@ -1054,8 +1059,9 @@
     "步长": 1,
     "最大值可改": true,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "■" },
-    "剩余值标记": { "类型": "文字", "内容": "□" }
+    "标记尺寸": 17,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-unmarked.svg" }
   },
   {
     "ID": "companion-upgrades",

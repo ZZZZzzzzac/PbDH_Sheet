@@ -20,6 +20,11 @@ describe("Sheet Module sizing", () => {
     expect(countableResourceCss).toMatch(/\[data-countable-print-strategy="clear-uniform-squares"\]\s+\.marker-cell\s+\.marker-glyph\s*\{[^}]*display:\s*none/s);
   });
 
+  it("clears Marker Presentation for print without replacing Numeric Presentation values", () => {
+    expect(countableResourceCss).not.toContain('[data-countable-print-strategy="clear-uniform-squares"] [data-module-type="countableResource"] [data-part="value-group"] > [data-part="input"]');
+    expect(countableResourceCss).not.toContain('[data-countable-print-strategy="clear-uniform-squares"] [data-module-type="countableResource"] [data-part="value-group"]::before');
+  });
+
   it("raises the focused Sheet Module above adjacent controls", () => {
     expect(modulesCss).toMatch(/\.container:focus-within\s*\{[^}]*position:\s*relative[^}]*z-index:\s*[1-9]/s);
   });

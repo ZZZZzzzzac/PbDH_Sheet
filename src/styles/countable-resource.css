@@ -101,14 +101,6 @@
   display: none;
 }
 
-[data-countable-print-strategy="clear-uniform-squares"] [data-module-type="countableResource"] [data-part="value-group"] > [data-part="input"] {
-  display: none;
-}
-
-[data-countable-print-strategy="clear-uniform-squares"] [data-module-type="countableResource"] [data-part="value-group"]::before {
-  content: "0";
-}
-
 .stepper {
   display: inline-grid;
   place-items: center;

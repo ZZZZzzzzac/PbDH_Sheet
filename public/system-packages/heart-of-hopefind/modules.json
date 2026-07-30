@@ -13,8 +13,9 @@
     "步长": 1,
     "最大值可改": false,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "✨" },
-    "剩余值标记": { "类型": "文字", "内容": "☆" }
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-hope-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-hope-unmarked.svg" }
   },
   {
     "ID": "wounds",
@@ -26,8 +27,9 @@
     "步长": 1,
     "最大值可改": false,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "🧟" },
-    "剩余值标记": { "类型": "文字", "内容": "🙎‍♂️" }
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-wounds-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-wounds-unmarked.svg" }
   },
   {
     "ID": "noise",
@@ -48,8 +50,9 @@
     "步长": 1,
     "最大值可改": true,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "🖤" },
-    "剩余值标记": { "类型": "文字", "内容": "❤️" }
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-life-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-life-unmarked.svg" }
   },
   {
     "ID": "stress",
@@ -61,8 +64,9 @@
     "步长": 1,
     "最大值可改": true,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "⚡" },
-    "剩余值标记": { "类型": "文字", "内容": "◇" }
+    "标记尺寸": 26,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-unmarked.svg" }
   },
   {
     "ID": "pick-survivor-style",
@@ -127,8 +131,9 @@
     "步长": 1,
     "最大值可改": true,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "●" },
-    "剩余值标记": { "类型": "文字", "内容": "○" }
+    "标记尺寸": 20,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-unmarked.svg" }
   },
   {
     "ID": "core-hurt-phase-development",
@@ -140,8 +145,9 @@
     "步长": 1,
     "最大值可改": true,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "●" },
-    "剩余值标记": { "类型": "文字", "内容": "○" }
+    "标记尺寸": 20,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-unmarked.svg" }
   },
   {
     "ID": "core-hurt-phase-turn",
@@ -153,8 +159,9 @@
     "步长": 1,
     "最大值可改": true,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "●" },
-    "剩余值标记": { "类型": "文字", "内容": "○" }
+    "标记尺寸": 20,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-unmarked.svg" }
   },
   {
     "ID": "core-hurt-phase-conclusion",
@@ -166,7 +173,8 @@
     "步长": 1,
     "最大值可改": true,
     "显示方式": "标记",
-    "当前值标记": { "类型": "文字", "内容": "●" },
-    "剩余值标记": { "类型": "文字", "内容": "○" }
+    "标记尺寸": 20,
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-marked.svg" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-unmarked.svg" }
   }
 ]
