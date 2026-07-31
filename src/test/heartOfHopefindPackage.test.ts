@@ -8,6 +8,7 @@ import { composeResource } from "../domain/resourceComposer";
 import type { SystemPackage } from "../domain/systemPackage";
 import { runValidationChecksInProcess } from "../domain/validationScript";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
+import { formatCharacterTextExport } from "../domain/characterTextFormatter";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "heart-of-hopefind");
 let loadedResult: Awaited<ReturnType<typeof loadSystemPackageFromZipFile>>;
@@ -87,6 +88,17 @@ describe("Heart of Hopefind System Package", () => {
       });
     }
     expect(new Set(Object.values(markers).map(({ assetName }) => assetName)).size).toBe(5);
+  });
+
+  it("exports core resources to SealDice without Core Hurt phases", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const definition = loadedResult.package.characterTextExports?.find((candidate) => candidate.ID === "sealdice");
+    expect(definition).toBeTruthy();
+    if (!definition) return;
+    expect(formatCharacterTextExport(definition, createEmptyCharacterData(loadedResult.package))).toBe(
+      ".st 希望点2希望点上限6受伤点0受伤点上限5生命0生命上限5压力0压力上限5",
+    );
   });
 
   it("uses Free Text dropdowns for both dice and derives the Fear Die from Noise", async () => {

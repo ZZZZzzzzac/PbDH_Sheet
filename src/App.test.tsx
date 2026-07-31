@@ -205,6 +205,105 @@ describe("App Validation Checks", () => {
     vi.restoreAllMocks();
   });
 
+  it("orders and labels import/export actions for Players", async () => {
+    render(<App />);
+    await act(async () => useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob()));
+    act(() => {
+      const currentPackage = useRuntimeStore.getState().currentPackage!;
+      useRuntimeStore.setState({
+        currentPackage: {
+          ...currentPackage,
+          characterTextExports: [{
+            ID: "sealdice", 名称: "导出为海豹骰", 模板: ".st {字段}", 字段分隔符: "",
+            字段: [{ 模块ID: "character-name", 取值: "文本", 模板: "姓名{值}" }],
+          }, {
+            ID: "other-text", 名称: "导出为其他文本", 模板: "{字段}", 字段分隔符: ",",
+            字段: [],
+          }],
+          characterFormatAdapters: [{
+            ID: "zzz-character-json", 名称: "ZZZ Format", 载体: [], 导入脚本: "zzz-import.js",
+            importScriptContent: "module.exports=()=>({values:{}})", 导出脚本: "zzz-export.js",
+            exportScriptContent: "module.exports=()=>({document:{}})", 导出文件后缀: ".json",
+          }, {
+            ID: "dhsheet-character", 名称: "dhSheet Format", 载体: [], 导入脚本: "dhsheet-import.js",
+            importScriptContent: "module.exports=()=>({values:{}})", 导出脚本: "dhsheet-export.js",
+            exportScriptContent: "module.exports=()=>({document:{}})", 导出文件后缀: ".json",
+          }],
+        },
+      });
+    });
+
+    const trigger = screen.getByRole("button", { name: "导入导出" });
+    const panel = trigger.closest(".top-menu")?.querySelector(".menu-panel");
+    expect(Array.from(panel?.querySelectorAll(".menu-item") ?? []).map((item) => item.textContent)).toEqual([
+      "导入 (JSON/HTML)",
+      "打印 PDF",
+      "导出 HTML",
+      "导出 JSON",
+      "导出为海豹骰",
+      "导出为其他文本",
+      "导出为ZZZ格式",
+      "导出为dhsheet格式",
+    ]);
+  });
+
+  it("copies a declared Character Text Export without changing Character Data", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    render(<App />);
+    await act(async () => useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob()));
+    act(() => {
+      const state = useRuntimeStore.getState();
+      useRuntimeStore.setState({
+        currentPackage: {
+          ...state.currentPackage!,
+          characterTextExports: [{
+            ID: "sealdice", 名称: "导出为海豹骰", 模板: ".st {字段}", 字段分隔符: "",
+            字段: [{ 模块ID: "character-name", 取值: "文本", 模板: "姓名{值}" }],
+          }],
+        },
+        characterData: {
+          ...state.characterData!,
+          character: {
+            ...state.characterData!.character,
+            values: { ...state.characterData!.character.values, "character-name": " +01 " },
+          },
+        },
+      });
+    });
+    const before = useRuntimeStore.getState().characterData;
+
+    await user.click(screen.getByRole("button", { name: "导出为海豹骰" }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(".st 姓名1"));
+    expect(screen.getByRole("status")).toHaveTextContent("导出为海豹骰已复制。");
+    expect(useRuntimeStore.getState().characterData).toBe(before);
+  });
+
+  it("reports clipboard failure and hides undeclared Character Text Exports", async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockRejectedValue(new Error("denied"));
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    render(<App />);
+    await act(async () => useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob()));
+    expect(screen.queryByRole("button", { name: "导出为海豹骰" })).not.toBeInTheDocument();
+    act(() => {
+      useRuntimeStore.setState({
+        currentPackage: {
+          ...useRuntimeStore.getState().currentPackage!,
+          characterTextExports: [{
+            ID: "sealdice", 名称: "导出为海豹骰", 模板: ".st {字段}", 字段分隔符: "", 字段: [],
+          }],
+        },
+      });
+    });
+
+    await user.click(screen.getByRole("button", { name: "导出为海豹骰" }));
+
+    expect(await screen.findByText("导出为海豹骰复制失败，请检查浏览器剪贴板权限。")).toBeInTheDocument();
+  });
+
   it("runs Validation Checks only after the manual check button is clicked", async () => {
     const user = userEvent.setup();
     render(<App />);

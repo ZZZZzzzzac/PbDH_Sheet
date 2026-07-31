@@ -21,6 +21,7 @@ import { collectGuideValidationIssues } from "./guideValidation";
 import { collectModuleValidationIssues } from "./moduleValidation";
 import { collectPresentationValidationIssues } from "./presentationValidation";
 import { collectScriptValidationIssues } from "./scriptValidation";
+import { collectCharacterTextExportValidationIssues } from "./characterTextExportValidation";
 import { createValidationContext } from "./validationContext";
 
 type DependencyParseResult =
@@ -235,6 +236,7 @@ function validateSystemPackageCore(input: unknown): PackageValidationResult {
   collectCardValidationIssues(context);
   collectPresentationValidationIssues(context);
   collectScriptValidationIssues(context);
+  collectCharacterTextExportValidationIssues(context);
 
   if (issues.some((issue) => issue.level === "error" || issue.level === "fatal")) {
     return { ok: false, issues };
@@ -276,6 +278,7 @@ function inferDiagnosticEntities(pointer: Array<string | number>): PackageIssueE
     resourceLibraries: "resourceLibrary", dependencies: "dependency",
     validationChecks: "validationCheck", characterCreationGuide: "guideStep",
     questionnaireCharacterCreation: "questionnaire",
+    characterTextExports: "manifest",
   };
   const kind = typeof root === "string" ? definitions[root] : undefined;
   if (!kind) return [];

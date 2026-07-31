@@ -81,10 +81,6 @@ function splitReversible(value, label, diagnostics) {
   });
   return [source, "", ""];
 }
-function splitThresholds(value) {
-  const parts = string(value).split(/\s*\/\s*/u);
-  return [parts[0] || "", parts.slice(1).join("/") || ""];
-}
 function exportUpgrades(values, diagnostics) {
   const upgrades = { tier1: {}, tier2: {}, tier3: {} };
   const common = [["traits-1", 0, 0], ["traits-2", 0, 1], ["traits-3", 0, 2], ["hp-1", 1, 0], ["hp-2", 1, 1], ["stress-1", 2, 0], ["stress-2", 2, 1], ["experiences", 3, 0], ["domain-card", 4, 0], ["evasion", 5, 0]];
@@ -144,7 +140,6 @@ module.exports = function (input) {
     : ["", "", ""];
   const secondaryFeature = secondaryFeatureIndex >= 0 ? inventoryLines[secondaryFeatureIndex].slice("副武器特性：".length) : "";
   const inventory = inventoryLines.filter((_, index) => index !== secondarySummaryIndex && index !== secondaryFeatureIndex);
-  const thresholds = splitThresholds(values.thresholds);
   const hp = resource(values, "hp");
   const stress = resource(values, "stress");
   const hope = resource(values, "hope");
@@ -169,7 +164,7 @@ module.exports = function (input) {
     hope: hope.current, hopeMax: hope.max === null ? 6 : hope.max,
     hp: booleanSlots(hp, 18), stress: booleanSlots(stress, 18), hpMax: hp.max === null ? hp.current : hp.max, stressMax: stress.max === null ? stress.current : stress.max,
     armorBoxes: booleanSlots(armorSlots, 12), armorValue: string(values["armor-value"]), armorValueManualModifier: "0", armorBonus: "", armorMax: armorSlots.max === null ? armorSlots.current : armorSlots.max,
-    minorThreshold: thresholds[0], majorThreshold: thresholds[1], minorThresholdManualModifier: "0", majorThresholdManualModifier: "0",
+    minorThreshold: string(values["major-threshold"]), majorThreshold: string(values["severe-threshold"]), minorThresholdManualModifier: "0", majorThresholdManualModifier: "0",
     inventory: inventory.concat(["", "", "", "", ""]).slice(0, 5),
     characterBackground: string(values["background-story"]), characterAppearance: "", characterMotivation: string(values.notes),
     cards: padCards(activeCards, "empty-card"), inventory_cards: padCards(vaultCards, "empty-inventory-card"), checkedUpgrades: exportUpgrades(values, diagnostics),

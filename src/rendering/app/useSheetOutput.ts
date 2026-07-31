@@ -164,6 +164,19 @@ export function useSheetOutput({
     downloadText(`${JSON.stringify(result.document, null, 2)}\n`, fileName, "application/json");
   };
 
+  const exportCharacterText = async (exportId: string) => {
+    if (!characterData || !currentPackage) return;
+    const definition = currentPackage.characterTextExports?.find((candidate) => candidate.ID === exportId);
+    if (!definition) return;
+    const { formatCharacterTextExport } = await import("../../domain/characterTextFormatter");
+    try {
+      await navigator.clipboard.writeText(formatCharacterTextExport(definition, characterData));
+      useRuntimeStore.setState({ importError: null, importNotice: `${definition.名称}已复制。` });
+    } catch {
+      useRuntimeStore.setState({ importError: `${definition.名称}复制失败，请检查浏览器剪贴板权限。`, importNotice: null });
+    }
+  };
+
   const handleValidation = async () => {
     let frameworkIssues: ValidationIssue[] = [];
     if (await preparePrintableContent(false)) {
@@ -202,6 +215,7 @@ export function useSheetOutput({
     validationDialogOpen,
     pendingExternalExport,
     beginOutput,
+    exportCharacterText,
     exportWithCharacterAdapter,
     handleValidation,
     closeValidationDialog,

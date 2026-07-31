@@ -36,6 +36,7 @@ interface AppTopBarProps {
   onDuplicateSave: () => void;
   onDeleteSave: () => void;
   onBeginOutput: (kind: OutputKind) => void;
+  onExportCharacterText: (exportId: string) => void;
   onExportWithCharacterAdapter: (adapterId: string) => void;
   onPresetSystemPackage: (event: ChangeEvent<HTMLSelectElement>) => void;
   onSelectSkin: (skinId: string) => void;
@@ -154,23 +155,28 @@ export function AppTopBar(props: AppTopBarProps) {
             <span className="menu-trigger-text">导入导出</span>
           </button>
           <div className="menu-panel" role="menu">
+            <button className="menu-item" type="button" onClick={() => characterFileInputRef.current?.click()} aria-label="导入 (JSON/HTML)" disabled={!currentPackage}>
+              <Upload aria-hidden="true" size={16} /><span>导入 (JSON/HTML)</span>
+            </button>
             <button className="menu-item" type="button" onClick={() => props.onBeginOutput("print")} aria-label="打开浏览器打印 PDF" disabled={!characterDataAvailable}>
               <Printer aria-hidden="true" size={16} /><span>打印 PDF</span>
             </button>
-            <button className="menu-item" type="button" onClick={() => characterFileInputRef.current?.click()} aria-label="导入 Character JSON" disabled={!currentPackage}>
-              <Upload aria-hidden="true" size={16} /><span>导入</span>
-            </button>
-            <button className="menu-item" type="button" onClick={() => props.onBeginOutput("json")} aria-label="导出 Character JSON" disabled={!characterDataAvailable}>
-              <Download aria-hidden="true" size={16} /><span>导出 PbDH</span>
-            </button>
-            {currentPackage?.characterFormatAdapters?.filter((adapter) => adapter.exportScriptContent).map((adapter) => (
-              <button className="menu-item" type="button" key={adapter.ID} onClick={() => props.onExportWithCharacterAdapter(adapter.ID)} disabled={!characterDataAvailable}>
-                <Download aria-hidden="true" size={16} /><span>导出 {adapter.名称.replace(/\s+format$/iu, "")}</span>
-              </button>
-            ))}
             <button className="menu-item" type="button" onClick={() => props.onBeginOutput("html")} aria-label="导出 HTML snapshot" disabled={!characterDataAvailable}>
               <FileText aria-hidden="true" size={16} /><span>导出 HTML</span>
             </button>
+            <button className="menu-item" type="button" onClick={() => props.onBeginOutput("json")} aria-label="导出 Character JSON" disabled={!characterDataAvailable}>
+              <Download aria-hidden="true" size={16} /><span>导出 JSON</span>
+            </button>
+            {currentPackage?.characterTextExports?.map((definition) => (
+              <button className="menu-item" type="button" key={definition.ID} onClick={() => props.onExportCharacterText(definition.ID)} disabled={!characterDataAvailable}>
+                <Copy aria-hidden="true" size={16} /><span>{definition.名称}</span>
+              </button>
+            ))}
+            {currentPackage?.characterFormatAdapters?.filter((adapter) => adapter.exportScriptContent).map((adapter) => (
+              <button className="menu-item" type="button" key={adapter.ID} onClick={() => props.onExportWithCharacterAdapter(adapter.ID)} disabled={!characterDataAvailable}>
+                <Download aria-hidden="true" size={16} /><span>{characterAdapterExportLabel(adapter.名称)}</span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -246,4 +252,14 @@ export function AppTopBar(props: AppTopBarProps) {
       </nav>
     </header>
   );
+}
+
+function characterAdapterExportLabel(name: string): string {
+  const formatName = name.replace(/\s+format$/iu, "");
+  const normalizedName = /^dhsheet$/iu.test(formatName)
+    ? "dhsheet"
+    : /^zzz$/iu.test(formatName)
+      ? "ZZZ"
+      : formatName;
+  return `导出为${normalizedName}格式`;
 }

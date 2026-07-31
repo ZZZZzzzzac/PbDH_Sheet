@@ -121,7 +121,8 @@ describe("TTTRI character consistency validation", () => {
       hp: { current: 0, max: numberField(selectedClass, "生命点") + 1 },
       stress: { current: 0, max: 7 },
       evasion: String(numberField(selectedClass, "闪避值") + 1),
-      thresholds: `${numberField(selectedArmor, "重度阈值") + 2} / ${numberField(selectedArmor, "严重阈值") + 2}`,
+      "major-threshold": String(numberField(selectedArmor, "重度阈值") + 2),
+      "severe-threshold": String(numberField(selectedArmor, "严重阈值") + 2),
     });
     expect(derivedIssues(valid)).toEqual([]);
 
@@ -153,7 +154,8 @@ describe("TTTRI character consistency validation", () => {
       evasion: String(numberField(selectedClass, "闪避值") + evasion),
       "armor-value": String(numberField(selectedArmor, "护甲值") + armor),
       "armor-slots": { current: 0, max: numberField(selectedArmor, "护甲值") + armor },
-      thresholds: `${numberField(selectedArmor, "重度阈值") + level + heavy} / ${numberField(selectedArmor, "严重阈值") + level}`,
+      "major-threshold": String(numberField(selectedArmor, "重度阈值") + level + heavy),
+      "severe-threshold": String(numberField(selectedArmor, "严重阈值") + level),
     });
     expect(derivedIssues(issues)).toEqual([]);
   });
@@ -219,7 +221,8 @@ function baseValues(): Record<string, unknown> {
     "armor-summary": armorSummary(selectedArmor),
     "armor-value": selectedArmor.fields["护甲值"],
     "armor-slots": { current: 0, max: numberField(selectedArmor, "护甲值") },
-    thresholds: `${numberField(selectedArmor, "重度阈值") + 1} / ${numberField(selectedArmor, "严重阈值") + 1}`,
+    "major-threshold": String(numberField(selectedArmor, "重度阈值") + 1),
+    "severe-threshold": String(numberField(selectedArmor, "严重阈值") + 1),
   };
 }
 

@@ -14,6 +14,7 @@ import type { ResourceLibraryEntry } from "../domain/resourceLibrary";
 import type { SystemPackage } from "../domain/systemPackage";
 import { runValidationChecksInProcess } from "../domain/validationScript";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
+import { formatCharacterTextExport } from "../domain/characterTextFormatter";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "hows-my-driving");
 
@@ -35,6 +36,15 @@ describe("HOW'S MY DRIVING System Package", () => {
       ID: "hows-my-driving",
     });
     expect(systemPackage.pages.map((page) => page.ID)).toEqual(["passenger-sheet", "ride-sheet"]);
+  });
+
+  it("exports Fuel and Ride Damage to SealDice", () => {
+    const definition = systemPackage.characterTextExports?.find((candidate) => candidate.ID === "sealdice");
+    expect(definition).toBeTruthy();
+    if (!definition) return;
+    expect(formatCharacterTextExport(definition, createEmptyCharacterData(systemPackage))).toBe(
+      ".st 燃料点0座驾损伤0",
+    );
   });
 
   it("lays out each Memento with a compact unavailable checkbox and a three-row Experience", async () => {

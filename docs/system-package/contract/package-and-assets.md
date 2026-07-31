@@ -17,7 +17,7 @@
 }
 ```
 
-可选入口包括 `shell`、`skins`、`defaultSkin`、`resourceLibraries`、`dependencies`、`characterCreationGuide`、`validationChecks`、`resourceFormatAdapters` 与 `characterFormatAdapters`。精确声明形状见本文件下方自动生成部分；声明了就必须存在，未声明的常规图片仍可从 `assets/**` 发现。
+可选入口包括 `shell`、`skins`、`defaultSkin`、`resourceLibraries`、`dependencies`、`characterCreationGuide`、`validationChecks`、`resourceFormatAdapters`、`characterFormatAdapters` 与 `characterTextExports`。精确声明形状见本文件下方自动生成部分；声明了就必须存在，未声明的常规图片仍可从 `assets/**` 发现。
 
 manifest 可用 `加载展示` 提供不依赖包 CSS 的加载页品牌：`标语`（1–80 字）与六位十六进制 `强调色`。
 
@@ -48,7 +48,8 @@ my-system/
 ├─ guides/          # 可选
 ├─ checks/          # 可选
 ├─ skins/           # 可选
-└─ adapters/        # 可选
+├─ adapters/        # 可选
+└─ exports/         # 可选
 ```
 
 目录名只是组织约定；入口以 manifest 声明为准，`assets/**` 除外。
@@ -132,6 +133,7 @@ Package、Page、Module、Resource Library、Resource Entry、Dependency、Check
 | questionnaireCharacterCreation.html | 是 | string | 最短 1 |
 | resourceFormatAdapters | 否 | string | 最短 1 |
 | characterFormatAdapters | 否 | string | 最短 1 |
+| characterTextExports | 否 | string | 最短 1 |
 | assets | 否 | unknown | — |
 | resourceLibraries | 否 | array | — |
 | resourceLibraries[] | 是 | object | — |

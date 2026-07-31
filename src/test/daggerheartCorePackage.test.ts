@@ -11,6 +11,7 @@ import { getResourceLibraryFields } from "../domain/resourceLibrary";
 import { getResourcePickerLinks } from "../domain/systemPackage";
 import { resolveQuestionnaireResult } from "../domain/questionnaire";
 import { applyResourceSelectionToDraft } from "../domain/resourceSelection";
+import { formatCharacterTextExport } from "../domain/characterTextFormatter";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "daggerheart-core");
 let loadedResult: Awaited<ReturnType<typeof loadSystemPackageFromZipFile>>;
@@ -68,6 +69,35 @@ describe("Daggerheart core System Package", () => {
       });
     }
     expect(new Set(Object.values(markers).map(({ assetName }) => assetName)).size).toBe(5);
+  });
+
+  it("exports real Daggerheart Module values as a SealDice command", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const definition = loadedResult.package.characterTextExports?.find((candidate) => candidate.ID === "sealdice");
+    expect(definition).toBeTruthy();
+    if (!definition) return;
+    const data = createEmptyCharacterData(loadedResult.package);
+    data.character.values = {
+      ...data.character.values,
+      agility: "1",
+      strength: "4",
+      instinct: "3",
+      knowledge: "-1",
+      presence: "0",
+      finesse: "0",
+      hp: { current: 6, max: 6 },
+      stress: { current: 0, max: 9 },
+      hope: { current: 0, max: 6 },
+      "armor-slots": { current: 9, max: 9 },
+      evasion: "11",
+      "major-threshold": "14",
+      "severe-threshold": "32",
+    };
+
+    expect(formatCharacterTextExport(definition, data)).toBe(
+      ".st 敏捷1力量4本能3知识-1风度0灵巧0生命6生命上限6压力0压力上限9希望0希望上限6护甲9护甲上限9闪避11重伤阈值14严重阈值32",
+    );
   });
 
   it("ships the latest 30-question class/domain questionnaire and replays its class Picker result", () => {

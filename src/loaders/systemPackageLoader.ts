@@ -103,6 +103,10 @@ export async function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): P
     ? readPackageJsonFile(vfs, manifest.data.characterFormatAdapters)
     : undefined;
   if (characterFormatAdaptersJson && !characterFormatAdaptersJson.ok) return { ok: false, issues: [characterFormatAdaptersJson.issue] };
+  const characterTextExportsJson = manifest.data.characterTextExports
+    ? readPackageJsonFile(vfs, manifest.data.characterTextExports)
+    : undefined;
+  if (characterTextExportsJson && !characterTextExportsJson.ok) return { ok: false, issues: [characterTextExportsJson.issue] };
   const resourceFormatAdapters = resourceFormatAdaptersJson
     ? loadFormatAdapterScriptFilesFromVfs(vfs, resourceFormatAdaptersJson.value, false)
     : undefined;
@@ -134,6 +138,7 @@ export async function loadSystemPackageFromVfs(vfs: PackageVirtualFileSystem): P
     questionnaire?.value,
     resourceFormatAdapters?.value,
     characterFormatAdapters?.value,
+    characterTextExportsJson?.value,
     shell?.value,
     skins.value,
     packageAssets,
@@ -160,6 +165,7 @@ async function normalizeManifestPackage(
   questionnaireCharacterCreation?: unknown,
   resourceFormatAdapters?: unknown,
   characterFormatAdapters?: unknown,
+  characterTextExports?: unknown,
   shell?: unknown,
   skins?: Array<{ ID: string; 名称: string; cssContent: string; 推荐框架配色: "light" | "dark" }>,
   packageAssets: RuntimePackageAsset[] = [],
@@ -187,6 +193,7 @@ async function normalizeManifestPackage(
     questionnaireCharacterCreation,
     resourceFormatAdapters,
     characterFormatAdapters,
+    characterTextExports,
   }, sourceMap);
 }
 
@@ -200,6 +207,7 @@ function buildPackageSourceMap(manifest: z.infer<typeof packageManifestSchema>, 
     ...(manifest.questionnaireCharacterCreation ? { questionnaireCharacterCreation: manifest.questionnaireCharacterCreation.html } : {}),
     ...(manifest.resourceFormatAdapters ? { resourceFormatAdapters: manifest.resourceFormatAdapters } : {}),
     ...(manifest.characterFormatAdapters ? { characterFormatAdapters: manifest.characterFormatAdapters } : {}),
+    ...(manifest.characterTextExports ? { characterTextExports: manifest.characterTextExports } : {}),
     ...(manifest.shell ? { shell: manifest.shell.html } : {}),
   };
   manifest.resourceLibraries?.forEach((library) => {

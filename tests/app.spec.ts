@@ -104,7 +104,7 @@ test("Daggerheart imports a dhSheet character through the isolated Format Adapte
 
   const fileChooserPromise = page.waitForEvent("filechooser");
   await openExportMenu(page);
-  await page.getByRole("button", { name: "导入 Character JSON" }).click();
+  await page.getByRole("button", { name: "导入 (JSON/HTML)" }).click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles(path.join(process.cwd(), "tests", "fixtures", "format-adapters", "daggerheart-core", "布罗克-战士-仙灵-龟人-荒野之民-LV1.json"));
 
@@ -152,7 +152,7 @@ test("minimal loop edits, autosaves, exports and compatibly imports Character JS
 
   const fileChooserPromise = page.waitForEvent("filechooser");
   await openExportMenu(page);
-  await page.getByRole("button", { name: "导入 Character JSON" }).click();
+  await page.getByRole("button", { name: "导入 (JSON/HTML)" }).click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles(compatibleImportPath);
 

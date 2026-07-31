@@ -10,6 +10,7 @@
   "pages": "pages.json",
   "modules": "modules.json",
   "dependencies": "dependencies.json",
+  "characterTextExports": "exports/character-text.json",
   "resourceLibraries": [
     { "ID": "archetypes", "名称": "原型", "路径": "resources/archetypes.json" },
     { "ID": "approaches", "名称": "行事风格", "路径": "resources/approaches.json" },

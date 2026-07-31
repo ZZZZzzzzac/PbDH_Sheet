@@ -5,6 +5,7 @@ import {
   resourceFormatAdapterSourceSchema,
 } from "./formatAdapter";
 import { resourceLibraryReferenceSchema } from "./resourceLibrary";
+import { characterTextExportSchema } from "./characterTextExport";
 import { dependencyRuleSchema, sheetModuleSchema } from "./systemPackage";
 
 export const packageRelativePathSchema = z.string().min(1).refine(
@@ -35,6 +36,7 @@ export const packageDependenciesSourceSchema = z.array(dependencyRuleSchema);
 export const packageGuideSourceSchema = characterCreationGuideSchema;
 export const resourceFormatAdaptersSourceSchema = z.array(resourceFormatAdapterSourceSchema).min(1);
 export const characterFormatAdaptersSourceSchema = z.array(characterFormatAdapterSourceSchema).min(1);
+export const characterTextExportsSourceSchema = z.array(characterTextExportSchema).min(1);
 
 export const packageShellSourceSchema = z.object({
   html: packageRelativePathSchema,
@@ -85,6 +87,7 @@ export const systemPackageManifestSourceSchema = z.object({
   questionnaireCharacterCreation: packageQuestionnaireSourceSchema.optional(),
   resourceFormatAdapters: packageRelativePathSchema.optional(),
   characterFormatAdapters: packageRelativePathSchema.optional(),
+  characterTextExports: packageRelativePathSchema.optional(),
   assets: z.never().optional(),
   resourceLibraries: z.array(resourceLibraryReferenceSchema).optional(),
   validationChecks: z.array(packageValidationCheckSourceSchema).optional(),
@@ -107,6 +110,7 @@ export const authorContractSchemas = {
   resourceLibraryFile: resourceLibraryFileSourceSchema,
   resourceFormatAdapters: resourceFormatAdaptersSourceSchema,
   characterFormatAdapters: characterFormatAdaptersSourceSchema,
+  characterTextExports: characterTextExportsSourceSchema,
 } as const;
 
 export type SystemPackageManifestSource = z.infer<typeof systemPackageManifestSourceSchema>;

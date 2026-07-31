@@ -50,6 +50,7 @@
     "html": "questionnaires/subclass-recommendation.html"
   },
   "characterFormatAdapters": "adapters/character-formats.json",
+  "characterTextExports": "exports/character-text.json",
   "validationChecks": [
     { "ID": "tttri-character-consistency", "脚本": "checks/character-consistency.js" }
   ],

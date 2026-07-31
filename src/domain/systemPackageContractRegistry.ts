@@ -199,6 +199,19 @@ export const systemPackageContractEntries: readonly SystemPackageContractEntry[]
     ],
   },
   {
+    id: "character-text-exports",
+    title: "Character Text Export declarations",
+    group: "author-source",
+    schema: authorContractSchemas.characterTextExports,
+    summary: "Character Data Module Value 到剪贴板文本的声明式格式化规则。",
+    document: "character-text-export.md",
+    semanticConstraints: [
+      "Module ID 必须存在；文本只适用于 freeText/longText，当前值与最大值只适用于 countableResource。",
+      "Player 值不是有符号十进制安全整数时只跳过字段；导出不会修改 Character Save。",
+      "总模板替换 {字段}，字段模板替换 {值}；未知占位符保留。",
+    ],
+  },
+  {
     id: "page-runtime",
     title: "Loaded Page runtime shape",
     group: "runtime",

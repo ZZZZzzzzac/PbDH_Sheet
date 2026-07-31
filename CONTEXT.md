@@ -200,6 +200,10 @@ _Avoid_: DaggerHeart_Character format
 An Author-declared external character-format detector plus isolated Import and optional Export Scripts that convert at the Character Data seam without mutating the active Character Save.
 _Avoid_: Character plugin, live Character Data mutation script
 
+**Character Text Export**:
+An Author-declared, clipboard-oriented text formatter that reads selected integer Module Values from Character Data, skips invalid Player values, and renders one non-importable text command without mutating the active Character Save.
+_Avoid_: Character Format Adapter, dice-bot logic in the Base Framework
+
 **Character Save**:
 A local saved instance of Character Data under the Current System Package.
 _Avoid_: Cloud account character
@@ -274,6 +278,8 @@ _Avoid_: Script plugin
 - `daggerheart-core` initially keeps its current plain presentation as a compatibility and troubleshooting Skin, while its first purpose-designed Skin becomes the package default once complete.
 - A **Player** uses a **Sheet Tool** and should not need to understand the **Base Framework**.
 - A **Player** imports or selects a **System Package** separately from **Character Data**.
+- A **System Package** may declare multiple ordered **Character Text Exports**. The Author owns their Module mappings and target syntax; the Base Framework only validates references, formats supported integer values, and copies the result.
+- A **Character Text Export** is not a **Character Format Adapter** because it produces clipboard text rather than a document intended for later import.
 - The first-version runtime uses one **Current System Package** at a time.
 - A **Player** may have multiple local **Character Saves** for the **Current System Package**.
 - An **Author Preview** helps an **Author** validate a **System Package** by looking at the resulting **Sheet Tool**.

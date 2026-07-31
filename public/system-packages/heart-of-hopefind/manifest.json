@@ -10,6 +10,7 @@
   "pages": "pages.json",
   "modules": "modules.json",
   "dependencies": "dependencies.json",
+  "characterTextExports": "exports/character-text.json",
   "resourceLibraries": [
     { "ID": "survivor-styles", "名称": "求生者风格", "路径": "resources/survivor-styles.json" }
   ],

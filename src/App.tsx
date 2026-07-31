@@ -97,6 +97,7 @@ export default function App() {
     validationDialogOpen,
     pendingExternalExport,
     beginOutput,
+    exportCharacterText,
     exportWithCharacterAdapter,
     handleValidation,
     closeValidationDialog,
@@ -277,6 +278,7 @@ export default function App() {
         onDuplicateSave={() => void handleDuplicateSave()}
         onDeleteSave={() => void handleDeleteSave()}
         onBeginOutput={(kind) => void beginOutput(kind)}
+        onExportCharacterText={(exportId) => void exportCharacterText(exportId)}
         onExportWithCharacterAdapter={(adapterId) => void exportWithCharacterAdapter(adapterId)}
         onPresetSystemPackage={(event) => void handlePresetSystemPackage(event)}
         onSelectSkin={selectSystemPackageSkin}

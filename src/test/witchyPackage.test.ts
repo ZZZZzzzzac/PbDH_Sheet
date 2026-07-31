@@ -7,6 +7,7 @@ import { applyDependencyResultToCharacterData, evaluateDependencies } from "../d
 import type { SystemPackage } from "../domain/systemPackage";
 import { runValidationChecksInProcess } from "../domain/validationScript";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
+import { formatCharacterTextExport } from "../domain/characterTextFormatter";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "witchy");
 let loadedResult: Awaited<ReturnType<typeof loadSystemPackageFromZipFile>>;
@@ -70,6 +71,17 @@ describe("Witchy System Package", () => {
 
     const witchingHour = result.package.skins?.find((skin) => skin.ID === "witching-hour");
     expect(witchingHour).toBeDefined();
+  });
+
+  it("exports resources and the three Essences to SealDice", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const definition = loadedResult.package.characterTextExports?.find((candidate) => candidate.ID === "sealdice");
+    expect(definition).toBeTruthy();
+    if (!definition) return;
+    expect(formatCharacterTextExport(definition, createEmptyCharacterData(loadedResult.package))).toBe(
+      ".st 魔力6魔力上限6蚀痕0蚀痕上限6物质界0精神界0灵界0",
+    );
   });
 
   it("fills archetype and familiar text from their Resource Libraries", async () => {

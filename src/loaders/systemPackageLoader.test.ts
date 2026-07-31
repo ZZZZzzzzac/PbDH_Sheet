@@ -4,6 +4,23 @@ import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures"
 import { loadSystemPackageFromZipFile } from "./systemPackageLoader";
 
 describe("loadSystemPackageFromZipFile", () => {
+  it("loads Character Text Export declarations from the manifest path", async () => {
+    const characterTextExports = [{
+      ID: "text",
+      名称: "导出文本",
+      模板: "cmd {字段}",
+      字段分隔符: "",
+      字段: [{ 模块ID: "character-name", 取值: "文本", 模板: "姓名{值}" }],
+    }];
+    const result = await loadSystemPackageFromZipFile(createPackageZip({
+      manifest: { ...createManifest(), characterTextExports: "exports/character-text.json" },
+      extraFiles: { "exports/character-text.json": JSON.stringify(characterTextExports) },
+    }));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.package.characterTextExports).toEqual(characterTextExports);
+  });
+
   it("loads a restricted loading presentation from manifest.json", async () => {
     const result = await loadSystemPackageFromZipFile(createPackageZip({
       manifest: {
@@ -510,6 +527,7 @@ function createPackageZip(
     guide?: unknown;
     questionnaireHtml?: string;
     skinFiles?: Record<string, string>;
+    extraFiles?: Record<string, string>;
   } = {},
 ) {
   return zipBlob({
@@ -525,6 +543,7 @@ function createPackageZip(
     ...(options.guide ? { "guides/character-creation.json": JSON.stringify(options.guide) } : {}),
     ...(options.questionnaireHtml ? { "questionnaires/class.html": options.questionnaireHtml } : {}),
     ...(options.skinFiles ?? {}),
+    ...(options.extraFiles ?? {}),
   });
 }
 

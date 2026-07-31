@@ -16,6 +16,7 @@ export function collectBaseValidationIssues(context: ValidationContext): void {
   );
   collectDuplicateIdIssues(systemPackage.resourceFormatAdapters ?? [], "Resource Format Adapter", "DUPLICATE_RESOURCE_FORMAT_ADAPTER_ID", "resourceFormatAdapters", issues);
   collectDuplicateIdIssues(systemPackage.characterFormatAdapters ?? [], "Character Format Adapter", "DUPLICATE_CHARACTER_FORMAT_ADAPTER_ID", "characterFormatAdapters", issues);
+  collectDuplicateIdIssues(systemPackage.characterTextExports ?? [], "Character Text Export", "DUPLICATE_CHARACTER_TEXT_EXPORT_ID", "characterTextExports", issues);
 
   if (systemPackage.manifest.schemaVersion !== frameworkSchemaVersion) {
     issues.push({

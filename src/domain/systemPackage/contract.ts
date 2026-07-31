@@ -16,6 +16,7 @@ import {
   type CharacterFormatAdapter,
   type ResourceFormatAdapter,
 } from "../formatAdapter";
+import { characterTextExportSchema, type CharacterTextExport } from "../characterTextExport";
 
 export const frameworkSchemaVersion = "0.2.0";
 
@@ -508,6 +509,7 @@ export const systemPackageEnvelopeSchema = z.object({
   questionnaireCharacterCreation: questionnaireDefinitionSchema.optional(),
   resourceFormatAdapters: z.array(resourceFormatAdapterSchema).optional(),
   characterFormatAdapters: z.array(characterFormatAdapterSchema).optional(),
+  characterTextExports: z.array(characterTextExportSchema).optional(),
 });
 
 export interface SystemPackage {
@@ -525,6 +527,7 @@ export interface SystemPackage {
   questionnaireCharacterCreation?: QuestionnaireDefinition;
   resourceFormatAdapters?: ResourceFormatAdapter[];
   characterFormatAdapters?: CharacterFormatAdapter[];
+  characterTextExports?: CharacterTextExport[];
 }
 export type FreeTextModule = z.infer<typeof freeTextModuleSchema>;
 export type LongTextModule = z.infer<typeof longTextModuleSchema>;

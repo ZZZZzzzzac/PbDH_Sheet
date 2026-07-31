@@ -50,6 +50,7 @@
   },
   "resourceFormatAdapters": "adapters/resource-formats.json",
   "characterFormatAdapters": "adapters/character-formats.json",
+  "characterTextExports": "exports/character-text.json",
   "validationChecks": [
     {
       "ID": "character-consistency",

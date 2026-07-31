@@ -116,6 +116,7 @@ module.exports = function (input) {
     "character-name": document.name, level: document.level, "class-name": professionName, "subclass-name": subclassName,
     "ancestry-name": ancestryName, "community-name": communityName, "secondary-domain": document.rhodesSecondaryDomain,
     evasion: document.evasion, "armor-value": document.armorValue,
+    "major-threshold": document.minorThreshold, "severe-threshold": document.majorThreshold,
     agility: document.agility && document.agility.value, strength: document.strength && document.strength.value,
     finesse: document.finesse && document.finesse.value, instinct: document.instinct && document.instinct.value,
     presence: document.presence && document.presence.value, knowledge: document.knowledge && document.knowledge.value,
@@ -125,7 +126,6 @@ module.exports = function (input) {
     "ancestry-experience-modifier": Array.isArray(document.ancestryExperienceValues) ? document.ancestryExperienceValues[0] : undefined,
   };
   Object.entries(scalarPairs).forEach(([id, value]) => put(output.values, id, value));
-  put(output.values, "thresholds", joined([document.minorThreshold, document.majorThreshold]) && `${text(document.minorThreshold) || ""} / ${text(document.majorThreshold) || ""}`);
   put(output.values, "weapon-summary", joined([document.primaryWeaponName, document.primaryWeaponTrait, document.primaryWeaponDamage]));
   put(output.values, "armor-summary", joined([document.armorName, document.armorBaseScore, document.armorThreshold]));
   for (let index = 0; index < 5; index += 1) {

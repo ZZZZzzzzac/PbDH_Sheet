@@ -83,7 +83,7 @@ describe("TTTRI dhSheet Character Format Adapter", () => {
     if ("error" in conversion) throw new Error(conversion.error.text);
 
     expect(conversion.data.character.values).toEqual(expect.objectContaining({
-      evasion: "11", thresholds: "8 / 16", "armor-value": "13",
+      evasion: "11", "major-threshold": "8", "severe-threshold": "16", "armor-value": "13",
       agility: "2", strength: "1", finesse: "1", instinct: "0", presence: "0", knowledge: "-1",
       hp: { current: 2, max: 6 }, stress: { current: 3, max: 6 }, hope: { current: 3, max: 6 },
       "armor-slots": { current: 0, max: 13 }, proficiency: { current: 1, max: 6 },

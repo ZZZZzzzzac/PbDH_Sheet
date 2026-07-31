@@ -38,6 +38,7 @@ Package Script 的 `.d.ts` 作为相关主题的类型附件，由生成区块�
 | Guide、Validation Script 与诊断 | [引导与验证](contract/guides-validation.md) |
 | 隔离问卷与 Resource Picker 结果回放 | [问卷式车卡](contract/questionnaire-character-creation.md) |
 | Resource/Character Format Adapter | [扩展与适配器](contract/extensions-adapters.md) |
+| Character Data 到剪贴板文本 | [人物文本导出](contract/character-text-export.md) |
 
 ## 三种可执行材料的边界
 

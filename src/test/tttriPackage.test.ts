@@ -11,6 +11,7 @@ import { resolveQuestionnaireResult } from "../domain/questionnaire";
 import { applyResourceSelectionToDraft } from "../domain/resourceSelection";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 import { createCardInstancesFromSelection } from "../store/runtimeHelpers";
+import { formatCharacterTextExport } from "../domain/characterTextFormatter";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "tttri");
 let loadedResult: Awaited<ReturnType<typeof loadSystemPackageFromZipFile>>;
@@ -179,6 +180,25 @@ describe("TTTRI System Package", () => {
         剩余值标记: { 类型: "图片", 资源路径: `assets/icons/resource-${assetName}-unmarked.svg` },
       });
     }
+  });
+
+  it("exports split thresholds and core values to SealDice without Armor Value", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const definition = loadedResult.package.characterTextExports?.find((candidate) => candidate.ID === "sealdice");
+    expect(definition).toBeTruthy();
+    if (!definition) return;
+    const data = createEmptyCharacterData(loadedResult.package);
+    data.character.values = {
+      ...data.character.values,
+      agility: "1", strength: "4", instinct: "3", knowledge: "-1", presence: "0", finesse: "0",
+      hp: { current: 6, max: 6 }, stress: { current: 0, max: 9 }, hope: { current: 0, max: 6 },
+      "armor-slots": { current: 9, max: 9 }, proficiency: { current: 2, max: 6 }, evasion: "11",
+      "major-threshold": "14", "severe-threshold": "32", "armor-value": "9",
+    };
+    expect(formatCharacterTextExport(definition, data)).toBe(
+      ".st 敏捷1力量4本能3知识-1风度0灵巧0生命6生命上限6压力0压力上限9希望0希望上限6护甲9护甲上限9熟练度2闪避11重度阈值14严重阈值32",
+    );
   });
 
   it("renders Terra Portal text Cards with a dark readable face", () => {
@@ -515,7 +535,8 @@ describe("TTTRI System Package", () => {
       `${armor.fields.名称} | 阈值 ${armor.fields.重度阈值}/${armor.fields.严重阈值} | 护甲值 ${armor.fields.护甲值}`,
     );
     expect(data.character.values["armor-feature"]).toBe(armor.fields.描述);
-    expect(data.character.values.thresholds).toBe(`${armor.fields.重度阈值} / ${armor.fields.严重阈值}`);
+    expect(data.character.values["major-threshold"]).toBe(armor.fields.重度阈值);
+    expect(data.character.values["severe-threshold"]).toBe(armor.fields.严重阈值);
     expect(data.character.values["armor-value"]).toBe(armor.fields.护甲值);
     expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "armor-summary", 类型: "freeText" }));
     expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "weapon-feature", 类型: "longText", 标签: "" }));
@@ -627,7 +648,8 @@ describe("TTTRI System Package", () => {
       `当前阈值应为 ${Number(armor.fields.重度阈值) + 1} / ${Number(armor.fields.严重阈值) + 1}`,
     );
 
-    data.character.values.thresholds = `${Number(armor.fields.重度阈值) + 1} / ${Number(armor.fields.严重阈值) + 1}`;
+    data.character.values["major-threshold"] = String(Number(armor.fields.重度阈值) + 1);
+    data.character.values["severe-threshold"] = String(Number(armor.fields.严重阈值) + 1);
     const correctedIssues = await runValidationChecksInProcess({
       characterData: data,
       resourceLibraries: systemPackage.resourceLibraries,

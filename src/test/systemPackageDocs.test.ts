@@ -26,6 +26,7 @@ describe("System Package documentation", () => {
     expect(markdownFiles.map((file) => relative(docsRoot, file).replaceAll("\\", "/")).sort()).toEqual([
       "README.md",
       "authoring-workflow.md",
+      "contract/character-text-export.md",
       "contract/dependencies.md",
       "contract/extensions-adapters.md",
       "contract/guides-validation.md",

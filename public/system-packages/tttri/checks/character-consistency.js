@@ -307,13 +307,16 @@ function checkDerivedValues(issues, context) {
   if (heavyBase === undefined || severeBase === undefined || !validLevel(context.level)) return;
   const expectedHeavy = heavyBase + context.level + modifiers.heavyThreshold;
   const expectedSevere = severeBase + context.level;
-  const actual = thresholdPair(context.values.thresholds);
-  if (!actual || actual.heavy !== expectedHeavy || actual.severe !== expectedSevere) {
-    const actualText = actual ? `${actual.heavy} / ${actual.severe}` : "未填写或格式无法识别";
+  const actualHeavy = integer(context.values["major-threshold"]);
+  const actualSevere = integer(context.values["severe-threshold"]);
+  if (actualHeavy !== expectedHeavy || actualSevere !== expectedSevere) {
+    const actualText = actualHeavy === undefined || actualSevere === undefined
+      ? "未填写或格式无法识别"
+      : `${actualHeavy} / ${actualSevere}`;
     warn(
       issues,
       "CURRENT_THRESHOLDS_MISMATCH",
-      "character.values.thresholds",
+      "character.values.major-threshold",
       `当前阈值应为 ${expectedHeavy} / ${expectedSevere}（护甲基础阈值 + 等级及永久干员修正），当前为 ${actualText}。`,
     );
   }
@@ -438,13 +441,6 @@ function findArmorEntry(library, summary) {
   return findEntryByName(library, summary.slice(0, markerIndex).trim());
 }
 
-function thresholdPair(value) {
-  const parts = text(value).split(/[/／]/);
-  if (parts.length !== 2) return undefined;
-  const heavy = integer(parts[0]);
-  const severe = integer(parts[1]);
-  return heavy === undefined || severe === undefined ? undefined : { heavy, severe };
-}
 
 function compareCountableMax(issues, value, expected, config) {
   if (expected === undefined) return;
