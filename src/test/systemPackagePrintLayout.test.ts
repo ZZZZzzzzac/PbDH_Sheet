@@ -25,7 +25,10 @@ describe("built-in System Package print layout contract", () => {
     expect(base).toMatch(/\.daggerheart-sheet\s*\{[^}]*padding:\s*0\.4rem/s);
     expect(beasts).toMatch(/\.beast-reference-page\s*\{[^}]*padding:\s*0/s);
     expect(companion).toMatch(/\.companion-page\s*\{[^}]*padding:\s*3mm/s);
+    expect(shell).toMatch(/\.print-mode :scope \.daggerheart-workspace\s*\{[^}]*display:\s*block[^}]*padding:\s*0/s);
+    expect(shell).toMatch(/\.print-mode :scope \.daggerheart-sheet-pane\s*\{[^}]*min-height:\s*0[^}]*overflow:\s*visible/s);
     expect(shell).toMatch(/\.print-mode :scope \.daggerheart-card-pane\s*\{[^}]*padding:\s*3mm/s);
+    expect(shell).toMatch(/@media print\s*\{[\s\S]*?\.daggerheart-sheet-pane\s*\{[^}]*overflow:\s*visible/s);
     expect(shell).toMatch(/@media print\s*\{[\s\S]*?\.daggerheart-card-pane\s*\{[^}]*padding:\s*3mm/s);
   });
 

@@ -68,6 +68,19 @@
   }
 }
 
+.print-mode :scope .daggerheart-workspace {
+  display: block;
+  padding: 0;
+}
+
+.print-mode :scope .daggerheart-sheet-pane {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+  border: 0;
+}
+
 .print-mode :scope .daggerheart-card-pane {
   box-sizing: border-box;
   padding: 3mm;
@@ -83,6 +96,7 @@
     width: 100%;
     min-width: 0;
     min-height: 0;
+    overflow: visible;
     border: 0;
   }
 

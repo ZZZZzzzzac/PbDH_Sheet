@@ -161,6 +161,9 @@ export function AppTopBar(props: AppTopBarProps) {
             <button className="menu-item" type="button" onClick={() => props.onBeginOutput("print")} aria-label="打开浏览器打印 PDF" disabled={!characterDataAvailable}>
               <Printer aria-hidden="true" size={16} /><span>打印 PDF</span>
             </button>
+            <button className="menu-item" type="button" onClick={() => props.onBeginOutput("long-screenshot")} aria-label="进入长截图模式" disabled={!characterDataAvailable}>
+              <Eye aria-hidden="true" size={16} /><span>长截图模式</span>
+            </button>
             <button className="menu-item" type="button" onClick={() => props.onBeginOutput("html")} aria-label="导出 HTML snapshot" disabled={!characterDataAvailable}>
               <FileText aria-hidden="true" size={16} /><span>导出 HTML</span>
             </button>

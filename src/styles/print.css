@@ -10,6 +10,27 @@
   border: 0;
 }
 
+.long-screenshot-exit {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 9999;
+  padding: 10px 14px;
+  border: 1px solid var(--framework-border-strong);
+  border-radius: 6px;
+  background: var(--framework-text-strong);
+  color: var(--framework-surface);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px var(--framework-shadow-strong);
+}
+
+.long-screenshot-mode .message,
+.long-screenshot-mode .error-panel {
+  display: none;
+}
+
 .print-mode .top-bar,
 .print-mode .top-menu-bar,
 .print-mode .page-navigation,
@@ -153,6 +174,8 @@
 
   .top-bar,
   .top-menu-bar,
+  .page-navigation,
+  .long-screenshot-exit,
   .message,
   .validation-dialog-backdrop,
   .resource-dialog-backdrop,

@@ -94,6 +94,7 @@ export default function App() {
   const activeCharacterSaveName = characterSaves.find((save) => save.id === activeCharacterSaveId)?.name ?? "无角色存档";
   const {
     printMode,
+    longScreenshotMode,
     validationDialogOpen,
     pendingExternalExport,
     beginOutput,
@@ -102,6 +103,7 @@ export default function App() {
     handleValidation,
     closeValidationDialog,
     continuePendingOutput,
+    exitLongScreenshotMode,
     cancelExternalExport,
     confirmExternalExport,
   } = useSheetOutput({
@@ -244,7 +246,7 @@ export default function App() {
     : null;
 
   return (
-    <div className={`app-shell${printMode ? " print-mode" : ""}`} data-framework-color-scheme={resolvedFrameworkColorScheme}>
+    <div className={`app-shell${printMode ? " print-mode" : ""}${longScreenshotMode ? " long-screenshot-mode" : ""}`} data-framework-color-scheme={resolvedFrameworkColorScheme}>
       {bootStatus === "loading" ? (
         <PackageLoadingSurface progress={packageLoadProgress} presentation={packageLoadingPresentation} />
       ) : null}
@@ -289,6 +291,12 @@ export default function App() {
         onPackageFile={(event) => void handlePackageFile(event)}
         onPackageDirectory={(event) => void handlePackageDirectory(event)}
       />
+
+      {longScreenshotMode ? (
+        <button className="long-screenshot-exit" type="button" onClick={exitLongScreenshotMode} aria-label="退出长截图模式">
+          退出长截图模式
+        </button>
+      ) : null}
 
       {authorPreviewActive ? <div className="message message-info" role="status">预览中 · 刷新页面可重新读取开发目录</div> : null}
 

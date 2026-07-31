@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { exportCharacterData, type CharacterData } from "../../domain/characterData";
 import { createCardTableLayout, type CardTableLayout } from "../../domain/cardEngine";
 import type { SystemPackage } from "../../domain/systemPackage";
@@ -8,7 +8,8 @@ import { waitForTextFits } from "../textFit";
 import type { PendingCharacterExport } from "../CharacterExportDialog";
 import { useRuntimeStore } from "../../store/runtimeStore";
 
-export type OutputKind = "json" | "html" | "print";
+export type OutputKind = "json" | "html" | "print" | "long-screenshot";
+type PreparedOutputMode = "print" | "long-screenshot";
 
 interface SheetOutputOptions {
   currentPackage: SystemPackage | null;
@@ -57,10 +58,16 @@ export function useSheetOutput({
 }: SheetOutputOptions) {
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
   const [pendingOutput, setPendingOutput] = useState<OutputKind | null>(null);
-  const [printMode, setPrintMode] = useState(false);
+  const [preparedOutputMode, setPreparedOutputMode] = useState<PreparedOutputMode | null>(null);
   const [pendingExternalExport, setPendingExternalExport] = useState<PendingCharacterExport | null>(null);
 
-  const preparePrintableContent = async (tidyCardsForOutput = true) => {
+  useEffect(() => {
+    const finishPrinting = () => setPreparedOutputMode((current) => current === "print" ? null : current);
+    window.addEventListener("afterprint", finishPrinting);
+    return () => window.removeEventListener("afterprint", finishPrinting);
+  }, []);
+
+  const preparePrintableContent = async (tidyCardsForOutput = true, mode: PreparedOutputMode = "print") => {
     if (!currentPackage) return false;
     if (printablePages(currentPackage.pages, useRuntimeStore.getState().pageVisibility).length === 0) {
       useRuntimeStore.setState({ importNotice: "当前没有可打印页面。" });
@@ -68,7 +75,7 @@ export function useSheetOutput({
     }
 
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-    setPrintMode(true);
+    setPreparedOutputMode(mode);
     await nextFrame();
     await nextFrame();
 
@@ -108,21 +115,24 @@ export function useSheetOutput({
         await waitForVisibleImages(printableRoot ?? document);
         downloadText(await buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined, activeCharacterSaveName), `${baseName}.html`, "text/html");
       } finally {
-        setPrintMode(false);
+        setPreparedOutputMode(null);
       }
       return;
     }
 
+    if (kind === "long-screenshot") return;
+
     if (!printableRoot) {
-      setPrintMode(false);
+      setPreparedOutputMode(null);
       return;
     }
     try {
       const { waitForVisibleImages } = await import("../../export/output");
       await waitForVisibleImages(printableRoot);
       window.print();
-    } finally {
-      setPrintMode(false);
+    } catch (error) {
+      setPreparedOutputMode(null);
+      throw error;
     }
   };
 
@@ -130,7 +140,7 @@ export function useSheetOutput({
     let frameworkIssues: ValidationIssue[] = [];
     let printableContentPrepared = false;
     if (kind !== "json") {
-      printableContentPrepared = await preparePrintableContent();
+      printableContentPrepared = await preparePrintableContent(true, kind === "long-screenshot" ? "long-screenshot" : "print");
       if (!printableContentPrepared) return;
       const { collectFrameworkValidationIssues } = await import("../frameworkChecks");
       frameworkIssues = collectFrameworkValidationIssues(document.querySelector(".sheet-tool") ?? document);
@@ -182,7 +192,7 @@ export function useSheetOutput({
     if (await preparePrintableContent(false)) {
       const { collectFrameworkValidationIssues } = await import("../frameworkChecks");
       frameworkIssues = collectFrameworkValidationIssues(document.querySelector(".sheet-tool") ?? document);
-      setPrintMode(false);
+      setPreparedOutputMode(null);
     }
     await runValidationChecks();
     useRuntimeStore.setState({ validationIssues: [...frameworkIssues, ...useRuntimeStore.getState().validationIssues] });
@@ -190,7 +200,7 @@ export function useSheetOutput({
   };
 
   const closeValidationDialog = () => {
-    if (pendingOutput) setPrintMode(false);
+    if (pendingOutput) setPreparedOutputMode(null);
     setPendingOutput(null);
     setValidationDialogOpen(false);
   };
@@ -211,7 +221,8 @@ export function useSheetOutput({
   };
 
   return {
-    printMode,
+    printMode: preparedOutputMode !== null,
+    longScreenshotMode: preparedOutputMode === "long-screenshot",
     validationDialogOpen,
     pendingExternalExport,
     beginOutput,
@@ -220,6 +231,7 @@ export function useSheetOutput({
     handleValidation,
     closeValidationDialog,
     continuePendingOutput,
+    exitLongScreenshotMode: () => setPreparedOutputMode((current) => current === "long-screenshot" ? null : current),
     cancelExternalExport: () => setPendingExternalExport(null),
     confirmExternalExport,
   };

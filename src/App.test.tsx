@@ -238,6 +238,7 @@ describe("App Validation Checks", () => {
     expect(Array.from(panel?.querySelectorAll(".menu-item") ?? []).map((item) => item.textContent)).toEqual([
       "导入 (JSON/HTML)",
       "打印 PDF",
+      "长截图模式",
       "导出 HTML",
       "导出 JSON",
       "导出为海豹骰",
@@ -425,9 +426,16 @@ describe("App Validation Checks", () => {
     expect(revokeObjectUrlSpy).toHaveBeenCalledWith("blob:test");
   });
 
-  it("uses browser printing as the only PDF output path and restores the normal Sheet Tool afterward", async () => {
+  it("keeps every printable page rendered until the browser finishes printing", async () => {
+    const twoPagePackage: SystemPackage = {
+      ...minimalSystemPackage,
+      pages: [
+        minimalSystemPackage.pages[0],
+        { ...minimalSystemPackage.pages[0], ID: "second-page", 名称: "第二页" },
+      ],
+    };
     configureRuntimeDependencies({
-      loadSystemPackageFromFile: async () => ({ ok: true, package: minimalSystemPackage, issues: [] }),
+      loadSystemPackageFromFile: async () => ({ ok: true, package: twoPagePackage, issues: [] }),
       storage: createEmptyStorage(),
       runValidationChecks: async () => [],
     });
@@ -447,7 +455,48 @@ describe("App Validation Checks", () => {
     await user.click(screen.getByRole("button", { name: "打开浏览器打印 PDF" }));
 
     await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
-    expect(document.querySelector(".app-shell")).not.toHaveClass("print-mode");
+    expect(document.querySelector(".app-shell")).toHaveClass("print-mode");
+    expect(document.querySelectorAll(".sheet-page")).toHaveLength(2);
+
+    act(() => window.dispatchEvent(new Event("afterprint")));
+
+    await waitFor(() => expect(document.querySelector(".app-shell")).not.toHaveClass("print-mode"));
+    expect(document.querySelectorAll(".sheet-page")).toHaveLength(1);
+  });
+
+  it("keeps every A4 page visible for manual long screenshots until the Player exits", async () => {
+    const twoPagePackage: SystemPackage = {
+      ...minimalSystemPackage,
+      pages: [
+        minimalSystemPackage.pages[0],
+        { ...minimalSystemPackage.pages[0], ID: "second-page", 名称: "第二页" },
+      ],
+    };
+    configureRuntimeDependencies({
+      loadSystemPackageFromFile: async () => ({ ok: true, package: twoPagePackage, issues: [] }),
+      storage: createEmptyStorage(),
+      runValidationChecks: async () => [],
+    });
+    const printSpy = vi.fn();
+    Object.defineProperty(window, "print", { value: printSpy, configurable: true });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await act(async () => {
+      await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    });
+    await user.click(screen.getByRole("button", { name: "第二页" }));
+    await user.click(screen.getByRole("button", { name: "进入长截图模式" }));
+
+    await waitFor(() => expect(document.querySelector(".app-shell")).toHaveClass("print-mode", "long-screenshot-mode"));
+    expect(document.querySelectorAll(".sheet-page")).toHaveLength(2);
+    expect(printSpy).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "退出长截图模式" }));
+
+    await waitFor(() => expect(document.querySelector(".app-shell")).not.toHaveClass("print-mode", "long-screenshot-mode"));
+    expect(document.querySelectorAll(".sheet-page")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "第二页" })).toHaveAttribute("aria-current", "page");
   });
 
   it("restores the normal Sheet Tool after exporting an HTML snapshot", async () => {
@@ -491,7 +540,9 @@ describe("App Validation Checks", () => {
     await user.click(screen.getByRole("button", { name: "打开浏览器打印 PDF" }));
 
     await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
-    expect(document.querySelector(".app-shell")).not.toHaveClass("print-mode");
+    expect(document.querySelector(".app-shell")).toHaveClass("print-mode");
+    act(() => window.dispatchEvent(new Event("afterprint")));
+    await waitFor(() => expect(document.querySelector(".app-shell")).not.toHaveClass("print-mode"));
     expect(screen.getByLabelText("Sheet Tool")).not.toHaveAttribute("data-countable-print-strategy");
     expect(useRuntimeStore.getState().characterData).toBe(before);
   });
@@ -530,6 +581,7 @@ describe("App Validation Checks", () => {
 
     await waitFor(() => expect(printSpy).toHaveBeenCalledTimes(1));
     expect(tidySpy).toHaveBeenCalledWith("print-card-table", expect.objectContaining({ surfaceWidthPx: 600 }));
+    act(() => window.dispatchEvent(new Event("afterprint")));
   });
 });
 
