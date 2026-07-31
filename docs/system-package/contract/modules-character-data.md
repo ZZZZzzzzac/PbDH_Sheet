@@ -62,7 +62,7 @@ Character Data 是独立于 System Package 源文件的持久对象，保存：
 
 语义约束：
 
-- Character Data 的 systemPackage id/version 必须匹配当前包才可原生导入。
+- Character Data 的 systemPackage id 必须匹配当前包；version 不阻止原生导入。导入从当前包默认值建立新存档，只原样保留当前包可合法使用的数据，并报告、丢弃其他数据。
 - Player Image dataUrl 只在 Character Data 中嵌入；System Package 资产只保存引用。
 
 | 路径 | 必填 | 类型 | 约束 / 默认值 |

@@ -2,10 +2,10 @@ import type { StateCreator } from "zustand";
 import type { CardTableLayout } from "../domain/cardEngine";
 import type {
   CheckboxState,
+  CharacterConversionReport,
   CharacterData,
   SheetValue,
 } from "../domain/characterData";
-import type { CharacterAdapterConversion } from "../domain/characterFormatAdapter";
 import type { EffectiveResourceCatalog } from "../domain/effectiveResourceCatalog";
 import type { GeneratedResourceId, ResourceExtension, ResourceExtensionIssue } from "../domain/resourceExtension";
 import type { ResourceComposerSelections } from "../domain/resourceComposer";
@@ -75,7 +75,13 @@ export interface PendingResourceFormatSelection {
   adapters: Array<{ ID: string; 名称: string }>;
 }
 
-export interface PendingCharacterConversion extends CharacterAdapterConversion {}
+export interface PendingCharacterConversion {
+  sourceName: string;
+  data: CharacterData;
+  suggestedSaveName?: string;
+  successNotice: string;
+  report: CharacterConversionReport;
+}
 
 export interface PendingCharacterFormatSelection {
   text: string;

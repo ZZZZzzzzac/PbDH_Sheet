@@ -565,7 +565,7 @@ describe("TTTRI System Package", () => {
     const missingIssues = await runValidationChecksInProcess({
       characterData: empty,
       resourceLibraries: systemPackage.resourceLibraries,
-      packageMetadata: { id: "tttri", version: "0.1.0" },
+      packageMetadata: { id: systemPackage.manifest.ID, version: systemPackage.manifest.版本 },
       checks: systemPackage.validationChecks,
     });
     expect(missingIssues.map((issue) => issue.code)).toEqual(expect.arrayContaining([
@@ -577,7 +577,7 @@ describe("TTTRI System Package", () => {
     const t4MissingIssues = await runValidationChecksInProcess({
       characterData: empty,
       resourceLibraries: systemPackage.resourceLibraries,
-      packageMetadata: { id: "tttri", version: "0.1.0" },
+      packageMetadata: { id: systemPackage.manifest.ID, version: systemPackage.manifest.版本 },
       checks: systemPackage.validationChecks,
     });
     expect(t4MissingIssues.map((issue) => issue.code)).not.toContain("T4_ELITE_SUBCLASS_MISSING");
@@ -586,7 +586,7 @@ describe("TTTRI System Package", () => {
     const selectedT4UpgradeIssues = await runValidationChecksInProcess({
       characterData: empty,
       resourceLibraries: systemPackage.resourceLibraries,
-      packageMetadata: { id: "tttri", version: "0.1.0" },
+      packageMetadata: { id: systemPackage.manifest.ID, version: systemPackage.manifest.版本 },
       checks: systemPackage.validationChecks,
     });
     expect(selectedT4UpgradeIssues.map((issue) => issue.code)).toContain("T4_ELITE_SUBCLASS_MISSING");
@@ -600,7 +600,7 @@ describe("TTTRI System Package", () => {
     const validIssues = await runValidationChecksInProcess({
       characterData: empty,
       resourceLibraries: systemPackage.resourceLibraries,
-      packageMetadata: { id: "tttri", version: "0.1.0" },
+      packageMetadata: { id: systemPackage.manifest.ID, version: systemPackage.manifest.版本 },
       checks: systemPackage.validationChecks,
     });
     expect(validIssues.filter((issue) => ["CLASS_MISSING", "SUBCLASS_MISSING", "SUBCLASS_STAGE_INVALID", "SUBCLASS_UNKNOWN", "T4_ELITE_SUBCLASS_MISSING"].includes(issue.code ?? ""))).toEqual([]);
@@ -620,7 +620,7 @@ describe("TTTRI System Package", () => {
     const baseIssues = await runValidationChecksInProcess({
       characterData: data,
       resourceLibraries: systemPackage.resourceLibraries,
-      packageMetadata: { id: "tttri", version: "0.1.0" },
+      packageMetadata: { id: systemPackage.manifest.ID, version: systemPackage.manifest.版本 },
       checks: systemPackage.validationChecks,
     });
     expect(baseIssues.find((issue) => issue.code === "CURRENT_THRESHOLDS_MISMATCH")?.text).toContain(
@@ -631,7 +631,7 @@ describe("TTTRI System Package", () => {
     const correctedIssues = await runValidationChecksInProcess({
       characterData: data,
       resourceLibraries: systemPackage.resourceLibraries,
-      packageMetadata: { id: "tttri", version: "0.1.0" },
+      packageMetadata: { id: systemPackage.manifest.ID, version: systemPackage.manifest.版本 },
       checks: systemPackage.validationChecks,
     });
     expect(correctedIssues.map((issue) => issue.code)).not.toContain("CURRENT_THRESHOLDS_MISMATCH");

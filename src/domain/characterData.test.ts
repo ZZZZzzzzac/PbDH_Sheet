@@ -3,6 +3,33 @@ import { minimalSystemPackage, moduleDemoSystemPackage } from "../test/fixtures"
 import { createCardInstance } from "./cardEngine";
 import { createEmptyCharacterData, exportCharacterData, parseCharacterDataJson, removePlayerImage, updateCharacterValue, updatePlayerImage, updateResourceSelectionSnapshot } from "./characterData";
 import { normalizeResourceLibraries } from "./resourceLibrary";
+import type { SystemPackage } from "./systemPackage";
+
+const compatibilitySystemPackage = {
+  ...moduleDemoSystemPackage,
+  manifest: { ...moduleDemoSystemPackage.manifest, 版本: "2.0.0" },
+  modules: [
+    ...moduleDemoSystemPackage.modules,
+    { ID: "pick-class", 类型: "resourcePicker", 按钮文本: "选择职业", 资源库: [{ ID: "classes" }] },
+    {
+      ID: "compose-class", 类型: "resourceComposer", 按钮文本: "组合职业",
+      来源槽位: [{ ID: "base", 标签: "基础", 资源库ID: "classes" }],
+      输出字段: [{ 字段: "名称", 来源槽位ID: "base", 来源字段: "名称" }],
+    },
+    {
+      ID: "class-cards", 类型: "cardTable", 标签: "职业卡",
+      资源来源: [
+        { 类型: "resourceLibrary", ID: "classes" },
+        { 类型: "resourceComposer", ID: "compose-class" },
+      ],
+      状态选项: ["配置", "已消耗"],
+    },
+  ],
+  resourceLibraries: [{
+    ID: "classes", 名称: "职业", 路径: "classes.json",
+    entries: [{ ID: "class:current", legacyIds: ["class-old"], fields: { ID: "class:current", 名称: "守卫" } }],
+  }],
+} as SystemPackage;
 
 describe("Character Data import/export", () => {
   it("migrates legacy Card and Derived Source references to the current Resource Entry ID", () => {
@@ -12,10 +39,13 @@ describe("Character Data import/export", () => {
     }]);
     expect(normalized.ok).toBe(true);
     if (!normalized.ok) return;
-    const systemPackage = { ...minimalSystemPackage, resourceLibraries: normalized.resourceLibraries };
+    const systemPackage = {
+      ...compatibilitySystemPackage,
+      resourceLibraries: normalized.resourceLibraries,
+    };
     let data = createCardInstance(createEmptyCharacterData(systemPackage), {
       instanceId: "legacy-class-card",
-      tableModuleId: "domain-card-table",
+      tableModuleId: "class-cards",
       libraryId: "classes",
       definitionId: "class-old",
     });
@@ -53,7 +83,110 @@ describe("Character Data import/export", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.data.character.values["character-name"]).toBe("阿青");
+      expect(result.data.character.id).not.toBe(data.character.id);
+      expect(result.report.diagnostics).toEqual([]);
     }
+  });
+
+  it("projects same-ID Character Data from another package version onto current defaults", () => {
+    const source = createEmptyCharacterData(compatibilitySystemPackage, "source-character");
+    source.systemPackage.version = "0.1.0";
+    source.character.values["character-name"] = "阿青";
+    source.character.values.background = { current: 1, max: 2 } as never;
+    source.character.values.conditions = { removed: true };
+    source.character.values.vitality = { current: 9, max: 6 };
+    source.character.values.removed = "旧字段";
+
+    const result = parseCharacterDataJson(exportCharacterData(source), compatibilitySystemPackage);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.character.id).not.toBe("source-character");
+    expect(result.data.systemPackage).toEqual({ id: "demo", version: "2.0.0" });
+    expect(result.data.character.values).toMatchObject({
+      "character-name": "阿青",
+      background: "写下角色的来历。",
+      conditions: { wounded: false, exhausted: false, inspired: true },
+      vitality: { current: 3, max: 6 },
+    });
+    expect(result.data.character.values.removed).toBeUndefined();
+    expect(result.report.convertedFields).toBe(1);
+    expect(result.report.skippedFields).toBe(4);
+    expect(result.report.diagnostics.map((issue) => issue.code)).toEqual(expect.arrayContaining([
+      "CHARACTER_DATA_VALUE_INCOMPATIBLE",
+      "CHARACTER_DATA_MODULE_MISSING",
+    ]));
+  });
+
+  it("drops unusable Cards and resets only an invalid Card state", () => {
+    const source = createEmptyCharacterData(compatibilitySystemPackage, "source-character");
+    const baseCard = {
+      instanceId: "valid-card", tableModuleId: "class-cards",
+      definitionRef: { type: "resourceLibrary" as const, libraryId: "classes", entryId: "class:current" },
+      state: "旧状态", xPct: 10, yPct: 20, zIndex: 1, face: "front" as const,
+      rotation: 0, scale: 1, indicators: [],
+    };
+    source.cards.instances = [
+      baseCard,
+      { ...baseCard, instanceId: "missing-entry", definitionRef: { type: "resourceLibrary", libraryId: "classes", entryId: "missing" } },
+      { ...baseCard, instanceId: "missing-table", tableModuleId: "removed-table" },
+    ];
+
+    const result = parseCharacterDataJson(exportCharacterData(source), compatibilitySystemPackage);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.cards.instances).toEqual([
+      expect.objectContaining({ instanceId: "valid-card", state: "配置" }),
+    ]);
+    expect(result.report.matchedCards).toBe(1);
+    expect(result.report.skippedCards).toBe(2);
+    expect(result.report.diagnostics.map((issue) => issue.code)).toEqual(expect.arrayContaining([
+      "CHARACTER_DATA_CARD_STATE_RESET",
+      "CHARACTER_DATA_CARD_RESOURCE_MISSING",
+      "CHARACTER_DATA_CARD_TABLE_INVALID",
+    ]));
+  });
+
+  it("keeps only current Composite Resources, selection snapshots, and Player Images", () => {
+    const source = createEmptyCharacterData(compatibilitySystemPackage, "source-character");
+    source.compositeResources = {
+      "composite:compose-class": {
+        ID: "composite:compose-class", composerModuleId: "compose-class",
+        fields: { ID: "composite:compose-class", 名称: "守卫" },
+      },
+      "composite:removed": {
+        ID: "composite:removed", composerModuleId: "removed",
+        fields: { ID: "composite:removed", 名称: "旧组合" },
+      },
+    };
+    source.resourceSelections = {
+      "pick-class": { libraryId: "classes", entryIds: ["class:current"] },
+      removed: { libraryId: "classes", entryIds: ["class:current"] },
+      "missing-entry": { libraryId: "classes", entryIds: ["missing"] },
+    };
+    source.character.values.portrait = { kind: "player-image", imageId: "portrait-valid" };
+    source.playerImages = {
+      "portrait-valid": { id: "portrait-valid", mimeType: "image/png", dataUrl: "data:image/png;base64,AA==" },
+      orphan: { id: "orphan", mimeType: "image/png", dataUrl: "data:image/png;base64,AA==" },
+    };
+
+    const result = parseCharacterDataJson(exportCharacterData(source), compatibilitySystemPackage);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(Object.keys(result.data.compositeResources)).toEqual(["composite:compose-class"]);
+    expect(result.data.resourceSelections).toEqual({
+      "pick-class": { libraryId: "classes", entryIds: ["class:current"] },
+    });
+    expect(result.data.playerImages).toEqual({
+      "portrait-valid": expect.objectContaining({ id: "portrait-valid" }),
+    });
+    expect(result.report.diagnostics.map((issue) => issue.code)).toEqual(expect.arrayContaining([
+      "CHARACTER_DATA_COMPOSITE_INCOMPATIBLE",
+      "CHARACTER_DATA_SELECTION_INCOMPATIBLE",
+      "CHARACTER_DATA_IMAGE_ORPHANED",
+    ]));
   });
 
   it("rejects malformed JSON", () => {
@@ -84,30 +217,30 @@ describe("Character Data import/export", () => {
   });
 
   it("exports and imports Card Instance state", () => {
-    const data = createCardInstance(createEmptyCharacterData(minimalSystemPackage), {
+    const data = createCardInstance(createEmptyCharacterData(compatibilitySystemPackage), {
       instanceId: "card-instance-1",
-      tableModuleId: "domain-card-table",
-      libraryId: "domain-cards",
-      definitionId: "domain-card:符文护符",
+      tableModuleId: "class-cards",
+      libraryId: "classes",
+      definitionId: "class:current",
     });
-    const result = parseCharacterDataJson(exportCharacterData(data), minimalSystemPackage);
+    const result = parseCharacterDataJson(exportCharacterData(data), compatibilitySystemPackage);
 
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.data.cards.instances).toEqual([
         expect.objectContaining({
           instanceId: "card-instance-1",
-          definitionRef: { type: "resourceLibrary", libraryId: "domain-cards", entryId: "domain-card:符文护符" },
-          state: "",
-          tableModuleId: "domain-card-table",
+          definitionRef: { type: "resourceLibrary", libraryId: "classes", entryId: "class:current" },
+          state: "配置",
+          tableModuleId: "class-cards",
         }),
       ]);
     }
   });
 
   it("normalizes legacy libraryId and definitionId Card references on import", () => {
-    const data = createCardInstance(createEmptyCharacterData(minimalSystemPackage), {
-      instanceId: "legacy-card", tableModuleId: "table", libraryId: "domain-cards", definitionId: "card-1",
+    const data = createCardInstance(createEmptyCharacterData(compatibilitySystemPackage), {
+      instanceId: "legacy-card", tableModuleId: "class-cards", libraryId: "classes", definitionId: "class:current",
     });
     const json = JSON.parse(exportCharacterData(data));
     const reference = json.cards.instances[0].definitionRef;
@@ -115,9 +248,9 @@ describe("Character Data import/export", () => {
     json.cards.instances[0].libraryId = reference.libraryId;
     json.cards.instances[0].definitionId = reference.entryId;
 
-    const result = parseCharacterDataJson(JSON.stringify(json), minimalSystemPackage);
+    const result = parseCharacterDataJson(JSON.stringify(json), compatibilitySystemPackage);
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.data.cards.instances[0].definitionRef).toEqual({ type: "resourceLibrary", libraryId: "domain-cards", entryId: "card-1" });
+    if (result.ok) expect(result.data.cards.instances[0].definitionRef).toEqual({ type: "resourceLibrary", libraryId: "classes", entryId: "class:current" });
   });
 
   it("imports older Character Data without card state as an empty Card State", () => {
@@ -133,12 +266,12 @@ describe("Character Data import/export", () => {
   });
 
   it("exports Resource Selection snapshots and defaults older data to an empty record", () => {
-    const data = updateResourceSelectionSnapshot(createEmptyCharacterData(minimalSystemPackage), "pick-class", "classes", ["class:druid"]);
+    const data = updateResourceSelectionSnapshot(createEmptyCharacterData(compatibilitySystemPackage), "pick-class", "classes", ["class:current"]);
     const exported = JSON.parse(exportCharacterData(data));
-    expect(exported.resourceSelections).toEqual({ "pick-class": { libraryId: "classes", entryIds: ["class:druid"] } });
+    expect(exported.resourceSelections).toEqual({ "pick-class": { libraryId: "classes", entryIds: ["class:current"] } });
 
     delete exported.resourceSelections;
-    const result = parseCharacterDataJson(JSON.stringify(exported), minimalSystemPackage);
+    const result = parseCharacterDataJson(JSON.stringify(exported), compatibilitySystemPackage);
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data.resourceSelections).toEqual({});
   });
@@ -165,16 +298,16 @@ describe("Character Data import/export", () => {
   });
 
   it("defaults indicators when importing an existing Card Instance", () => {
-    const data = createCardInstance(createEmptyCharacterData(minimalSystemPackage), {
+    const data = createCardInstance(createEmptyCharacterData(compatibilitySystemPackage), {
       instanceId: "legacy-card",
-      tableModuleId: "domain-card-table",
-      libraryId: "domain-cards",
-      definitionId: "domain-card:符文护符",
+      tableModuleId: "class-cards",
+      libraryId: "classes",
+      definitionId: "class:current",
     });
     const exported = JSON.parse(exportCharacterData(data));
     delete exported.cards.instances[0].indicators;
 
-    const result = parseCharacterDataJson(JSON.stringify(exported), minimalSystemPackage);
+    const result = parseCharacterDataJson(JSON.stringify(exported), compatibilitySystemPackage);
 
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.data.cards.instances[0].indicators).toEqual([]);
@@ -196,7 +329,7 @@ describe("Character Data import/export", () => {
     expect(removed.playerImages["portrait-new"]).toBeUndefined();
   });
 
-  it("rejects hidden Resource Library selection refs in Character Data", () => {
+  it("drops unsupported hidden Resource Library selection values with a diagnostic", () => {
     const data = createEmptyCharacterData(moduleDemoSystemPackage);
     const exported = JSON.parse(exportCharacterData(data));
     exported.character.values["domain-choice"] = {
@@ -208,6 +341,12 @@ describe("Character Data import/export", () => {
 
     const result = parseCharacterDataJson(JSON.stringify(exported), moduleDemoSystemPackage);
 
-    expect(result.ok).toBe(false);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.character.values["domain-choice"]).toBeUndefined();
+    expect(result.report.diagnostics).toContainEqual(expect.objectContaining({
+      code: "CHARACTER_DATA_MODULE_MISSING",
+      path: "character.values.domain-choice",
+    }));
   });
 });

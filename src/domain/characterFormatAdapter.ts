@@ -1,4 +1,4 @@
-import { createEmptyCharacterData, createCharacterId, type CharacterData, type PlayerImageData, type SheetValue } from "./characterData";
+import { createEmptyCharacterData, createCharacterId, type CharacterConversionReport, type CharacterData, type PlayerImageData, type SheetValue } from "./characterData";
 import type { CardInstance } from "./cardEngine";
 import { carrierMatches, stableAdapterId, type CharacterFormatAdapter, type FormatCarrier, type FormatDiagnostic } from "./formatAdapter";
 import { executePackageScriptInWorker } from "./packageScriptRunner";
@@ -11,7 +11,6 @@ import {
 import type { SystemPackage } from "./systemPackage";
 
 export interface ExternalCharacterSource { document: unknown; fileName: string; carrier: FormatCarrier }
-export interface CharacterConversionReport { convertedFields: number; skippedFields: number; matchedCards: number; skippedCards: number; convertedImages: number; skippedImages: number; diagnostics: FormatDiagnostic[] }
 export interface CharacterAdapterConversion { adapter: CharacterFormatAdapter; data: CharacterData; suggestedSaveName?: string; report: CharacterConversionReport }
 export interface CharacterAdapterExport { adapter: CharacterFormatAdapter; document: Record<string, unknown>; report: { exportedFields: number; skippedFields: number; exportedCards: number; skippedCards: number; exportedImages: number; skippedImages: number; diagnostics: FormatDiagnostic[] } }
 

@@ -3,7 +3,7 @@
 状态：Accepted  
 日期：2026-07-07
 
-修订：[ADR-0028](0028-embedded-player-images-in-character-data.md) 为 Player Image 增加了新的结构化值与顶层图片集合；当前联合类型以源码 schema 为准。
+修订：[ADR-0028](0028-embedded-player-images-in-character-data.md) 为 Player Image 增加了新的结构化值与顶层图片集合；[ADR-0033](0033-current-package-projection-for-native-character-import.md) 规定原生导入按 Current System Package 投影合法数据；当前联合类型以源码 schema 为准。
 
 ## 背景
 

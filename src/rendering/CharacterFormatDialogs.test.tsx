@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { createEmptyCharacterData } from "../domain/characterData";
-import type { CharacterAdapterConversion, CharacterAdapterExport } from "../domain/characterFormatAdapter";
+import type { CharacterAdapterExport } from "../domain/characterFormatAdapter";
 import type { CharacterFormatAdapter } from "../domain/formatAdapter";
 import { minimalSystemPackage } from "../test/fixtures";
 import { CharacterExportDialog } from "./CharacterExportDialog";
@@ -19,9 +19,10 @@ describe("Character format dialogs", () => {
     fireEvent.click(screen.getByRole("button", { name: "B" }));
     expect(onSelect).toHaveBeenCalledWith("b");
 
-    const conversion: CharacterAdapterConversion = { adapter, data: createEmptyCharacterData(minimalSystemPackage), report: { convertedFields: 8, skippedFields: 2, matchedCards: 3, skippedCards: 1, convertedImages: 1, skippedImages: 1, diagnostics: [{ level: "warning", code: "LOSS", text: "Skipped" }] } };
+    const conversion = { sourceName: "PbDH Character Data", data: createEmptyCharacterData(minimalSystemPackage), report: { convertedFields: 8, skippedFields: 2, matchedCards: 3, skippedCards: 1, convertedImages: 1, skippedImages: 1, diagnostics: [{ level: "warning" as const, code: "LOSS", text: "Skipped" }] } };
     rerender(<CharacterImportDialogs pendingConversion={conversion} pendingSelection={null} onSelect={onSelect} onConfirm={onConfirm} onCancel={onCancel} />);
     const dialog = screen.getByRole("alertdialog", { name: "确认有损人物卡转换" });
+    expect(dialog).toHaveTextContent("PbDH Character Data");
     expect(dialog).toHaveTextContent("字段 8 已转换 / 2 跳过");
     expect(dialog).toHaveTextContent("Cards 3 已匹配 / 1 跳过");
     fireEvent.click(screen.getByRole("button", { name: "确认并新建存档" }));

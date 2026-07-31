@@ -30,7 +30,7 @@ export function CharacterImportDialogs({ pendingConversion, pendingSelection, on
   return (
     <div className="resource-manager-backdrop">
       <section className="resource-manager character-conversion-dialog" role="alertdialog" aria-modal="true" aria-label="确认有损人物卡转换">
-        <header className="resource-manager-header"><div><p className="resource-manager-kicker">{pendingConversion.adapter.名称}</p><h2>确认人物卡转换</h2></div></header>
+        <header className="resource-manager-header"><div><p className="resource-manager-kicker">{pendingConversion.sourceName}</p><h2>确认人物卡转换</h2></div></header>
         <div className="resource-manager-body">
           <p>转换不会覆盖当前 Character Save；确认后会创建并选中一个新存档。</p>
           <div className="resource-manager-summary">

@@ -63,6 +63,21 @@ export async function importCharacterSource(
   ]);
   const native = parseCharacterDataText(text, currentPackage);
   if (native.ok) {
+    if (isLossyCharacterConversion(native.report)) {
+      set({
+        pendingCharacterConversion: {
+          sourceName: "PbDH Character Data",
+          data: native.data,
+          suggestedSaveName: "导入角色",
+          successNotice: "Character Data 已兼容导入为新的 Character Save。",
+          report: native.report,
+        },
+        pendingCharacterFormatSelection: null,
+        importError: null,
+        importNotice: null,
+      });
+      return;
+    }
     await persistImportedCharacter(
       environment,
       native.data,
@@ -132,13 +147,24 @@ export async function importCharacterSource(
     return;
   }
   conversion.data = normalized.data;
-  const lossy = conversion.report.diagnostics.length > 0
-    || conversion.report.skippedCards > 0
-    || conversion.report.skippedFields > 0
-    || conversion.report.skippedImages > 0;
-  if (lossy) {
+  conversion.report = {
+    convertedFields: normalized.report.convertedFields,
+    skippedFields: conversion.report.skippedFields + normalized.report.skippedFields,
+    matchedCards: normalized.report.matchedCards,
+    skippedCards: conversion.report.skippedCards + normalized.report.skippedCards,
+    convertedImages: normalized.report.convertedImages,
+    skippedImages: conversion.report.skippedImages + normalized.report.skippedImages,
+    diagnostics: [...conversion.report.diagnostics, ...normalized.report.diagnostics],
+  };
+  if (isLossyCharacterConversion(conversion.report)) {
     set({
-      pendingCharacterConversion: conversion,
+      pendingCharacterConversion: {
+        sourceName: adapter.名称,
+        data: conversion.data,
+        ...(conversion.suggestedSaveName ? { suggestedSaveName: conversion.suggestedSaveName } : {}),
+        successNotice: `${adapter.名称} 已导入为新的 Character Save。`,
+        report: conversion.report,
+      },
       pendingCharacterFormatSelection: null,
       importError: null,
       importNotice: null,
@@ -153,4 +179,16 @@ export async function importCharacterSource(
     set,
     get,
   );
+}
+
+function isLossyCharacterConversion(report: {
+  skippedFields: number;
+  skippedCards: number;
+  skippedImages: number;
+  diagnostics: unknown[];
+}): boolean {
+  return report.diagnostics.length > 0
+    || report.skippedCards > 0
+    || report.skippedFields > 0
+    || report.skippedImages > 0;
 }

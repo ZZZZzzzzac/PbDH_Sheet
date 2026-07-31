@@ -67,7 +67,7 @@ test("refreshes a stale built-in System Package cache after a Base release updat
   await page.reload();
 
   await expect(questionnaireButton).toBeVisible();
-  await expect(page.getByText("已更新预制 System Package：Daggerheart 核心人物卡")).toBeVisible();
+  await expect(page.getByText("已更新预制 System Package：匕首心")).toBeVisible();
 });
 
 test("Daggerheart Resource Picker fills the adjacent Free Text height and centers its icon-label content", async ({ page }) => {
@@ -115,7 +115,7 @@ test("Daggerheart imports a dhSheet character through the isolated Format Adapte
   await expect(page.getByText("dhSheet Format 已导入为新的 Character Save。")).toBeVisible();
 });
 
-test("minimal loop edits, autosaves, exports and imports Character JSON", async ({ page }, testInfo) => {
+test("minimal loop edits, autosaves, exports and compatibly imports Character JSON", async ({ page }, testInfo) => {
   await page.goto("/");
 
   await uploadPackage(page, await demoPackagePath(testInfo));
@@ -140,6 +140,11 @@ test("minimal loop edits, autosaves, exports and imports Character JSON", async 
   const download = await downloadCharacterJson(page);
   const exportPath = path.join(testInfo.outputDir, "character.json");
   await download.saveAs(exportPath);
+  const compatibleImport = JSON.parse(await readFile(exportPath, "utf8"));
+  compatibleImport.systemPackage.version = "0.0.1";
+  compatibleImport.character.values["removed-module"] = "旧版本数据";
+  const compatibleImportPath = path.join(testInfo.outputDir, "character-old-version.json");
+  await writeFile(compatibleImportPath, JSON.stringify(compatibleImport), "utf8");
 
   await page.locator('[data-module-id="character-name"] [role="button"]').click();
   await page.getByLabel("姓名").fill("改坏的名字");
@@ -149,10 +154,13 @@ test("minimal loop edits, autosaves, exports and imports Character JSON", async 
   await openExportMenu(page);
   await page.getByRole("button", { name: "导入 Character JSON" }).click();
   const fileChooser = await fileChooserPromise;
-  await fileChooser.setFiles(exportPath);
+  await fileChooser.setFiles(compatibleImportPath);
 
+  const conversionDialog = page.getByRole("alertdialog", { name: "确认有损人物卡转换" });
+  await expect(conversionDialog).toContainText("CHARACTER_DATA_MODULE_MISSING");
+  await conversionDialog.getByRole("button", { name: "确认并新建存档" }).click();
   await expect(page.locator('[data-module-id="character-name"]')).toContainText("阿青");
-  await expect(page.getByText("Character Data 已导入为 Character Save。")).toBeVisible();
+  await expect(page.getByText("Character Data 已兼容导入为新的 Character Save。")).toBeVisible();
 });
 
 test("persists demo text and Player images in a real browser", async ({ page }, testInfo) => {

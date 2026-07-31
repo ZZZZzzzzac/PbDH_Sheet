@@ -34,7 +34,7 @@ export function createCharacterImportSlice(
         environment,
         pending.data,
         pending.suggestedSaveName ?? "导入角色",
-        `${pending.adapter.名称} 已导入为新的 Character Save。`,
+        pending.successNotice,
         set,
         get,
       );
@@ -44,7 +44,7 @@ export function createCharacterImportSlice(
       set({
         pendingCharacterConversion: null,
         pendingCharacterFormatSelection: null,
-        importNotice: "已取消外部人物卡转换；当前 Character Save 未改变。",
+        importNotice: "已取消人物卡转换；当前 Character Save 未改变。",
       });
     },
   });

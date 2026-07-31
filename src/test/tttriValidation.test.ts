@@ -6,6 +6,7 @@ import type { ResourceLibrary } from "../domain/resourceLibrary";
 import { runValidationChecksInProcess } from "../domain/validationScript";
 
 const packageRoot = resolve(process.cwd(), "public/system-packages/tttri");
+const packageManifest = JSON.parse(readFileSync(resolve(packageRoot, "manifest.json"), "utf8")) as { ID: string; 版本: string };
 const scriptContent = readFileSync(resolve(packageRoot, "checks/character-consistency.js"), "utf8");
 const libraryFiles = {
   ancestries: "ancestries.json",
@@ -162,7 +163,7 @@ async function validate(overrides: Record<string, unknown> = {}, cards = baseCar
   const characterData = {
     kind: "pbdh-character-data",
     schemaVersion: "0.1.0",
-    systemPackage: { id: "tttri", version: "0.1.0" },
+    systemPackage: { id: packageManifest.ID, version: packageManifest.版本 },
     character: { id: "test-character", values: { ...baseValues(), ...overrides } },
     cards: { instances: cards },
     compositeResources: {},
@@ -173,7 +174,7 @@ async function validate(overrides: Record<string, unknown> = {}, cards = baseCar
   return runValidationChecksInProcess({
     characterData,
     resourceLibraries,
-    packageMetadata: { id: "tttri", version: "0.1.0" },
+    packageMetadata: { id: packageManifest.ID, version: packageManifest.版本 },
     checks: [{ ID: "character-consistency", 脚本: "checks/character-consistency.js", scriptContent }],
   });
 }

@@ -6,7 +6,7 @@ import type { PackageDirectoryHandle } from "../loaders/packageVfs";
 import type { SystemPackage } from "../domain/systemPackage";
 import { loadResourceExtensionJson } from "../domain/resourceExtension";
 import { createCardInstance } from "../domain/cardEngine";
-import { createEmptyCharacterData } from "../domain/characterData";
+import { createEmptyCharacterData, exportCharacterData } from "../domain/characterData";
 import { configureRuntimeDependencies, resetRuntimeDependencies, useRuntimeStore } from "./runtimeStore";
 
 describe("runtime store", () => {
@@ -253,6 +253,40 @@ describe("runtime store", () => {
     expect(useRuntimeStore.getState().activeCharacterSaveId).not.toBe(before?.character.id);
     expect(await memoryStorage.listCharacterSaves(basePackage.manifest.ID)).toHaveLength(saveCount + 1);
     expect(await memoryStorage.listResourceExtensions(basePackage.manifest.ID)).toEqual([]);
+  });
+
+  it("creates new saves for lossless and confirmed lossy native Character Data imports", async () => {
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    const original = useRuntimeStore.getState().characterData!;
+    const initialSaveCount = (await memoryStorage.listCharacterSaves(minimalSystemPackage.manifest.ID)).length;
+
+    const lossless = createEmptyCharacterData(minimalSystemPackage, original.character.id);
+    lossless.systemPackage.version = "0.0.1";
+    lossless.character.values["character-name"] = "兼容角色";
+    await useRuntimeStore.getState().importCharacterDataFromText(exportCharacterData(lossless));
+
+    const importedLossless = useRuntimeStore.getState().characterData!;
+    expect(useRuntimeStore.getState().pendingCharacterConversion).toBeNull();
+    expect(importedLossless.character.values["character-name"]).toBe("兼容角色");
+    expect(importedLossless.character.id).not.toBe(original.character.id);
+    expect(importedLossless.systemPackage.version).toBe(minimalSystemPackage.manifest.版本);
+    expect(await memoryStorage.listCharacterSaves(minimalSystemPackage.manifest.ID)).toHaveLength(initialSaveCount + 1);
+
+    const lossy = createEmptyCharacterData(minimalSystemPackage, original.character.id);
+    lossy.character.values.removed = "不可用";
+    const beforeLossy = useRuntimeStore.getState().characterData;
+    await useRuntimeStore.getState().importCharacterDataFromText(exportCharacterData(lossy));
+
+    expect(useRuntimeStore.getState().characterData).toBe(beforeLossy);
+    expect(useRuntimeStore.getState().pendingCharacterConversion).toMatchObject({
+      sourceName: "PbDH Character Data",
+      report: { skippedFields: 1 },
+    });
+    expect(await memoryStorage.listCharacterSaves(minimalSystemPackage.manifest.ID)).toHaveLength(initialSaveCount + 1);
+
+    await useRuntimeStore.getState().confirmCharacterConversion();
+    expect(useRuntimeStore.getState().characterData?.character.id).not.toBe(original.character.id);
+    expect(await memoryStorage.listCharacterSaves(minimalSystemPackage.manifest.ID)).toHaveLength(initialSaveCount + 2);
   });
 
   it("does not persist Resource Picker provenance without pure derived consumers", async () => {

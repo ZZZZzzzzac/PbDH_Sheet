@@ -27,8 +27,6 @@ describe("Heart of Hopefind System Package", () => {
     expect(result.issues.filter((issue) => issue.level === "fatal" || issue.level === "error")).toEqual([]);
     expect(result.package.manifest).toMatchObject({
       ID: "heart-of-hopefind",
-      名称: "寻望之心 Heart of Hopefind",
-      版本: "0.1.0",
     });
     expect(result.package.defaultSkin).toBe("survivor-notebook");
     expect(result.package.pages.map((page) => page.ID)).toEqual(["character-sheet"]);

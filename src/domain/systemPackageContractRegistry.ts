@@ -245,7 +245,7 @@ export const systemPackageContractEntries: readonly SystemPackageContractEntry[]
     summary: "角色值、Cards、Composite Resources、选择快照与 Player Images 的持久格式。",
     document: "modules-character-data.md",
     semanticConstraints: [
-      "Character Data 的 systemPackage id/version 必须匹配当前包才可原生导入。",
+      "Character Data 的 systemPackage id 必须匹配当前包；version 不阻止原生导入。导入从当前包默认值建立新存档，只原样保留当前包可合法使用的数据，并报告、丢弃其他数据。",
       "Player Image dataUrl 只在 Character Data 中嵌入；System Package 资产只保存引用。",
     ],
   },

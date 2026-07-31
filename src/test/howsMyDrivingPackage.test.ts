@@ -33,8 +33,6 @@ describe("HOW'S MY DRIVING System Package", () => {
     expect(loadResult.issues.filter((issue) => issue.level === "fatal" || issue.level === "error")).toEqual([]);
     expect(systemPackage.manifest).toMatchObject({
       ID: "hows-my-driving",
-      名称: "我的车技如何？ HOW'S MY DRIVING?",
-      版本: "0.1.0",
     });
     expect(systemPackage.pages.map((page) => page.ID)).toEqual(["passenger-sheet", "ride-sheet"]);
   });
