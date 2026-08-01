@@ -173,6 +173,7 @@ async function capturePrintMetrics(page: Page): Promise<A4SurfaceMetric[]> {
         visuallyHidden.forEach((element, index) => { element.style.display = previousDisplay[index]; });
         return metric;
       }));
+      window.dispatchEvent(new Event("afterprint"));
     };
   });
 
