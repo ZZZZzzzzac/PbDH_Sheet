@@ -134,6 +134,8 @@ describe("HTML snapshot export/import", () => {
     expect(html).toContain("-webkit-print-color-adjust: exact");
     expect(html).toMatch(/\.snapshot-shell \.sheet-page,\s*\.snapshot-shell \[data-print-page="true"\]\s*\{[^}]*padding:\s*0/s);
     expect(html).toMatch(/\.snapshot-shell \[data-print-page="true"\]:has\(\[data-module-type="cardTable"\]\)\s*\{[^}]*padding:\s*var\(--card-table-print-page-padding, 3mm\)/s);
+    expect(html).toMatch(/\.snapshot-shell \.sheet-page:has\(\[data-module-type="cardTable"\]\),[\s\S]*?\.snapshot-shell \[data-print-page="true"\]:has\(\[data-module-type="cardTable"\]\)\s*\{[^}]*height:\s*auto\s*!important[^}]*min-height:\s*297mm\s*!important[^}]*overflow:\s*visible\s*!important/s);
+    expect(html).toMatch(/\.snapshot-shell \.card-table-surface\s*\{[^}]*display:\s*grid/s);
   });
 
   it("keeps ordinary A4 page boxes padding-free and gives Card Table print pages a default inset", () => {
@@ -152,6 +154,14 @@ describe("HTML snapshot export/import", () => {
     expect(printCss).toMatch(/\.print-mode \[data-markdown-editor\]\[data-markdown-empty="true"\]\s*\{[^}]*display:\s*block\s*!important/s);
     expect(printCss).toMatch(/\.print-mode \[data-markdown-preview\]\[data-markdown-empty="true"\]\s*\{[^}]*display:\s*none\s*!important/s);
     expect(printCss).toMatch(/\.print-mode input::placeholder,\s*\.print-mode textarea::placeholder\s*\{[^}]*color:\s*#e6e8e9 !important[^}]*-webkit-text-fill-color:\s*#e6e8e9 !important[^}]*print-color-adjust:\s*exact/s);
+  });
+
+  it("lets Card Table print surfaces grow and fragment instead of clipping overflow cards", () => {
+    expect(printCss).toMatch(/\.print-mode \.sheet-page:has\(\[data-module-type="cardTable"\]\),[\s\S]*?\.print-mode \[data-print-page="true"\]:has\(\[data-module-type="cardTable"\]\)\s*\{[^}]*height:\s*auto\s*!important[^}]*min-height:\s*297mm\s*!important[^}]*overflow:\s*visible\s*!important/s);
+    expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\.sheet-page:has\(\[data-module-type="cardTable"\]\),[\s\S]*?\[data-print-page="true"\]:has\(\[data-module-type="cardTable"\]\)\s*\{[^}]*height:\s*auto\s*!important[^}]*min-height:\s*297mm\s*!important[^}]*overflow:\s*visible\s*!important[^}]*break-inside:\s*auto[^}]*box-decoration-break:\s*clone/s);
+    expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\.module-slot:has\(\[data-module-type="cardTable"\]\),[\s\S]*?\.container:has\(\[data-module-type="cardTable"\]\)\s*\{[^}]*break-inside:\s*auto/s);
+    expect(printCss).toMatch(/\.print-mode \.card-table-surface\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*repeat\(auto-fill,\s*minmax\(0,\s*var\(--play-card-width\)\)\)/s);
+    expect(printCss).toMatch(/\.print-mode \.play-card\s*\{[^}]*position:\s*relative[^}]*width:\s*var\(--play-card-width\)\s*!important[^}]*left:\s*auto\s*!important/s);
   });
 
   it("keeps Free Text on one line while preparing output and browser printing", () => {

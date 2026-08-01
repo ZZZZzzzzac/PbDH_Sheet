@@ -307,6 +307,37 @@ export function placeCardInstancesInNextTidySlots(
   );
 }
 
+export interface CardLayoutSnapshotEntry {
+  instanceId: string;
+  xPct: number;
+  yPct: number;
+  zIndex: number;
+  rotation: number;
+}
+
+export function restoreCardTableLayout(
+  data: CharacterData,
+  tableModuleId: string,
+  snapshot: CardLayoutSnapshotEntry[],
+): CharacterData {
+  const savedById = new Map(snapshot.map((card) => [card.instanceId, card]));
+  return updateCardInstances(
+    data,
+    data.cards.instances.map((instance) => {
+      if (instance.tableModuleId !== tableModuleId) return instance;
+      const saved = savedById.get(instance.instanceId);
+      if (!saved) return instance;
+      return {
+        ...instance,
+        xPct: saved.xPct,
+        yPct: saved.yPct,
+        zIndex: saved.zIndex,
+        rotation: saved.rotation,
+      };
+    }),
+  );
+}
+
 export function deleteCardInstance(data: CharacterData, instanceId: string): CharacterData {
   return updateCardInstances(
     data,

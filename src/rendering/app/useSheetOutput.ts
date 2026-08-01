@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { exportCharacterData, type CharacterData } from "../../domain/characterData";
-import { createCardTableLayout, type CardTableLayout } from "../../domain/cardEngine";
+import { createCardTableLayout, type CardLayoutSnapshotEntry, type CardTableLayout } from "../../domain/cardEngine";
 import type { SystemPackage } from "../../domain/systemPackage";
 import type { ValidationIssue } from "../../domain/validationRunner";
 import { printablePages } from "../pagePresentation";
@@ -60,12 +60,24 @@ export function useSheetOutput({
   const [pendingOutput, setPendingOutput] = useState<OutputKind | null>(null);
   const [preparedOutputMode, setPreparedOutputMode] = useState<PreparedOutputMode | null>(null);
   const [pendingExternalExport, setPendingExternalExport] = useState<PendingCharacterExport | null>(null);
+  const cardLayoutSnapshotRef = useRef<Array<{ tableModuleId: string; cards: CardLayoutSnapshotEntry[] }> | null>(null);
 
   useEffect(() => {
     const finishPrinting = () => setPreparedOutputMode((current) => current === "print" ? null : current);
     window.addEventListener("afterprint", finishPrinting);
     return () => window.removeEventListener("afterprint", finishPrinting);
   }, []);
+
+  useEffect(() => {
+    if (preparedOutputMode !== null) return;
+    const snapshot = cardLayoutSnapshotRef.current;
+    if (!snapshot) return;
+    cardLayoutSnapshotRef.current = null;
+    for (const table of snapshot) {
+      if (table.cards.length === 0) continue;
+      useRuntimeStore.getState().restoreCardTableLayout(table.tableModuleId, table.cards);
+    }
+  }, [preparedOutputMode]);
 
   const preparePrintableContent = async (tidyCardsForOutput = true, mode: PreparedOutputMode = "print") => {
     if (!currentPackage) return false;
@@ -80,6 +92,21 @@ export function useSheetOutput({
     await nextFrame();
 
     if (tidyCardsForOutput) {
+      const characterData = useRuntimeStore.getState().characterData;
+      cardLayoutSnapshotRef.current = currentPackage.modules
+        .filter((module) => module.类型 === "cardTable")
+        .map((module) => ({
+          tableModuleId: module.ID,
+          cards: (characterData?.cards.instances ?? [])
+            .filter((instance) => instance.tableModuleId === module.ID)
+            .map((instance) => ({
+              instanceId: instance.instanceId,
+              xPct: instance.xPct,
+              yPct: instance.yPct,
+              zIndex: instance.zIndex,
+              rotation: instance.rotation,
+            })),
+        }));
       for (const module of currentPackage.modules) {
         if (module.类型 !== "cardTable") continue;
         const cardCount = characterData?.cards.instances.filter((instance) => instance.tableModuleId === module.ID).length ?? 0;

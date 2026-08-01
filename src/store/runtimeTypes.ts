@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import type { CardTableLayout } from "../domain/cardEngine";
+import type { CardLayoutSnapshotEntry, CardTableLayout } from "../domain/cardEngine";
 import type {
   CheckboxState,
   CharacterConversionReport,
@@ -199,6 +199,7 @@ export interface CardSlice {
   addCardIndicator: (instanceId: string) => void;
   transitionCardIndicator: (instanceId: string, indicatorId: string, direction: "increment" | "decrement") => void;
   tidyCardTable: (tableModuleId: string, layout: CardTableLayout) => void;
+  restoreCardTableLayout: (tableModuleId: string, snapshot: CardLayoutSnapshotEntry[]) => void;
   placePendingCardInstances: (tableModuleId: string, layout: CardTableLayout) => void;
   setCardTableCardWidth: (tableModuleId: string, widthPx: number) => void;
   deleteCardInstance: (instanceId: string) => void;

@@ -5,6 +5,7 @@ import {
   deleteCardInstance,
   flipCardInstance,
   placeCardInstancesInNextTidySlots,
+  restoreCardTableLayout,
   rotateCardInstance,
   setCardInstanceUpright,
   tidyCardTable,
@@ -66,6 +67,11 @@ export function createCardSlice(environment: RuntimeEnvironment): RuntimeSlice<C
     tidyCardTable(tableModuleId, layout) {
       updateCardAndAutosave(environment, get, set, (data) =>
         tidyCardTable(data, tableModuleId, layout));
+    },
+
+    restoreCardTableLayout(tableModuleId, snapshot) {
+      updateCardAndAutosave(environment, get, set, (data) =>
+        restoreCardTableLayout(data, tableModuleId, snapshot));
     },
 
     placePendingCardInstances(tableModuleId, layout) {

@@ -117,10 +117,36 @@
   page-break-inside: avoid;
 }
 
+.print-mode .sheet-page:has([data-module-type="cardTable"]),
+.print-mode [data-print-page="true"]:has([data-module-type="cardTable"]) {
+  height: auto !important;
+  min-height: 297mm !important;
+  overflow: visible !important;
+}
+
 .print-mode .card-table-surface {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(0, var(--play-card-width)));
+  align-items: start;
+  align-content: start;
+  gap: 4px;
+  padding: 0;
+  height: auto !important;
+  min-height: 0 !important;
   overflow: visible;
   border: 0;
   background: #ffffff;
+}
+
+.print-mode .play-card {
+  position: relative;
+  width: var(--play-card-width) !important;
+  left: auto !important;
+  top: auto !important;
+  z-index: auto !important;
+  transform: none !important;
+  box-shadow: none !important;
+  filter: none !important;
 }
 
 .print-mode .module-slot,
@@ -270,6 +296,23 @@
   [data-print-page="true"] {
     break-inside: avoid;
     page-break-inside: avoid;
+  }
+
+  .sheet-page:has([data-module-type="cardTable"]),
+  [data-print-page="true"]:has([data-module-type="cardTable"]) {
+    height: auto !important;
+    min-height: 297mm !important;
+    overflow: visible !important;
+    break-inside: auto;
+    page-break-inside: auto;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  .module-slot:has([data-module-type="cardTable"]),
+  .container:has([data-module-type="cardTable"]) {
+    break-inside: auto;
+    page-break-inside: auto;
   }
 
   .module-slot,
