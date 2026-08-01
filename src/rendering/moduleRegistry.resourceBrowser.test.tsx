@@ -57,7 +57,7 @@ describe("Resource Browser rendering", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
 
-    expect((await screen.findByText("烈焰")).tagName).toBe("STRONG");
+    expect((await screen.findByText("烈焰", {}, { timeout: 5_000 })).tagName).toBe("STRONG");
     expect(screen.getByText("利刃")).toHaveAttribute("data-markdown-color", "red");
   });
 

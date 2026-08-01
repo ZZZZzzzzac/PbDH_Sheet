@@ -1,4 +1,4 @@
-# 《巫趣》ω1.0 车卡器 PRD
+# 《巫趣》ω1.1 车卡器 PRD
 
 ## 目标
 
@@ -24,18 +24,18 @@
 
 | 规则内容 | 表达方式 | 要求 |
 | --- | --- | --- |
-| 魔力点 | `countableResource` | 初始 current/max 均为 6；上限由依赖计算，不直接编辑 |
+| 魔力点 | `countableResource` | 初始 current 为 3、max 为 6；上限由依赖计算，不直接编辑 |
 | 蚀痕 | 独立 `countableResource` | 初始 0；每 1 蚀痕令魔法点上限减少 1 |
 | 魔法点上限联动 | `countableChanged` + `integerCalculation` | `max(0, 6 - 蚀痕 current - 使魔选择数量)`；选择使魔占用 1 点 |
 | 残月/月全食 | Validation Script | max 为 1–3 时提示残月及混乱骰改为 d20；max 为 0 时提示月全食；不自动改值 |
 | 三项魔法本质 | 3 个放大的 `freeText` | 物质界、精神界、灵界；视觉层级参照 `daggerheart-core` 六属性 |
-| 经历 | 5 组名称/修正 `freeText` | 复用 `daggerheart-core` 结构；前两项初始修正默认 +2 |
+| 经历 | 4 组可见名称/修正 `freeText` | 前两项初始修正默认 +3；另两项留给成长使用；保留旧第五组 Module ID 以兼容既有 Character Data，但不再显示 |
 | 原型 | Resource Library + `resourcePicker` + 文本填充 | 显示为“原型文本框 + 放大镜按钮”；选择后把名称与规则填入人物卡，不提供单独指示物字段 |
-| 自创魔法 | 4 组 `freeText` + `longText` | 自由记录名称、意象、表现和用法；前三项纳入初始创建检查，第四项为额外栏位 |
+| 自创魔法 | 3 组 `freeText` + `longText` | 自由记录名称、一个名词意象、一个动词意象、表现和用法；三项均纳入初始创建检查 |
 | 终末条件 | `longText` | 自由描述物品或元素构成的终末条件 |
 | 命运预兆 | 3 个 `longText` | 分别记录过去、现在、未来 |
 | 使魔 | `imageField` + Resource Library + `resourcePicker` + 文本填充 | 左侧头像；右侧依次为名字、类型、特技。资源名称填入“类型”，资源规则填入“特技” |
-| 道具 | `longText` | 自由记录，不连接 Resource Library |
+| 货币/宝物/战利品 | `longText` | 自由记录，不连接 Resource Library；不内置规则书中的宝物范例表 |
 
 不需要开发新的 Base Framework Module。原型和使魔均通过现有 Dependency Engine 的 `fillText` 动作写入普通文本模块。
 
@@ -59,7 +59,7 @@ Validation Script 只报告客观规则和状态：
 
 - 三项魔法本质必须是整数、创建时各在 -2 到 +2、合计为 0。
 - 三个初始魔法必须填写名称或描述。
-- 至少填写前两个经历，初始修正通常为 +2。
+- 至少填写前两个经历，初始修正通常为 +3。
 - 魔力点 max 为 1–3 时报告残月；max 为 0 时报告月全食。
 
 检查不会评价创作质量；魔力点上限的声明式联动由 Dependency Engine 完成，不由 Validation 修改。
@@ -84,12 +84,14 @@ Validation Script 只报告客观规则和状态：
 - Card Table、Card Instance、Card Indicator。
 - 永久魔力上限损失的独立来源；#268 第一版只计算蚀痕与使魔占用。
 - 原型专属模块或状态机。
-- 结构化魔法意象编辑器。
+- 结构化魔法意象编辑器；名词/动词意象仍使用现有自由文本记录。
+- 宝物 Resource Library 或宝物效果自动化。
 - 大量 `readOnlyDisplay` 规则速查。
-- WS 敌人管理、威胁骰、预言自动化、掷骰器、云同步或多人协作。
+- WS 行动、敌人管理、威胁骰、主动/被动预言、便签地图、掷骰器、云同步或多人协作。
 
 ## 来源
 
-- 规则来源：《Witchy 巫趣》ω1.0。
+- 规则来源：《Witchy 巫趣》ω1.1。
 - 文字与主设计：Lost；审校与设计：一条腿。
 - System Package 保留原规则的 Powered by DaggerHeart 与 DPCGL 声明。
+- ω1.1 规则稿的更新说明与经历主规则明确初始加值为 +3；“往昔回响”、使用示例和成长规则中的残留 +2 文本不作为人物卡实现依据。

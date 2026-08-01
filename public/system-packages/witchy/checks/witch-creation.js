@@ -61,8 +61,8 @@ module.exports = async (input) => {
     if (!experience) {
       issues.push({ level: "error", code: "WITCH_EXPERIENCE_MISSING", path: `character.values.experience-${index}`, text: `请填写初始经历 ${index}。` });
     }
-    if (modifier !== "+2" && modifier !== "2") {
-      issues.push({ level: "warning", code: "WITCH_EXPERIENCE_MODIFIER", path: `character.values.experience-modifier-${index}`, text: `初始经历 ${index} 的修正通常为 +2。` });
+    if (modifier !== "+3" && modifier !== "3") {
+      issues.push({ level: "warning", code: "WITCH_EXPERIENCE_MODIFIER", path: `character.values.experience-modifier-${index}`, text: `初始经历 ${index} 的修正通常为 +3。` });
     }
   }
 

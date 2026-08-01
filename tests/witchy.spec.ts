@@ -4,7 +4,7 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
   await page.goto("/");
   await selectWitchyPreset(page);
 
-  await expect(page.getByText("ω1.0 女巫人物卡")).toBeVisible();
+  await expect(page.getByText("ω1.1 女巫人物卡")).toBeVisible();
   const identityBox = await page.locator(".character-summary").boundingBox();
   const resourceBox = await page.locator(".resource-panel").boundingBox();
   const nameBox = await page.locator('[data-module-slot-id="character-name"]').boundingBox();
@@ -55,7 +55,7 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
     const rect = row.getBoundingClientRect();
     return { x: rect.x, y: rect.y, width: rect.width };
   }));
-  expect(experienceRows).toHaveLength(5);
+  expect(experienceRows).toHaveLength(4);
   expect(experienceRows.every((row) => Math.abs(row.x - experienceRows[0].x) <= 1)).toBe(true);
   expect(experienceRows.every((row, index) => index === 0 || row.y > experienceRows[index - 1].y)).toBe(true);
   const contentGrid = await page.locator(".sheet-content-grid").boundingBox();
@@ -98,6 +98,10 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
   await page.getByLabel("选择 园丁").click();
   await expect(page.locator('[data-module-id="archetype-name"]')).toContainText("园丁");
   await expect(page.locator('[data-module-id="archetype-description"]')).toContainText("精心培育");
+  const archetypePreview = page.locator('[data-module-id="archetype-description"] [data-markdown-preview]');
+  await expect.poll(() => archetypePreview.evaluate((element) => (
+    element.scrollHeight <= element.clientHeight + 1
+  ))).toBe(true);
 
   await page.getByRole("textbox", { name: "魔法一", exact: true }).fill("荆棘");
   await page.getByRole("textbox", { name: "魔法二", exact: true }).fill("月光");
@@ -111,12 +115,12 @@ test("Witchy creates, saves, reloads, and prints one centered A4 character sheet
   await waitForStoredValue(page, "inventory", "银杯、雨水瓶、旧钟发条");
 
   await page.reload();
-  await expect(page.getByText("ω1.0 女巫人物卡")).toBeVisible();
+  await expect(page.getByText("ω1.1 女巫人物卡")).toBeVisible();
   await expect(page.locator('[data-module-id="archetype-name"]')).toContainText("园丁");
   await expect(page.locator('[data-module-id="familiar-type-name"]')).toContainText("警铃");
   await expect(page.locator('[data-module-id="inventory"]')).toContainText("银杯");
   await expect(page.locator('[data-module-id="omen-future"]')).toContainText("银杯破裂");
-  await expect(page.getByRole("img", { name: "魔力：当前值 5，上限 5" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "魔力：当前值 3，上限 5" })).toBeVisible();
   await page.getByRole("button", { name: "蚀痕增加" }).click();
   await page.getByRole("button", { name: "蚀痕增加" }).click();
   await expect(page.getByRole("img", { name: "魔力：当前值 3，上限 3" })).toBeVisible();
