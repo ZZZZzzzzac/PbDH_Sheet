@@ -14,13 +14,15 @@ Composer 将多个 Resource Library 槽位的选择合成为一个角色资源�
 
 - `来源槽位` 定义槽位 ID、标签、资源库 ID 与可选字段模板；
 - `输出字段` 把每个结果字段映射到一个槽位的来源字段；
-- `选择关系输出` 可在所有选择相同/不全相同时写固定值；
+- `选择关系输出` 可在所有选择相同/不全相同时写固定值；全部相同时还可优先继承首个来源的指定字段，并在该字段为空时使用固定回退值；
 - Composite Resource 的 `ID` 由框架生成，不能由输出映射覆盖；
 - 可选 `创建卡牌` 把结果加入指定 Card Table。
 
 ## Resource Extensions 与“其他资源”
 
 角色导入或用户操作可以产生不属于包内原生库的扩展资源。Base 保留其文本字段与来源，使其可通过 `其他` Picker 和 `otherResourceLibraries` Card 来源继续使用。只有确定身份和字段兼容时才合并到原生 Entry；宁可保留为其他资源，也不要错误拆分或丢字段。
+
+Resource Extension 可在根级 `metadata` 中携带应用专用往返信息。每个键必须使用反向域名式命名空间，例如 `cn.pbdh.cards.workspace`。Base 在导入、持久化和规范化导出时原样保留未知命名空间，但不把 metadata 转换为 Resource Value，也不用于展示、搜索、筛选或 Card Presentation。
 
 ## Card Table 与 Card Presentation
 
@@ -32,7 +34,7 @@ Composer 将多个 Resource Library 槽位的选择合成为一个角色资源�
 
 模板字段必须存在。Card name、description 与 tags 是资源的展示投影，不复制成新的合同数据。
 
-Card Table 可设置 `显示方式: "image" | "text"`、`卡图字段`、`卡背字段`、`显示方式字段` 与 `背面卡牌ID字段`。`背面卡牌ID` 必须指向同一 Resource Library 的 Entry。来自只含纯图的在线格式时，若文字才是权威内容，Adapter 应输出 text card，而不是把无文字卡图当完整卡牌。
+Card Table 可设置 `显示方式: "image" | "text" | "split"`、`卡图字段`、`卡背字段`、`显示方式字段` 与 `背面卡牌ID字段`。Resource Entry 可通过显示方式字段覆盖 Table 默认值；`split` 表示上部卡图与下部结构化文字，文字区至少占卡面一半。`背面卡牌ID` 必须指向同一 Resource Library 的 Entry。来自只含纯图的在线格式时，若文字才是权威内容，Adapter 应输出 text card，而不是把无文字卡图当完整卡牌。
 
 紧凑 text Card 的 description 会自动拟合，最小到 9px；仍放不下时显示省略号，完整内容在 Card Detail 可见。Card name 与 tags 保持可辨识。此拟合不修改 Resource Entry 或 Character Data。
 
@@ -109,6 +111,7 @@ Author Resource 文件归一化后的字段元数据与字符串值。
 语义约束：
 
 - 缺失的 Extension/Library/Entry ID 可由导入流程生成；生成后归一化 JSON 会显式写回。
+- 根级 metadata 使用反向域名式命名空间；Base 原样保留但不把它归一化为 Resource Value，也不用于展示、搜索、筛选或 Card Presentation。
 
 | 路径 | 必填 | 类型 | 约束 / 默认值 |
 | --- | --- | --- | --- |
@@ -123,5 +126,6 @@ Author Resource 文件归一化后的字段元数据与字符串值。
 | resourceLibraries[].名称 | 是 | string | 最短 1 |
 | resourceLibraries[].entries | 是 | array | — |
 | resourceLibraries[].entries[] | 是 | object | — |
+| metadata | 否 | object | — |
 
 <!-- END GENERATED CONTRACT -->

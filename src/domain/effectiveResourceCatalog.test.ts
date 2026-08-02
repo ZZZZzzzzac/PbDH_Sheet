@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { minimalSystemPackage } from "../test/fixtures";
 import { createEffectiveResourceCatalog } from "./effectiveResourceCatalog";
 import { loadResourceExtensionJson, type ResourceExtension } from "./resourceExtension";
+import { composeResource } from "./resourceComposer";
 import type { SystemPackage } from "./systemPackage";
 
 const packageWithClasses: SystemPackage = {
@@ -56,6 +57,25 @@ describe("Effective Resource Catalog", () => {
     expect(catalog.extensions[0].issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "RESOURCE_ENTRY_ID_CONFLICT" })]));
     expect(catalog.resourceLibraries).toHaveLength(1);
     expect(catalog.resourceLibraries[0].entries).toHaveLength(1);
+  });
+
+  it("qualifies Extension asset references so Composer output keeps an unambiguous runtime image", () => {
+    const candidate = extension({
+      ID: "illustrated", 名称: "带图扩展", 版本: "1", 目标系统包ID: packageWithClasses.manifest.ID,
+      resourceLibraries: [{ ID: "classes", 名称: "职业", entries: [{ ID: "class:painted", 名称: "绘卡师", 卡图: "assets/painted.webp" }] }],
+    });
+
+    const catalog = createEffectiveResourceCatalog(packageWithClasses, [candidate]);
+    const painted = catalog.resourceLibraries[0].entries.find((entry) => entry.ID === "class:painted");
+    if (!painted) throw new Error("extension entry missing");
+    const composite = composeResource({
+      ID: "compose-painted", 类型: "resourceComposer", 按钮文本: "组合",
+      来源槽位: [{ ID: "source", 标签: "来源", 资源库ID: "classes" }],
+      输出字段: [{ 字段: "卡图", 来源槽位ID: "source", 来源字段: "卡图" }],
+    }, { source: painted });
+
+    expect(painted.fields.卡图).toBe("resource-extension:illustrated:assets/painted.webp");
+    expect(composite?.fields.卡图).toBe("resource-extension:illustrated:assets/painted.webp");
   });
 
   it("reserves legacy Entry IDs against Extension conflicts", () => {

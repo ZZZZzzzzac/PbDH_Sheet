@@ -176,6 +176,27 @@
   background: #e2e8e9;
 }
 
+.play-card-split {
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 63 / 88;
+  min-height: 0;
+  overflow: hidden;
+  background: #fffdf7;
+}
+
+.play-card-split-art {
+  flex: 1 1 50%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.play-card-split-art .play-card-image {
+  height: 100%;
+  aspect-ratio: auto;
+  object-fit: cover;
+}
+
 .play-card-text {
   position: relative;
   display: grid;
@@ -187,6 +208,15 @@
   padding: 14px;
   background: #fffdf7;
   color: #202426;
+}
+
+.play-card-split-text {
+  flex: 0 1 auto;
+  grid-template-rows: auto auto;
+  min-height: 50%;
+  aspect-ratio: auto;
+  gap: 8px;
+  padding: 10px;
 }
 
 .play-card-state-badge {
@@ -403,6 +433,9 @@
 .card-detail-face .play-card-state-badge { top: 8px; right: 52px; font-size: 0.95rem; transform: none; }
 .card-detail-face .play-card-image { width: 100%; height: auto; max-height: 82vh; object-fit: contain; }
 .card-detail-face .play-card-text { min-height: 420px; font-size: 1.1rem; }
+.card-detail-face .play-card-split { width: 100%; }
+.card-detail-face .play-card-split-art .play-card-image { height: 100%; max-height: none; object-fit: cover; }
+.card-detail-face .play-card-split-text { min-height: 50%; font-size: 1.1rem; }
 .card-detail-face .play-card-description { max-height: none; overflow: visible; }
 .card-detail-close { position: absolute; top: 8px; right: 8px; z-index: 1; width: 36px; height: 36px; border: 0; border-radius: 50%; background: rgba(255,255,255,.9); cursor: pointer; }
 

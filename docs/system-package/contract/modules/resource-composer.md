@@ -52,6 +52,7 @@ resourceComposer Sheet Module 的作者源文件形状。
 | 选择关系输出 | 否 | object | — |
 | 选择关系输出.字段 | 是 | string | 最短 1 |
 | 选择关系输出.全部相同时 | 是 | string | 最短 1 |
+| 选择关系输出.全部相同时来源字段 | 否 | string | 最短 1 |
 | 选择关系输出.不全相同时 | 是 | string | 最短 1 |
 | 创建卡牌 | 否 | object | — |
 | 创建卡牌.卡牌桌面模块ID | 是 | string | 最短 1 |

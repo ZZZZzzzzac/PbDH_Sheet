@@ -194,7 +194,7 @@ export const cardTableModuleSchema = sheetModuleBaseSchema.extend({
       徽标: z.string().refine((value) => value.trim().length > 0, { message: "Card state 徽标不能为空白字符串。" }),
     }),
   ).optional(),
-  显示方式: z.enum(["image", "text"]).optional().meta({ default: "image" }),
+  显示方式: z.enum(["image", "text", "split"]).optional().meta({ default: "image" }),
   卡图字段: z.string().min(1).optional(),
   卡背字段: z.string().min(1).optional(),
   显示方式字段: z.string().min(1).optional(),
@@ -249,6 +249,7 @@ export const resourceComposerModuleSchema = sheetModuleBaseSchema.extend({
   选择关系输出: z.object({
     字段: z.string().min(1).refine((field) => field !== "ID", { message: "Composite Resource ID 由框架生成。" }),
     全部相同时: z.string().min(1),
+    全部相同时来源字段: z.string().min(1).optional(),
     不全相同时: z.string().min(1),
   }).optional(),
   创建卡牌: z.object({ 卡牌桌面模块ID: z.string().min(1), 默认状态: z.string().min(1).optional() }).optional(),

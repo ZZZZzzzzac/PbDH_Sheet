@@ -78,6 +78,7 @@ describe("Resource Extension repository", () => {
     const first = loadResourceExtensionJson(JSON.stringify({
       ID: "void", 名称: "虚空", 版本: "1", 目标系统包ID: "core",
       resourceLibraries: [{ ID: "classes", 名称: "职业", entries: [{ ID: "void-class", 名称: "刺客" }] }],
+      metadata: { "cn.pbdh.cards.workspace": { schemaVersion: "1.0.0", packageKind: "card", entries: [] } },
     }), "core");
     if (!first.ok) throw new Error(JSON.stringify(first.issues));
     const replacement = { ...first.extension, 版本: "2" };
@@ -89,6 +90,7 @@ describe("Resource Extension repository", () => {
     const extensions = await database.resourceExtensions.where("targetSystemPackageId").equals("core").toArray();
     expect(extensions).toHaveLength(1);
     expect(extensions[0].data.版本).toBe("2");
+    expect(extensions[0].data.metadata).toEqual(first.extension.metadata);
     expect(extensions[0].assets?.[0]).toMatchObject({ 路径: "assets/card.png", sourceId: "void" });
     expect(await database.systemPackages.get("current-system-package")).toMatchObject({ data: { marker: "unchanged" } });
 

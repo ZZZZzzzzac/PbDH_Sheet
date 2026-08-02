@@ -122,7 +122,7 @@ export function createEffectiveResourceCatalog(systemPackage: SystemPackage, ext
       名称: source.名称,
       路径: source.路径,
       entries: source.entries.map((entry) => ({
-        ...entry.fields,
+        ...qualifyExtensionAssetReferences(entry.fields, source.entryProvenance[entry.ID]),
         ID: entry.ID,
         ...(entry.aliases?.length ? { 旧ID: entry.aliases.length === 1 ? entry.aliases[0] : entry.aliases } : {}),
       })),
@@ -140,6 +140,19 @@ export function createEffectiveResourceCatalog(systemPackage: SystemPackage, ext
     libraries: effectiveLibraries,
     extensions: statuses,
   };
+}
+
+function qualifyExtensionAssetReferences(
+  fields: Record<string, string>,
+  provenance: ResourceProvenance | undefined,
+): Record<string, string> {
+  if (provenance?.type !== "resourceExtension") return fields;
+  return Object.fromEntries(Object.entries(fields).map(([key, value]) => [
+    key,
+    value.startsWith("assets/")
+      ? `resource-extension:${encodeURIComponent(provenance.id)}:${value}`
+      : value,
+  ]));
 }
 
 export function applyEffectiveResourceCatalog(systemPackage: SystemPackage, catalog: EffectiveResourceCatalog): SystemPackage {

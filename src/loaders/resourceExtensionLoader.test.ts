@@ -14,8 +14,9 @@ function extensionDocument(overrides: Record<string, unknown> = {}) {
 
 describe("Resource Extension file loader", () => {
   it("loads ZIP images with Extension-scoped identity and preserves them in normalized ZIP", async () => {
+    const metadata = { "cn.pbdh.cards.workspace": { schemaVersion: "1.0.0", packageKind: "card", entries: [] } };
     const result = await loadResourceExtensionFromZipFile(new Blob([zipSync({
-      "extension.json": encoder.encode(JSON.stringify(extensionDocument({ ID: undefined }))),
+      "extension.json": encoder.encode(JSON.stringify(extensionDocument({ ID: undefined, metadata }))),
       "assets/cards/card.png": new Uint8Array([1, 2, 3]),
     })]), "core", { generateId: () => "generated-extension" });
 
@@ -25,7 +26,9 @@ describe("Resource Extension file loader", () => {
     expect(result.normalizedArtifact.fileName).toBe("generated-extension.normalized.zip");
     const normalizedFiles = unzipSync(result.normalizedArtifact.bytes);
     expect(normalizedFiles["assets/cards/card.png"]).toEqual(new Uint8Array([1, 2, 3]));
-    expect(JSON.parse(new TextDecoder().decode(normalizedFiles["extension.json"])).ID).toBe("generated-extension");
+    const normalizedDocument = JSON.parse(new TextDecoder().decode(normalizedFiles["extension.json"]));
+    expect(normalizedDocument.ID).toBe("generated-extension");
+    expect(normalizedDocument.metadata).toEqual(metadata);
   });
 
   it("rejects missing images, unsupported files, and unsafe SVG", async () => {

@@ -278,7 +278,10 @@ export const systemPackageContractEntries: readonly SystemPackageContractEntry[]
     schema: resourceExtensionDocumentSchema,
     summary: "独立资源扩展的目标包和库贡献。",
     document: "resources-cards.md",
-    semanticConstraints: ["缺失的 Extension/Library/Entry ID 可由导入流程生成；生成后归一化 JSON 会显式写回。"],
+    semanticConstraints: [
+      "缺失的 Extension/Library/Entry ID 可由导入流程生成；生成后归一化 JSON 会显式写回。",
+      "根级 metadata 使用反向域名式命名空间；Base 原样保留但不把它归一化为 Resource Value，也不用于展示、搜索、筛选或 Card Presentation。",
+    ],
   },
   ...Object.entries(scriptContractSchemas).map(([id, schema]): SystemPackageContractEntry => ({
     id: `script-${id}`,

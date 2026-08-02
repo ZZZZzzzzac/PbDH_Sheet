@@ -59,7 +59,7 @@ cardTable Sheet Module 的作者源文件形状。
 | 状态选项 | 否 | array | 最少项 1 |
 | 状态选项[] | 是 | string | 最短 1 |
 | 状态外观 | 否 | object | — |
-| 显示方式 | 否 | "image" \| "text" | 默认 "image" |
+| 显示方式 | 否 | "image" \| "text" \| "split" | 默认 "image" |
 | 卡图字段 | 否 | string | 最短 1 |
 | 卡背字段 | 否 | string | 最短 1 |
 | 显示方式字段 | 否 | string | 最短 1 |

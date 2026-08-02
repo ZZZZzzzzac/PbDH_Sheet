@@ -36,14 +36,28 @@ export function CardFace({
   const cardArtRef = definition?.fields[artField] ?? "";
   const libraryId = definitionRef?.type === "resourceLibrary" ? definitionRef.libraryId : undefined;
   const provenance = findResourceEntryProvenance(resourceCatalog, libraryId, definition?.ID);
-  const cardArtUrlKey = resourceAssetUrlKey(provenance?.type, provenance?.id, cardArtRef);
+  const cardArtUrlKey = cardArtRef.startsWith("resource-extension:")
+    ? cardArtRef
+    : resourceAssetUrlKey(provenance?.type, provenance?.id, cardArtRef);
   const cardArtUrl = useRuntimeStore((state) => cardArtRef ? state.packageAssetUrls[cardArtUrlKey] : undefined);
-  const showImage = resolveCardDisplayMode(definition, module) === "image" && cardArtUrl && !imageFailed;
+  const displayMode = resolveCardDisplayMode(definition, module);
+  const showArt = displayMode !== "text" && cardArtUrl && !imageFailed;
   useEffect(() => setImageFailed(false), [cardArtRef, cardArtUrl]);
 
-  return showImage
-    ? <img className="play-card-image" src={cardArtUrl} alt={fallbackName} draggable={false} onError={() => setImageFailed(true)} />
-    : <TextCard definition={definition} module={module} presentation={presentation} fallbackName={fallbackName} autoFitDescription={autoFitDescription} />;
+  if (showArt && displayMode === "image") {
+    return <img className="play-card-image" src={cardArtUrl} alt={fallbackName} draggable={false} onError={() => setImageFailed(true)} />;
+  }
+  if (showArt && displayMode === "split") {
+    return (
+      <div className="play-card-split">
+        <div className="play-card-split-art">
+          <img className="play-card-image" src={cardArtUrl} alt={fallbackName} draggable={false} onError={() => setImageFailed(true)} />
+        </div>
+        <TextCard definition={definition} module={module} presentation={presentation} fallbackName={fallbackName} autoFitDescription={autoFitDescription} split />
+      </div>
+    );
+  }
+  return <TextCard definition={definition} module={module} presentation={presentation} fallbackName={fallbackName} autoFitDescription={autoFitDescription} />;
 }
 
 export function CardStateBadge({ id, label }: { id?: string; label: string }) {
@@ -56,17 +70,19 @@ function TextCard({
   presentation,
   fallbackName,
   autoFitDescription,
+  split = false,
 }: {
   definition?: ResourceLibraryEntry;
   module: CardTableModule;
   presentation?: CardPresentation;
   fallbackName: string;
   autoFitDescription: boolean;
+  split?: boolean;
 }) {
   const resolvedPresentation = resolveRenderedCardPresentation(definition, module, presentation);
 
   return (
-    <div className="play-card-text">
+    <div className={`play-card-text${split ? " play-card-split-text" : ""}`}>
       <header>
         <RestrictedMarkdown className="play-card-name" value={resolvedPresentation.name || fallbackName} />
         {resolvedPresentation.tags.length > 0 ? (

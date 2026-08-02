@@ -305,6 +305,34 @@ describe("Card rendering", () => {
     expect(card).toHaveTextContent("描述应该独立显示。");
   });
 
+  it("renders a split Card with both artwork and structured text", () => {
+    const systemPackage = createCardTablePackage();
+    const table = systemPackage.modules.find((module) => module.ID === "domain-card-table");
+    if (table?.类型 !== "cardTable") throw new Error("card table fixture missing");
+    table.显示方式字段 = "卡牌显示方式";
+    const definition = systemPackage.resourceLibraries?.find((library) => library.ID === "domain-cards")?.entries[0];
+    if (!definition) throw new Error("definition fixture missing");
+    definition.fields.卡图 = "assets/cards/front.webp";
+    definition.fields.卡牌显示方式 = "split";
+    const characterData = createCardInstance(createEmptyCharacterData(systemPackage), {
+      instanceId: "split-card",
+      tableModuleId: "domain-card-table",
+      libraryId: "domain-cards",
+      definitionId: definition.ID,
+    });
+    useRuntimeStore.setState({
+      currentPackage: systemPackage,
+      characterData,
+      packageAssetUrls: { "assets/cards/front.webp": "blob:front" },
+    });
+
+    render(<SheetRenderer systemPackage={systemPackage} />);
+    const card = screen.getByRole("article", { name: "回想测试" });
+    expect(within(card).getByRole("img", { name: "回想测试" })).toHaveAttribute("src", "blob:front");
+    expect(card).toHaveTextContent("描述应该独立显示。");
+    expect(card.querySelector(".play-card-split-text")).toBeInTheDocument();
+  });
+
   it("shows an image as soon as its URL becomes available without requiring a Card interaction", () => {
     const systemPackage = createCardTablePackage();
     const table = systemPackage.modules.find((module) => module.ID === "domain-card-table");

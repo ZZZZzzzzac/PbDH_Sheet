@@ -21,6 +21,46 @@ describe("Resource Extension JSON loader", () => {
     expect(result.extension.resourceLibraries[0].library.entries[0].fields.名称).toBe("刺客");
   });
 
+  it("round-trips namespaced root metadata without exposing it as a resource field", () => {
+    const metadata = {
+      "cn.pbdh.cards.workspace": {
+        schemaVersion: "1.0.0",
+        packageKind: "card",
+        entries: [{ libraryId: "cards", entryId: "card-1", order: 0 }],
+      },
+    };
+    const result = loadResourceExtensionJson(JSON.stringify({
+      ID: "cards",
+      名称: "卡牌",
+      版本: "1.0.0",
+      目标系统包ID: "core",
+      resourceLibraries: [{ ID: "cards", 名称: "卡牌", entries: [{ ID: "card-1", 名称: "示例" }] }],
+      metadata,
+    }), "core");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.extension.metadata).toEqual(metadata);
+    expect(result.extension.resourceLibraries[0].library.fields.map((field) => field.key)).toEqual(["ID", "名称"]);
+    expect(JSON.parse(result.normalizedJson).metadata).toEqual(metadata);
+  });
+
+  it("rejects metadata keys that are not reverse-domain namespaces", () => {
+    const result = loadResourceExtensionJson(JSON.stringify({
+      名称: "卡牌",
+      版本: "1.0.0",
+      目标系统包ID: "core",
+      resourceLibraries: [{ ID: "cards", 名称: "卡牌", entries: [] }],
+      metadata: { workspace: {} },
+    }), "core");
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.issues).toContainEqual(expect.objectContaining({
+      code: "RESOURCE_EXTENSION_SHAPE_INVALID",
+      path: "metadata.workspace",
+    }));
+  });
+
   it("generates all missing IDs, retries collisions, and round-trips normalized JSON", () => {
     const ids = ["taken-extension", "extension-ok", "taken-library", "library-ok", "taken-entry", "entry-ok"];
     const generateId = () => ids.shift() ?? "unexpected";

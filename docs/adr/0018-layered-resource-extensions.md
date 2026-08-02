@@ -9,11 +9,13 @@ System Package 的资源目前随整个包分发。Author B 若只补充资源�
 
 ## 决策
 
-Resource Extension 作为独立 JSON 或 ZIP 产物安装并持久化，不改写 System Package。Extension 用 System Package ID 定位目标包，并包含一个或多个显式 Resource Library contributions；每项 contribution 用 Resource Library ID 决定向现有库贡献 Entry 或形成独立库。运行时通过 Effective Resource Catalog 原子合并整个 Extension 的有效视图并保留每条 Entry 的来源。
+Resource Extension 作为独立 JSON 或 ZIP 产物安装并持久化，不改写 System Package。Extension 用 System Package ID 定位目标包，并包含一个或多个显式 Resource Library contributions；每项 contribution 用 Resource Library ID 决定向现有库贡献 Entry 或形成独立库。运行时通过 Effective Resource Catalog 原子合并整个 Extension 的有效视图并保留每条 Entry 的来源。Catalog 在有效视图中把 `assets/...` 引用限定到贡献它的 Extension；这样 Composer 可以只持久化输出资源，仍能无歧义地显示扩展图片，不需要持久化来源槽位选择。
 
 同 Extension ID 重导入时整包替换。跨 System Package、其他 Extension 的 Entry ID 冲突会拒绝安装；包升级导致的实际冲突会禁用 Extension 并显示诊断，但不阻止 System Package 加载。目标 Library ID 消失时，Extension 自动成为独立库。兼容性只比较 System Package ID，不比较版本。
 
 Resource Picker 使用统一多库合同，也可由 Author 声明为 Other Resources Picker，动态接收未被普通 Picker 引用的库。Player 可以安装或卸载 Extension，但不能配置 Picker 与 Library 的链接。
+
+2026-08-02 补充：Resource Extension 可在根级 `metadata` 中携带按反向域名命名空间隔离的应用往返数据。Base 对未知命名空间只负责校验为 JSON、持久化和规范化导出，不把它们并入 Effective Resource Catalog、Resource Value、搜索、筛选或 Card Presentation。应用不得把专用 metadata 混入 Resource Entry 的普通字段。
 
 补充澄清：Other Resources Picker 的动态集合只包含 Resource Extension 贡献的独立 Library。System Package 自有 Library 与命中既有目标后合并的 contribution 都不进入 Other；独立 Library 若已被普通 Resource Picker 或 Resource Composer 使用，也不再进入 Other。
 

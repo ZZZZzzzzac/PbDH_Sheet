@@ -2,6 +2,11 @@ import { z } from "zod";
 import { generateId } from "../utils";
 import { normalizeResourceLibraries, type ResourceLibrary } from "./resourceLibrary";
 
+const metadataNamespaceSchema = z.string().regex(
+  /^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9-]*){2,}$/u,
+  "metadata 键必须使用反向域名式命名空间",
+);
+
 export const resourceExtensionDocumentSchema = z.object({
   ID: z.string().min(1).optional(),
   名称: z.string().min(1),
@@ -12,6 +17,7 @@ export const resourceExtensionDocumentSchema = z.object({
     名称: z.string().min(1),
     entries: z.array(z.record(z.string(), z.unknown())),
   })).min(1),
+  metadata: z.record(metadataNamespaceSchema, z.unknown()).optional(),
 });
 
 export interface ResourceExtensionContribution {
@@ -26,6 +32,7 @@ export interface ResourceExtension {
   名称: string;
   版本: string;
   目标系统包ID: string;
+  metadata?: Record<string, unknown>;
   sourceType: "json" | "zip";
   resourceLibraries: ResourceExtensionContribution[];
 }
@@ -161,6 +168,7 @@ export function loadResourceExtensionJson(
     名称: parsed.data.名称,
     版本: parsed.data.版本,
     目标系统包ID: parsed.data.目标系统包ID,
+    ...(parsed.data.metadata !== undefined ? { metadata: parsed.data.metadata } : {}),
     sourceType: "json",
     resourceLibraries: normalizedInputs.map((input, index) => ({ ...input, library: normalized.resourceLibraries[index] })),
   };
@@ -179,6 +187,7 @@ export function serializeResourceExtension(extension: ResourceExtension): string
     版本: extension.版本,
     目标系统包ID: extension.目标系统包ID,
     resourceLibraries: extension.resourceLibraries.map(({ ID, 名称, entries }) => ({ ID, 名称, entries })),
+    ...(extension.metadata !== undefined ? { metadata: extension.metadata } : {}),
   }, null, 2)}\n`;
 }
 

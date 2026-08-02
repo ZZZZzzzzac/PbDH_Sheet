@@ -32,6 +32,18 @@ describe("Resource Composer", () => {
     expect(composeResource(module, { a: elf, b: elf })?.fields).toMatchObject({ 特性A: "敏锐", 特性B: "冥想", 卡牌显示方式: "image" });
   });
 
+  it("can inherit a same-entry presentation value while keeping the configured fallback", () => {
+    const presentationModule = {
+      ...module,
+      选择关系输出: { ...module.选择关系输出, 全部相同时来源字段: "卡牌显示方式" },
+    } as const;
+    const splitElf = { ...elf, fields: { ...elf.fields, 卡牌显示方式: "split" } };
+
+    expect(composeResource(presentationModule, { a: splitElf, b: splitElf })?.fields.卡牌显示方式).toBe("split");
+    expect(composeResource(presentationModule, { a: elf, b: elf })?.fields.卡牌显示方式).toBe("image");
+    expect(composeResource(presentationModule, { a: splitElf, b: human })?.fields.卡牌显示方式).toBe("text");
+  });
+
   it("does not produce partial output", () => {
     expect(composeResource(module, { a: elf })).toBeNull();
   });
