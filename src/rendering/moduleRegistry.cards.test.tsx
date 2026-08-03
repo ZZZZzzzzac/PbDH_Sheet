@@ -575,7 +575,7 @@ describe("Card rendering", () => {
 
   it("expands the Card Table surface to the height allocated by its container", () => {
     vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
-      return this.classList.contains("card-table-module") ? 1200 : 0;
+      return this.classList.contains("module-slot") ? 1200 : 0;
     });
     const systemPackage = createCardTablePackage();
     useRuntimeStore.setState({
@@ -586,5 +586,78 @@ describe("Card rendering", () => {
     const result = render(<SheetRenderer systemPackage={systemPackage} />);
 
     expect(result.container.querySelector(".card-table-surface")).toHaveStyle({ height: "1200px", minHeight: "1200px" });
+  });
+
+  it("lets the Player drag the bottom handle to expand and restore the Card Table height", () => {
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains("module-slot") ? 1200 : 0;
+    });
+    const systemPackage = createCardTablePackage();
+    useRuntimeStore.setState({
+      currentPackage: systemPackage,
+      characterData: createEmptyCharacterData(systemPackage),
+    });
+
+    const result = render(<SheetRenderer systemPackage={systemPackage} />);
+    const surface = result.container.querySelector(".card-table-surface");
+    const handle = screen.getByRole("button", { name: "调整卡牌桌面高度" });
+
+    fireEvent.pointerDown(handle, { pointerId: 7, clientY: 200 });
+    fireEvent.pointerMove(handle, { pointerId: 7, clientY: 440 });
+    fireEvent.pointerUp(handle, { pointerId: 7, clientY: 440 });
+
+    expect(useRuntimeStore.getState().cardTableSurfaceHeights["domain-card-table"]).toBe(1440);
+    expect(surface).toHaveStyle({ height: "1440px", minHeight: "1440px" });
+
+    fireEvent.doubleClick(handle);
+    expect(useRuntimeStore.getState().cardTableSurfaceHeights["domain-card-table"]).toBeUndefined();
+    expect(surface).toHaveStyle({ height: "1200px", minHeight: "1200px" });
+  });
+
+  it("supports keyboard Card Table resizing and restoring the automatic height", () => {
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains("module-slot") ? 1200 : 0;
+    });
+    const systemPackage = createCardTablePackage();
+    useRuntimeStore.setState({
+      currentPackage: systemPackage,
+      characterData: createEmptyCharacterData(systemPackage),
+    });
+
+    const result = render(<SheetRenderer systemPackage={systemPackage} />);
+    const handle = screen.getByRole("button", { name: "调整卡牌桌面高度" });
+
+    fireEvent.keyDown(handle, { key: "ArrowDown" });
+    expect(result.container.querySelector(".card-table-surface")).toHaveStyle({ height: "1280px" });
+
+    fireEvent.keyDown(handle, { key: "Home" });
+    expect(result.container.querySelector(".card-table-surface")).toHaveStyle({ height: "1200px" });
+  });
+
+  it("does not retain temporary print-mode Card Table heights", () => {
+    let allocatedHeight = 1200;
+    vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains("module-slot") ? allocatedHeight : 0;
+    });
+    const systemPackage = createCardTablePackage();
+    useRuntimeStore.setState({
+      currentPackage: systemPackage,
+      characterData: createEmptyCharacterData(systemPackage),
+    });
+
+    const result = render(<div className="app-shell"><SheetRenderer systemPackage={systemPackage} /></div>);
+    const appShell = result.container.querySelector(".app-shell")!;
+    const surface = result.container.querySelector(".card-table-surface");
+    expect(surface).toHaveStyle({ height: "1200px", minHeight: "1200px" });
+
+    allocatedHeight = 2400;
+    appShell.classList.add("print-mode");
+    fireEvent(window, new Event("resize"));
+    expect(surface).toHaveStyle({ height: "1200px", minHeight: "1200px" });
+
+    allocatedHeight = 1200;
+    appShell.classList.remove("print-mode");
+    fireEvent(window, new Event("resize"));
+    expect(surface).toHaveStyle({ height: "1200px", minHeight: "1200px" });
   });
 });

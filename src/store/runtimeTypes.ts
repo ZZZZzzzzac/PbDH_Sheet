@@ -189,6 +189,7 @@ export interface QuestionnaireSlice {
 
 export interface CardSlice {
   cardTableCardWidths: Record<string, number>;
+  cardTableSurfaceHeights: Record<string, number>;
   pendingCardTablePlacements: Record<string, string[]>;
   updateCardInstancePosition: (instanceId: string, xPct: number, yPct: number) => void;
   bringCardInstanceToFront: (instanceId: string) => void;
@@ -202,6 +203,7 @@ export interface CardSlice {
   restoreCardTableLayout: (tableModuleId: string, snapshot: CardLayoutSnapshotEntry[]) => void;
   placePendingCardInstances: (tableModuleId: string, layout: CardTableLayout) => void;
   setCardTableCardWidth: (tableModuleId: string, widthPx: number) => void;
+  setCardTableSurfaceHeight: (tableModuleId: string, heightPx: number | null) => void;
   deleteCardInstance: (instanceId: string) => void;
 }
 

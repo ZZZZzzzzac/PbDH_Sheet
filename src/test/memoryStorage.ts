@@ -12,6 +12,7 @@ export function createMemoryStorage(cachedPackage: unknown = null, initial?: {
   const characterSaves = new Map<string, { id: string; packageId: string; name: string; updatedAt: string; data: NonNullable<typeof savedData> }>();
   const activeSaveIds = new Map<string, string>();
   const skinPreferences = new Map<string, string>();
+  const cardTableSurfaceHeights = new Map<string, Record<string, number>>();
   let frameworkColorSchemePreference: "follow-skin" | "light" | "dark" = "follow-skin";
   let savedPackage = cachedPackage;
   let savedPackageAssets: Awaited<ReturnType<StorageService["loadCurrentPackageAssets"]>> = initial?.packageAssets ?? [];
@@ -92,6 +93,15 @@ export function createMemoryStorage(cachedPackage: unknown = null, initial?: {
     },
     setSystemPackageSkinPreference(packageId, skinId) {
       skinPreferences.set(packageId, skinId);
+    },
+    loadCardTableSurfaceHeights(packageId) {
+      return { ...(cardTableSurfaceHeights.get(packageId) ?? {}) };
+    },
+    setCardTableSurfaceHeight(packageId, tableModuleId, heightPx) {
+      const next = { ...(cardTableSurfaceHeights.get(packageId) ?? {}) };
+      if (heightPx === null) delete next[tableModuleId];
+      else next[tableModuleId] = Math.max(420, Math.round(heightPx));
+      cardTableSurfaceHeights.set(packageId, next);
     },
     loadFrameworkColorSchemePreference() {
       return frameworkColorSchemePreference;

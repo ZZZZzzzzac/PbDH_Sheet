@@ -1,5 +1,5 @@
 import { Layers } from "lucide-react";
-import { useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import {
   clampCardTablePosition,
@@ -31,6 +31,12 @@ interface CardMenuState {
   y: number;
 }
 
+interface HeightResizeState {
+  pointerId: number;
+  startY: number;
+  startHeightPx: number;
+}
+
 export function CardTableModule({ module, systemPackage }: CardTableModuleProps) {
   const tableRef = useRef<HTMLDivElement>(null);
   const longPressTimerRef = useRef<number | null>(null);
@@ -46,14 +52,19 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
   const placePendingCardInstances = useRuntimeStore((state) => state.placePendingCardInstances);
   const cardWidthPx = useRuntimeStore((state) => state.cardTableCardWidths[module.ID] ?? defaultCardWidthPx);
   const setCardTableCardWidth = useRuntimeStore((state) => state.setCardTableCardWidth);
+  const manualSurfaceHeightPx = useRuntimeStore((state) => state.cardTableSurfaceHeights[module.ID]);
+  const setCardTableSurfaceHeight = useRuntimeStore((state) => state.setCardTableSurfaceHeight);
   const visibleInstances = instances.filter((instance) => instance.tableModuleId === module.ID).sort(compareCards);
   const [surfaceWidthPx, setSurfaceWidthPx] = useState(0);
   const [surfaceViewportHeightPx, setSurfaceViewportHeightPx] = useState(0);
+  const [heightResizeState, setHeightResizeState] = useState<HeightResizeState | null>(null);
+  const manualSurfaceHeightRef = useRef(manualSurfaceHeightPx);
+  manualSurfaceHeightRef.current = manualSurfaceHeightPx;
   const tableLayout = createCardTableLayout({
     surfaceWidthPx: surfaceWidthPx || 800,
     cardCount: visibleInstances.length,
     preferredCardWidthPx: cardWidthPx,
-    minSurfaceHeightPx: surfaceViewportHeightPx,
+    minSurfaceHeightPx: Math.max(surfaceViewportHeightPx, manualSurfaceHeightPx ?? 0),
   });
   const menuInstance = cardMenu
     ? visibleInstances.find((instance) => instance.instanceId === cardMenu.instanceId)
@@ -65,11 +76,15 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
   useLayoutEffect(() => {
     const table = tableRef.current;
     if (!table) return;
+    const allocationElement = table.closest<HTMLElement>(".module-slot") ?? table.parentElement;
 
     const updateSurfaceSize = () => {
+      if (table.closest(".app-shell.print-mode")) return;
       const rect = table.getBoundingClientRect();
       setSurfaceWidthPx(Math.max(0, table.clientWidth));
-      setSurfaceViewportHeightPx(Math.max(420, window.innerHeight - rect.top - 16, table.parentElement?.clientHeight ?? 0));
+      if (manualSurfaceHeightRef.current !== undefined) return;
+      const allocatedHeight = allocationElement?.clientHeight ?? 0;
+      setSurfaceViewportHeightPx(Math.max(420, allocatedHeight || window.innerHeight - rect.top - 16));
     };
 
     updateSurfaceSize();
@@ -80,7 +95,7 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
 
     const observer = new ResizeObserver(updateSurfaceSize);
     observer.observe(table);
-    if (table.parentElement) observer.observe(table.parentElement);
+    if (allocationElement && allocationElement !== table) observer.observe(allocationElement);
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", updateSurfaceSize);
@@ -168,6 +183,46 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
     setCardMenu({ instanceId: instance.instanceId, x: event.clientX, y: event.clientY });
   };
 
+  const applyManualSurfaceHeight = (heightPx: number) => {
+    const automaticHeightPx = Math.max(420, surfaceViewportHeightPx);
+    setCardTableSurfaceHeight(module.ID, heightPx <= automaticHeightPx ? null : heightPx);
+  };
+
+  const beginHeightResize = (event: PointerEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    setHeightResizeState({
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startHeightPx: tableLayout.surfaceHeightPx,
+    });
+  };
+
+  const continueHeightResize = (event: PointerEvent<HTMLButtonElement>) => {
+    if (!heightResizeState || heightResizeState.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    event.stopPropagation();
+    applyManualSurfaceHeight(heightResizeState.startHeightPx + event.clientY - heightResizeState.startY);
+  };
+
+  const endHeightResize = (event: PointerEvent<HTMLButtonElement>) => {
+    if (heightResizeState?.pointerId !== event.pointerId) return;
+    event.stopPropagation();
+    setHeightResizeState(null);
+  };
+
+  const resizeHeightWithKeyboard = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "Home") {
+      event.preventDefault();
+      setCardTableSurfaceHeight(module.ID, null);
+      return;
+    }
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    applyManualSurfaceHeight(tableLayout.surfaceHeightPx + (event.key === "ArrowDown" ? 80 : -80));
+  };
+
   return (
     <section className="card-table-module" data-module-id={module.ID} data-module-type={module.类型} data-part="container">
       <div
@@ -212,6 +267,19 @@ export function CardTableModule({ module, systemPackage }: CardTableModuleProps)
             key={instance.instanceId}
           />
         ))}
+        <button
+          className="card-table-resize-handle"
+          data-part="resize-handle"
+          type="button"
+          aria-label="调整卡牌桌面高度"
+          title="上下拖动调整桌面高度；双击恢复自动高度"
+          onPointerDown={beginHeightResize}
+          onPointerMove={continueHeightResize}
+          onPointerUp={endHeightResize}
+          onPointerCancel={endHeightResize}
+          onDoubleClick={() => setCardTableSurfaceHeight(module.ID, null)}
+          onKeyDown={resizeHeightWithKeyboard}
+        />
         {cardMenu ? createPortal(
           <CardContextMenu
             instance={menuInstance}

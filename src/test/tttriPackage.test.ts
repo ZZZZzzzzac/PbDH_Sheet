@@ -145,6 +145,8 @@ describe("TTTRI System Package", () => {
     expect(loadedResult.package.pages.map((page) => page.ID)).not.toContain("character-cards");
     expect(loadedResult.package.shell?.htmlContent).toContain('class="tttri-sheet-pane"');
     expect(loadedResult.package.shell?.htmlContent).toContain('class="tttri-card-pane"');
+    expect(loadedResult.package.shell?.cssContent).toMatch(/\.tttri-sheet-pane\s*\{[^}]*min-height:\s*0/s);
+    expect(loadedResult.package.shell?.cssContent).not.toContain("min-height: 90rem");
   });
 
   it("uses the three Daggerheart gold Countable Resources", () => {

@@ -37,6 +37,18 @@ export function loadFrameworkColorSchemePreference(
   }
 }
 
+function loadCardTableSurfaceHeights(
+  environment: RuntimeEnvironment,
+  packageId: string,
+): Record<string, number> {
+  try {
+    return environment.dependencies.storage.loadCardTableSurfaceHeights(packageId);
+  } catch (error) {
+    console.error("loadCardTableSurfaceHeights failed", error);
+    return {};
+  }
+}
+
 export async function activatePackage(
   environment: RuntimeEnvironment,
   systemPackage: SystemPackage,
@@ -58,6 +70,7 @@ export async function activatePackage(
     const effectivePackage = applyEffectiveResourceCatalog(systemPackage, resourceCatalog);
     const loaded = await loadActiveCharacterForPackage(effectivePackage, environment.dependencies.storage);
     const skinPreference = resolveSkinPreference(environment, systemPackage);
+    const cardTableSurfaceHeights = loadCardTableSurfaceHeights(environment, systemPackage.manifest.ID);
 
     set({
       basePackage: systemPackage,
@@ -77,6 +90,7 @@ export async function activatePackage(
       characterSaves: loaded.characterSaves,
       activeCharacterSaveId: loaded.activeCharacterSaveId,
       ...emptyDerivedState(),
+      cardTableSurfaceHeights,
       ...rebuildDependencyRuntimeState(loaded.characterData, effectivePackage),
       packageIssues: issues,
       bootStatus: "ready",
@@ -193,6 +207,7 @@ export async function clearCachedPackageAndResetState(
     characterSaves: [],
     activeCharacterSaveId: null,
     ...emptyDerivedState(),
+    cardTableSurfaceHeights: {},
     packageIssues: [],
     bootStatus: "ready",
     packageLoadProgress: null,

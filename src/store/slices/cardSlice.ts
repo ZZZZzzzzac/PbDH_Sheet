@@ -22,6 +22,7 @@ import { scheduleAutosave } from "../workflows/autosave";
 export function createCardSlice(environment: RuntimeEnvironment): RuntimeSlice<CardSlice> {
   return (set, get) => ({
     cardTableCardWidths: {},
+    cardTableSurfaceHeights: {},
     pendingCardTablePlacements: {},
 
     updateCardInstancePosition(instanceId, xPct, yPct) {
@@ -100,6 +101,23 @@ export function createCardSlice(environment: RuntimeEnvironment): RuntimeSlice<C
           [tableModuleId]: clampCardWidth(widthPx),
         },
       }));
+    },
+
+    setCardTableSurfaceHeight(tableModuleId, heightPx) {
+      const packageId = get().currentPackage?.manifest.ID;
+      if (packageId) {
+        try {
+          environment.dependencies.storage.setCardTableSurfaceHeight(packageId, tableModuleId, heightPx);
+        } catch (error) {
+          console.error("setCardTableSurfaceHeight failed", error);
+        }
+      }
+      set((state) => {
+        const nextHeights = { ...state.cardTableSurfaceHeights };
+        if (heightPx === null) delete nextHeights[tableModuleId];
+        else nextHeights[tableModuleId] = Math.max(420, Math.round(heightPx));
+        return { cardTableSurfaceHeights: nextHeights };
+      });
     },
 
     deleteCardInstance(instanceId) {

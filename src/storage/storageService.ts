@@ -4,7 +4,7 @@ import type { SystemPackage } from "../domain/systemPackage";
 import type { ResourceExtension } from "../domain/resourceExtension";
 import type { RuntimePackageAsset } from "../loaders/assetResolver";
 import type { PackageDirectoryHandle } from "../loaders/packageVfs";
-import { currentCharacterKey, currentSystemPackageKey, characterSaveIdKeyPrefix, systemPackageSkinPreferenceKeyPrefix, frameworkColorSchemeKey } from "./storageKeys";
+import { cardTableSurfaceHeightsKeyPrefix, currentCharacterKey, currentSystemPackageKey, characterSaveIdKeyPrefix, systemPackageSkinPreferenceKeyPrefix, frameworkColorSchemeKey } from "./storageKeys";
 
 interface CharacterDataRecord {
   id: string;
@@ -64,6 +64,8 @@ export interface StorageService {
   setActiveCharacterSaveId(packageId: string, saveId: string): Promise<void>;
   loadSystemPackageSkinPreference(packageId: string): string | null;
   setSystemPackageSkinPreference(packageId: string, skinId: string): void;
+  loadCardTableSurfaceHeights(packageId: string): Record<string, number>;
+  setCardTableSurfaceHeight(packageId: string, tableModuleId: string, heightPx: number | null): void;
   loadFrameworkColorSchemePreference(): "follow-skin" | "light" | "dark";
   setFrameworkColorSchemePreference(preference: "follow-skin" | "light" | "dark"): void;
   listResourceExtensions(targetSystemPackageId: string): Promise<ResourceExtension[]>;
@@ -251,6 +253,29 @@ export const storageService: StorageService = {
 
   setSystemPackageSkinPreference(packageId: string, skinId: string): void {
     localStorage.setItem(`${systemPackageSkinPreferenceKeyPrefix}${packageId}`, skinId);
+  },
+
+  loadCardTableSurfaceHeights(packageId: string): Record<string, number> {
+    const raw = localStorage.getItem(`${cardTableSurfaceHeightsKeyPrefix}${packageId}`);
+    if (!raw) return {};
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+      return Object.fromEntries(Object.entries(parsed).filter((entry): entry is [string, number] => (
+        typeof entry[1] === "number" && Number.isFinite(entry[1]) && entry[1] >= 420
+      )));
+    } catch {
+      return {};
+    }
+  },
+
+  setCardTableSurfaceHeight(packageId: string, tableModuleId: string, heightPx: number | null): void {
+    const key = `${cardTableSurfaceHeightsKeyPrefix}${packageId}`;
+    const next = this.loadCardTableSurfaceHeights(packageId);
+    if (heightPx === null) delete next[tableModuleId];
+    else next[tableModuleId] = Math.max(420, Math.round(heightPx));
+    if (Object.keys(next).length === 0) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify(next));
   },
 
   loadFrameworkColorSchemePreference(): "follow-skin" | "light" | "dark" {

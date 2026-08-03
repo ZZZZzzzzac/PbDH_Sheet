@@ -37,6 +37,7 @@
 .print-mode .resource-picker-module,
 .print-mode .image-actions,
 .print-mode .card-table-actions,
+.print-mode .card-table-resize-handle,
 .print-mode .play-card-delete {
   display: none;
 }
@@ -216,6 +217,7 @@ body:has(.app-shell.print-mode) > .player-image-crop-backdrop {
   .image-actions,
   [data-module-type="imageField"] [data-part="remove-button"],
   .card-table-actions,
+  .card-table-resize-handle,
   .play-card-delete {
     display: none !important;
   }

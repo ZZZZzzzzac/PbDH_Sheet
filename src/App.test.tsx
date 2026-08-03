@@ -8,13 +8,11 @@ import { minimalSystemPackage } from "./test/fixtures";
 import { createCardTablePackage } from "./test/cardTablePackage";
 import type { SystemPackage } from "./domain/systemPackage";
 import presetSystemPackages from "virtual:preset-system-packages";
-
 function createEmptyStorage(): StorageService {
   const saves = new Map<string, Parameters<StorageService["saveCharacterSave"]>[0]>();
   const active = new Map<string, string>();
-  const skinPreferences = new Map<string, string>();
+  const skinPreferences = new Map<string, string>(), cardTableSurfaceHeights = new Map<string, Record<string, number>>();
   let frameworkColorSchemePreference: "follow-skin" | "light" | "dark" = "follow-skin";
-
   return {
     async loadCurrentSystemPackage() {
       return null;
@@ -75,6 +73,13 @@ function createEmptyStorage(): StorageService {
     },
     setSystemPackageSkinPreference(packageId, skinId) {
       skinPreferences.set(packageId, skinId);
+    },
+    loadCardTableSurfaceHeights: (packageId) => ({ ...(cardTableSurfaceHeights.get(packageId) ?? {}) }),
+    setCardTableSurfaceHeight(packageId, tableModuleId, heightPx) {
+      const next = { ...(cardTableSurfaceHeights.get(packageId) ?? {}) };
+      if (heightPx === null) delete next[tableModuleId];
+      else next[tableModuleId] = heightPx;
+      cardTableSurfaceHeights.set(packageId, next);
     },
     loadFrameworkColorSchemePreference() {
       return frameworkColorSchemePreference;

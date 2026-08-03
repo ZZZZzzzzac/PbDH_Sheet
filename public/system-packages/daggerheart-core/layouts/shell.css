@@ -10,7 +10,7 @@
   flex: 0 1 54rem;
   width: min(54rem, 100%);
   min-width: 38rem;
-  min-height: 90rem;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid var(--dh-shell-line);
   background: var(--dh-shell-surface);

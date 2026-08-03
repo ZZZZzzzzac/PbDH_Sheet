@@ -37,6 +37,8 @@ describe("Daggerheart core System Package", () => {
       ]),
     );
     expect(result.package.skins?.length).toBe(2);
+    expect(result.package.shell?.cssContent).toMatch(/\.daggerheart-sheet-pane\s*\{[^}]*min-height:\s*0/s);
+    expect(result.package.shell?.cssContent).not.toContain("min-height: 90rem");
     const kimiSkin = result.package.skins?.find((skin) => skin.ID === "skin-KimiK3");
     expect(kimiSkin?.layoutOverrides?.shell?.htmlContent).toContain("card-table-banner");
     expect(kimiSkin?.layoutOverrides?.pages.map((page) => page.ID)).toEqual([

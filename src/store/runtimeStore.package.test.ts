@@ -40,6 +40,7 @@ describe("runtime store", () => {
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
       cardTableCardWidths: {},
+      cardTableSurfaceHeights: {},
       validationIssues: [],
       validationStatus: "idle",
       bootStatus: "idle",
@@ -189,6 +190,24 @@ describe("runtime store", () => {
     expect(useRuntimeStore.getState().characterData).toBe(before);
   });
 
+  it("persists Card Table surface heights per System Package across initialization", async () => {
+    await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
+    const before = useRuntimeStore.getState().characterData;
+
+    act(() => useRuntimeStore.getState().setCardTableSurfaceHeight("domain-card-table", 1440));
+
+    expect(memoryStorage.loadCardTableSurfaceHeights("demo-minimal")).toEqual({ "domain-card-table": 1440 });
+    expect(useRuntimeStore.getState().characterData).toBe(before);
+
+    useRuntimeStore.setState({ cardTableSurfaceHeights: {}, bootStatus: "idle" });
+    await useRuntimeStore.getState().initialize();
+
+    expect(useRuntimeStore.getState().cardTableSurfaceHeights).toEqual({ "domain-card-table": 1440 });
+
+    act(() => useRuntimeStore.getState().setCardTableSurfaceHeight("domain-card-table", null));
+    expect(memoryStorage.loadCardTableSurfaceHeights("demo-minimal")).toEqual({});
+  });
+
   it("restores cached System Package on initialize", async () => {
     await act(async () => {
       await useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob());
@@ -204,6 +223,7 @@ describe("runtime store", () => {
       pageVisibility: {},
       resourcePickerDefaultQueries: {},
       cardTableCardWidths: {},
+      cardTableSurfaceHeights: {},
       validationIssues: [],
       validationStatus: "idle",
       bootStatus: "idle",
