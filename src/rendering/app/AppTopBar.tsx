@@ -5,6 +5,7 @@ import type { PresetSystemPackage } from "../../loaders/presetSystemPackageLoade
 import type { CharacterSaveSummary } from "../../storage/storageService";
 import type { BootStatus, FrameworkColorSchemePreference, ValidationStatus } from "../../store/runtimeTypes";
 import type { OutputKind } from "./useSheetOutput";
+import { normalizeCharacterFormatName } from "./outputFileName";
 
 interface AppTopBarProps {
   characterFileInputRef: RefObject<HTMLInputElement | null>;
@@ -258,7 +259,7 @@ export function AppTopBar(props: AppTopBarProps) {
 }
 
 function characterAdapterExportLabel(name: string): string {
-  const formatName = name.replace(/\s+format$/iu, "");
+  const formatName = normalizeCharacterFormatName(name);
   const normalizedName = /^dhsheet$/iu.test(formatName)
     ? "dhsheet"
     : /^zzz$/iu.test(formatName)

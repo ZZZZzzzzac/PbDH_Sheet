@@ -4,6 +4,8 @@
 
 模块值保存 Player Image 引用，实际 data URL 位于 Character Data 的 `playerImages`。包作者应提供有意义的标签和替代文本，并在 Layout 中为不同图片比例设置稳定容器。System Package 本身不得用 Character Data 式 base64 存放批量素材。
 
+Player 选择或更换图片后，Base Framework 会先打开自由比例裁剪界面；裁剪区域可拖动、四角可调整，滚轮可缩放。只有确认裁剪后，处理过的 WebP 才会替换当前 Player Image 并进入 autosave；取消或处理失败不会改变现有值。首版不要求 Author 声明固定比例，也不在 Character Data 中保留原图或裁剪编辑状态。
+
 ---
 
 <!-- BEGIN GENERATED CONTRACT -->

@@ -6,6 +6,10 @@
 - [ ] character data中文化
 - [x] 文档优化
 - [x] guide居中
+- [x] imageField 裁剪缩放功能
+- [x] 打印时头像右上的(x)隐藏
+- [ ] 资源库带图/卡牌形式
+- [x] 导出文件名默认以存档名为主
 
 # daggerheart-core
 - [ ] 兼职优化

@@ -142,6 +142,10 @@ describe("HTML snapshot export/import", () => {
     expect(printCss).toMatch(/\.long-screenshot-exit\s*\{[^}]*position:\s*fixed/s);
     expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\.long-screenshot-exit[^{]*\{[^}]*display:\s*none\s*!important/s);
     expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\.page-navigation,[\s\S]*?\{[^}]*display:\s*none\s*!important/s);
+    expect(printCss).toMatch(/\.print-mode \[data-module-type="imageField"\] \[data-part="remove-button"\][\s\S]*?\{[^}]*display:\s*none/s);
+    expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\[data-module-type="imageField"\] \[data-part="remove-button"\],[\s\S]*?\{[^}]*display:\s*none\s*!important/s);
+    expect(printCss).toMatch(/body:has\(\.app-shell\.print-mode\) > \.player-image-crop-backdrop\s*\{[^}]*display:\s*none\s*!important/s);
+    expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\.player-image-crop-backdrop,[\s\S]*?\{[^}]*display:\s*none\s*!important/s);
     expect(printCss).toMatch(/\.print-mode \.sheet-page,\s*\.print-mode \[data-print-page="true"\]\s*\{[^}]*box-sizing:\s*border-box[^}]*width:\s*210mm[^}]*height:\s*297mm[^}]*padding:\s*0/s);
     expect(printCss).toMatch(/@media print\s*\{[\s\S]*?\.sheet-page,\s*\[data-print-page="true"\]\s*\{[^}]*padding:\s*0\s*!important/s);
     expect(printCss).toMatch(/\.print-mode \[data-print-page="true"\]:has\(\[data-module-type="cardTable"\]\)\s*\{[^}]*padding:\s*var\(--card-table-print-page-padding, 3mm\)\s*!important/s);

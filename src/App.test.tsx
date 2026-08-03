@@ -152,9 +152,13 @@ describe("App Validation Checks", () => {
   let anchorClickSpy: ReturnType<typeof vi.spyOn>;
   let createObjectUrlSpy: ReturnType<typeof vi.spyOn>;
   let revokeObjectUrlSpy: ReturnType<typeof vi.spyOn>;
+  let downloadedFileNames: string[];
 
   beforeEach(() => {
-    anchorClickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    downloadedFileNames = [];
+    anchorClickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      downloadedFileNames.push(this.download);
+    });
     createObjectUrlSpy = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:test");
     revokeObjectUrlSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
     configureRuntimeDependencies({
@@ -423,8 +427,31 @@ describe("App Validation Checks", () => {
     await user.click(await screen.findByRole("button", { name: "继续输出" }));
 
     expect(anchorClickSpy).toHaveBeenCalledTimes(1);
+    expect(downloadedFileNames).toEqual(["未命名角色.json"]);
     expect(createObjectUrlSpy).toHaveBeenCalled();
     expect(revokeObjectUrlSpy).toHaveBeenCalledWith("blob:test");
+  });
+
+  it("adds the readable target format to external export file names", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await act(async () => useRuntimeStore.getState().uploadSystemPackageFromFile(new Blob()));
+    act(() => {
+      useRuntimeStore.setState({
+        currentPackage: {
+          ...useRuntimeStore.getState().currentPackage!,
+          characterFormatAdapters: [{
+            ID: "zzz-character-json", 名称: "ZZZ Format", 载体: [], 导入脚本: "zzz-import.js",
+            importScriptContent: "module.exports=()=>({values:{}})", 导出脚本: "zzz-export.js",
+            exportScriptContent: "module.exports=()=>({document:{}})", 导出文件后缀: ".json",
+          }],
+        },
+      });
+    });
+
+    await user.click(screen.getByRole("button", { name: "导出为ZZZ格式" }));
+
+    await waitFor(() => expect(downloadedFileNames).toEqual(["未命名角色.ZZZ.json"]));
   });
 
   it("keeps every printable page rendered until the browser finishes printing", async () => {
@@ -440,9 +467,11 @@ describe("App Validation Checks", () => {
       storage: createEmptyStorage(),
       runValidationChecks: async () => [],
     });
+    const titleBeforePrint = document.title;
     const printSpy = vi.fn(() => {
       expect(document.querySelector(".app-shell")).toHaveClass("print-mode");
       expect(screen.queryByLabelText("导出预览")).not.toBeInTheDocument();
+      expect(document.title).toBe("未命名角色");
     });
     Object.defineProperty(window, "print", { value: printSpy, configurable: true });
     const user = userEvent.setup();
@@ -463,6 +492,7 @@ describe("App Validation Checks", () => {
 
     await waitFor(() => expect(document.querySelector(".app-shell")).not.toHaveClass("print-mode"));
     expect(document.querySelectorAll(".sheet-page")).toHaveLength(1);
+    expect(document.title).toBe(titleBeforePrint);
   });
 
   it("keeps every A4 page visible for manual long screenshots until the Player exits", async () => {

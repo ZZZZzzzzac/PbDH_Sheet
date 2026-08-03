@@ -120,7 +120,7 @@ describe("TTTRI character consistency validation", () => {
       "advancement-tier-2": { "hp-1": true, "stress-1": true, evasion: true },
       hp: { current: 0, max: numberField(selectedClass, "生命点") + 1 },
       stress: { current: 0, max: 7 },
-      evasion: String(numberField(selectedClass, "闪避值") + 1),
+      evasion: String(numberField(selectedClass, "闪避值") + 2),
       "major-threshold": String(numberField(selectedArmor, "重度阈值") + 2),
       "severe-threshold": String(numberField(selectedArmor, "严重阈值") + 2),
     });
@@ -128,6 +128,33 @@ describe("TTTRI character consistency validation", () => {
 
     const invalid = await validate({ stress: { current: 0, max: 5 } });
     expect(issueCodes(invalid)).toContain("STRESS_MAX_MISMATCH");
+  });
+
+  it.each([
+    { armor: "基础轻型制式装备", evasion: 1, traits: [2, 1, 1, 0, 0, -1] },
+    { armor: "基础加重型制式装备", evasion: -2, traits: [1, 1, 1, 0, 0, -1] },
+    { armor: "贵族风貌套装", evasion: 0, traits: [2, 1, 1, 0, 1, -1] },
+    { armor: "身负重任套装", evasion: -1, traits: [1, 0, 0, -1, -1, -2] },
+  ])("applies the fixed evasion and trait modifiers from $armor", async ({ armor, evasion, traits }) => {
+    const selectedClass = entryByName("classes", "辅助");
+    const selectedArmor = entryByName("armor", armor);
+    const issues = await validate({
+      "armor-summary": armorSummary(selectedArmor),
+      evasion: String(numberField(selectedClass, "闪避值") + evasion),
+      agility: String(traits[0]),
+      strength: String(traits[1]),
+      finesse: String(traits[2]),
+      instinct: String(traits[3]),
+      presence: String(traits[4]),
+      knowledge: String(traits[5]),
+      "armor-value": selectedArmor.fields["护甲值"],
+      "armor-slots": { current: 0, max: numberField(selectedArmor, "护甲值") },
+      "major-threshold": String(numberField(selectedArmor, "重度阈值") + 1),
+      "severe-threshold": String(numberField(selectedArmor, "严重阈值") + 1),
+    });
+
+    expect(issueCodes(issues)).not.toContain("EVASION_MISMATCH");
+    expect(issueCodes(issues)).not.toContain("TRAIT_DISTRIBUTION_MISMATCH");
   });
 
   it("requires an armor value", async () => {
@@ -151,7 +178,7 @@ describe("TTTRI character consistency validation", () => {
       "subclass-stage": stage,
       "advancement-tier-4": stage.startsWith("精英") ? { "subclass-elite": true } : {},
       hp: { current: 0, max: numberField(selectedClass, "生命点") + hp },
-      evasion: String(numberField(selectedClass, "闪避值") + evasion),
+      evasion: String(numberField(selectedClass, "闪避值") + evasion + 1),
       "armor-value": String(numberField(selectedArmor, "护甲值") + armor),
       "armor-slots": { current: 0, max: numberField(selectedArmor, "护甲值") + armor },
       "major-threshold": String(numberField(selectedArmor, "重度阈值") + level + heavy),
@@ -217,7 +244,7 @@ function baseValues(): Record<string, unknown> {
     "advancement-tier-4": {},
     hp: { current: 0, max: numberField(selectedClass, "生命点") },
     stress: { current: 0, max: 6 },
-    evasion: selectedClass.fields["闪避值"],
+    evasion: String(numberField(selectedClass, "闪避值") + 1),
     "armor-summary": armorSummary(selectedArmor),
     "armor-value": selectedArmor.fields["护甲值"],
     "armor-slots": { current: 0, max: numberField(selectedArmor, "护甲值") },

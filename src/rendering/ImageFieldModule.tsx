@@ -1,8 +1,11 @@
 import { X } from "lucide-react";
-import { useRef, type ChangeEvent } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import type { PlayerImageValue } from "../domain/characterData";
 import type { ImageFieldModule as ImageFieldModuleConfig } from "../domain/systemPackage";
 import { useRuntimeStore } from "../store/runtimeStore";
+import { PlayerImageCropDialog } from "./PlayerImageCropDialog";
+import type { PlayerImageCropSelection } from "./playerImageCrop";
+import { cropPlayerImage } from "./playerImageProcessor";
 
 interface ImageFieldModuleProps {
   module: ImageFieldModuleConfig;
@@ -10,6 +13,9 @@ interface ImageFieldModuleProps {
 
 export function ImageFieldModule({ module }: ImageFieldModuleProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [processingError, setProcessingError] = useState<string | null>(null);
   const value = useRuntimeStore((state) => state.characterData?.character.values[module.ID]);
   const playerImages = useRuntimeStore((state) => state.characterData?.playerImages ?? {});
   const uploadPlayerImage = useRuntimeStore((state) => state.uploadPlayerImage);
@@ -23,8 +29,23 @@ export function ImageFieldModule({ module }: ImageFieldModuleProps) {
     if (!file) {
       return;
     }
-    await uploadPlayerImage(module.ID, file);
+    setProcessingError(null);
+    setPendingFile(file);
     event.target.value = "";
+  };
+
+  const applyCrop = async (selection: PlayerImageCropSelection) => {
+    if (!pendingFile) return;
+    setProcessing(true);
+    setProcessingError(null);
+    try {
+      await uploadPlayerImage(module.ID, await cropPlayerImage(pendingFile, selection));
+      setPendingFile(null);
+    } catch (error) {
+      setProcessingError(error instanceof Error ? error.message : "图片处理失败，请重试。");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return (
@@ -55,10 +76,20 @@ export function ImageFieldModule({ module }: ImageFieldModuleProps) {
         className="visually-hidden"
         data-part="input"
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
         aria-label={`${module.标签}图片文件`}
         onChange={handleFileChange}
       />
+      {pendingFile ? (
+        <PlayerImageCropDialog
+          file={pendingFile}
+          label={module.标签}
+          working={processing}
+          processingError={processingError}
+          onCancel={() => { setPendingFile(null); setProcessingError(null); }}
+          onConfirm={(selection) => void applyCrop(selection)}
+        />
+      ) : null}
     </figure>
   );
 }

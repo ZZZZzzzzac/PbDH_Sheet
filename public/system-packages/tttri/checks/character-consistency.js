@@ -130,12 +130,14 @@ function checkTraits(issues, context) {
   }
 
   const upgradeCounts = context.advancementStates.map((state) => countSelectedPrefix(state, "traits-"));
-  if (upgradeCounts.some((count) => count > 3) || !hasLegalTraitAllocation(actual, upgradeCounts)) {
+  const armorTraits = armorModifiers(context.armorEntry).traits;
+  const traitsBeforeArmor = actual.map((value, index) => value - armorTraits[index]);
+  if (upgradeCounts.some((count) => count > 3) || !hasLegalTraitAllocation(traitsBeforeArmor, upgradeCounts)) {
     warn(
       issues,
       "TRAIT_DISTRIBUTION_MISMATCH",
       "character.values",
-      "角色属性无法由初始 2、1、1、0、0、-1 与已标记的属性升级合法产生；同一位阶内同一属性最多提升一次。",
+      "角色属性无法由初始 2、1、1、0、0、-1、已标记的属性升级与当前护甲的固定修正合法产生；同一位阶内同一属性最多提升一次。",
     );
   }
 }
@@ -269,6 +271,7 @@ function hasLegalDomainCardAllocation(cards, sources, allowedDomains) {
 
 function checkDerivedValues(issues, context) {
   const modifiers = subclassModifiers(context.subclassEntry);
+  const armorMods = armorModifiers(context.armorEntry);
   const hpBase = integer(field(context.classEntry, "生命点"));
   const evasionBase = integer(field(context.classEntry, "闪避值"));
   const armorBase = integer(field(context.armorEntry, "护甲值"));
@@ -281,7 +284,7 @@ function checkDerivedValues(issues, context) {
   const expectedStress = 6 + countSelected(context.advancementStates, "stress-");
   const expectedEvasion = evasionBase === undefined
     ? undefined
-    : evasionBase + context.advancementStates.filter((state) => selected(state, "evasion")).length + modifiers.evasion;
+    : evasionBase + context.advancementStates.filter((state) => selected(state, "evasion")).length + modifiers.evasion + armorMods.evasion;
   const expectedArmor = armorBase === undefined ? undefined : armorBase + modifiers.armor;
 
   compareCountableMax(issues, context.values.hp, expectedHp, {
@@ -320,6 +323,22 @@ function checkDerivedValues(issues, context) {
       `当前阈值应为 ${expectedHeavy} / ${expectedSevere}（护甲基础阈值 + 等级及永久干员修正），当前为 ${actualText}。`,
     );
   }
+}
+
+function armorModifiers(entry) {
+  const description = field(entry, "描述");
+  const traits = Array(TRAITS.length).fill(0);
+  const sharedTraitMatch = description.match(/所有角色属性(?:以及|与|和)?闪避值\s*([+-]\d+)/);
+  if (sharedTraitMatch) traits.fill(Number(sharedTraitMatch[1]));
+
+  const traitLabels = ["敏捷", "力量", "灵巧", "本能", "风度", "知识"];
+  traitLabels.forEach((label, index) => {
+    const match = description.match(new RegExp(`${label}\\s*([+-]\\d+)`));
+    if (match) traits[index] += Number(match[1]);
+  });
+
+  const evasionMatch = description.match(/闪避值\s*([+-]\d+)/);
+  return { evasion: evasionMatch ? Number(evasionMatch[1]) : 0, traits };
 }
 
 function subclassModifiers(entry) {

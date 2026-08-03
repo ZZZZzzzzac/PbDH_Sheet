@@ -7,6 +7,7 @@ import { printablePages } from "../pagePresentation";
 import { waitForTextFits } from "../textFit";
 import type { PendingCharacterExport } from "../CharacterExportDialog";
 import { useRuntimeStore } from "../../store/runtimeStore";
+import { buildOutputFileName, sanitizeFileName } from "./outputFileName";
 
 export type OutputKind = "json" | "html" | "print" | "long-screenshot";
 type PreparedOutputMode = "print" | "long-screenshot";
@@ -33,11 +34,6 @@ function downloadText(text: string, fileName: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
-function sanitizeFileName(name: string): string {
-  const safe = name.trim().replace(/[<>:"/\\|?*]/g, "_");
-  return safe || "character";
-}
-
 function nextFrame() {
   return new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 }
@@ -61,11 +57,24 @@ export function useSheetOutput({
   const [preparedOutputMode, setPreparedOutputMode] = useState<PreparedOutputMode | null>(null);
   const [pendingExternalExport, setPendingExternalExport] = useState<PendingCharacterExport | null>(null);
   const cardLayoutSnapshotRef = useRef<Array<{ tableModuleId: string; cards: CardLayoutSnapshotEntry[] }> | null>(null);
+  const titleBeforePrintRef = useRef<string | null>(null);
+
+  const restoreDocumentTitle = () => {
+    if (titleBeforePrintRef.current === null) return;
+    document.title = titleBeforePrintRef.current;
+    titleBeforePrintRef.current = null;
+  };
 
   useEffect(() => {
-    const finishPrinting = () => setPreparedOutputMode((current) => current === "print" ? null : current);
+    const finishPrinting = () => {
+      restoreDocumentTitle();
+      setPreparedOutputMode((current) => current === "print" ? null : current);
+    };
     window.addEventListener("afterprint", finishPrinting);
-    return () => window.removeEventListener("afterprint", finishPrinting);
+    return () => {
+      window.removeEventListener("afterprint", finishPrinting);
+      restoreDocumentTitle();
+    };
   }, []);
 
   useEffect(() => {
@@ -130,7 +139,7 @@ export function useSheetOutput({
     const baseName = sanitizeFileName(activeCharacterSaveName);
 
     if (kind === "json") {
-      downloadText(exportCharacterData(characterData), `${baseName}.json`, "application/json");
+      downloadText(exportCharacterData(characterData), buildOutputFileName(activeCharacterSaveName, ".json"), "application/json");
       return;
     }
 
@@ -140,7 +149,7 @@ export function useSheetOutput({
       const { buildReadonlyHtmlSnapshot, waitForVisibleImages } = await import("../../export/output");
       try {
         await waitForVisibleImages(printableRoot ?? document);
-        downloadText(await buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined, activeCharacterSaveName), `${baseName}.html`, "text/html");
+        downloadText(await buildReadonlyHtmlSnapshot(characterData, printableRoot ?? undefined, activeCharacterSaveName), buildOutputFileName(activeCharacterSaveName, ".html"), "text/html");
       } finally {
         setPreparedOutputMode(null);
       }
@@ -156,8 +165,11 @@ export function useSheetOutput({
     try {
       const { waitForVisibleImages } = await import("../../export/output");
       await waitForVisibleImages(printableRoot);
+      titleBeforePrintRef.current ??= document.title;
+      document.title = baseName;
       window.print();
     } catch (error) {
+      restoreDocumentTitle();
       setPreparedOutputMode(null);
       throw error;
     }
@@ -193,7 +205,7 @@ export function useSheetOutput({
       return;
     }
     const { report } = result;
-    const fileName = `${sanitizeFileName(activeCharacterSaveName)}.${adapter.ID}.json`;
+    const fileName = buildOutputFileName(activeCharacterSaveName, adapter.导出文件后缀, adapter.名称);
     if (report.skippedFields + report.skippedCards + report.skippedImages > 0) {
       setPendingExternalExport({ conversion: result, fileName });
       return;
