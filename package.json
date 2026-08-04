@@ -9,7 +9,7 @@
     "test": "npm run test:health && npm run check:system-package-contract && vitest run",
     "test:health": "node --test scripts/test-health.test.mjs && node scripts/test-health.mjs",
     "test:release": "node --test scripts/release-tools.test.mjs",
-    "test:e2e": "playwright test",
+    "test:e2e": "npm run build && playwright test",
     "generate:system-package-contract": "tsx scripts/generate-system-package-contract.ts",
     "check:system-package-contract": "tsx scripts/generate-system-package-contract.ts --check",
     "check:bundle-budget": "node scripts/check-bundle-budget.mjs",

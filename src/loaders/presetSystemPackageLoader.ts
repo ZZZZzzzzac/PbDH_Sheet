@@ -3,6 +3,9 @@ import { inferMimeType } from "../utils";
 import { createVirtualFileSystem, normalizePackagePath, packageArchiveLimits } from "./packageVfs";
 import { loadSystemPackageFromVfs, type PackageLoadResult } from "./systemPackageLoader";
 
+// 单个预制包文件的抓取超时：连接挂死时不再无限等待，超时后按加载失败处理。
+const presetFetchTimeoutMs = 15_000;
+
 export interface PresetSystemPackage {
   id: string;
   name: string;
@@ -51,13 +54,15 @@ export async function loadPresetSystemPackage(
   let completed = 0;
   let nextIndex = 0;
   let failure: PackageIssue | undefined;
-  const workers = Array.from({ length: Math.min(8, metadataPaths.length) }, async () => {
+  const workers = Array.from({ length: Math.min(4, metadataPaths.length) }, async () => {
     while (!failure) {
       const index = nextIndex++;
       if (index >= metadataPaths.length) return;
       const pathResult = { ok: true as const, path: metadataPaths[index] };
       try {
-        const response = await fetchFile(presetFileUrl(baseUrl, preset.directory, pathResult.path, preset.releaseVersion));
+        const response = await fetchFile(presetFileUrl(baseUrl, preset.directory, pathResult.path, preset.releaseVersion), {
+          signal: AbortSignal.timeout(presetFetchTimeoutMs),
+        });
         if (!response.ok) {
           failure = presetFetchIssue(preset, pathResult.path, `HTTP ${response.status}`);
           return;
@@ -101,7 +106,9 @@ async function loadPresetInventory(
   fetchFile: typeof fetch,
 ): Promise<{ ok: true; files: string[] } | { ok: false; result: PackageLoadResult }> {
   try {
-    const response = await fetchFile(presetFileUrl(baseUrl, preset.directory, preset.inventoryPath, preset.releaseVersion));
+    const response = await fetchFile(presetFileUrl(baseUrl, preset.directory, preset.inventoryPath, preset.releaseVersion), {
+      signal: AbortSignal.timeout(presetFetchTimeoutMs),
+    });
     if (!response.ok) {
       return { ok: false, result: { ok: false, issues: [presetFetchIssue(preset, preset.inventoryPath, `HTTP ${response.status}`)] } };
     }

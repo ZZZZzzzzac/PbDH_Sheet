@@ -36,9 +36,9 @@ describe("preset System Package loader", () => {
     expect(result.ok, JSON.stringify(result.issues)).toBe(true);
     if (!result.ok) return;
     expect(result.package.manifest).toMatchObject({ ID: preset.id, 名称: preset.name, 版本: preset.version });
-    expect(fetchFile).toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/.pbdh-files.json?v=2.0.1");
-    expect(fetchFile).toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/manifest.json?v=2.0.1");
-    expect(fetchFile).not.toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/assets/cards/hidden.webp?v=2.0.1");
+    expect(fetchFile).toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/.pbdh-files.json?v=2.0.1", expect.anything());
+    expect(fetchFile).toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/manifest.json?v=2.0.1", expect.anything());
+    expect(fetchFile).not.toHaveBeenCalledWith("/pbdh/system-packages/preset%20test/assets/cards/hidden.webp?v=2.0.1", expect.anything());
     expect(result.packageAssets).toEqual(expect.arrayContaining([
       expect.objectContaining({
         路径: "assets/cards/hidden.webp",

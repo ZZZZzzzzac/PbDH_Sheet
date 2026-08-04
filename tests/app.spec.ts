@@ -180,6 +180,8 @@ test("persists demo text and Player images in a real browser", async ({ page }, 
   await page.getByRole("button", { name: "上传Player 图片" }).click();
   const imageChooser = await imageChooserPromise;
   await imageChooser.setFiles(avatarPath);
+  await expect(page.getByRole("dialog", { name: "裁剪Player 图片" })).toBeVisible();
+  await page.getByRole("button", { name: "应用裁剪" }).click();
   await expect(page.getByAltText("Player 上传的角色头像")).toBeVisible();
   await waitForAutosave(page, "portrait", "player-image");
 
@@ -1161,4 +1163,4 @@ async function walkPackageFiles(directory: string): Promise<string[]> {
 }
 
 const tinyPngBase64 =
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=";
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
