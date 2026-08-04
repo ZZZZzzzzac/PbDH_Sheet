@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, Check, Filter, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import {
   queryResourceLibraryEntries,
   summarizeResourceEntry,
@@ -9,7 +9,22 @@ import {
   type ResourceLibraryField,
   type ResourceLibraryQuery,
 } from "../domain/resourceLibrary";
+import { useRuntimeStore } from "../store/runtimeStore";
 import { RestrictedMarkdown } from "./RestrictedMarkdown";
+
+const cardArtPreviewDelayMs = 150;
+const cardArtPreviewGap = 12;
+const cardArtPreviewMargin = 12;
+const cardArtPreviewMaxWidth = 320;
+const cardArtPreviewMaxHeightRatio = 0.7;
+
+type CardArtPreview = {
+  entryId: string;
+  url: string;
+  alt: string;
+  anchor: Pick<DOMRect, "top" | "bottom"> & { pointerX: number };
+  layout?: { left: number; top: number; width: number; height: number };
+};
 
 interface ResourceLibraryBrowserProps {
   library: ResourceLibrary;
@@ -45,18 +60,25 @@ export function ResourceLibraryBrowser({
   const [keywords, setKeywords] = useState(defaultQuery?.keywords ?? "");
   const [openFilterField, setOpenFilterField] = useState<string | null>(null);
   const [draftSelectedIds, setDraftSelectedIds] = useState(selectedIds);
+  const [cardArtPreview, setCardArtPreview] = useState<CardArtPreview | null>(null);
+  const cardArtPreviewTimer = useRef<number | null>(null);
+  const packageAssetUrls = useRuntimeStore((state) => state.packageAssetUrls);
   const browserFields = fields ?? library.fields;
   const tableFields = browserFields.filter((field) => field.visible);
   const tableColumnFields = normalizeTableColumnWidths(tableFields, library.entries);
   const rows = useMemo(() => queryResourceLibraryEntries(library, { filters, sort, keywords }, browserFields), [browserFields, filters, keywords, library, sort]);
 
   useEffect(() => {
+    clearCardArtPreviewTimer();
+    setCardArtPreview(null);
     setFilters(defaultQuery?.filters ?? {});
     setSort(normalizeSort(defaultQuery?.sort));
     setKeywords(defaultQuery?.keywords ?? "");
     setOpenFilterField(null);
     setDraftSelectedIds(selectedIds);
   }, [library.ID]);
+
+  useEffect(() => () => clearCardArtPreviewTimer(), []);
 
   useEffect(() => {
     onQueryChange?.({ filters, sort, keywords });
@@ -108,6 +130,44 @@ export function ResourceLibraryBrowser({
   const cycleSort = (field: string) => {
     setSort((current) => current?.field !== field ? { field, direction: "asc" } : current.direction === "asc" ? { field, direction: "desc" } : undefined);
   };
+
+  const openCardArtPreview = (event: ReactPointerEvent<HTMLTableRowElement>, entry: ResourceLibraryEntry) => {
+    if (event.pointerType !== "mouse" || !window.matchMedia?.("(hover: hover) and (pointer: fine)").matches) return;
+    const cardArtRef = entry.fields.卡图?.trim();
+    const url = cardArtRef ? packageAssetUrls[cardArtRef] : undefined;
+    if (!url) return;
+
+    clearCardArtPreviewTimer();
+    const rowRect = event.currentTarget.getBoundingClientRect();
+    const pointerX = event.clientX;
+    cardArtPreviewTimer.current = window.setTimeout(() => {
+      cardArtPreviewTimer.current = null;
+      setCardArtPreview({
+        entryId: entry.ID,
+        url,
+        alt: `${summarizeResourceEntry(entry)}卡图预览`,
+        anchor: { top: rowRect.top, bottom: rowRect.bottom, pointerX },
+      });
+    }, cardArtPreviewDelayMs);
+  };
+
+  const closeCardArtPreview = () => {
+    clearCardArtPreviewTimer();
+    setCardArtPreview(null);
+  };
+
+  const finishCardArtPreview = (entryId: string, image: HTMLImageElement) => {
+    setCardArtPreview((current) => current?.entryId === entryId ? {
+      ...current,
+      layout: layoutCardArtPreview(current.anchor, image.naturalWidth, image.naturalHeight, window.innerWidth, window.innerHeight),
+    } : current);
+  };
+
+  function clearCardArtPreviewTimer() {
+    if (cardArtPreviewTimer.current === null) return;
+    window.clearTimeout(cardArtPreviewTimer.current);
+    cardArtPreviewTimer.current = null;
+  }
 
   return (
     <div className="resource-dialog-backdrop" data-output-exclude="true">
@@ -164,6 +224,8 @@ export function ResourceLibraryBrowser({
                     className={draftSelectedIds.includes(entry.ID) ? "selected-row" : undefined}
                     key={entry.ID}
                     onClick={() => handleRowSelect(entry)}
+                    onPointerEnter={(event) => openCardArtPreview(event, entry)}
+                    onPointerLeave={closeCardArtPreview}
                     onKeyDown={(event) => {
                       if (event.key !== "Enter" && event.key !== " ") {
                         return;
@@ -186,6 +248,17 @@ export function ResourceLibraryBrowser({
           </div>
         </div>
 
+        {cardArtPreview ? (
+          <img
+            alt={cardArtPreview.alt}
+            className={`resource-card-preview${cardArtPreview.layout ? " is-ready" : ""}`}
+            src={cardArtPreview.url}
+            style={cardArtPreview.layout}
+            onError={() => setCardArtPreview(null)}
+            onLoad={(event) => finishCardArtPreview(cardArtPreview.entryId, event.currentTarget)}
+          />
+        ) : null}
+
         {multiSelect ? (
           <footer className="resource-dialog-footer">
             <button className="icon-button" type="button" onClick={commitDraftSelection}>
@@ -197,6 +270,36 @@ export function ResourceLibraryBrowser({
       </section>
     </div>
   );
+}
+
+function layoutCardArtPreview(
+  anchor: CardArtPreview["anchor"],
+  naturalWidth: number,
+  naturalHeight: number,
+  viewportWidth: number,
+  viewportHeight: number,
+) {
+  const availableAbove = Math.max(0, anchor.top - cardArtPreviewGap - cardArtPreviewMargin);
+  const availableBelow = Math.max(0, viewportHeight - anchor.bottom - cardArtPreviewGap - cardArtPreviewMargin);
+  const placeBelow = availableBelow >= availableAbove;
+  const availableHeight = placeBelow ? availableBelow : availableAbove;
+  if (naturalWidth <= 0 || naturalHeight <= 0 || availableHeight <= 0) return undefined;
+
+  const scale = Math.min(
+    1,
+    cardArtPreviewMaxWidth / naturalWidth,
+    viewportHeight * cardArtPreviewMaxHeightRatio / naturalHeight,
+    availableHeight / naturalHeight,
+  );
+  const width = Math.round(naturalWidth * scale);
+  const height = Math.round(naturalHeight * scale);
+  const left = clamp(anchor.pointerX - width / 2, cardArtPreviewMargin, viewportWidth - cardArtPreviewMargin - width);
+  const top = placeBelow ? anchor.bottom + cardArtPreviewGap : anchor.top - cardArtPreviewGap - height;
+  return { left, top, width, height };
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.min(Math.max(value, minimum), Math.max(minimum, maximum));
 }
 
 function normalizeSort(sort: ResourceLibraryQuery["sort"] | undefined) {

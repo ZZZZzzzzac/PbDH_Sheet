@@ -12,6 +12,7 @@ import { applyResourceSelectionToDraft } from "../domain/resourceSelection";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 import { createCardInstancesFromSelection } from "../store/runtimeHelpers";
 import { formatCharacterTextExport } from "../domain/characterTextFormatter";
+import { resolveCardDisplayMode } from "../rendering/cardTable/cardDefinition";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "tttri");
 let loadedResult: Awaited<ReturnType<typeof loadSystemPackageFromZipFile>>;
@@ -244,6 +245,31 @@ describe("TTTRI System Package", () => {
         expect(libraryFields.filter((field) => fieldConfig.get(field)?.默认显示 !== false), moduleId).toEqual(testCase.visible);
       }
     }
+  });
+
+  it("ships hover art for every Ancestry while keeping Card Table cards text-only", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const systemPackage = loadedResult.package;
+    const ancestries = systemPackage.resourceLibraries.find((library) => library.ID === "ancestries")!;
+    const picker = systemPackage.modules.find((module) => module.ID === "pick-ancestry");
+    const cardTable = systemPackage.modules.find((module) => module.ID === "character-card-table");
+    expect(picker?.类型).toBe("resourcePicker");
+    expect(cardTable?.类型).toBe("cardTable");
+    if (picker?.类型 !== "resourcePicker" || picker.资源库 === "其他" || cardTable?.类型 !== "cardTable") return;
+
+    const artPaths = ancestries.entries.map((entry) => entry.fields.卡图);
+    expect(ancestries.entries).toHaveLength(35);
+    expect(new Set(artPaths).size).toBe(35);
+    for (const entry of ancestries.entries) {
+      const expectedPath = `assets/cards/ancestries/${entry.fields.名称}.webp`;
+      expect(entry.fields.卡图, entry.ID).toBe(expectedPath);
+      expect(statSync(join(packageRoot, expectedPath)).isFile(), entry.ID).toBe(true);
+      expect(resolveCardDisplayMode(entry, cardTable), entry.ID).toBe("text");
+    }
+
+    const ancestryFields = picker.资源库.find((link) => link.ID === "ancestries")?.字段模板 ?? [];
+    expect(ancestryFields).toContainEqual({ 键: "卡图", 默认显示: false });
   });
 
   it("applies only non-empty Subclass update fields across all five stages without creating Cards", () => {

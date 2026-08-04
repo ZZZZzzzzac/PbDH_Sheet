@@ -19,6 +19,7 @@ describe("Resource Browser rendering", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("opens Resource Picker browser and fills target text modules without storing a selection value", () => {
@@ -59,6 +60,98 @@ describe("Resource Browser rendering", () => {
 
     expect((await screen.findByText("烈焰", {}, { timeout: 5_000 })).tagName).toBe("STRONG");
     expect(screen.getByText("利刃")).toHaveAttribute("data-markdown-color", "red");
+  });
+
+  it("shows a resolved card-art preview after a desktop mouse rests on a Resource Entry row", () => {
+    vi.useFakeTimers();
+    stubHoverPointer(true);
+    const systemPackage = createResourcePickerPackage();
+    systemPackage.resourceLibraries[0].fields.find((field) => field.key === "卡图")!.visible = false;
+    renderModuleDemo(systemPackage, { "assets/cards/flame.png": "blob:flame-card" });
+    fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
+    expect(screen.queryByText("assets/cards/flame.png")).not.toBeInTheDocument();
+    const row = screen.getByLabelText("选择 烈焰");
+    vi.spyOn(row, "getBoundingClientRect").mockReturnValue(rect({ left: 120, right: 420, top: 96, bottom: 136 }));
+
+    fireEvent.pointerEnter(row, { pointerType: "mouse", clientX: 520 });
+    act(() => vi.advanceTimersByTime(149));
+    expect(screen.queryByRole("img", { name: "烈焰卡图预览" })).not.toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(1));
+    const preview = screen.getByRole("img", { name: "烈焰卡图预览" });
+    Object.defineProperties(preview, {
+      naturalWidth: { configurable: true, value: 200 },
+      naturalHeight: { configurable: true, value: 300 },
+    });
+    fireEvent.load(preview);
+
+    expect(preview).toHaveAttribute("src", "blob:flame-card");
+    expect(preview).toHaveClass("is-ready");
+    expect(preview).toHaveStyle({ left: "420px", top: "148px", width: "200px", height: "300px" });
+    fireEvent.pointerLeave(row, { pointerType: "mouse" });
+    expect(screen.queryByRole("img", { name: "烈焰卡图预览" })).not.toBeInTheDocument();
+  });
+
+  it("uses the larger vertical side and scales card art to fit without covering the hovered row", () => {
+    vi.useFakeTimers();
+    stubHoverPointer(true);
+    renderModuleDemo(createResourcePickerPackage(), { "assets/cards/flame.png": "blob:flame-card" });
+    fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
+    const row = screen.getByLabelText("选择 烈焰");
+    vi.spyOn(row, "getBoundingClientRect").mockReturnValue(rect({ left: 120, right: 900, top: 400, bottom: 440 }));
+
+    fireEvent.pointerEnter(row, { pointerType: "mouse", clientX: 700 });
+    act(() => vi.advanceTimersByTime(150));
+    const preview = screen.getByRole("img", { name: "烈焰卡图预览" });
+    Object.defineProperties(preview, {
+      naturalWidth: { configurable: true, value: 400 },
+      naturalHeight: { configurable: true, value: 800 },
+    });
+    fireEvent.load(preview);
+
+    expect(preview).toHaveStyle({ left: "606px", top: "12px", width: "188px", height: "376px" });
+    fireEvent.error(preview);
+    expect(screen.queryByRole("img", { name: "烈焰卡图预览" })).not.toBeInTheDocument();
+  });
+
+  it("does not preview unresolved art or run hover previews without a desktop hover pointer", () => {
+    vi.useFakeTimers();
+    stubHoverPointer(true);
+    const unresolved = renderModuleDemo(createResourcePickerPackage());
+    fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
+    fireEvent.pointerEnter(screen.getByLabelText("选择 烈焰"), { pointerType: "mouse" });
+    act(() => vi.advanceTimersByTime(150));
+    expect(screen.queryByRole("img", { name: "烈焰卡图预览" })).not.toBeInTheDocument();
+
+    unresolved.unmount();
+    stubHoverPointer(false);
+    renderModuleDemo(createResourcePickerPackage(), { "assets/cards/flame.png": "blob:flame-card" });
+    fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
+    fireEvent.pointerEnter(screen.getByLabelText("选择 烈焰"), { pointerType: "mouse" });
+    act(() => vi.advanceTimersByTime(150));
+    expect(screen.queryByRole("img", { name: "烈焰卡图预览" })).not.toBeInTheDocument();
+  });
+
+  it("resolves Resource Extension card art through its source-scoped runtime key", () => {
+    vi.useFakeTimers();
+    stubHoverPointer(true);
+    const basePackage = createResourcePickerPackage();
+    const loaded = loadResourceExtensionJson(JSON.stringify({
+      ID: "illustrated", 名称: "插画扩展", 版本: "1", 目标系统包ID: basePackage.manifest.ID,
+      resourceLibraries: [{ ID: "domains", 名称: "领域", entries: [{
+        ID: "extension-flame", 名称: "扩展烈焰", 领域: "利刃", 等级: "2", 卡图: "assets/cards/flame.png",
+      }] }],
+    }), basePackage.manifest.ID);
+    if (!loaded.ok) throw new Error(JSON.stringify(loaded.issues));
+    const systemPackage = applyEffectiveResourceCatalog(basePackage, createEffectiveResourceCatalog(basePackage, [loaded.extension]));
+    const extensionArtRef = resourceAssetUrlKey("resourceExtension", "illustrated", "assets/cards/flame.png");
+    renderModuleDemo(systemPackage, { [extensionArtRef]: "blob:extension-flame-card" });
+    fireEvent.click(screen.getByRole("button", { name: "选择领域" }));
+
+    fireEvent.pointerEnter(screen.getByLabelText("选择 扩展烈焰"), { pointerType: "mouse" });
+    act(() => vi.advanceTimersByTime(150));
+
+    expect(screen.getByRole("img", { name: "扩展烈焰卡图预览" })).toHaveAttribute("src", "blob:extension-flame-card");
   });
 
   it("places each Resource Library column's sort and filter controls before its field label", () => {
@@ -205,3 +298,30 @@ describe("Resource Browser rendering", () => {
     });
   });
 });
+
+function stubHoverPointer(matches: boolean) {
+  vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({
+    matches,
+    media: "(hover: hover) and (pointer: fine)",
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
+}
+
+function rect({ left, right, top, bottom }: { left: number; right: number; top: number; bottom: number }): DOMRect {
+  return {
+    x: left,
+    y: top,
+    left,
+    right,
+    top,
+    bottom,
+    width: right - left,
+    height: bottom - top,
+    toJSON: () => ({}),
+  };
+}

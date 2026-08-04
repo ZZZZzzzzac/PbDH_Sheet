@@ -234,6 +234,30 @@
   color: var(--framework-text-muted);
 }
 
+.resource-card-preview {
+  position: fixed;
+  z-index: 90;
+  display: none;
+  max-width: 320px;
+  max-height: 70vh;
+  border: 1px solid var(--framework-border-strong);
+  background: var(--framework-surface);
+  box-shadow: 0 16px 36px var(--framework-shadow);
+  object-fit: contain;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .resource-card-preview {
+    display: block;
+  }
+
+  .resource-card-preview.is-ready {
+    visibility: visible;
+  }
+}
+
 @media (max-width: 640px) {
   .selection-content {
     grid-template-columns: 1fr;
