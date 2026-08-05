@@ -49,6 +49,7 @@
 }
 
 .brand-panel {
+  position: relative;
   display: grid;
   grid-column: 1;
   grid-row: 1 / span 2;
@@ -56,9 +57,14 @@
   min-height: 4rem;
   padding: 0.25rem;
   border: 1px solid #69727c;
-  font-size: 1rem;
-  font-weight: 700;
-  text-align: center;
+}
+
+.brand-logo {
+  position: absolute;
+  inset: 0.25rem;
+  width: calc(100% - 0.5rem);
+  height: calc(100% - 0.5rem);
+  object-fit: contain;
 }
 
 .identity-fields {

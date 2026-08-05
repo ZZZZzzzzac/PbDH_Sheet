@@ -147,63 +147,25 @@
   color: var(--tp-text);
 }
 
-/* 品牌块：官网 RHODES ISLAND :// PROFILE 结构 */
+/* 品牌块：美工 SLOGAN 字标，等比缩放适配面板 */
 .brand-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 0.06rem;
-  padding: 0.32rem 0.42rem 0.38rem;
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 4rem;
+  padding: 0.25rem;
   border: 0;
   background: var(--tp-black);
-  color: var(--tp-text);
   box-shadow: inset 0 0 0 1px var(--tp-line);
-  text-align: left;
 }
 
-.brand-kicker {
-  font-family: var(--tp-font-wide);
-  font-size: 0.48rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  color: var(--tp-cyan);
-  text-transform: uppercase;
-}
-
-.brand-title {
-  font-family: var(--tp-font-body);
-  font-size: 1.05rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  line-height: 1.1;
-  color: var(--tp-text);
-}
-
-.brand-subtitle {
-  font-family: var(--tp-font-display);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  color: var(--tp-text);
-  text-transform: uppercase;
-}
-
-.brand-rule {
-  display: block;
-  width: 100%;
-  height: 1px;
-  margin: 0.1rem 0 0.04rem;
-  background: var(--tp-line);
-}
-
-.brand-code {
-  font-family: var(--tp-font-display);
-  font-size: 0.5rem;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-  color: var(--tp-muted);
-  text-transform: uppercase;
+.brand-logo {
+  position: absolute;
+  inset: 0.25rem;
+  width: calc(100% - 0.5rem);
+  height: calc(100% - 0.5rem);
+  object-fit: contain;
+  filter: invert(1) brightness(0.82);
 }
 
 /* 头版选择器：实心青底黑字（官网 CTA） */
@@ -716,6 +678,11 @@
   background: #ffffff;
 }
 
+/* 打印纸面为浅色：品牌 logo 恢复原色深字，反白仅在深色屏幕保留 */
+.print-mode :scope .brand-logo {
+  filter: none;
+}
+
 .print-mode :scope .card-desk-banner {
   display: none;
 }
@@ -807,6 +774,10 @@
 
   .tttri-workspace {
     background: #ffffff;
+  }
+
+  .brand-logo {
+    filter: none;
   }
 
   .tttri-sheet-pane {

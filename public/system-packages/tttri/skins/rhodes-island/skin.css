@@ -167,55 +167,24 @@
   color: var(--ak-ink);
 }
 
-/* 品牌黄签:罗德岛字标 + 条码。 */
+/* 品牌黄签:美工 SLOGAN 字标。 */
 .brand-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: 0.08rem;
-  padding: 0.3rem 0.4rem 0.42rem;
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 4rem;
+  padding: 0.25rem;
   border: 0;
   background: linear-gradient(150deg, var(--ak-yellow) 0%, #e5b800 100%);
-  color: var(--ak-ink);
   box-shadow: 0 0 0 1px rgba(31, 31, 28, 0.85);
-  text-align: left;
 }
 
-.brand-eyebrow {
-  font-family: var(--ak-font-display);
-  font-size: 0.5rem;
-  font-weight: 700;
-  letter-spacing: 0.3em;
-  color: rgba(31, 31, 28, 0.72);
-}
-
-.brand-title {
-  font-family: var(--ak-font-display);
-  font-size: 1.18rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  line-height: 1.05;
-}
-
-.brand-subtitle {
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.42em;
-}
-
-.brand-barcode {
-  display: block;
-  height: 0.5rem;
-  margin-top: 0.14rem;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--ak-ink) 0 1px, transparent 1px 3px,
-    var(--ak-ink) 3px 6px, transparent 6px 7px,
-    var(--ak-ink) 7px 8px, transparent 8px 11px,
-    var(--ak-ink) 11px 14px, transparent 14px 15px,
-    var(--ak-ink) 15px 16px, transparent 16px 18px
-  );
+.brand-logo {
+  position: absolute;
+  inset: 0.25rem;
+  width: calc(100% - 0.5rem);
+  height: calc(100% - 0.5rem);
+  object-fit: contain;
 }
 
 /* 头版内选择器:黄底黑字。 */
