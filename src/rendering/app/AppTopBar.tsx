@@ -7,6 +7,8 @@ import type { BootStatus, FrameworkColorSchemePreference, ValidationStatus } fro
 import type { OutputKind } from "./useSheetOutput";
 import { normalizeCharacterFormatName } from "./outputFileName";
 
+declare const __PBDH_VERSION__: string;
+
 interface AppTopBarProps {
   characterFileInputRef: RefObject<HTMLInputElement | null>;
   packageFileInputRef: RefObject<HTMLInputElement | null>;
@@ -78,7 +80,10 @@ export function AppTopBar(props: AppTopBarProps) {
         <span className="brand-mark">PbDH</span>
         <div>
           <p className="eyebrow">Base Framework</p>
-          <h1>Sheet Tool</h1>
+          <div className="brand-title-row">
+            <h1>Sheet Tool</h1>
+            <span className="system-version-badge" title="Sheet Tool 框架版本">v{__PBDH_VERSION__}</span>
+          </div>
         </div>
       </div>
 

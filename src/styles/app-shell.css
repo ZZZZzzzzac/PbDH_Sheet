@@ -112,6 +112,33 @@
   font-size: clamp(1.3rem, 2.5vw, 1.8rem);
 }
 
+.brand-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.brand-title-row h1 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.system-version-badge {
+  flex: 0 0 auto;
+  padding: 1px 8px;
+  border: 1px solid var(--framework-border-strong);
+  border-radius: 999px;
+  color: var(--framework-text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
 .top-menu-bar {
   display: flex;
   align-items: center;

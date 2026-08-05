@@ -120,6 +120,9 @@ function walkPresetFiles(directory: string): string[] {
 
 export default defineConfig({
   base: "/pbdh/",
+  define: {
+    __PBDH_VERSION__: JSON.stringify(packageJson.version),
+  },
   plugins: [
     react(),
     presetSystemPackagesPlugin(),
