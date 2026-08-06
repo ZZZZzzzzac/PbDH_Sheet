@@ -1,10 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import { createEmptyCharacterData, exportCharacterData, updateCharacterValue } from "../domain/characterData";
 import { minimalSystemPackage } from "../test/fixtures";
 import printCss from "../styles/print.css?raw";
 import { buildReadonlyHtmlSnapshot, extractEmbeddedCharacterJson, parseCharacterDataText, waitForVisibleImages } from "./output";
 
 describe("HTML snapshot export/import", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
   it("exports a read-only HTML snapshot with inert embedded Character JSON", async () => {
     const data = updateCharacterValue(createEmptyCharacterData(minimalSystemPackage), "character-name", "阿青");
     const html = await buildReadonlyHtmlSnapshot(data);
@@ -62,6 +65,58 @@ describe("HTML snapshot export/import", () => {
     expect(fetchMock).toHaveBeenCalledWith("blob:card-art");
     expect(html).toContain('src="data:image/png;base64,iVBORw=="');
     expect(html).not.toContain("blob:card-art");
+  });
+
+  it("embeds same-origin static Card artwork in the exported HTML snapshot", async () => {
+    const data = createEmptyCharacterData(minimalSystemPackage);
+    document.body.innerHTML = `
+      <main class="sheet-tool">
+        <article class="play-card">
+          <img class="play-card-image" src="/system-packages/core/assets/cards/flame.png?v=2.1.0" alt="卡图">
+        </article>
+      </main>`;
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), { headers: { "Content-Type": "image/png" } }),
+    );
+
+    const html = await buildReadonlyHtmlSnapshot(data, document.querySelector(".sheet-tool")!);
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("system-packages/core/assets/cards/flame.png?v=2.1.0"));
+    expect(html).toContain('src="data:image/png;base64,iVBORw=="');
+    expect(html).not.toContain("system-packages/core");
+  });
+
+  it("keeps cross-origin image URLs untouched in the exported HTML snapshot", async () => {
+    const data = createEmptyCharacterData(minimalSystemPackage);
+    document.body.innerHTML = `
+      <main class="sheet-tool">
+        <article class="play-card">
+          <img class="play-card-image" src="https://example.com/cards/flame.png" alt="卡图">
+        </article>
+      </main>`;
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), { headers: { "Content-Type": "image/png" } }),
+    );
+
+    const html = await buildReadonlyHtmlSnapshot(data, document.querySelector(".sheet-tool")!);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(html).toContain('src="https://example.com/cards/flame.png"');
+  });
+
+  it("keeps the original src when inlining a static image fails", async () => {
+    const data = createEmptyCharacterData(minimalSystemPackage);
+    document.body.innerHTML = `
+      <main class="sheet-tool">
+        <article class="play-card">
+          <img class="play-card-image" src="/system-packages/core/assets/cards/missing.png" alt="卡图">
+        </article>
+      </main>`;
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("Failed to fetch"));
+
+    const html = await buildReadonlyHtmlSnapshot(data, document.querySelector(".sheet-tool")!);
+
+    expect(html).toContain('src="/system-packages/core/assets/cards/missing.png"');
   });
 
   it("exports rendered Markdown instead of a focused raw editor", async () => {

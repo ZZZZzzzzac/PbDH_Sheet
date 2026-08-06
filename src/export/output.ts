@@ -126,31 +126,61 @@ function formatSnapshotValue(value: unknown): string {
 async function serializePrintableRoot(root: Element): Promise<string> {
   const clone = root.cloneNode(true) as Element;
   syncFormControls(root, clone);
-  await embedBlobImages(root, clone);
+  await embedImages(root, clone);
   clone.querySelectorAll("[data-output-exclude]").forEach((element) => element.remove());
   stripInteractiveRuntimeState(clone);
   return clone.outerHTML;
 }
 
-async function embedBlobImages(sourceRoot: Element, cloneRoot: Element): Promise<void> {
+async function embedImages(sourceRoot: Element, cloneRoot: Element): Promise<void> {
   const sourceImages = sourceRoot.querySelectorAll("img");
   const cloneImages = cloneRoot.querySelectorAll("img");
 
   await Promise.all([...sourceImages].map(async (sourceImage, index) => {
     const source = sourceImage.currentSrc || sourceImage.src;
-    if (!source.startsWith("blob:")) {
+    if (!shouldInlineImageUrl(source)) {
       return;
     }
 
-    const response = await fetch(source);
-    if (!response.ok) {
-      throw new Error(`无法内联导出图片：${response.status} ${response.statusText}`);
+    const cloneImage = cloneImages[index];
+    if (!cloneImage) {
+      return;
     }
 
-    const mimeType = response.headers.get("Content-Type")?.split(";", 1)[0] || "application/octet-stream";
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    cloneImages[index]?.setAttribute("src", `data:${mimeType};base64,${bytesToBase64(bytes)}`);
+    try {
+      const response = await fetch(source);
+      if (!response.ok) {
+        throw new Error(`无法内联导出图片：${response.status} ${response.statusText}`);
+      }
+
+      const mimeType = response.headers.get("Content-Type")?.split(";", 1)[0] || "application/octet-stream";
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      cloneImage.setAttribute("src", `data:${mimeType};base64,${bytesToBase64(bytes)}`);
+    } catch (error) {
+      if (source.startsWith("blob:")) {
+        throw error;
+      }
+      // 静态资源（如预制包的相对路径卡图）内联失败时保留原 URL，避免阻断整个导出。
+    }
   }));
+}
+
+// 导出后仍可用的 URL 无需内联：data: 已内联，跨域外部图保留原样（离线时才可能失效）。
+function shouldInlineImageUrl(source: string): boolean {
+  if (source.startsWith("data:")) {
+    return false;
+  }
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(source)) {
+    return true;
+  }
+  if (source.startsWith("blob:")) {
+    return true;
+  }
+  try {
+    return new URL(source).origin === location.origin;
+  } catch {
+    return false;
+  }
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
