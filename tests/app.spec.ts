@@ -36,6 +36,31 @@ test("switches between built-in System Packages without upload", async ({ page }
   await expect(page.locator('[data-system-package-id="heart-of-hopefind"]')).toBeVisible();
 });
 
+test("opens the preset System Package named by the URL path", async ({ page }) => {
+  await page.goto("/pbdh/tttri");
+
+  await expect(page.locator('[data-system-package-id="tttri"]')).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/pbdh/tttri");
+});
+
+test("opens a preset System Package through its short URL path alias", async ({ page }) => {
+  await page.goto("/pbdh/driving");
+
+  await expect(page.locator('[data-system-package-id="hows-my-driving"]')).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/pbdh/driving");
+});
+
+test("switching preset System Packages rewrites the URL path", async ({ page }) => {
+  await page.goto("/pbdh/tttri");
+  await expect(page.locator('[data-system-package-id="tttri"]')).toBeVisible();
+
+  await page.getByRole("button", { name: "系统包", exact: true }).click();
+  await page.getByRole("combobox", { name: "预制系统包" }).selectOption("heart-of-hopefind");
+
+  await expect(page.locator('[data-system-package-id="heart-of-hopefind"]')).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/pbdh/hopefind");
+});
+
 test("refreshes a stale built-in System Package cache after a Base release update", async ({ page }) => {
   await page.goto("/");
   const questionnaireButton = page.getByRole("button", { name: /打开问卷/ });

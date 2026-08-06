@@ -18,6 +18,7 @@ interface PresetManifest {
 interface PresetBuildRecord {
   catalog: {
     id: string;
+    urlPath: string;
     name: string;
     version: string;
     releaseVersion: string;
@@ -30,6 +31,14 @@ interface PresetBuildRecord {
   files: string[];
   inventoryJson: string;
 }
+
+// 直达链接短路径别名：URL 段 -> 预制包 id。无别名的包直接使用 id 作为路径段。
+const presetUrlPathAliases: Record<string, string> = {
+  "daggerheart-core": "daggerheart",
+  "heart-of-hopefind": "hopefind",
+  "hows-my-driving": "driving",
+  "witchy-omega-1": "witchy",
+};
 
 const presetInventoryFileName = ".pbdh-files.json";
 
@@ -95,6 +104,7 @@ function readPresetBuildRecords(): PresetBuildRecord[] {
       return {
         catalog: {
           id: manifest.ID,
+          urlPath: presetUrlPathAliases[manifest.ID] ?? manifest.ID,
           name: manifest.名称,
           version: manifest.版本,
           releaseVersion: packageJson.version,

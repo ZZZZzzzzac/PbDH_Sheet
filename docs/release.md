@@ -114,11 +114,33 @@ location = /pbdh {
 location /pbdh/ {
     alias /var/www/pbdh/current/;
     index index.html;
+    try_files $uri $uri/ /pbdh/index.html;
     add_header Cache-Control "no-cache" always;
 }
 ```
 
+`try_files` 是 System Package 直达链接的必要配置：`/pbdh/tttri` 等路径在 `current/` 下没有对应文件，需要回退到 `index.html`，由前端按路径加载对应预制包。`/pbdh/` 下的真实静态资源（`assets/`、`system-packages/`）仍按原路径命中，不受影响。
+
 这里不使用长时间 `immutable` 缓存：System Package 内资源路径可能稳定但内容会随版本变化。`no-cache` 允许浏览器缓存，同时要求每次重验证，避免 Cloudflare 或浏览器长期返回旧包。
+
+### System Package 直达链接
+
+前端会把 URL 路径的第一段映射为预制 System Package：访问 `https://daggerheart.cn/pbdh/tttri` 直接加载 `tttri` 包，访问 `https://daggerheart.cn/pbdh/` 保持默认包。玩家在「系统包」菜单切换预制包时，路径会同步改写（如切到 `heart-of-hopefind` 后变为 `/pbdh/hopefind`），刷新或分享该链接即直达对应包。上传自定义包成功后路径回退到 `/pbdh/`。
+
+当前预制包直达链接（路径段使用短别名，配置在 `vite.config.ts` 的 `presetUrlPathAliases`）：
+
+| 直达链接 | 包 |
+| --- | --- |
+| `/pbdh/`（默认） | daggerheart-core |
+| `/pbdh/daggerheart` | daggerheart-core |
+| `/pbdh/tttri` | tttri（罗德岛旅记） |
+| `/pbdh/hopefind` | heart-of-hopefind（寻望之心） |
+| `/pbdh/driving` | hows-my-driving |
+| `/pbdh/witchy` | witchy（巫趣） |
+
+根路径在缓存为其他预制包时会回到默认包；导入的自定义包不受影响。
+
+**上线顺序**：必须先在生产服务器应用第 4 节的 `try_files` 配置，再发布包含该功能的新版本；否则 `/pbdh/tttri` 等链接会返回 404。发布后可用 `curl -I https://daggerheart.cn/pbdh/tttri` 验证应返回 `200` 而非 `404`。
 
 修改生产 Nginx 前，先同步修改 `Daggerheart_VPS/daggerheart_tools/nginx_daggerheart.conf`。生产操作必须先验证：
 
@@ -126,6 +148,8 @@ location /pbdh/ {
 sudo nginx -t
 sudo systemctl reload nginx
 ```
+
+如果线上版本还未包含直达链接功能，先应用 `try_files` 也不会破坏现有 `/pbdh/` 访问；反之，先发布新版本而未应用 `try_files` 会让直达链接 404。
 
 首次 Release 尚未部署时 `/pbdh/` 返回 404 属正常；Nginx reload 不依赖 `current` 已存在。
 

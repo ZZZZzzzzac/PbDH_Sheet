@@ -25,6 +25,28 @@ export function generateId(prefix: string): string {
   return `${prefix}${uuid}`;
 }
 
+// 从部署路径中解析出第一段作为预制系统包 id，例如 base "/pbdh/" 下
+// "/pbdh/tttri" -> "tttri；"/pbdh/" 或无匹配前缀时返回 null。
+export function presetIdFromPathname(baseUrl: string, pathname: string): string | null {
+  const base = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+  const prefix = base.startsWith("/") ? base : `/${base}`;
+  const rest = prefix === "/" ? pathname.replace(/^\/+/, "") : pathname.startsWith(prefix) ? pathname.slice(prefix.length) : "";
+  const segment = rest.split("/")[0];
+  if (!segment) return null;
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
+// 构造某个预制系统包对应的部署路径；presetId 为 null 时返回 base 本身。
+export function presetPathname(baseUrl: string, presetId: string | null): string {
+  const base = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+  const prefix = base.startsWith("/") ? base : `/${base}`;
+  return presetId ? `${prefix}${encodeURIComponent(presetId)}` : prefix;
+}
+
 export function inferMimeType(path: string): string {
   const lowerPath = path.toLowerCase();
   if (lowerPath.endsWith(".png")) {

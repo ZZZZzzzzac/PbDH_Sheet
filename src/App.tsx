@@ -15,6 +15,8 @@ import { PackageLoadingSurface } from "./rendering/app/PackageLoadingSurface";
 import { resolveGuideTargetPageId } from "./rendering/app/guideTarget";
 import { useSheetOutput } from "./rendering/app/useSheetOutput";
 import { useRuntimeStore } from "./store/runtimeStore";
+import { findPresetByUrlPath } from "./loaders/presetSystemPackageLoader";
+import { presetIdFromPathname, presetPathname } from "./utils";
 import presetSystemPackages from "virtual:preset-system-packages";
 
 const defaultPresetSystemPackage = presetSystemPackages.find((preset) => preset.id === "daggerheart-core");
@@ -32,6 +34,9 @@ export default function App() {
   const questionnaireSessionRef = useRef<QuestionnaireHostSession | null>(null);
   const [guideSession, setGuideSession] = useState<GuideSession | null>(null);
   const [resourceManagerOpen, setResourceManagerOpen] = useState(false);
+  const [urlPresetSystemPackage] = useState(
+    () => findPresetByUrlPath(presetSystemPackages, presetIdFromPathname(import.meta.env.BASE_URL, window.location.pathname)),
+  );
   const currentPackage = useRuntimeStore((state) => state.currentPackage);
   const selectedSkinId = useRuntimeStore((state) => state.selectedSkinId);
   const frameworkColorSchemePreference = useRuntimeStore((state) => state.frameworkColorSchemePreference);
@@ -119,7 +124,17 @@ export default function App() {
   useEffect(() => {
     void initialize(presetSystemPackages).then(async () => {
       const state = useRuntimeStore.getState();
-      if (!state.currentPackage && state.bootStatus === "ready" && defaultPresetSystemPackage) {
+      if (state.bootStatus !== "ready" || state.authorPreviewActive) return;
+      if (urlPresetSystemPackage) {
+        if (state.currentPackage?.manifest.ID !== urlPresetSystemPackage.id) {
+          await state.switchToPresetSystemPackage(urlPresetSystemPackage);
+        }
+        return;
+      }
+      // 根路径默认 daggerheart-core：缓存里是其他预制包时切回默认，导入的自定义包保持不变。
+      const currentId = state.currentPackage?.manifest.ID ?? null;
+      const currentIsPreset = currentId !== null && presetSystemPackages.some((preset) => preset.id === currentId);
+      if (defaultPresetSystemPackage && (!currentId || currentIsPreset) && currentId !== defaultPresetSystemPackage.id) {
         await state.switchToPresetSystemPackage(defaultPresetSystemPackage);
       }
     });
@@ -196,19 +211,36 @@ export default function App() {
       return;
     }
 
+    const beforeId = useRuntimeStore.getState().currentPackage?.manifest.ID;
     await uploadSystemPackageFromFile(file);
+    if (useRuntimeStore.getState().currentPackage?.manifest.ID !== beforeId) {
+      syncPresetUrl(null);
+    }
     event.target.value = "";
   };
 
   const handlePackageDirectory = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files ? [...event.target.files] : [];
-    if (files.length > 0) await uploadSystemPackageFromDirectory(files);
+    if (files.length === 0) return;
+    const beforeId = useRuntimeStore.getState().currentPackage?.manifest.ID;
+    await uploadSystemPackageFromDirectory(files);
+    if (useRuntimeStore.getState().currentPackage?.manifest.ID !== beforeId) {
+      syncPresetUrl(null);
+    }
     event.target.value = "";
   };
 
   const handlePresetSystemPackage = async (event: ChangeEvent<HTMLSelectElement>) => {
     const preset = presetSystemPackages.find((candidate) => candidate.id === event.target.value);
-    if (preset) await switchToPresetSystemPackage(preset);
+    if (!preset) return;
+    syncPresetUrl(preset.urlPath);
+    await switchToPresetSystemPackage(preset);
+  };
+
+  const syncPresetUrl = (urlPath: string | null) => {
+    const url = new URL(window.location.href);
+    url.pathname = presetPathname(import.meta.env.BASE_URL, urlPath);
+    window.history.replaceState(null, "", url);
   };
 
   const handleEnterAuthorPreview = async () => {

@@ -8,6 +8,8 @@ const presetFetchTimeoutMs = 15_000;
 
 export interface PresetSystemPackage {
   id: string;
+  /** 直达链接使用的短路径段，默认与 id 相同。 */
+  urlPath: string;
   name: string;
   version: string;
   releaseVersion: string;
@@ -16,6 +18,15 @@ export interface PresetSystemPackage {
   fileCount: number;
   metadataFileCount: number;
   loadingPresentation?: NonNullable<SystemPackage["manifest"]["加载展示"]>;
+}
+
+// 按直达链接路径段查找预制包；只匹配 urlPath，不匹配旧的长 id。
+export function findPresetByUrlPath(
+  presets: readonly Pick<PresetSystemPackage, "id" | "urlPath">[],
+  segment: string | null,
+): PresetSystemPackage | undefined {
+  if (!segment) return undefined;
+  return presets.find((preset) => preset.urlPath === segment) as PresetSystemPackage | undefined;
 }
 
 export interface PresetLoadProgress {

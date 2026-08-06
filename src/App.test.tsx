@@ -8,7 +8,7 @@ import { minimalSystemPackage } from "./test/fixtures";
 import { createCardTablePackage } from "./test/cardTablePackage";
 import type { SystemPackage } from "./domain/systemPackage";
 import presetSystemPackages from "virtual:preset-system-packages";
-function createEmptyStorage(): StorageService {
+export function createEmptyStorage(): StorageService {
   const saves = new Map<string, Parameters<StorageService["saveCharacterSave"]>[0]>();
   const active = new Map<string, string>();
   const skinPreferences = new Map<string, string>(), cardTableSurfaceHeights = new Map<string, Record<string, number>>();
