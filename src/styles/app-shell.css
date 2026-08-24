@@ -404,6 +404,12 @@
 }
 
 @media (max-width: 640px) {
+  /* 窄屏(手机竖屏)下保持 A4 纸比例,但允许页内滚动:内容超出 A4 高度时
+     在页框内滚动查看,而不是被 overflow:hidden 裁掉。 */
+  .sheet-page {
+    overflow-y: auto;
+  }
+
   .top-bar {
     align-items: center;
     gap: 10px;

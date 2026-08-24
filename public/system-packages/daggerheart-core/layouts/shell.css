@@ -43,6 +43,14 @@
     flex-direction: column;
   }
 
+  /* 纵向布局下 pane 高度须随内容自适应:原 flex-basis 54rem 会把页面高度
+     锁死在 864px,配合 overflow:hidden 裁掉超出部分(竖屏/平板/窄桌面窗口
+     下"背景与关系"等长页面底部被截断、窗口比例失真)。 */
+  .daggerheart-sheet-pane {
+    flex-basis: auto;
+    overflow: visible;
+  }
+
   .daggerheart-sheet-pane,
   .daggerheart-card-pane {
     width: 100%;
