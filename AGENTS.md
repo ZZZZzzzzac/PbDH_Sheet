@@ -55,3 +55,4 @@ Developing new feature / debug and any other non-trivial task, use /to-prd /to-i
 - `scripts/release-tools.mjs` owns release-version and built-output validation shared by local checks and workflows.
 - `scripts/deploy-release.sh` owns remote immutable-release staging and atomic activation; it must not contain hostnames, usernames, credentials, or destructive cleanup commands.
 - `docs/release.md` is the maintainer runbook for versioning, GitHub Secrets, first deployment, promotion, health checks, and rollback.
+- 本地跑全量测试时用低并发（vitest `--maxWorkers=2`）避免 daggerheart/tttri 大包加载超时 flake；失败全是 timeout 时先单独重跑失败文件再下结论。详见 `docs/release.md`「本地验证的已知问题」。

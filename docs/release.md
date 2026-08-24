@@ -232,6 +232,28 @@ tag push 触发 `Release` workflow。成功后 GitHub Releases 出现：
 - `pbdh-sheet-X.Y.Z.tar.gz.sha256`
 - 自动生成的 Release Notes
 
+### 本地验证的已知问题（部署前必读）
+
+本机（Windows）跑全量测试时，daggerheart-core / tttri 等大包加载对并发敏感：`npm test` 默认高并发下，`beforeAll` 加载包超过 10s hook 超时（表现为 `daggerheartCorePackage.test.ts`、`tttriPackage.test.ts`、`tttriCharacterFormatAdapter.test.ts` 三个 suite 失败，以及零星 5000ms 测试超时）。**这些失败与代码改动无关**，判定依据：失败全是 timeout 而非断言内容错误，且失败文件单独重跑即通过。
+
+规避方法（按序）：
+
+```powershell
+# 1) vitest 全套用低并发跑(2 workers), 本机 60s 左右完成且稳定
+node .\node_modules\vitest\vitest.mjs run --maxWorkers=2
+
+# 2) 若仍有零星超时, 单独重跑失败文件确认是 flake
+node .\node_modules\vitest\vitest.mjs run --maxWorkers=2 <失败文件路径>
+```
+
+e2e 同理：`tests/card-table-print.spec.ts` 等曾出现对话框 `toBeVisible` 超时 flake（页面快照里对话框实际已打开），单独重跑即过。Playwright 配置本身已把 workers 从 8 降到 4 缓解同类问题（见 `playwright.config.ts` 注释）。e2e 失败时先单独重跑失败 spec 再下结论：
+
+```powershell
+node .\node_modules\@playwright\test\cli.js test tests/<失败spec>.ts --workers=1
+```
+
+健康检查相关命令（`test:health`、`check:system-package-contract`）不受此影响，可正常执行。
+
 ## 7. 部署或回滚
 
 打开 `Actions -> Deploy Release -> Run workflow`，输入不带 `v` 的版本号，例如 `1.3.0`。
