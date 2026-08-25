@@ -49,8 +49,10 @@ module.exports = async (input) => {
 
   for (let index = 1; index <= 3; index += 1) {
     const name = typeof values[`magic-${index}-name`] === "string" ? values[`magic-${index}-name`].trim() : "";
+    const noun = typeof values[`magic-${index}-noun`] === "string" ? values[`magic-${index}-noun`].trim() : "";
+    const verb = typeof values[`magic-${index}-verb`] === "string" ? values[`magic-${index}-verb`].trim() : "";
     const description = typeof values[`magic-${index}-description`] === "string" ? values[`magic-${index}-description`].trim() : "";
-    if (!name && !description) {
+    if (!name && !noun && !verb && !description) {
       issues.push({ level: "error", code: "WITCH_MAGIC_MISSING", path: `character.values.magic-${index}-name`, text: `请填写初始魔法 ${index}。` });
     }
   }

@@ -23,7 +23,7 @@ describe("Witchy System Package", () => {
 
     expect(result.ok, result.ok ? undefined : JSON.stringify(result.issues, null, 2)).toBe(true);
     if (!result.ok) return;
-    expect(result.package.manifest.版本).toBe("1.1.0");
+    expect(result.package.manifest.版本).toBe("1.2.0");
     expect(result.issues.filter((issue) => issue.level === "fatal" || issue.level === "error")).toEqual([]);
     expect(result.package.defaultSkin).toBe("witching-hour");
     expect(result.package.characterCreationGuide?.步骤.length).toBeGreaterThan(0);
