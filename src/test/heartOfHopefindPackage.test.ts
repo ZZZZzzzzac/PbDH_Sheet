@@ -83,8 +83,8 @@ describe("Heart of Hopefind System Package", () => {
       expect(result.package.modules.find((module) => module.ID === id)).toMatchObject({
         类型: "countableResource",
         标记尺寸: size,
-        当前值标记: { 类型: "图片", 资源路径: `assets/icons/resource-${assetName}-marked.svg` },
-        剩余值标记: { 类型: "图片", 资源路径: `assets/icons/resource-${assetName}-unmarked.svg` },
+        当前值标记: { 类型: "图片", 资源路径: `assets/icons/resource-${assetName}-marked.webp` },
+        剩余值标记: { 类型: "图片", 资源路径: `assets/icons/resource-${assetName}-unmarked.webp` },
       });
     }
     expect(new Set(Object.values(markers).map(({ assetName }) => assetName)).size).toBe(5);

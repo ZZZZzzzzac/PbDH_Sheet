@@ -14,8 +14,8 @@
     "最大值可改": false,
     "显示方式": "标记",
     "标记尺寸": 26,
-    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-hope-marked.svg" },
-    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-hope-unmarked.svg" }
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-hope-marked.webp" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-hope-unmarked.webp" }
   },
   {
     "ID": "wounds",
@@ -28,8 +28,8 @@
     "最大值可改": false,
     "显示方式": "标记",
     "标记尺寸": 26,
-    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-wounds-marked.svg" },
-    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-wounds-unmarked.svg" }
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-wounds-marked.webp" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-wounds-unmarked.webp" }
   },
   {
     "ID": "noise",
@@ -51,8 +51,8 @@
     "最大值可改": true,
     "显示方式": "标记",
     "标记尺寸": 26,
-    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-life-marked.svg" },
-    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-life-unmarked.svg" }
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-life-marked.webp" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-life-unmarked.webp" }
   },
   {
     "ID": "stress",
@@ -65,8 +65,8 @@
     "最大值可改": true,
     "显示方式": "标记",
     "标记尺寸": 26,
-    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-marked.svg" },
-    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-unmarked.svg" }
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-marked.webp" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-stress-unmarked.webp" }
   },
   {
     "ID": "pick-survivor-style",
@@ -132,8 +132,8 @@
     "最大值可改": true,
     "显示方式": "标记",
     "标记尺寸": 20,
-    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-marked.svg" },
-    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-unmarked.svg" }
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-marked.webp" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-unmarked.webp" }
   },
   {
     "ID": "core-hurt-phase-development",
@@ -146,8 +146,8 @@
     "最大值可改": true,
     "显示方式": "标记",
     "标记尺寸": 20,
-    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-marked.svg" },
-    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-unmarked.svg" }
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-marked.webp" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-unmarked.webp" }
   },
   {
     "ID": "core-hurt-phase-turn",
@@ -160,8 +160,8 @@
     "最大值可改": true,
     "显示方式": "标记",
     "标记尺寸": 20,
-    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-marked.svg" },
-    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-unmarked.svg" }
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-marked.webp" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-unmarked.webp" }
   },
   {
     "ID": "core-hurt-phase-conclusion",
@@ -174,7 +174,7 @@
     "最大值可改": true,
     "显示方式": "标记",
     "标记尺寸": 20,
-    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-marked.svg" },
-    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-unmarked.svg" }
+    "当前值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-marked.webp" },
+    "剩余值标记": { "类型": "图片", "资源路径": "assets/icons/resource-core-hurt-progress-unmarked.webp" }
   }
 ]
