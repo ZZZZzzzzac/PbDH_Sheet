@@ -30,8 +30,8 @@ describe("Sheet Module sizing", () => {
   });
 
   it("stretches Free Text editors and inputs to the Module content area", () => {
-    expect(modulesCss).toMatch(/\[data-module-type="freeText"\]\s*>\s*\[data-markdown-editor="true"\]\s*\{[^}]*align-self:\s*stretch[^}]*min-height:\s*calc\(1lh \+ 10px\)/s);
-    expect(modulesCss).toMatch(/\[data-module-type="freeText"\]\s*>\s*\[data-markdown-editor="true"\]\s*>\s*\[data-part="input"\][^\{]*\{[^}]*align-self:\s*stretch[^}]*height:\s*100%[^}]*min-height:\s*calc\(1lh \+ 10px\)[^}]*text-align:\s*center/s);
+    expect(modulesCss).toMatch(/\[data-module-type="freeText"\]\s*>\s*\[data-markdown-editor="true"\]\s*\{[^}]*align-self:\s*stretch[^}]*min-height:\s*calc\(1\.2em \+ 10px\)/s);
+    expect(modulesCss).toMatch(/\[data-module-type="freeText"\]\s*>\s*\[data-markdown-editor="true"\]\s*>\s*\[data-part="input"\][^\{]*\{[^}]*align-self:\s*stretch[^}]*height:\s*100%[^}]*min-height:\s*calc\(1\.2em \+ 10px\)[^}]*line-height:\s*1\.2[^}]*text-align:\s*center/s);
   });
 
   it("centers Free Text values in both editing and preview states", () => {
