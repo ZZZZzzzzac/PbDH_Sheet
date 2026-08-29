@@ -291,9 +291,9 @@ describe("TTTRI System Package", () => {
     expect([t1.fields.等级, t2.fields.等级, t3.fields.等级, t4x.fields.等级, t4y.fields.等级]).toEqual(["预备", "正式", "资深", "精英X", "精英Y"]);
     expect(t1.fields).not.toHaveProperty("武器伤害骰");
     expect(systemPackage.modules).not.toContainEqual(expect.objectContaining({ ID: "weapon-attack-attribute" }));
-    expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "subclass-name", 标签: "干员类型" }));
+    expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "subclass-name", 标签: "子职" }));
     expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "subclass-stage", 标签: "等级" }));
-    expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "subclass-current", 标签: "干员特性" }));
+    expect(systemPackage.modules).toContainEqual(expect.objectContaining({ ID: "subclass-current", 标签: "子职特性" }));
     expect(t1.fields.子职提升).toBe("子职特性获得：紧急维生：花费 3 希望点，启动医疗单元，为攻击范围内一名未标记生命点为 1-3 的友方自愿角色恢复 2 生命点。");
     expect(t2.fields.子职提升).toBe("子职特性增强：紧急维生+：花费 3 希望点，启动医疗单元，为攻击范围内一名:red[**未标记生命点为 1-4**] 的友方自愿角色恢复 2 生命点。");
     expect(t3.fields.子职提升).toContain("职业特性增强：状态分析-医师：");
