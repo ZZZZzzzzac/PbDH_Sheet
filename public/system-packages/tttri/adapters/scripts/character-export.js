@@ -90,10 +90,11 @@ function exportUpgrades(values, diagnostics) {
       if (state[option] === true) upgrades[`${dhTier}-${optionIndex}-${boxIndex}`] = { [optionIndex]: true };
     }
     if (baseTier === 3 || baseTier === 4) {
-      const subclassId = baseTier === 4 ? "subclass-elite" : "subclass";
-      if (state[subclassId] === true) upgrades[`${dhTier}-6-0`] = { 6: true };
       if (state["proficiency-1"] === true || state["proficiency-2"] === true) upgrades[`${dhTier}-7`] = { 7: true };
-      if (state["multiclass-1"] === true || state["multiclass-2"] === true) upgrades[`${dhTier}-8`] = { 8: true };
+      if (state["multiclass-1"] === true && state["multiclass-2"] === true) upgrades[`${dhTier}-8`] = { 8: true };
+    }
+    if (state.subclass || state["subclass-elite"] || (state["multiclass-1"] === true) !== (state["multiclass-2"] === true)) {
+      diagnostics.push({ level: "warning", code: "TTTRI_DHSHEET_ADVANCEMENT_NOT_EQUIVALENT", text: `TTTRI T${baseTier} 的阶段奖励领取记录或未完成的双格技艺交流没有等价升级选项，导出时未猜测映射。` });
     }
   }
   const t2 = values["advancement-tier-2"] || {};

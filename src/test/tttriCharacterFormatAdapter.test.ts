@@ -120,15 +120,15 @@ describe("TTTRI dhSheet Character Format Adapter", () => {
     if ("error" in conversion) throw new Error(conversion.error.text);
 
     expect(conversion.data.character.values["advancement-tier-2"]).toEqual(expect.objectContaining({
-      "traits-1": true, "hp-1": true, subclass: false, "multiclass-1": false,
+      "traits-1": true, "hp-1": true, "multiclass-1": false,
     }));
     expect(conversion.data.character.values["advancement-tier-3"]).toEqual(expect.objectContaining({
-      subclass: true, "proficiency-1": true, "proficiency-2": true, "multiclass-1": true,
+      "proficiency-1": true, "proficiency-2": true, "multiclass-1": true, "multiclass-2": true,
     }));
-    expect(conversion.data.character.values["advancement-tier-3"]).not.toHaveProperty("multiclass-2");
-    expect(conversion.data.character.values["advancement-tier-4"]).toEqual(expect.objectContaining({
-      "subclass-elite": true,
-    }));
+    expect(conversion.report.diagnostics).toContainEqual(expect.objectContaining({ code: "TTTRI_DHSHEET_ADVANCEMENT_NOT_EQUIVALENT" }));
+    expect(conversion.data.character.values["advancement-tier-2"]).not.toHaveProperty("subclass");
+    expect(conversion.data.character.values["advancement-tier-3"]).not.toHaveProperty("subclass");
+    expect(conversion.data.character.values["advancement-tier-4"]).not.toHaveProperty("subclass-elite");
   });
 
   it("names every unmatched dhSheet Card in the import diagnostics", async () => {
@@ -212,17 +212,18 @@ describe("TTTRI dhSheet Character Format Adapter", () => {
     const conversion = await convertExternalCharacterSource(detection.source, detection.adapter, tttriPackage);
     if ("error" in conversion) throw new Error(conversion.error.text);
     conversion.data.character.values["advancement-tier-2"] = { "traits-1": true, subclass: true, "multiclass-1": true };
-    conversion.data.character.values["advancement-tier-3"] = { subclass: true, "proficiency-1": true, "multiclass-1": true };
+    conversion.data.character.values["advancement-tier-3"] = { subclass: true, "proficiency-1": true, "multiclass-1": true, "multiclass-2": true };
     conversion.data.character.values["advancement-tier-4"] = { "subclass-elite": true };
 
     const exported = await exportExternalCharacterData(conversion.data, detection.adapter, tttriPackage);
     if ("error" in exported) throw new Error(exported.error.text);
     expect((exported.document as Record<string, unknown>).checkedUpgrades).toEqual(expect.objectContaining({
       "tier1-0-0": { 0: true },
-      "tier2-6-0": { 6: true }, "tier2-7": { 7: true }, "tier2-8": { 8: true },
-      "tier3-6-0": { 6: true },
+      "tier2-7": { 7: true }, "tier2-8": { 8: true },
     }));
     expect((exported.document as Record<string, unknown>).checkedUpgrades).not.toHaveProperty("tier1-6-0");
+    expect((exported.document as Record<string, unknown>).checkedUpgrades).not.toHaveProperty("tier2-6-0");
+    expect((exported.document as Record<string, unknown>).checkedUpgrades).not.toHaveProperty("tier3-6-0");
     expect(exported.report.diagnostics).toContainEqual(expect.objectContaining({
       code: "TTTRI_DHSHEET_ADVANCEMENT_NOT_EQUIVALENT",
     }));

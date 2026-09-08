@@ -85,17 +85,21 @@ describe("TTTRI character consistency validation", () => {
     ]));
   });
 
-  it("allows one half-level out-of-domain Card for a single-slot multiclass advancement", async () => {
+  it("allows one half-level out-of-domain Card only for a completed double-slot multiclass advancement", async () => {
     const normalDomains = [domainEntry("奥术", 1, 0), domainEntry("奥术", 1, 1), domainEntry("奥术", 2, 0)];
     const multiclassValues = {
       level: "2",
-      "advancement-tier-2": { "multiclass-1": true },
+      "advancement-tier-2": { "multiclass-1": true, "multiclass-2": true },
     };
     const validCards = characterCardsWithDomains([...normalDomains, domainEntry("工业", 1, 0)]);
     const valid = await validate(multiclassValues, validCards);
     expect(issueCodes(valid)).not.toContain("DOMAIN_CARD_COUNT_MISMATCH");
     expect(issueCodes(valid)).not.toContain("DOMAIN_CARD_LEVEL_MISMATCH");
     expect(issueCodes(valid)).not.toContain("DOMAIN_CARD_AFFILIATION_MISMATCH");
+    expect(issueCodes(valid)).not.toContain("MULTICLASS_UPGRADE_INCOMPLETE");
+    const incomplete = await validate({ level: "2", "advancement-tier-2": { "multiclass-1": true } }, validCards);
+    expect(issueCodes(incomplete)).toContain("MULTICLASS_UPGRADE_INCOMPLETE");
+    expect(issueCodes(incomplete)).toContain("DOMAIN_CARD_COUNT_MISMATCH");
 
     const overLevelCards = characterCardsWithDomains([...normalDomains, domainEntry("工业", 2, 0)]);
     const overLevel = await validate(multiclassValues, overLevelCards);

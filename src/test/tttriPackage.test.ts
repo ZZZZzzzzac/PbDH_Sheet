@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { zipSync } from "fflate";
 import { beforeAll, describe, expect, it } from "vitest";
-import { createEmptyCharacterData, updateResourceSelectionSnapshot } from "../domain/characterData";
+import { createEmptyCharacterData, parseCharacterDataJson, updateResourceSelectionSnapshot } from "../domain/characterData";
 import { applyDependencyResultToCharacterData, evaluateDependencies, rebuildDerivedDependencies } from "../domain/dependencyEngine";
 import { resolveCardPresentation } from "../domain/cardPresentation";
 import { runValidationChecksInProcess } from "../domain/validationScript";
@@ -245,6 +245,53 @@ describe("TTTRI System Package", () => {
         expect(libraryFields.filter((field) => fieldConfig.get(field)?.默认显示 !== false), moduleId).toEqual(testCase.visible);
       }
     }
+  });
+
+  it("includes the unchanged Guard interruption clause in every advanced feature and upgrade summary", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const entries = loadedResult.package.resourceLibraries.find((library) => library.ID === "subclasses")!.entries;
+    const clause = "并中断该目标正在持续的动作（例如使用身体压制某个生物的动作）";
+    for (const name of ["无畏者", "强攻手", "武者", "斗士", "领主", "术战者", "重剑手", "收割者"]) {
+      for (const stage of ["T3", "T4Y"]) {
+        const entry = entries.find((candidate) => candidate.ID === `子职:近卫:${name}:${stage}`)!;
+        expect(entry, `${name} ${stage}`).toBeDefined();
+        expect(entry.fields.职业特性.split(clause), entry.ID).toHaveLength(2);
+        if (stage === "T3") expect(entry.fields.子职提升.split(clause), entry.ID).toHaveLength(2);
+      }
+    }
+    expect(entries.find((entry) => entry.ID === "子职:近卫:强攻手:T3")!.fields.职业特性).toContain(`孤立其中等量个目标，${clause}。`);
+  });
+
+  it("ships the September 2026 branches and verified errata", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    expect(loadedResult.package.manifest.版本).toBe("1.1.0");
+    const entries = loadedResult.package.resourceLibraries.find((library) => library.ID === "subclasses")!.entries;
+    const names = ["排陷手", "破术者", "收割者", "卫盟者", "回环射手", "塑灵术师", "游击手", "行商"];
+    const questionnaire = readFileSync(join(packageRoot, "questionnaires/subclass-recommendation.html"), "utf8");
+    for (const name of names) {
+      const branch = entries.filter((entry) => entry.fields.名称 === name);
+      expect(branch.map((entry) => entry.fields.阶段), name).toEqual(["T1", "T2", "T3", "T4X", "T4Y"]);
+      expect(questionnaire).toContain(`name:'${name}'`);
+      for (const entry of branch) {
+        expect(entry.fields.子职提升.length, entry.ID).toBeGreaterThan(30);
+        expect(entry.fields.武器原型, entry.ID).toMatch(/d\d+(?:\+\d+)?\/(物理|法术)$/);
+        expect(entry.fields.子职提升, entry.ID).not.toContain("undefined");
+      }
+    }
+    expect(entries.find((entry) => entry.ID === "子职:辅助:游击手:T2")?.fields.武器原型).toContain("d8+3");
+    expect(entries.find((entry) => entry.ID === "子职:术师:塑灵术师:T3")?.fields.子职特性).toContain("替该友方角色承受此伤害和相关后果");
+    for (const stage of ["T3", "T4Y"]) {
+      expect(entries.find((entry) => entry.ID === `子职:术师:阵法术师:${stage}`)?.fields.职业特性).toContain("单独重掷希望骰或恐惧骰");
+    }
+    const hook = entries.find((entry) => entry.ID === "子职:特种:钩索师:T4Y")!;
+    for (const value of [hook.fields.职业特性, hook.fields.子职提升]) {
+      expect(value).toContain("外置捕网");
+      expect(value).toContain("敏捷反应掷骰（17）");
+      expect(value).not.toContain("紧急机动");
+    }
+    expect(entries.find((entry) => entry.ID === "子职:特种:推击手:T4Y")?.fields.职业特性).toContain("紧急机动");
   });
 
   it("ships hover art for every Ancestry while keeping Card Table cards text-only", () => {
@@ -584,18 +631,15 @@ describe("TTTRI System Package", () => {
     expect(t3?.类型).toBe("checkboxResource");
     expect(t4?.类型).toBe("checkboxResource");
     if (t2?.类型 !== "checkboxResource" || t3?.类型 !== "checkboxResource" || t4?.类型 !== "checkboxResource") return;
-    expect(t2.选项.some((option) => option.ID === "subclass")).toBe(true);
-    expect(t3.选项.some((option) => option.ID === "subclass")).toBe(true);
+    expect(t2.选项.some((option) => option.ID === "subclass")).toBe(false);
+    expect(t3.选项.some((option) => option.ID === "subclass")).toBe(false);
     expect(t4.选项.some((option) => option.ID === "subclass")).toBe(false);
-    expect(t4.选项.some((option) => option.ID === "subclass-elite")).toBe(true);
-    const weaponArchetypeText = "提升武器原型: 使用人物卡上的干员选择器选择对应的新等级 (预备->正式->资深->精英)";
-    expect(t2.选项.find((option) => option.ID === "subclass")?.标签).toBe(weaponArchetypeText);
-    expect(t3.选项.find((option) => option.ID === "subclass")?.标签).toBe(weaponArchetypeText);
-    expect(t4.选项.find((option) => option.ID === "subclass-elite")?.标签).toBe(weaponArchetypeText);
+    expect(t4.选项.some((option) => option.ID === "subclass-elite")).toBe(false);
     for (const [tier, multiclassCap] of [[t2, 2], [t3, 4], [t4, 5]] as const) {
       const multiclassOptions = tier.选项.filter((option) => option.ID.startsWith("multiclass-"));
-      expect(multiclassOptions).toHaveLength(1);
-      expect(multiclassOptions[0]?.标签).toBe(`技艺交流：从你不具有的领域中选择一张等级小于或等于你干员等级一半的领域卡（最高为${multiclassCap}级）`);
+      expect(multiclassOptions).toHaveLength(2);
+      expect(multiclassOptions.every((option) => option.分组 === "multiclass")).toBe(true);
+      expect(multiclassOptions[0]?.标签).toBe(`技艺交流：从你不具有的领域中选择一张等级小于或等于你干员等级一半的领域卡（最高为${multiclassCap}级）（须标记两格）`);
       expect(tier.选项.filter((option) => option.分组 === "proficiency")).toHaveLength(tier === t2 ? 0 : 2);
     }
     const baseCss = systemPackage.pages.find((page) => page.ID === "character-story")?.layout.cssContent ?? "";
@@ -629,7 +673,7 @@ describe("TTTRI System Package", () => {
       packageMetadata: { id: systemPackage.manifest.ID, version: systemPackage.manifest.版本 },
       checks: systemPackage.validationChecks,
     });
-    expect(t4MissingIssues.map((issue) => issue.code)).not.toContain("T4_ELITE_SUBCLASS_MISSING");
+    expect(t4MissingIssues.map((issue) => issue.code)).toContain("T4_ELITE_SUBCLASS_MISSING");
 
     empty.character.values["advancement-tier-4"] = { "subclass-elite": true };
     const selectedT4UpgradeIssues = await runValidationChecksInProcess({
@@ -646,6 +690,7 @@ describe("TTTRI System Package", () => {
     empty.character.values["class-name"] = selectedClass.fields.名称;
     empty.character.values["subclass-name"] = selectedSubclass.fields.名称;
     empty.character.values["subclass-stage"] = selectedSubclass.fields.等级;
+    empty.character.values["advancement-tier-4"] = {};
     const validIssues = await runValidationChecksInProcess({
       characterData: empty,
       resourceLibraries: systemPackage.resourceLibraries,
@@ -653,6 +698,37 @@ describe("TTTRI System Package", () => {
       checks: systemPackage.validationChecks,
     });
     expect(validIssues.filter((issue) => ["CLASS_MISSING", "SUBCLASS_MISSING", "SUBCLASS_STAGE_INVALID", "SUBCLASS_UNKNOWN", "T4_ELITE_SUBCLASS_MISSING"].includes(issue.code ?? ""))).toEqual([]);
+  });
+
+  it("imports old advancement records with warnings without losing valid choices or feature text", () => {
+    expect(loadedResult.ok).toBe(true);
+    if (!loadedResult.ok) return;
+    const source = createEmptyCharacterData(loadedResult.package);
+    source.systemPackage.version = "1.0.1";
+    source.character.values["subclass-name"] = "无畏者";
+    source.character.values["subclass-stage"] = "资深";
+    source.character.values["subclass-current"] = "玩家保留的特性文本";
+    for (const tier of [2, 3, 4]) {
+      source.character.values[`advancement-tier-${tier}`] = {
+        [tier === 4 ? "subclass-elite" : "subclass"]: true,
+        "hp-1": true, "traits-1": true, "stress-1": false,
+      };
+    }
+    const before = JSON.stringify(source);
+    const result = parseCharacterDataJson(before, loadedResult.package);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.report.diagnostics.filter((issue) => issue.code === "CHARACTER_DATA_CHECKBOX_OPTIONS_SKIPPED")).toHaveLength(3);
+    expect(result.report.diagnostics.every((issue) => issue.level === "warning")).toBe(true);
+    for (const tier of [2, 3, 4]) {
+      const state = result.data.character.values[`advancement-tier-${tier}`];
+      expect(state).toMatchObject({ "hp-1": true, "traits-1": true, "stress-1": false });
+      expect(state).not.toHaveProperty(tier === 4 ? "subclass-elite" : "subclass");
+    }
+    expect(result.data.character.values).toMatchObject({
+      "subclass-name": "无畏者", "subclass-stage": "资深", "subclass-current": "玩家保留的特性文本",
+    });
+    expect(JSON.stringify(source)).toBe(before);
   });
 
   it("checks current thresholds against armor base thresholds plus level", async () => {

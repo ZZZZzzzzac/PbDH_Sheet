@@ -50,16 +50,15 @@ function advancement(upgrades, sourceTier, targetTier) {
     evasion: upgradeSelected(upgrades, sourceTier, 5, 0, false),
   };
   if (targetTier === 2) {
-    result.subclass = false;
     result["multiclass-1"] = false;
+    result["multiclass-2"] = false;
   } else {
-    const subclass = upgradeSelected(upgrades, sourceTier, 6, 0, false);
-    result[targetTier === 4 ? "subclass-elite" : "subclass"] = subclass;
     const proficiency = upgradeSelected(upgrades, sourceTier, 7, 0, true);
     const multiclass = upgradeSelected(upgrades, sourceTier, 8, 0, true);
     result["proficiency-1"] = proficiency;
     result["proficiency-2"] = proficiency;
     result["multiclass-1"] = multiclass;
+    result["multiclass-2"] = multiclass;
   }
   return result;
 }
@@ -144,6 +143,9 @@ module.exports = function (input) {
   output.values["advancement-tier-2"] = advancement(document.checkedUpgrades, "tier1", 2);
   output.values["advancement-tier-3"] = advancement(document.checkedUpgrades, "tier2", 3);
   output.values["advancement-tier-4"] = advancement(document.checkedUpgrades, "tier3", 4);
+  if (["tier2", "tier3"].some((tier) => upgradeSelected(document.checkedUpgrades, tier, 6, 0, false))) {
+    output.diagnostics.push({ level: "warning", code: "TTTRI_DHSHEET_ADVANCEMENT_NOT_EQUIVALENT", text: "dhSheet 的子职升级选项不等价于 TTTRI 1.1.0 的阶段奖励，未转换为升级消耗或领取记录；请按角色等级核对武器原型。" });
+  }
   if (selectedClass) {
     output.values["primary-domain"] = text(field(selectedClass, "主领域"));
     output.values["class-hope-feature"] = text(field(selectedClass, "希望特性"));

@@ -42,6 +42,8 @@ Character Data 是独立于 System Package 源文件的持久对象，保存：
 
 默认值只在没有持久值时生效。加载旧 Character Data 时不重放通用依赖来覆盖已有值。改变模块 ID、选项 ID 或资源 Entry ID 会使旧数据失联，因此显示名称可变，身份不可随意变。
 
+原生导入遇到已移除或类型无效的 Checkbox 选项时，报告警告并丢弃这些选项，不阻塞导入；同组仍有效的布尔选项继续保留，缺失项使用当前默认值。若整组没有可用项，则整组使用当前默认值。
+
 ## 受限 Markdown
 
 资源文字与 Card 描述可使用受限 Markdown：`**粗体**`、`*斜体*`、`***粗斜体***`、`- 无序项`、`1. 有序项`，以及 `:red[...]`、`:orange[...]`、`:yellow[...]`、`:green[...]`、`:blue[...]`、`:purple[...]`、`:gray[...]`。颜色语法不能嵌套；raw HTML 会被当作文本或过滤。Character Data 不存渲染 HTML。主题可通过如 `--restricted-markdown-blue` 的包作用域变量调整安全颜色。
