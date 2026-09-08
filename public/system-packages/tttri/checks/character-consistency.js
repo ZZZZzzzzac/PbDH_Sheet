@@ -87,12 +87,12 @@ function checkRequiredSelections(issues, context) {
   const subclassName = text(context.values["subclass-name"]);
   const subclassStage = text(context.values["subclass-stage"]);
   if (!subclassName) {
-    warn(issues, "SUBCLASS_MISSING", "character.values.subclass-name", "尚未选择干员。");
+    warn(issues, "SUBCLASS_MISSING", "character.values.subclass-name", "尚未选择子职。");
   }
   if (subclassName && !ALL_STAGES.includes(subclassStage)) {
-    warn(issues, "SUBCLASS_STAGE_INVALID", "character.values.subclass-stage", "干员等级必须是预备、正式、资深、精英X或精英Y。");
+    warn(issues, "SUBCLASS_STAGE_INVALID", "character.values.subclass-stage", "子职等级必须是预备、正式、资深、精英X或精英Y。");
   } else if (subclassName && !context.subclassEntry) {
-    warn(issues, "SUBCLASS_UNKNOWN", "character.values.subclass-name", "当前干员类型及等级组合不在干员资源库中。");
+    warn(issues, "SUBCLASS_UNKNOWN", "character.values.subclass-name", "当前子职类型及等级组合不在子职资源库中。");
   }
 }
 
@@ -114,7 +114,7 @@ function checkSubclassProgression(issues, context) {
     warn(issues, "T3_SUBCLASS_UPGRADE_MISSING", "character.values.subclass-stage", "5-7 级的阶段奖励应使用资深干员武器原型，不消耗升级格。");
   }
   if (context.tier === 4 && !isElite) {
-    warn(issues, "T4_ELITE_SUBCLASS_MISSING", "character.values.subclass-stage", "8-10 级的阶段奖励应选择精英X或精英Y的干员，不消耗升级格。");
+    warn(issues, "T4_ELITE_SUBCLASS_MISSING", "character.values.subclass-stage", "8-10 级的阶段奖励应选择精英X或精英Y的子职，不消耗升级格。");
   } else if (context.tier !== undefined && context.tier < 4 && isElite) {
     warn(issues, "ELITE_SUBCLASS_BEFORE_T4", "character.values.subclass-stage", "尚未达到 8 级，不应提前选择精英X或精英Y。");
   }
@@ -326,7 +326,7 @@ function checkDerivedValues(issues, context) {
       issues,
       "CURRENT_THRESHOLDS_MISMATCH",
       "character.values.major-threshold",
-      `当前阈值应为 ${expectedHeavy} / ${expectedSevere}（护甲基础阈值 + 等级及永久干员修正），当前为 ${actualText}。`,
+      `当前阈值应为 ${expectedHeavy} / ${expectedSevere}（护甲基础阈值 + 等级及永久子职修正），当前为 ${actualText}。`,
     );
   }
 }
