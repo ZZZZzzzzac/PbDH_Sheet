@@ -1,5 +1,6 @@
-import { Archive, Copy, Download, Eye, FileText, Library, Map, Plus, Printer, ShieldCheck, Sparkles, Trash2, Type, Upload, X } from "lucide-react";
+import { Archive, Copy, Download, Eye, FileText, Library, Map, Plus, Printer, Send, ShieldCheck, Sparkles, Trash2, Type, Upload, X } from "lucide-react";
 import type { ChangeEvent, InputHTMLAttributes, RefObject } from "react";
+import { supportsDholDelivery } from "../../export/dholDelivery";
 import type { SystemPackage } from "../../domain/systemPackage";
 import type { PresetSystemPackage } from "../../loaders/presetSystemPackageLoader";
 import type { CharacterSaveSummary } from "../../storage/storageService";
@@ -39,6 +40,7 @@ interface AppTopBarProps {
   onDuplicateSave: () => void;
   onDeleteSave: () => void;
   onBeginOutput: (kind: OutputKind) => void;
+  onSendToDhol: () => void;
   onExportCharacterText: (exportId: string) => void;
   onExportWithCharacterAdapter: (adapterId: string) => void;
   onPresetSystemPackage: (event: ChangeEvent<HTMLSelectElement>) => void;
@@ -176,6 +178,11 @@ export function AppTopBar(props: AppTopBarProps) {
             <button className="menu-item" type="button" onClick={() => props.onBeginOutput("json")} aria-label="导出 Character JSON" disabled={!characterDataAvailable}>
               <Download aria-hidden="true" size={16} /><span>导出 JSON</span>
             </button>
+            {supportsDholDelivery(currentPackage) ? (
+              <button className="menu-item" type="button" onClick={props.onSendToDhol} disabled={!characterDataAvailable}>
+                <Send aria-hidden="true" size={16} /><span>发送到在线面板</span>
+              </button>
+            ) : null}
             {currentPackage?.characterTextExports?.map((definition) => (
               <button className="menu-item" type="button" key={definition.ID} onClick={() => props.onExportCharacterText(definition.ID)} disabled={!characterDataAvailable}>
                 <Copy aria-hidden="true" size={16} /><span>{definition.名称}</span>

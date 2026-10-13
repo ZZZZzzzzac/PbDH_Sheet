@@ -23,6 +23,7 @@ const defaultPresetSystemPackage = presetSystemPackages.find((preset) => preset.
 const ResourceManager = lazy(() => import("./rendering/ResourceManager").then((module) => ({ default: module.ResourceManager })));
 const CharacterImportDialogs = lazy(() => import("./rendering/CharacterImportDialogs").then((module) => ({ default: module.CharacterImportDialogs })));
 const CharacterExportDialog = lazy(() => import("./rendering/CharacterExportDialog").then((module) => ({ default: module.CharacterExportDialog })));
+const DholExportDialog = lazy(() => import("./rendering/DholExportDialog").then((module) => ({ default: module.DholExportDialog })));
 const QuestionnaireResultDialog = lazy(() => import("./rendering/QuestionnaireResultDialog").then((module) => ({ default: module.QuestionnaireResultDialog })));
 
 export default function App() {
@@ -34,6 +35,7 @@ export default function App() {
   const questionnaireSessionRef = useRef<QuestionnaireHostSession | null>(null);
   const [guideSession, setGuideSession] = useState<GuideSession | null>(null);
   const [resourceManagerOpen, setResourceManagerOpen] = useState(false);
+  const [dholExportOpen, setDholExportOpen] = useState(false);
   const [urlPresetSystemPackage] = useState(
     () => findPresetByUrlPath(presetSystemPackages, presetIdFromPathname(import.meta.env.BASE_URL, window.location.pathname)),
   );
@@ -312,6 +314,7 @@ export default function App() {
         onDuplicateSave={() => void handleDuplicateSave()}
         onDeleteSave={() => void handleDeleteSave()}
         onBeginOutput={(kind) => void beginOutput(kind)}
+        onSendToDhol={() => setDholExportOpen(true)}
         onExportCharacterText={(exportId) => void exportCharacterText(exportId)}
         onExportWithCharacterAdapter={(adapterId) => void exportWithCharacterAdapter(adapterId)}
         onPresetSystemPackage={(event) => void handlePresetSystemPackage(event)}
@@ -351,6 +354,11 @@ export default function App() {
         onClose={closeValidationDialog}
         onContinue={continuePendingOutput}
       />
+      {dholExportOpen && currentPackage && characterData ? (
+        <Suspense fallback={null}>
+          <DholExportDialog data={characterData} systemPackage={currentPackage} onClose={() => setDholExportOpen(false)} />
+        </Suspense>
+      ) : null}
       {currentPackage ? (
         <SheetRenderer
           systemPackage={currentPackage}

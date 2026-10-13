@@ -4,6 +4,8 @@ import { zipSync } from "fflate";
 import { beforeAll, describe, expect, it } from "vitest";
 import { loadSystemPackageFromZipFile } from "../loaders/systemPackageLoader";
 import type { SystemPackage } from "./systemPackage";
+import { createEmptyCharacterData } from "./characterData";
+import { buildDholDelivery } from "../export/dholDelivery";
 import { convertExternalCharacterSource, exportExternalCharacterData, parseAndDetectCharacterSource } from "./characterFormatAdapter";
 
 const packageRoot = join(process.cwd(), "public", "system-packages", "daggerheart-core");
@@ -146,6 +148,32 @@ describe("Character Format Adapter scripts", () => {
       "armor-name": conversion.data.character.values["armor-name"],
       "advancement-tier-3": expect.objectContaining({ "proficiency-1": true, "multiclass-1": true }),
     }));
+  });
+
+  it("delivers an installed resource entry and edited text through the dhSheet adapter", async () => {
+    const adapter = daggerheartPackage.characterFormatAdapters?.find((item) => item.ID === "dhsheet-character");
+    if (!adapter) throw new Error("dhSheet adapter missing");
+    const effectivePackage: SystemPackage = {
+      ...daggerheartPackage,
+      resourceLibraries: (daggerheartPackage.resourceLibraries ?? []).map((library) => library.ID === "domain-cards"
+        ? { ...library, entries: [...library.entries, { ID: "extension-card", fields: { 名称: "扩展卡", 描述: "第三方资源包原文", 领域: "奥术" } }] }
+        : library),
+    };
+    const data = createEmptyCharacterData(effectivePackage);
+    data.character.values["character-name"] = "扩展角色";
+    data.character.values["background-story"] = "手动改写的完整背景";
+    data.cards.instances.push({
+      instanceId: "extension-instance", tableModuleId: "character-card-table",
+      definitionRef: { type: "resourceLibrary", libraryId: "domain-cards", entryId: "extension-card" },
+      state: "配置", xPct: 0, yPct: 0, zIndex: 1, face: "front", rotation: 0, scale: 1,
+    });
+    const exported = await exportExternalCharacterData(data, adapter, effectivePackage);
+    if ("error" in exported) throw new Error(exported.error.text);
+    const delivery = buildDholDelivery(data, exported.document, effectivePackage);
+    expect(delivery.sheet.cards).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "扩展卡", description: "第三方资源包原文", type: "domain" }),
+    ]));
+    expect(delivery.sheet.characterBackground).toBe("手动改写的完整背景");
   });
 
   it("extracts embedded JSON without executing source scripts or requesting resources", () => {
