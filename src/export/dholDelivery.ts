@@ -1,7 +1,7 @@
 import type { CharacterData, SheetValue } from "../domain/characterData";
 import type { SystemPackage } from "../domain/systemPackage";
 
-export const DHOL_BASE_URL = "https://dhol-realtime.gooole-dql.workers.dev";
+export const DHOL_BASE_URL = "https://screenol.pages.dev";
 export const DHOL_ADAPTER_ID = "dhsheet-character";
 export const DHOL_PACKAGE_ID = "daggerheart-core";
 
